@@ -28,7 +28,6 @@
       sops
       ssh-to-age
       reuse
-      vim
     ];
   };
 }

@@ -10,10 +10,9 @@
   ...
 }: {
   imports = [
-    (modulesPath + "/installer/scan/not-detected.nix")
-    ../hosts/generic-disk-config.nix
-    ../services/openssh/openssh.nix
-    ../users/hrosten.nix
+    ../generic-disk-config.nix
+    ../../services/openssh/openssh.nix
+    ../../users/hrosten.nix
   ];
 
   boot.loader.grub = {
@@ -33,7 +32,6 @@
     pkgs.vim
   ];
 
-  # TODO: needs refinement
   networking.firewall.enable = true;
   networking.enableIPv6 = false;
   security.sudo.wheelNeedsPassword = false;

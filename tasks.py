@@ -23,13 +23,13 @@
 # $ inv --help deploy
 #
 # Run a task (using build-local as an example):
-# $ inv build-local ghafhydra
+# $ inv build-local
 #
 # For more pyinvoke usage examples, see:
 # https://docs.pyinvoke.org/en/stable/getting-started.html
 
 
-""" Deployment helper """
+""" Misc dev and deployment helper tasks """
 
 import json
 import os
@@ -43,7 +43,7 @@ from tempfile import TemporaryDirectory
 from typing import Any, Union
 
 from colorlog import ColoredFormatter, default_log_colors
-from deploykit import DeployHost
+from deploykit import DeployHost, DeployGroup, HostKeyCheck
 from invoke import task
 
 ################################################################################
@@ -92,7 +92,8 @@ def _init_logging(verbosity: int = 1) -> None:
     LOG.setLevel(level)
 
 
-set_log_verbosity(2)
+# Set logging verbosity (1=INFO, 2=DEBUG)
+set_log_verbosity(1)
 
 ################################################################################
 
@@ -150,6 +151,7 @@ def get_deploy_host(target: str = "", hostname: str = "") -> DeployHost:
     deploy_host = DeployHost(
         host=hostname,
         meta={"target": target},
+        host_key_check=HostKeyCheck.NONE,
         # verbose_ssh=True,
     )
     return deploy_host
@@ -203,17 +205,20 @@ def decrypt_host_key(target: str, tmpdir: str) -> None:
                 stdout=fh,
             )
         except subprocess.CalledProcessError:
-            LOG.fatal("Failed reading secret 'ssh_host_ed25519_key' for %s", target)
-            sys.exit(1)
-    pub_key = t / "etc/ssh/ssh_host_ed25519_key.pub"
-    with open(pub_key, "w") as fh:
-        subprocess.run(
-            ["ssh-keygen", "-y", "-f", f"{host_key}"],
-            stdout=fh,
-            text=True,
-            check=True,
-        )
-    pub_key.chmod(0o644)
+            LOG.warning("Failed reading secret 'ssh_host_ed25519_key' for %s.", target)
+            ask = input(f"Install '{target}' without pre-defined ssh host key? [y/N] ")
+            if ask != "y":
+                sys.exit(1)
+        else:
+            pub_key = t / "etc/ssh/ssh_host_ed25519_key.pub"
+            with open(pub_key, "w") as fh:
+                subprocess.run(
+                    ["ssh-keygen", "-y", "-f", f"{host_key}"],
+                    stdout=fh,
+                    text=True,
+                    check=True,
+                )
+            pub_key.chmod(0o644)
 
 
 @task
@@ -243,26 +248,42 @@ def install(c: Any, target: str, hostname: str) -> None:
 
 
 @task
-def build_local(_c: Any, target: str) -> None:
+def build_local(_c: Any, target: str = "") -> None:
     """
-    Build NixOS configuration `target` locally.
+    Build NixOS configuration `target` locally. If target is not
+    specificied, builds all nixosConfigurations.
 
     Example usage:
     inv build-local --target ghafhydra
     """
-    # For local builds, we pretend hostname is the target
-    h = get_deploy_host(hostname=target)
-    h.run_local(
-        [
-            "nixos-rebuild",
-            "build",
-            "--option",
-            "accept-flake-config",
-            "true",
-            "--flake",
-            f".#{target}",
-        ]
-    )
+    if target:
+        # For local builds, we pretend hostname is the target
+        g = DeployGroup([get_deploy_host(hostname=target)])
+    else:
+        res = subprocess.run(
+            ["nix", "flake", "show", "--json"],
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+        )
+        data = json.loads(res.stdout)
+        targets = data["nixosConfigurations"]
+        g = DeployGroup([get_deploy_host(hostname=t) for t in targets])
+
+    def _build_local(h: DeployHost) -> None:
+        h.run_local(
+            [
+                "nixos-rebuild",
+                "build",
+                "--option",
+                "accept-flake-config",
+                "true",
+                "--flake",
+                f".#{h.host}",
+            ]
+        )
+
+    g.run_function(_build_local)
 
 
 def wait_for_port(host: str, port: int, shutdown: bool = False) -> None:

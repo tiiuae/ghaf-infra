@@ -27,6 +27,7 @@
   outputs = {
     self,
     nixpkgs,
+    disko,
     ...
   } @ inputs: let
     inherit (self) outputs;
@@ -40,7 +41,7 @@
         inherit system;
         config.allowUnfree = true;
       });
-    bootstrapTargets = import ./bootstrap/targets.nix {inherit nixpkgs inputs outputs;};
+    templateTargets = import ./hosts/templates/targets.nix {inherit nixpkgs disko;};
   in {
     # Formatter for the nix files, available through 'nix fmt'
     formatter = forEachSystem (pkgs: pkgs.alejandra);
@@ -48,9 +49,9 @@
     devShells = forEachSystem (pkgs: import ./shell.nix {inherit pkgs;});
     # NixOS configuration entrypoint
     nixosConfigurations = {
-      # Generic bootstrap configurations
-      bootstrap-azure-x86_64-linux = bootstrapTargets.azure-x86_64-linux;
-      bootstrap-generic-x86_64-linux = bootstrapTargets.generic-x86_64-linux;
+      # Generic template configurations
+      template-azure-x86_64-linux = templateTargets.azure-x86_64-linux;
+      template-generic-x86_64-linux = templateTargets.generic-x86_64-linux;
 
       # Hydra host: ghafhydra
       ghafhydra = nixpkgs.lib.nixosSystem {
