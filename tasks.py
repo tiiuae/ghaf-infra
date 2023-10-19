@@ -253,6 +253,35 @@ def install(c: Any, target: str, hostname: str) -> None:
     ask = input(f"Install configuration '{target}' on host '{hostname}'? [y/N] ")
     if ask != "y":
         return
+
+    h = get_deploy_host(target, hostname)
+    # Check sudo nopasswd
+    try:
+        h.run("sudo -nv", become_root=True)
+    except subprocess.CalledProcessError:
+        LOG.warning(
+            "sudo on '%s' needs password: installation will likely fail", hostname
+        )
+        ask = input(f"Still continue? [y/N] ")
+        if ask != "y":
+            sys.exit(1)
+    # Check static ip
+    try:
+        h.run("ip a | grep dynamic")
+    except subprocess.CalledProcessError:
+        pass
+    else:
+        LOG.warning("Above address(es) on '%s' use dynamic addressing.", hostname)
+        LOG.warning(
+            "This might cause issues if you assume the target host is reachable "
+            "from any such address also after kexec switch. "
+            "If you do, consider making the address temporarily static "
+            "before continuing."
+        )
+        ask = input(f"Still continue? [y/N] ")
+        if ask != "y":
+            sys.exit(1)
+
     with TemporaryDirectory() as tmpdir:
         decrypt_host_key(target, tmpdir)
         command = "nix run github:numtide/nixos-anywhere --"

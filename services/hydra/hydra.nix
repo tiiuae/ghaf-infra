@@ -34,6 +34,7 @@
 in {
   programs.ssh.knownHosts = {
     build01 = {
+      # Add build01 public id to hydra host's known_hosts
       # TODO: get rid of static IP config:
       hostNames = ["192.168.1.107"];
       publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID+hx/Ff8U123lI8wMYvmVYn5M3Cv4m+XQxxNYFgJGTo";
