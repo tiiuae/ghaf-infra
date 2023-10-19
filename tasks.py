@@ -95,6 +95,24 @@ def _init_logging(verbosity: int = 1) -> None:
 # Set logging verbosity (1=INFO, 2=DEBUG)
 set_log_verbosity(1)
 
+
+def exec_cmd(cmd, raise_on_error=True):
+    """Run shell command cmd"""
+    LOG.debug("Running: %s", cmd)
+    try:
+        return subprocess.run(cmd.split(), capture_output=True, text=True, check=True)
+    except subprocess.CalledProcessError as error:
+        warn = [f"'{cmd}':"]
+        if error.stdout:
+            warn.append(f"{error.stdout}")
+        if error.stderr:
+            warn.append(f"{error.stderr}")
+        LOG.warning("\n".join(warn))
+        if raise_on_error:
+            raise error
+        return None
+
+
 ################################################################################
 
 
@@ -322,3 +340,44 @@ def reboot(_c: Any, hostname: str) -> None:
     print(f"Wait for {h.host} to start", end="")
     sys.stdout.flush()
     wait_for_port(h.host, port)
+
+
+@task
+def pre_push(c: Any) -> None:
+    """
+    Run 'pre-push' checks: black, pylint, pycodestyle, reuse lint, nix fmt.
+    Also, build all nixosConfiguration targets in this flake.
+
+    Example usage:
+    inv pre-push
+    """
+    cmd = f"find . -type f -name *.py ! -path *result* ! -path *eggs*"
+    ret = exec_cmd(cmd)
+    pyfiles = ret.stdout.replace("\n", " ")
+    LOG.info("Running black")
+    cmd = f"black -q {pyfiles}"
+    ret = exec_cmd(cmd, raise_on_error=False)
+    if not ret:
+        sys.exit(1)
+    LOG.info("Running pylint")
+    cmd = f"pylint --disable duplicate-code -rn {pyfiles}"
+    ret = exec_cmd(cmd, raise_on_error=False)
+    if not ret:
+        sys.exit(1)
+    LOG.info("Running pycodestyle")
+    cmd = f"pycodestyle --max-line-length=90 {pyfiles}"
+    ret = exec_cmd(cmd, raise_on_error=False)
+    if not ret:
+        sys.exit(1)
+    LOG.info("Running reuse lint")
+    cmd = f"reuse lint"
+    ret = exec_cmd(cmd, raise_on_error=False)
+    if not ret:
+        sys.exit(1)
+    LOG.info("Running nix fmt")
+    cmd = f"nix fmt"
+    ret = exec_cmd(cmd, raise_on_error=False)
+    if not ret:
+        sys.exit(1)
+    LOG.info("Building all nixosConfigurations")
+    build_local(c)
