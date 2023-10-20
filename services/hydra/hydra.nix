@@ -8,6 +8,15 @@
   ...
 }: let
   # See: https://nixos.org/manual/nix/stable/advanced-topics/distributed-builds.html#remote-builds
+  # Remote builder fields:
+  # 1 - Remote store URI
+  # 2 - Comma-separated list of builder supported platfor identifiers
+  # 3 - SSH identity file used by hydra-queue-runner to log in to the remote builder
+  # 4 - Max number of builds that will be executed in parallel on the machine
+  # 5 - Speed factor: relative speed of the machine; nix prefers fastest builder by speed factor
+  # 6 - Supported features for the remote builder
+  # 7 - Mandatory features
+  # 8 - The (base64-encoded) public host key of the remote machine (vs. ssh_known_hosts)
   localMachine = pkgs.writeTextFile {
     name = "build-localMachine";
     text = ''
@@ -18,7 +27,7 @@
     name = "build-build01Machine";
     # TODO: get rid of static IP config:
     text = ''
-      ssh://nix@192.168.1.107 x86_64-linux ${config.sops.secrets.id_buildfarm.path} 4 1 kvm,benchmark,big-parallel,nixos-test - -
+      ssh://nix@192.168.1.107 x86_64-linux ${config.sops.secrets.id_buildfarm.path} 8 2 kvm,benchmark,big-parallel,nixos-test - -
     '';
   };
   createJobsetsScript = pkgs.stdenv.mkDerivation {
@@ -34,7 +43,7 @@
 in {
   programs.ssh.knownHosts = {
     build01 = {
-      # Add build01 public id to hydra host's known_hosts
+      # Add build01 public id to ssh_known_hosts
       # TODO: get rid of static IP config:
       hostNames = ["192.168.1.107"];
       publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID+hx/Ff8U123lI8wMYvmVYn5M3Cv4m+XQxxNYFgJGTo";
@@ -48,7 +57,7 @@ in {
     useSubstitutes = true;
 
     buildMachinesFiles = [
-      # "${localMachine}"
+      "${localMachine}"
       "${build01Machine}"
     ];
 
