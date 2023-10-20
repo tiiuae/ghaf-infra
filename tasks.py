@@ -410,3 +410,4 @@ def pre_push(c: Any) -> None:
         sys.exit(1)
     LOG.info("Building all nixosConfigurations")
     build_local(c)
+    LOG.info("All pre-push checks passed")

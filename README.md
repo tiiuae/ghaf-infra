@@ -24,5 +24,16 @@ Flakes-based NixOS configurations for the following host profiles:
 
 Inspired by [nix-community infra](https://github.com/nix-community/infra), this project makes use of [pyinvoke](https://www.pyinvoke.org/) to help with common deployment [tasks](./tasks.py).
 
+## Secrets
+For deployment secrets (such as the binary cache signing key), this project uses [sops-nix](https://github.com/Mic92/sops-nix).
+
+The general idea is: each host have `secrets.yaml` file that contains the encrypted secrets required by that host. As an example, the `secrets.yaml` file for host ghafhydra defines a secret '[`cache-sig-key`](./hosts/ghafhydra/secrets.yaml)' which is used by the host ghafhydra in [its](./hosts/ghafhydra/configuration.nix) binary cache [configuration](./modules/binarycache/binary-cache.nix) to sign the packages in the nix binary cache. All secrets in `secrets.yaml` can be decrypted with the host's ssh key - sops automatically decrypts the host secrets when the system activates (i.e. on boot or whenever nixos-rebuild switch occurs) and places the decrypted secrets in the configured file paths.
+
+Each host's private ssh key is stored as sops secret and automatically deployed on [host installation](https://github.com/tiiuae/ghaf-infra/blob/61f6765dcead5fef08ad21b793ccdec79315feae/tasks.py#L220). 
+
+The `secrets.yaml` file is created and edited with the `sops` utility. The '[`.sops.yaml`](.sops.yaml)' file tells sops what secrets get encrypted with what keys.
+
+The secrets configuration and the usage of `sops` is adopted from [nix-community infra](https://github.com/nix-community/infra) project.
+
 ## License
 This project is licensed under the Apache-2.0 license - see the [Apache-2.0.txt](LICENSES/Apache-2.0.txt) file for details.
