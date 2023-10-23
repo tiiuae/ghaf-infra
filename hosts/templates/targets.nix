@@ -7,8 +7,10 @@
 }: {
   # NixOS bootstrap config for Azure x86_64 hosts
   # Tested on Azure Gen2 images, with "Standard" security type:
-  #  - Ubuntu 22_04-lts-gen2
-  #  - Debian 12-gen2
+  #  - Ubuntu 22_04-lts-gen2, Standard B2s
+  #  - Ubuntu 22_04-lts-gen2, Standard B4ms
+  #  - Ubuntu 22_04-lts-gen2, Standard B8ms
+  #  - Debian 12-gen2, Standard B2s
   azure-x86_64-linux = nixpkgs.lib.nixosSystem {
     modules = [
       disko.nixosModules.disko

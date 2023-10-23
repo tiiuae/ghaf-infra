@@ -60,7 +60,6 @@ in {
   };
 
   # Common network configuration
-  networking.networkmanager.enable = true;
   networking.firewall.enable = true;
   networking.enableIPv6 = false;
 
