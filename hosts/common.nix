@@ -44,7 +44,7 @@ in {
       # perform a garbage-collection until max-free bytes are available or there
       # is no more garbage.
       min-free = asGB 20;
-      max-free = asGB 60;
+      max-free = asGB 100;
       # check the free disk space every 10 seconds
       min-free-check-interval = 10;
     };
@@ -63,10 +63,12 @@ in {
   networking.firewall.enable = true;
   networking.enableIPv6 = false;
 
-  # TODO: Required by nixos-anywhere and nixos-rebuild switch?
   # Allow password-less sudo for wheel users
   security.sudo.enable = true;
   security.sudo.wheelNeedsPassword = false;
+  # Contents of the user and group files will be replaced on system activation
+  # Ref: https://search.nixos.org/options?channel=unstable&show=users.mutableUsers
+  users.mutableUsers = false;
 
   # Set your time zone
   time.timeZone = "UTC";

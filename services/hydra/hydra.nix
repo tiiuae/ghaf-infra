@@ -20,14 +20,14 @@
   localMachine = pkgs.writeTextFile {
     name = "build-localMachine";
     text = ''
-      localhost x86_64-linux - 4 1 kvm,benchmark,big-parallel,nixos-test - -
+      localhost x86_64-linux - 8 2 kvm,benchmark,big-parallel,nixos-test - -
     '';
   };
   build01Machine = pkgs.writeTextFile {
     name = "build-build01Machine";
     # TODO: get rid of static IP config:
     text = ''
-      ssh://nix@192.168.1.107 x86_64-linux ${config.sops.secrets.id_buildfarm.path} 8 2 kvm,benchmark,big-parallel,nixos-test - -
+      ssh://nix@10.3.0.5 x86_64-linux ${config.sops.secrets.id_buildfarm.path} 2 1 kvm,benchmark,big-parallel,nixos-test - -
     '';
   };
   createJobsetsScript = pkgs.stdenv.mkDerivation {
@@ -45,7 +45,7 @@ in {
     build01 = {
       # Add build01 public id to ssh_known_hosts
       # TODO: get rid of static IP config:
-      hostNames = ["192.168.1.107"];
+      hostNames = ["10.3.0.5"];
       publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID+hx/Ff8U123lI8wMYvmVYn5M3Cv4m+XQxxNYFgJGTo";
     };
   };
@@ -58,7 +58,7 @@ in {
 
     buildMachinesFiles = [
       "${localMachine}"
-      "${build01Machine}"
+      #"${build01Machine}"
     ];
 
     extraConfig = ''

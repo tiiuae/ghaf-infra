@@ -69,7 +69,7 @@ cat >data.json <<EOF
   "checkinterval": 60,
   "schedulingshares": 10,
   "emailoverride": "",
-  "keepnr": 3,
+  "keepnr": 2,
   "flake": "github:tiiuae/ghaf/main"
 }
 EOF

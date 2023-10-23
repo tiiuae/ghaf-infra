@@ -88,7 +88,7 @@ INFO     All pre-push checks passed
 #### install
 The `install` task installs the given NixOS configuration on the specified host with [nixos-anywhere](https://github.com/nix-community/nixos-anywhere). It will automatically partition and re-format the host hard drive, meaning all data on the target will be completely overwritten with no option to rollback. During installation, it will also decrypt and deploy the host private key from the sops secrets. The intended use of the `install` target is to install NixOS configuration on a non-NixOS host, or to repurpose an existing server.
 
-**Important**: `ìnstall` task assumes the given NixOS configuration is compatible with the specified host. In the existing Ghaf CI/CD infrastructure you can safely assume this holds true. However, if you plan to apply the NixOS configurations from this repository on a new infrastructure or onboard new hosts, please read the documentation in [adapting-to-new-environments.md](./docs/adapting-to-new-environments.md).
+Note: `ìnstall` task assumes the given NixOS configuration is compatible with the specified host. In the existing Ghaf CI/CD infrastructure you can safely assume this holds true. However, if you plan to apply the NixOS configurations from this repository on a new infrastructure or onboard new hosts, please read the documentation in [adapting-to-new-environments.md](./docs/adapting-to-new-environments.md).
 
 ```bash
 $ invoke install --target ghafhydra --hostname 51.12.50.33
@@ -149,9 +149,7 @@ $ nix flake update
 Then, deploy the updated configuration to the target host(s):
 ```bash
 $ invoke deploy --target ghafhydra --hostname 51.12.50.33
-[51.12.50.33] $ nix flake archive --to ssh://51.12.50.33 --json
 ..
-[51.12.50.33] reloading user units for hrosten...
 [51.12.50.33] setting up tmpfiles
 ```
 
