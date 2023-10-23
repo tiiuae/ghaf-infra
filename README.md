@@ -8,21 +8,158 @@ SPDX-License-Identifier: Apache-2.0
 This repository contains NixOS configurations for the [Ghaf](https://github.com/tiiuae/ghaf) CI/CD infrastructure.
 
 ## Highlights
-Flakes-based NixOS configurations for the following host profiles:
-- [ghafhydra](./hosts/ghafhydra/configuration.nix):
-    - [Hydra](https://nixos.wiki/wiki/Hydra) with pre-configured jobset for Ghaf.
-    - Hydra: declaratively configured with Ghaf flake jobset, using the host 'build01' as remote builder as well as build on localhost.
+This repository defines flakes-based NixOS configurations for the following targets:
+- **[ghafhydra](./hosts/ghafhydra/configuration.nix)** - *[Hydra](https://nixos.wiki/wiki/Hydra) with pre-configured jobset for Ghaf*:
+    - Hydra: declaratively configured with Ghaf flake jobset, using host 'build01' as remote builder, but also building on localhost.
     - Binary cache: using [nix-serve-ng](https://github.com/aristanetworks/nix-serve-ng) signing packages that can be verified with public key: `cache.ghafhydra:XQx1U4555ZzfCCQOZAjOKKPTavumCMbRNd3TJt/NzbU=`.
     - Automatic nix store garbage collection: when free disk space in `/nix/store` drops below [threshold value](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/hosts/common.nix#L46) automatically remove garbage.
     - Pre-defined users: allow ssh access for a set of users based on ssh public keys.
     - Secrets: uses [sops-nix](https://github.com/Mic92/sops-nix) to manage secrets - secrets, such as hydra admin password and binary cache signing key, are stored encrypted based on host ssh key.
     - Openssh server with pre-defined host ssh key. Server private key is stored encrypted as [sops secret](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/hosts/ghafhydra/secrets.yaml#L5) and automatically deployed on [host installation](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/tasks.py#L243).
-- [build01](./hosts/build01/configuration.nix):
-    - Remote builder for hydra.
+- **[build01](./hosts/build01/configuration.nix)** - *Remote builder for ghafhydra*:
     - Openssh server with pre-defined host ssh key. Server private key is stored encrypted as [sops secret](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/hosts/build01/secrets.yaml#L1) and automatically deployed on [host installation](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/tasks.py#L243).
     - Extensible buildfarm setup: build01 [allows ssh access](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/hosts/build01/configuration.nix#L16) with private key `id_buildfarm` [stored in sops secrets](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/hosts/ghafhydra/secrets.yaml#L3) on the hosts that need access to the builder. This setup makes it possible to use [build01](./hosts/build01/configuration.nix) and other hosts that are accessible with `id_buildfarm` as a [remote builder for hydra](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/services/hydra/hydra.nix#L61).
 
-Inspired by [nix-community infra](https://github.com/nix-community/infra), this project makes use of [pyinvoke](https://www.pyinvoke.org/) to help with common deployment [tasks](./tasks.py).
+## Usage
+**Important**:
+The configuration files in this repository declaratively define the system configuration for all hosts in the Ghaf CI/CD infrastructure. That is, all system configurations - including the secrets - are stored and version controlled in this repository, no additional manual configuration is required. Indeed, all the hosts in the infrastructure might be reinstalled without further notice, so do not assume that anything outside the configurations defined in this repository would be available in the hosts. This includes the administrator's home directories: do not keep any important data in your home, since the contents of `/home` will be regularly deleted.
+
+### Pre-requisites
+If you still don't have nix package manager on your local host, install it following the package manager installation instructions from https://nixos.org/download.html.
+
+Then, clone this repository:
+```bash
+$ git clone https://github.com/tiiuae/ghaf-infra.git
+$ cd ghaf-infra
+```
+
+All example commands in this document are executed from nix-shell in the root path of your local copy of this repository. Run the following commands to start a nix-shell:
+
+```bash
+# Start nix-shell
+$ nix-shell
+```
+
+### Tasks
+Inspired by [nix-community infra](https://github.com/nix-community/infra), this project makes use of [pyinvoke](https://www.pyinvoke.org/) to help with deployment [tasks](./tasks.py).
+
+Run the following command to list the available tasks:
+```bash
+$ invoke --list
+Available tasks:
+
+  build-local         Build NixOS configuration `target` locally.
+  deploy              Deploy NixOS configuration `target` to host `hostname`.
+  install             Install `target` on `hostname` using nixos-anywhere, deploying host private key.
+  pre-push            Run 'pre-push' checks: black, pylint, pycodestyle, reuse lint, nix fmt.
+  print-keys          Decrypt host private key, print ssh and age public keys for `target`.
+  reboot              Reboot host `hostname`.
+  update-sops-files   Update all sops yaml and json files according to .sops.yaml rules.
+```
+
+In the following sections, we will explain the intended usage of the most common above deployment tasks.
+
+#### build-local
+The `build-local` task builds the given nix flake target NixOS configuration locally. If the target is not specified `build-local` builds all NixOS configurations in the flake:
+
+```bash
+$ invoke build-local
+..
+[build01] building '/nix/store/chhh3zqmy0zqy7fx4cgiy7rn0w6zz5gh-nixos-system-build01-23.05.20231013.898cb20.drv'...
+[ghafhydra] building '/nix/store/wnlmh040h1gyrx31gigmc6940h4ipzh0-nixos-system-ghafhydra-23.05.20231013.898cb20.drv'...
+```
+
+#### pre-push
+The `pre-push` task runs a set of checks for the contents of this repository. The checks include: python linters, license compliance checks, and nix formatting checks. The `pre-push` task also locally builds all the NixOS configurations in the flake:
+
+```bash
+$ invoke pre-push 
+INFO     Running black
+INFO     Running pylint
+INFO     Running pycodestyle
+INFO     Running reuse lint
+INFO     Running nix fmt
+INFO     Building all nixosConfigurations
+...
+[ghafhydra] building '/nix/store/c8a3pfv1f9hgq8km4grrnnh315fzb5k7-nixos-system-ghafhydra-23.05.20231013.898cb20.drv'...
+INFO     All pre-push checks passed
+```
+
+#### install
+The `install` task installs the given NixOS configuration on the specified host with [nixos-anywhere](https://github.com/nix-community/nixos-anywhere). It will automatically partition and re-format the host hard drive, meaning all data on the target will be completely overwritten with no option to rollback. During installation, it will also decrypt and deploy the host private key from the sops secrets. The intended use of the `install` target is to install NixOS configuration on a non-NixOS host, or to repurpose an existing server.
+
+**Important**: `ìnstall` task assumes the given NixOS configuration is compatible with the specified host. In the existing Ghaf CI/CD infrastructure you can safely assume this holds true. However, if you plan to apply the NixOS configurations from this repository on a new infrastructure or onboard new hosts, please read the documentation in [adapting-to-new-environments.md](./docs/adapting-to-new-environments.md).
+
+```bash
+$ invoke install --target ghafhydra --hostname 51.12.50.33
+Install configuration 'ghafhydra' on host '51.12.50.33'? [y/N] y
+[51.12.50.33] $ sudo -nv
+[51.12.50.33] $ ip a | grep dynamic
+...
+### Uploading install SSH keys ###
+### Gathering machine facts ###
+### Switching system into kexec ###
+### Formatting hard drive with disko ###
+### Uploading the system closure ###
+### Copying extra files ###
+### Installing NixOS ###
+### Waiting for the machine to become reachable again ###
+### Done! ###
+...
+```
+
+#### deploy
+The `deploy` task deploys the given NixOS configuration to the specified host with [nixos-rebuild](https://nixos.wiki/wiki/Nixos-rebuild) `switch` subcommand. This task assumes the target host is already running NixOS, and fails if it's not.
+
+```bash
+$ invoke deploy --target ghafhydra --hostname 51.12.50.33
+[51.12.50.33] $ nix flake archive --to ssh://51.12.50.33 --json
+[51.12.50.33] copying path '/nix/store/dbppismymjc6382g4v6d6sb99pjby37b-source' from 'https://cache.vedenemo.dev'...
+[51.12.50.33] copying path '/nix/store/r2ip1850igy8kciyaagw502s3c6ph1s4-source' to 'ssh://51.12.50.33'...
+[51.12.50.33] copying path '/nix/store/yj1wxm9hh8610iyzqnz75kvs6xl8j3my-source' to 'ssh://51.12.50.33'...
+[51.12.50.33] $ sudo nixos-rebuild switch --option accept-flake-config true --flake /nix/store/1y4kqqi8xbw4ic96ahhhjgl61p61lvdg-source#ghafhydra
+...
+[51.12.50.33] reloading user units for hrosten...
+[51.12.50.33] setting up tmpfiles
+```
+
+#### update-sops-files
+The `update-sops-files` task updates all sops yaml and json files according to the rules in [`.sops.yaml`](.sops.yaml). The intended use is to update the secrets after adding new hosts, admins, or secrets:
+
+```bash
+$ invoke update-sops-files 
+2023/10/23 08:37:34 Syncing keys for file ghaf-infra/hosts/build01/secrets.yaml
+2023/10/23 08:37:34 File ghaf-infra/hosts/build01/secrets.yaml already up to date
+2023/10/23 08:37:34 Syncing keys for file ghaf-infra/hosts/ghafhydra/secrets.yaml
+2023/10/23 08:37:34 File ghaf-infra/hosts/ghafhydra/secrets.yaml already up to date
+```
+
+### Updating target hosts
+First, update the flake:
+
+```bash
+$ nix flake update
+...
+• Updated input 'nixpkgs':
+    'github:nixos/nixpkgs/898cb2064b6e98b8c5499f37e81adbdf2925f7c5' (2023-10-13)
+  → 'github:nixos/nixpkgs/5550a85a087c04ddcace7f892b0bdc9d8bb080c8' (2023-10-21)
+...
+```
+
+Then, deploy the updated configuration to the target host(s):
+```bash
+$ invoke deploy --target ghafhydra --hostname 51.12.50.33
+[51.12.50.33] $ nix flake archive --to ssh://51.12.50.33 --json
+..
+[51.12.50.33] reloading user units for hrosten...
+[51.12.50.33] setting up tmpfiles
+```
+
+### Onboarding new admins
+Onboarding new admins requires the following manual steps:
+- Add their user and ssh key to [users](./users/) and [import the user](https://github.com/tiiuae/ghaf-infra/blob/b740f96bcd28e4821f701f6556f4ef2914c7fdf5/hosts/ghafhydra/configuration.nix#L26) on the hosts they need access to.
+- Add their [age key](./docs/adapting-to-new-environments.md#add-your-admin-sops-key) to [.sops.yaml](.sops.yaml), update the `creation_rules`, and run the [`update-sops-files`](./README.md#update-sops-files) task.
+- [Deploy](./README.md#deploy) the new configuration to changed hosts.
 
 ## Secrets
 For deployment secrets (such as the binary cache signing key), this project uses [sops-nix](https://github.com/Mic92/sops-nix).

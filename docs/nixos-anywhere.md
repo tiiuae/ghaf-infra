@@ -1,5 +1,11 @@
-# Nixos-anywhere
-This document discusses the nixos-anywhere configuration to help those who plan to apply the NixOS configurations in this repository (or something based on them) on a new environment.
+<!--
+SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
+# Installing NixOS with nixos-anywhere
+This document discusses nixos-anywhere configuration to help those who plan to apply the NixOS configurations in this repository (or something based on them) on a new environment.
 
 Ghaf-infra uses [nixos-anywhere](https://github.com/nix-community/nixos-anywhere) to bootstrap NixOS on target hosts. This repository includes example [template](../hosts/templates/targets.nix) configurations for targets, such as: `generic-x86_64-linux` and `azure-x86_64-linux`. Each of these example configurations will require some manual modifications to make the configuration usable in your environment. For the sake of example, we will show how to modify the configurations to bootstrap NixOS on an azure VM.
 
@@ -18,7 +24,7 @@ Also, see: [nixos-anywhere: known issues](#nixos-anywhere-known-issues).
 
 ## Example: NixOS on azure
 
-This section covers applying the bootstrap configuration from this repository on an azure VM. However, the instructions from this section are written such that it should be easy to apply the example on other environments too.
+This section covers applying the bootstrap configuration from this repository on an azure VM. However, the instructions from this document are written such that it should be easy to apply them on other environments too.
 
 For the sake of example, we will modify the `template-azure-x86_64-linux` configuration defined in [templates/targets.nix](../hosts/templates/targets.nix) and imported in the main [flake.nix](../flake.nix):
 
@@ -33,16 +39,16 @@ $ nix flake show
 ```
 
 ### Azure VM requirements
-The azure example configuration in this repository has been tested on the following azure x86_64 Gen2 images with "Standard" security type:
-- Ubuntu 22_04-lts-gen2
-- Debian 12-gen2
+The azure example configuration in this repository has been tested on the following azure x86_64 Gen2 VMs with "Standard" security type:
+- Ubuntu 22_04-lts-gen2, Standard B2s
+- Ubuntu 22_04-lts-gen2, Standard B4ms
+- Ubuntu 22_04-lts-gen2, Standard B8ms
+- Debian 12-gen2, Standard B2s
 
-It should be possible to make the configuration work on any Gen2 x86_64 VM, but for the sake of example we will use **Ubuntu 22_04-lts-gen2** VM image.
-
-There are some known issues with [nixos-anywhere](https://github.com/nix-community/nixos-anywhere) and secure boot. Azure "Trusted Launch" enables secure boot and IMA (Integrity Measurement Architecture) which can not be disabled from inside the booted-up VM. Therefore, we use the azure "Standard" security type which disables the secure boot on the VM. For more details, see: [issue](https://github.com/nix-community/nixos-anywhere/issues/143), [comment](https://github.com/nix-community/nixos-anywhere/issues/189#issuecomment-1693762691), and [another issue](https://github.com/nix-community/nixos-images/issues/128).
+There are some known issues with [nixos-anywhere](https://github.com/nix-community/nixos-anywhere) and secure boot. Azure "Trusted Launch" enables secure boot and IMA (Integrity Measurement Architecture) which can not be disabled from inside the booted-up VM. Therefore, we need to use azure VM with "Standard" security type which disables the secure boot on the VM. For more details, see: [issue](https://github.com/nix-community/nixos-anywhere/issues/143), [comment](https://github.com/nix-community/nixos-anywhere/issues/189#issuecomment-1693762691), and [another issue](https://github.com/nix-community/nixos-images/issues/128).
 
 ### Check azure VM target configuration
-At this point, you should have an azure VM with an SSH access to the taret, using key-based authentication.
+At this point, you should have an azure VM with an SSH access to the target, using key-based authentication.
 All the commands in this section are run on the azure target VM.
 
 #### Temporarily allow sudo without password on the target
@@ -220,7 +226,7 @@ At this point, we are ready to bootstrap our example azure VM target with NixOS.
 
 As described in main [README](../README.md), this project uses [pyinvoke](https://www.pyinvoke.org/) to help with common deployment [tasks](./tasks.py). In this section, we show how to install the configuration you created above both using pyinvoke `install` helper task, as well as running nixos-anywhere manually.
 
-#### Option 1: intalling with pyinvoke helper
+#### Option 1: installing with pyinvoke helper
 
 ```bash
 # Run on the host, example azure VM target is 20.13.163.33

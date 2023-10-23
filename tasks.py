@@ -223,8 +223,8 @@ def decrypt_host_key(target: str, tmpdir: str) -> None:
                 stdout=fh,
             )
         except subprocess.CalledProcessError:
-            LOG.warning("Failed reading secret 'ssh_host_ed25519_key' for %s.", target)
-            ask = input(f"Install '{target}' without pre-defined ssh host key? [y/N] ")
+            LOG.warning("Failed reading secret 'ssh_host_ed25519_key' for '%s'", target)
+            ask = input(f"Still continue? [y/N] ")
             if ask != "y":
                 sys.exit(1)
         else:
@@ -297,8 +297,8 @@ def install(c: Any, target: str, hostname: str) -> None:
 @task
 def build_local(_c: Any, target: str = "") -> None:
     """
-    Build NixOS configuration `target` locally. If target is not
-    specificied, builds all nixosConfigurations.
+    Build NixOS configuration `target` locally.
+    If `target` is not specificied, builds all nixosConfigurations in the flake.
 
     Example usage:
     inv build-local --target ghafhydra
