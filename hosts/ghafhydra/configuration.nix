@@ -20,6 +20,7 @@
     inputs.disko.nixosModules.disko
     ../generic-disk-config.nix
     ../common.nix
+    ../azure-common.nix
     ../../services/hydra/hydra.nix
     ../../services/openssh/openssh.nix
     ../../services/binarycache/binary-cache.nix
@@ -43,16 +44,4 @@
       prefixLength = 24;
     }
   ];
-  # TODO: below options are required to demo this configuration on azure VM:
-  require = [
-    "${inputs.nixpkgs}/nixos/modules/virtualisation/azure-agent.nix"
-  ];
-  virtualisation.azure.agent.enable = true;
-  boot.kernelParams = ["console=ttyS0" "earlyprintk=ttyS0" "rootdelay=300" "panic=1" "boot.panic_on_fail"];
-  boot.initrd.kernelModules = ["hv_vmbus" "hv_netvsc" "hv_utils" "hv_storvsc"];
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
-  boot.loader.timeout = 0;
-  boot.loader.grub.configurationLimit = 0;
-  boot.growPartition = true;
 }

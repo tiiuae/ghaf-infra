@@ -11,7 +11,7 @@ This repository contains NixOS configurations for the [Ghaf](https://github.com/
 This repository defines flakes-based NixOS configurations for the following targets:
 - **[ghafhydra](./hosts/ghafhydra/configuration.nix)** - *[Hydra](https://nixos.wiki/wiki/Hydra) with pre-configured jobset for Ghaf*:
     - Hydra: declaratively configured with Ghaf flake jobset, using host 'build01' as remote builder, but also building on localhost.
-    - Binary cache: using [nix-serve-ng](https://github.com/aristanetworks/nix-serve-ng) signing packages that can be verified with public key: `cache.ghafhydra:XQx1U4555ZzfCCQOZAjOKKPTavumCMbRNd3TJt/NzbU=`.
+    - Binary cache: using [nix-serve-ng](https://github.com/aristanetworks/nix-serve-ng) signing packages that [can be verified](https://github.com/tiiuae/ghaf-infra/blob/c528714a310b420592ec6e73666d80288c5d0f12/docs/adapting-to-new-environments.md?plain=1#L231) with public key: `cache.ghafhydra:XQx1U4555ZzfCCQOZAjOKKPTavumCMbRNd3TJt/NzbU=`.
     - Automatic nix store garbage collection: when free disk space in `/nix/store` drops below [threshold value](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/hosts/common.nix#L46) automatically remove garbage.
     - Pre-defined users: allow ssh access for a set of users based on ssh public keys.
     - Secrets: uses [sops-nix](https://github.com/Mic92/sops-nix) to manage secrets - secrets, such as hydra admin password and binary cache signing key, are stored encrypted based on host ssh key.
