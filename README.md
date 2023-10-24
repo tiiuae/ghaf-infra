@@ -86,15 +86,13 @@ INFO     All pre-push checks passed
 ```
 
 #### install
-The `install` task installs the given NixOS configuration on the specified host with [nixos-anywhere](https://github.com/nix-community/nixos-anywhere). It will automatically partition and re-format the host hard drive, meaning all data on the target will be completely overwritten with no option to rollback. During installation, it will also decrypt and deploy the host private key from the sops secrets. The intended use of the `install` target is to install NixOS configuration on a non-NixOS host, or to repurpose an existing server.
+The `install` task installs the given NixOS configuration on the specified host with [nixos-anywhere](https://github.com/nix-community/nixos-anywhere). It will automatically partition and re-format the host hard drive, meaning all data on the target will be completely overwritten with no option to rollback. During installation, it will also decrypt and deploy the host private key from the sops secrets. The intended use of the `install` task is to install NixOS configuration on a non-NixOS host, or to repurpose an existing server.
 
 Note: `ìnstall` task assumes the given NixOS configuration is compatible with the specified host. In the existing Ghaf CI/CD infrastructure you can safely assume this holds true. However, if you plan to apply the NixOS configurations from this repository on a new infrastructure or onboard new hosts, please read the documentation in [adapting-to-new-environments.md](./docs/adapting-to-new-environments.md).
 
 ```bash
 $ invoke install --target ghafhydra --hostname 51.12.50.33
 Install configuration 'ghafhydra' on host '51.12.50.33'? [y/N] y
-[51.12.50.33] $ sudo -nv
-[51.12.50.33] $ ip a | grep dynamic
 ...
 ### Uploading install SSH keys ###
 ### Gathering machine facts ###
@@ -111,6 +109,8 @@ Install configuration 'ghafhydra' on host '51.12.50.33'? [y/N] y
 #### deploy
 The `deploy` task deploys the given NixOS configuration to the specified host with [nixos-rebuild](https://nixos.wiki/wiki/Nixos-rebuild) `switch` subcommand. This task assumes the target host is already running NixOS, and fails if it's not.
 
+Note: unlike the changes made with `install` task, `deploy` changes can be [reverted](https://zero-to-nix.com/concepts/nixos#rollbacks) with `nixos-rebuild switch --rollback` or similar.
+
 ```bash
 $ invoke deploy --target ghafhydra --hostname 51.12.50.33
 [51.12.50.33] $ nix flake archive --to ssh://51.12.50.33 --json
@@ -119,8 +119,6 @@ $ invoke deploy --target ghafhydra --hostname 51.12.50.33
 [51.12.50.33] copying path '/nix/store/yj1wxm9hh8610iyzqnz75kvs6xl8j3my-source' to 'ssh://51.12.50.33'...
 [51.12.50.33] $ sudo nixos-rebuild switch --option accept-flake-config true --flake /nix/store/1y4kqqi8xbw4ic96ahhhjgl61p61lvdg-source#ghafhydra
 ...
-[51.12.50.33] reloading user units for hrosten...
-[51.12.50.33] setting up tmpfiles
 ```
 
 #### update-sops-files
@@ -149,8 +147,6 @@ $ nix flake update
 Then, deploy the updated configuration to the target host(s):
 ```bash
 $ invoke deploy --target ghafhydra --hostname 51.12.50.33
-..
-[51.12.50.33] setting up tmpfiles
 ```
 
 ### Onboarding new admins
@@ -166,7 +162,7 @@ The general idea is: each host have `secrets.yaml` file that contains the encryp
 
 Each host's private ssh key is stored as sops secret and automatically deployed on [host installation](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/tasks.py#L243). 
 
-The `secrets.yaml` file is created and edited with the `sops` utility. The [`.sops.yaml`](.sops.yaml) file tells sops what secrets get encrypted with what keys.
+`secrets.yaml` files are created and edited with the `sops` utility. The [`.sops.yaml`](.sops.yaml) file tells sops what secrets get encrypted with what keys.
 
 The secrets configuration and the usage of `sops` is adopted from [nix-community infra](https://github.com/nix-community/infra) project.
 

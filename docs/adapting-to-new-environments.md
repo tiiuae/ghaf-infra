@@ -31,7 +31,7 @@ This document is organized into following sections:
 * [Install/Deploy the target configuration](#installdeploy-the-target-configuration)
 
 ## Host setup
-If you still don't have nix package manager on your host, install it following the package manager installation instructions from https://nixos.org/download.html.
+If you still don't have nix package manager on your local host, install it following the package manager installation instructions from https://nixos.org/download.html.
 
 Then, clone this repository:
 ```bash
@@ -89,7 +89,7 @@ creation_rules:
 ```
 
 ### Add yourself as user to the target
-Copy one of the user configurations under ['users'](../users/) as template for your admin user, and modify the username and the ssh key to match yours:
+Copy one of the user configurations under [users](../users/) as template for your admin user, and modify the username and the ssh key to match yours:
 ```bash
 # Run in nix-shell on your host
 $ cp users/tester.nix users/myadmin.nix
@@ -118,7 +118,7 @@ $ cat users/myadmin.nix
 ```
 
 ### Add your target configuration 
-Copy one of the system configurations under ['hosts'](./hosts/) as template for your target, or directly edit one of the existing configurations. For this example, we'll use the configuration 'ghafhydra' as a basis of our target configuration.
+Copy one of the system configurations under [hosts](./hosts/) as template for your target, or directly edit one of the existing configurations. For this example, we'll use the configuration 'ghafhydra' as a basis of our target configuration.
 
 ```bash
 # Run in nix-shell on your host
@@ -142,7 +142,7 @@ You will also need to add your new target configuration to the [`flake.nix`](../
 ```
 
 ### Modify your target configuration 
-Modify the server 'mytarget' configuration based on your needs. For this example, since our target is an azure VM, we will copy the relevant configuration from the 'azure-x86_64-linux' target in [./hosts/templates/targets.nix]. The final configuration in `hosts/mytarget/configuration.nix` becomes something like:
+Modify the server `mytarget` configuration based on your needs. For this example, since our target is an azure VM, we will copy the relevant configuration from the 'azure-x86_64-linux' target defined in [./hosts/templates/targets.nix](./hosts/templates/targets.nix). The final configuration in `hosts/mytarget/configuration.nix` becomes something like:
 
 ```bash
 # Run in nix-shell on your host
@@ -206,7 +206,7 @@ While editing the `hosts/mytarget/configuration.nix`, you might want to remove s
 At this point, the configuration is otherwise ready, but you have not generated any secrets yet.
 
 First, remove possible earlier secrets you might have copied from ghafhydra. 
-(Note: you will obviously not be able to decrypt the secrets from the original ghafhydra '[`secrets.yaml`](./hosts/ghafhydra/secrets.yaml)' since you don't have the private key that matches one of the age keys in the original '[`.sops.yaml`](.sops.yaml)' file.)
+(Note: you will obviously not be able to decrypt the secrets from the original ghafhydra [`secrets.yaml`](./hosts/ghafhydra/secrets.yaml) since you don't have the private key that matches one of the age keys in the original [`.sops.yaml`](.sops.yaml) file.)
 ```bash
 $ rm hosts/mytarget/secrets.yaml
 ```
@@ -274,7 +274,7 @@ ssh_host_ed25519_key: |
 ```
 
 When you save and exit the editor, sops will encrypt your secrets and saves them to the file you specified: `hosts/mytarget/secrets.yaml`.
-Notice: in the example sops configuration we defined in `.sops.yaml`; both `myadmin` and `mytarget` can decrypt all the secrets. For production setups, you would want to apply the principle of least privilege and only allow decryption for the servers or users who need access to the specific secret content. See, for instance, [nix-community/infra](https://github.com/nix-community/infra/blob/master/.sops.yaml) for a more complete example.
+Notice: in the example sops configuration we defined in `.sops.yaml`, both `myadmin` and `mytarget` can decrypt all the secrets. For production setups you would want to apply the principle of least privilege, that is, only allow decryption for the servers or users who need access to the specific secret content. See, for instance, [nix-community/infra](https://github.com/nix-community/infra/blob/master/.sops.yaml) for a more complete example.
 
 Now, if you re-run the command `sops hosts/mytarget/secrets.yaml`, sops will again decrypt the file allowing you to modify or add new secrets in an editor.
 
@@ -297,8 +297,8 @@ $ inv pre-push
 ## Target setup
 If you followed the example in this document, your target setup is now configured in `hosts/mytarget/configuration.nix`. When you install the configuration (see next section), [nixos-anywhere](https://github.com/nix-community/nixos-anywhere) automatically partitions and re-formats the target hard drive, as well as deploys the NixOS configuration you defined in the previous chapter.
 
-In case you want to run nixos-anywhere manually, or you run into issues executing the installation in your environment, see the documentation in [nixos-anywhere.md](./nixos-anywhere.md).
+In case you want to execute nixos-anywhere manually, or you run into issues executing the installation in your environment, see the documentation in [nixos-anywhere.md](./nixos-anywhere.md).
 
-## Install/Deploy the target configuration
-Please see the documentation in the main [README](../README.md#tasks) for instructions on how to deploy the new configuration.
+## Install the target configuration
+Please see the documentation in the main [README](../README.md#install) for instructions on how to install the new configuration.
 
