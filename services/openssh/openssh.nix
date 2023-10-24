@@ -12,7 +12,7 @@
     settings.PermitRootLogin = "no";
     settings.KbdInteractiveAuthentication = false;
     settings.PasswordAuthentication = false;
-    settings.ClientAliveInterval = 180;
+    settings.ClientAliveInterval = 60;
     hostKeys = [
       {
         path = "/etc/ssh/ssh_host_ed25519_key";
