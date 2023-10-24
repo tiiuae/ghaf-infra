@@ -27,7 +27,7 @@
     name = "build-build01Machine";
     # TODO: get rid of static IP config:
     text = ''
-      ssh://nix@10.3.0.5 x86_64-linux ${config.sops.secrets.id_buildfarm.path} 2 1 kvm,benchmark,big-parallel,nixos-test - -
+      ssh://nix@10.3.0.5 x86_64-linux ${config.sops.secrets.id_buildfarm.path} 8 2 kvm,benchmark,big-parallel,nixos-test - -
     '';
   };
   createJobsetsScript = pkgs.stdenv.mkDerivation {
@@ -58,7 +58,7 @@ in {
 
     buildMachinesFiles = [
       "${localMachine}"
-      #"${build01Machine}"
+      "${build01Machine}"
     ];
 
     extraConfig = ''
