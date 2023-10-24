@@ -25,6 +25,7 @@
     ../../services/openssh/openssh.nix
     ../../services/binarycache/binary-cache.nix
     ../../users/hrosten.nix
+    ../../users/bmg.nix
   ];
 
   networking.hostName = "ghafhydra";

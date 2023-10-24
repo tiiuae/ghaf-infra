@@ -16,6 +16,7 @@
     ../../services/openssh/openssh.nix
     ../../users/builder.nix
     ../../users/hrosten.nix
+    ../../users/bmg.nix
   ];
   networking.hostName = "build01";
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
