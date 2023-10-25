@@ -24,6 +24,7 @@
     ../../services/hydra/hydra.nix
     ../../services/openssh/openssh.nix
     ../../services/binarycache/binary-cache.nix
+    ../../services/nginx/nginx.nix
     ../../users/hrosten.nix
     ../../users/bmg.nix
   ];
@@ -37,7 +38,7 @@
   };
   # TODO: demo with static IP:
   networking.useDHCP = false;
-  networking.nameservers = ["8.8.8.8"];
+  networking.nameservers = ["1.1.1.1" "8.8.8.8"];
   networking.defaultGateway = "10.3.0.1";
   networking.interfaces.eth0.ipv4.addresses = [
     {

@@ -82,6 +82,19 @@ in {
     '';
   };
 
+  # Ref: https://nixos.org/manual/nixos/stable/#module-security-acme
+  security.acme.defaults.email = "trash@unikie.com";
+  security.acme.acceptTerms = true;
+  services.nginx = {
+    virtualHosts = {
+      "ghafhydra.swedencentral.cloudapp.azure.com" = {
+        forceSSL = true;
+        enableACME = true;
+        locations."/".proxyPass = "http://localhost:${toString (config.services.hydra.port)}";
+      };
+    };
+  };
+
   # delete build logs older than 30 days
   systemd.services.hydra-delete-old-logs = {
     startAt = "Sun 05:45";
