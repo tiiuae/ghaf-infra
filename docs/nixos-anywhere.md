@@ -107,7 +107,7 @@ sudo ip address show;
 
 #### Check the target disk layout
 
-[nixos-anywhere](https://github.com/nix-community/nixos-anywhere) needs to partition, format, and mount your disks. For simple installation, you can re-use the example disk-configuration at [generic-disk-config.nix](./hosts/generic-disk-config.nix) which is based on the example configuration at [nixos-anywhere-examples](https://github.com/numtide/nixos-anywhere-examples/blob/main/disk-config.nix).
+[nixos-anywhere](https://github.com/nix-community/nixos-anywhere) needs to partition, format, and mount your disks. For simple installation, you can re-use the example disk-configuration at [generic-disk-config.nix](../hosts/generic-disk-config.nix) which is based on the example configuration at [nixos-anywhere-examples](https://github.com/numtide/nixos-anywhere-examples/blob/main/disk-config.nix).
 
 For the bare minimum, you need to check the disk device matches your current system with `lsblk`:
 ```bash
@@ -224,7 +224,7 @@ $ inv pre-push
 ### Install NixOS using template configuration
 At this point, we are ready to bootstrap your azure VM target with NixOS.
 
-As described in main [README](../README.md), this project uses [pyinvoke](https://www.pyinvoke.org/) to help with common deployment [tasks](./tasks.py). In this section, we show how to install the configuration you have now created both using pyinvoke `install` helper task, as well as running nixos-anywhere manually.
+As described in main [README](../README.md), this project uses [pyinvoke](https://www.pyinvoke.org/) to help with common deployment [tasks](../tasks.py). In this section, we show how to install the configuration you have now created both using pyinvoke `install` helper task, as well as running nixos-anywhere manually.
 
 #### Option 1: installing with pyinvoke helper
 

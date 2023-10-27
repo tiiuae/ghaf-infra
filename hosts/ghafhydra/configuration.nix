@@ -36,6 +36,21 @@
     efiSupport = true;
     efiInstallAsRemovable = true;
   };
+
+  # TODO: have a separate configuration for ghafhydra-dev?
+  # Ref: https://nixos.org/manual/nixos/stable/#module-security-acme
+  security.acme.defaults.email = "trash@unikie.com";
+  security.acme.acceptTerms = true;
+  services.nginx = {
+    virtualHosts = {
+      "ghafhydra.swedencentral.cloudapp.azure.com" = {
+        forceSSL = true;
+        enableACME = true;
+        locations."/".proxyPass = "http://localhost:${toString (config.services.hydra.port)}";
+      };
+    };
+  };
+
   # TODO: demo with static IP:
   networking.useDHCP = false;
   networking.nameservers = ["1.1.1.1" "8.8.8.8"];

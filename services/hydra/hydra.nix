@@ -27,7 +27,7 @@
     name = "build-build01Machine";
     # TODO: get rid of static IP config:
     text = ''
-      ssh://nix@10.3.0.5 x86_64-linux ${config.sops.secrets.id_buildfarm.path} 8 2 kvm,benchmark,big-parallel,nixos-test - -
+      ssh://nix@10.3.0.5 aarch64-linux,x86_64-linux ${config.sops.secrets.id_buildfarm.path} 8 1 kvm,benchmark,big-parallel,nixos-test - -
     '';
   };
   createJobsetsScript = pkgs.stdenv.mkDerivation {
@@ -66,10 +66,6 @@ in {
     '';
   };
 
-  networking.firewall.allowedTCPPorts = [
-    config.services.hydra.port
-  ];
-
   services.postgresql = {
     enable = true;
     package = pkgs.postgresql_14;
@@ -80,19 +76,6 @@ in {
       hydra-users root postgres
       hydra-users postgres postgres
     '';
-  };
-
-  # Ref: https://nixos.org/manual/nixos/stable/#module-security-acme
-  security.acme.defaults.email = "trash@unikie.com";
-  security.acme.acceptTerms = true;
-  services.nginx = {
-    virtualHosts = {
-      "ghafhydra.swedencentral.cloudapp.azure.com" = {
-        forceSSL = true;
-        enableACME = true;
-        locations."/".proxyPass = "http://localhost:${toString (config.services.hydra.port)}";
-      };
-    };
   };
 
   # delete build logs older than 30 days
