@@ -70,40 +70,22 @@ You may need to temporarily set a static IP address on you target host if your c
 
 Note: azure VMs by default use static IP configuration, so this step should not be required.
 
-Log in to the target with SSH and check the following:
+Log in to the target with SSH and check if your ssh connection is established via an interface that uses dynamic addressing:
 ```bash
 # SSH on the target and run:
 # Check if the interface you are connected via the ssh on the target uses dhcp:
-ip a | \
-  grep $(\
-    sudo ss -tOnp | grep sshd |\
-    grep $(\
-      w | grep $USER | awk '{ print $3 }' | grep -vP "^\D" | sort | uniq | head -n1 || echo no_who \
-    ) |\
-    awk '{ print $4 }' | cut -d":" -f1 || echo no_sshd\
-  ) |\
-  grep dynamic
-
-# If the above command returns something like below, it means your ssh connection
-# is established via an interface that uses dynamic addresses (e.g. dhcp):
-
+ip a | grep dynamic
+  ...
   inet 192.168.1.112/24 brd 192.168.1.255 scope global dynamic noprefixroute eth0
+  ...
 
 # If the address is dynamic, and you are using the specified address to access
 # the target (192.168.1.112 in the above example case), you may need to make
 # the configuration static for nixos-anywhere to reach your host
 # after kexec system switch.
-# Make sure you change $TARGET_DEV, IP, and GW based on your config:
-export TARGET_DEV=eth0; \
-export TARGET_IP=192.168.1.112/24; \
-export TARGET_GW=192.168.1.1; \
-sudo ip address flush dev "$TARGET_DEV"; \
-sudo ip route flush dev "$TARGET_DEV"; \
-sleep 5; \
-sudo ip address add "$TARGET_IP" brd + dev "$TARGET_DEV"; \
-sudo route add default gw "$TARGET_GW" "$TARGET_DEV"; \
-sudo ip address show;
 ```
+
+See more details in https://github.com/nix-community/nixos-anywhere/issues/112.
 
 #### Check the target disk layout
 
