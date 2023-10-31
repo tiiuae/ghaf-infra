@@ -25,8 +25,6 @@
     efiSupport = true;
     efiInstallAsRemovable = true;
   };
-  # Emulate aarch64 until we have proper arm builder
-  boot.binfmt.emulatedSystems = ["aarch64-linux"];
   # TODO: demo with static IP:
   networking.useDHCP = false;
   networking.nameservers = ["1.1.1.1" "8.8.8.8"];

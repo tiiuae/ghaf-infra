@@ -27,7 +27,13 @@
     name = "build-build01Machine";
     # TODO: get rid of static IP config:
     text = ''
-      ssh://nix@10.3.0.5 aarch64-linux,x86_64-linux ${config.sops.secrets.id_buildfarm.path} 8 1 kvm,benchmark,big-parallel,nixos-test - -
+      ssh://nix@10.3.0.5 x86_64-linux ${config.sops.secrets.id_buildfarm.path} 8 2 kvm,benchmark,big-parallel,nixos-test - -
+    '';
+  };
+  awsarmMachine = pkgs.writeTextFile {
+    name = "build-awsarmMachine";
+    text = ''
+      ssh://nix@awsarm.vedenemo.dev aarch64-linux ${config.sops.secrets.id_buildfarm.path} 8 2 kvm,benchmark,big-parallel,nixos-test - -
     '';
   };
   createJobsetsScript = pkgs.stdenv.mkDerivation {
@@ -42,13 +48,22 @@
   };
 in {
   programs.ssh.knownHosts = {
+    # Add builder machines' public ids to ssh known_hosts
     build01 = {
-      # Add build01 public id to ssh_known_hosts
       # TODO: get rid of static IP config:
       hostNames = ["10.3.0.5"];
       publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID+hx/Ff8U123lI8wMYvmVYn5M3Cv4m+XQxxNYFgJGTo";
     };
+    armbuild01 = {
+      hostNames = ["awsarm.vedenemo.dev"];
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL3f7tAAO3Fc+8BqemsBQc/Yl/NmRfyhzr5SFOSKqrv0";
+    };
   };
+  programs.ssh.extraConfig = lib.mkAfter ''
+    host awsarm.vedenemo.dev
+        Hostname awsarm.vedenemo.dev
+        Port 20220
+  '';
   services.hydra = {
     enable = true;
     port = 3000;
@@ -59,6 +74,7 @@ in {
     buildMachinesFiles = [
       "${localMachine}"
       "${build01Machine}"
+      "${awsarmMachine}"
     ];
 
     extraConfig = ''
