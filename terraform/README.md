@@ -18,7 +18,7 @@ $ cd ghaf-infra
 
 All the commands in this document are executed from terraform nix-shell inside the `./terraform` directory.
 
-Bootstarp terraform nix-shell with the required dependencies:
+Bootstrap terraform nix-shell with the required dependencies:
 ```bash
 $ cd terraform
 $ nix-shell
@@ -27,8 +27,7 @@ $ nix-shell
 $ az login
 ```
 
-### Initializing Azure Storage 
-<details>
+## Initializing Azure Storage 
 On the first run, when starting a new configuration, you need to initialize terraform state storage:
 ```bash
 $ cd azure-storage/
@@ -37,7 +36,6 @@ $ terraform apply
 ```
 **Note**: if you work with existing ghaf-infra, there should be no need to initialize the state storage.
 
-</details>
 
 ## Terraform workflow
 
