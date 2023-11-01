@@ -8,6 +8,8 @@ keys:
   - &ghafhydra age1qnufx7gvz5kmm48nvdma4chxd4p0lca88f5fsyce8lrae6gp2a8sul692y
   - &hrosten age1hc6hszepd5xezxkgd3yx74pn3scxjm5w6px48m4rq9yj7w6rke7q72zhgn
   - &karim age122lvqyrdqz30fkfututykl0yle9u63u2em6e4aut7e5draws83ns3npt3a
+  - &jrautiola age15jq5gjjd7ypsdlqfjtqy4red57v8ggqq9na6u3xffznu678nydpsuuwjg0
+  - &binarycache age1s47a3y44j695gemcl0kqgjlxxvaa50de9s69jy2l6vc8xtmk5pcskhpknl
 creation_rules:
   - path_regex: terraform/secrets.yaml$
     key_groups:
@@ -27,3 +29,8 @@ creation_rules:
       - *flokli
       - *hrosten
       - *build01
+  - path_regex: hosts/binarycache/secrets.yaml$
+    key_groups:
+    - age:
+      - *jrautiola
+      - *binarycache
