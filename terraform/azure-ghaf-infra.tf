@@ -17,12 +17,23 @@ data "sops_file" "ghaf-infra" {
 }
 
 provider "azurerm" {
-  subscription_id = data.sops_file.ghaf-infra.data["az_subscription_id"]
-  client_id       = data.sops_file.ghaf-infra.data["az_client_id"]
-  client_secret   = data.sops_file.ghaf-infra.data["az_client_secret"]
-  tenant_id       = data.sops_file.ghaf-infra.data["az_tenant_id"]
   features {}
 }
+
+
+# Backend for storing tfstate
+
+terraform {
+  backend "azurerm" {
+    resource_group_name  = "ghaf-infra-storage"
+    storage_account_name = "ghafinfrastatestorage"
+    container_name       = "ghaf-infra-tfstate-container"
+    key                  = "ghaf-infra.tfstate"
+  }
+}
+
+
+# Resource group
 
 variable "resource_group_location" {
   type        = string
@@ -31,6 +42,6 @@ variable "resource_group_location" {
 }
 
 resource "azurerm_resource_group" "rg" {
+  name     = "ghaf-infra-terraform-dev"
   location = var.resource_group_location
-  name     = "ghaf-infra-terraform-test"
 }

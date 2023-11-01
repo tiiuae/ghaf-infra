@@ -22,16 +22,24 @@ Bootstarp terraform nix-shell with the required dependencies:
 ```bash
 $ cd terraform
 $ nix-shell
+
+# Authenticate with az login:
+$ az login
 ```
 
-On the first run, when starting a new configuration, you need to initialize terraform state file and plugins:
+### Initializing Azure Storage 
+<details>
+On the first run, when starting a new configuration, you need to initialize terraform state storage:
 ```bash
+$ cd azure-storage/
 $ terraform init
+$ terraform apply
 ```
-Note: if you work with existing ghaf-infra, there should be no need to re-initialize.
+**Note**: if you work with existing ghaf-infra, there should be no need to initialize the state storage.
+
+</details>
 
 ## Terraform workflow
-Note: working with ghaf-infra terraform configurations require access to [relevant sops secrets](./secrets.yaml). If you need access, send a PR that adds your [age public key](https://github.com/tiiuae/ghaf-infra/blob/6867a3b1e79883cb5a55108591e22fc6feb02450/docs/adapting-to-new-environments.md?plain=1#L51) to the relevant section of [.sops.yaml](https://github.com/tiiuae/ghaf-infra/blob/master/.sops.yaml) and ask review from the persons who merged the last change to that file.
 
 Following describes the intended workflow, with commands executed from the terraform nix-shell:
 
@@ -45,4 +53,3 @@ Following describes the intended workflow, with commands executed from the terra
 ## References
 - Azure secrets: https://registry.terraform.io/providers/hashicorp/azuread/0.9.0/docs/guides/service_principal_client_secret
 - Use Terraform to create Linux VM in azure: https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-terraform?tabs=azure-cli
-
