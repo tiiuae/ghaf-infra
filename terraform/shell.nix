@@ -17,13 +17,10 @@
 pkgs.mkShell {
   packages = [
     (pkgs.terraform.withPlugins (p: [
-      p.cloudflare
+      p.azurerm
       p.external
-      p.gandi
-      p.hydra
       p.null
       p.sops
-      p.tfe
     ]))
   ];
 }

@@ -5,3 +5,8 @@
 # Nix
 result
 result-*
+
+# Terraform
+.terraform
+.terraform.*
+terraform.tfstate
