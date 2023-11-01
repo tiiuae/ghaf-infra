@@ -10,11 +10,13 @@
   flake.nixosModules = {
     # shared modules
     azure-common = import ./azure-common.nix;
+    qemu-common = import ./qemu-common.nix;
     common = import ./common.nix;
     generic-disk-config = import ./generic-disk-config.nix;
     # host modules
     host-build01 = import ./build01;
     host-ghafhydra = import ./ghafhydra;
+    host-binarycache = import ./binarycache;
   };
 
   flake.nixosConfigurations = let
@@ -28,6 +30,10 @@
     ghafhydra = lib.nixosSystem {
       inherit specialArgs;
       modules = [self.nixosModules.host-ghafhydra];
+    };
+    binarycache = lib.nixosSystem {
+      inherit specialArgs;
+      modules = [self.nixosModules.host-binarycache];
     };
   };
 }
