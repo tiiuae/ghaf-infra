@@ -16,6 +16,8 @@
 }:
 pkgs.mkShell {
   packages = [
+    pkgs.sops
+    pkgs.azure-cli
     (pkgs.terraform.withPlugins (p: [
       p.azurerm
       p.external
