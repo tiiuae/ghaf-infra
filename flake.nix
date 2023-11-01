@@ -32,21 +32,29 @@
   } @ inputs: let
     inherit (self) outputs;
     # Supported systems for your flake packages, shell, etc.
-    systems = [
-      "x86_64-linux"
-    ];
-    forEachSystem = f: nixpkgs.lib.genAttrs systems (system: f pkgsFor.${system});
-    pkgsFor = nixpkgs.lib.genAttrs systems (system:
-      import nixpkgs {
-        inherit system;
-        config.allowUnfree = true;
-      });
+    systems = ["x86_64-linux"];
+    # forEachSystem [ "x86_64-linux" ] { example = true; } -> { x86_64-linux.example = true }
+    forEachSystem = nixpkgs.lib.genAttrs systems;
+    # Imports a module expecting a system to be passed in
+    importExpectingSystem = module: system:
+      import module {
+        pkgs = import nixpkgs {inherit system;};
+      };
+    ghaf-infra-shell = importExpectingSystem ./shell.nix;
+    terraform-shell = importExpectingSystem ./terraform/shell.nix;
     templateTargets = import ./hosts/templates/targets.nix {inherit nixpkgs disko;};
   in {
-    # Formatter for the nix files, available through 'nix fmt'
-    formatter = forEachSystem (pkgs: pkgs.alejandra);
-    # Development shell, available through 'nix develop'
-    devShells = forEachSystem (pkgs: import ./shell.nix {inherit pkgs;});
+    # nix fmt
+    formatter = forEachSystem (system: nixpkgs.legacyPackages.${system}.alejandra);
+
+    # Development shells
+    devShells = forEachSystem (system: {
+      # nix develop
+      default = ghaf-infra-shell system;
+      # nix develop .#terraform
+      terraform = terraform-shell system;
+    });
+
     # NixOS configuration entrypoint
     nixosConfigurations = {
       # Generic template configurations
