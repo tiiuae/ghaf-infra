@@ -6,11 +6,13 @@ keys:
   - &hrosten age1hc6hszepd5xezxkgd3yx74pn3scxjm5w6px48m4rq9yj7w6rke7q72zhgn
   - &ghafhydra age1qnufx7gvz5kmm48nvdma4chxd4p0lca88f5fsyce8lrae6gp2a8sul692y
   - &build01 age1tcp86swx4c8y8ej666k27lwca60j0x5tf4mcnw459ccec4am9vqqg2ht9d
+  - &karim age122lvqyrdqz30fkfututykl0yle9u63u2em6e4aut7e5draws83ns3npt3a
 creation_rules:
   - path_regex: terraform/secrets.yaml$
     key_groups:
     - age:
       - *hrosten
+      - *karim
   - path_regex: hosts/ghafhydra/secrets.yaml$
     key_groups:
     - age:
