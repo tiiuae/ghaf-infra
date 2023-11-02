@@ -408,6 +408,11 @@ def pre_push(c: Any) -> None:
     ret = exec_cmd(cmd, raise_on_error=False)
     if not ret:
         sys.exit(1)
+    LOG.info("Running nix flake check")
+    cmd = f"nix flake check"
+    ret = exec_cmd(cmd, raise_on_error=False)
+    if not ret:
+        sys.exit(1)
     LOG.info("Building all nixosConfigurations")
     build_local(c)
     LOG.info("All pre-push checks passed")
