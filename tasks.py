@@ -209,7 +209,7 @@ def decrypt_host_key(target: str, tmpdir: str) -> None:
     t.chmod(0o755)
     host_key = t / "etc/ssh/ssh_host_ed25519_key"
     host_key.parent.mkdir(parents=True, exist_ok=True)
-    with open(host_key, "w", opener=opener) as fh:
+    with open(host_key, "w", opener=opener, encoding="utf-8") as fh:
         try:
             subprocess.run(
                 [
@@ -224,12 +224,12 @@ def decrypt_host_key(target: str, tmpdir: str) -> None:
             )
         except subprocess.CalledProcessError:
             LOG.warning("Failed reading secret 'ssh_host_ed25519_key' for '%s'", target)
-            ask = input(f"Still continue? [y/N] ")
+            ask = input("Still continue? [y/N] ")
             if ask != "y":
                 sys.exit(1)
         else:
             pub_key = t / "etc/ssh/ssh_host_ed25519_key.pub"
-            with open(pub_key, "w") as fh:
+            with open(pub_key, "w", encoding="utf-8") as fh:
                 subprocess.run(
                     ["ssh-keygen", "-y", "-f", f"{host_key}"],
                     stdout=fh,
@@ -262,7 +262,7 @@ def install(c: Any, target: str, hostname: str) -> None:
         LOG.warning(
             "sudo on '%s' needs password: installation will likely fail", hostname
         )
-        ask = input(f"Still continue? [y/N] ")
+        ask = input("Still continue? [y/N] ")
         if ask != "y":
             sys.exit(1)
     # Check static ip
@@ -278,7 +278,7 @@ def install(c: Any, target: str, hostname: str) -> None:
             "If you do, consider making the address temporarily static "
             "before continuing."
         )
-        ask = input(f"Still continue? [y/N] ")
+        ask = input("Still continue? [y/N] ")
         if ask != "y":
             sys.exit(1)
 
@@ -380,7 +380,7 @@ def pre_push(c: Any) -> None:
     Example usage:
     inv pre-push
     """
-    cmd = f"find . -type f -name *.py ! -path *result* ! -path *eggs*"
+    cmd = "find . -type f -name *.py ! -path *result* ! -path *eggs*"
     ret = exec_cmd(cmd)
     pyfiles = ret.stdout.replace("\n", " ")
     LOG.info("Running black")
@@ -399,17 +399,17 @@ def pre_push(c: Any) -> None:
     if not ret:
         sys.exit(1)
     LOG.info("Running reuse lint")
-    cmd = f"reuse lint"
+    cmd = "reuse lint"
     ret = exec_cmd(cmd, raise_on_error=False)
     if not ret:
         sys.exit(1)
     LOG.info("Running nix fmt")
-    cmd = f"nix fmt"
+    cmd = "nix fmt"
     ret = exec_cmd(cmd, raise_on_error=False)
     if not ret:
         sys.exit(1)
     LOG.info("Running nix flake check")
-    cmd = f"nix flake check"
+    cmd = "nix flake check"
     ret = exec_cmd(cmd, raise_on_error=False)
     if not ret:
         sys.exit(1)
