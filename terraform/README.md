@@ -35,7 +35,7 @@ $ az login
 ```
 
 ## Initializing Azure Storage 
-This project stores the terraform state in a remote storage in an azure storage blob as configured in [tfstate-storage.tf](./azure-storage/tfstate-storage.tf). The benefits of using such remote storage setup are well outlined in [storing state in azure storage](https://learn.microsoft.com/en-us/azure/developer/terraform/store-state-in-azure-storage) and [terraform backend configuration](https://developer.hashicorp.com/terraform/language/settings/backends/configuration).
+This project stores the terraform state in a remote storage in an azure storage blob as configured in [tfstate-storage.tf](./azure-storage/tfstate-storage.tf). The benefits of using such remote storage setup are well outlined in [storing state in azure storage](https://learn.microsoft.com/en-us/azure/developer/terraform/store-state-in-azure-storage) and [terraform backend configuration](https://developer.hashicorp.com/terraform/language/settings/backends/configuration). The main benefit is that it allows multiple people to access the state data and collaborate on the resources configuration.
 
 **Note**: if you work with existing infrastructure, there should be no need to initialize the state storage. Initializing state storage is only needed when you start-off or move to a new infrastructure.
 
@@ -62,6 +62,9 @@ $ terraform validate
 # Once the changes are ready to be deployed, create a new PR
 # attaching the output of `terraform plan` to the PR:
 $ terraform plan
+# Notice: `terraform plan` only outputs the execution plan,
+# showing what actions terraform would take. It does not
+# perform the planned actions.
 
 # Once the PR is merged, apply your configuration changes:
 $ terraform apply
