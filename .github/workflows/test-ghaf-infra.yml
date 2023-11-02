@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Test ghaf-infra
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v22
+      - name: Run ghaf-infra CI tests
+        run: nix develop --command inv pre-push
+      - name: Run terraform fmt
+        run: |
+          TF_LOG="DEBUG" bash -c 'nix develop .#terraform --command terraform -chdir=terraform fmt'
+          TF_LOG="DEBUG" bash -c 'nix develop .#terraform --command terraform -chdir=terraform/azure-storage fmt'
+      # TODO: Enable the below check when 'terraform validate' passes:
+      # - name: Run terraform validate
+      #   run: |
+      #     TF_LOG="DEBUG" bash -c 'nix develop .#terraform --command terraform -chdir=terraform validate'
+      #     TF_LOG="DEBUG" bash -c 'nix develop .#terraform --command terraform -chdir=terraform/azure-storage validate'
