@@ -41,16 +41,51 @@ import time
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Union
+from collections import OrderedDict
+from dataclasses import dataclass
 
+from tabulate import tabulate
 from colorlog import ColoredFormatter, default_log_colors
-from deploykit import DeployHost, DeployGroup, HostKeyCheck
+from deploykit import DeployHost, HostKeyCheck
 from invoke import task
+
 
 ################################################################################
 
 ROOT = Path(__file__).parent.resolve()
 os.chdir(ROOT)
 LOG = logging.getLogger(os.path.abspath(__file__))
+
+################################################################################
+
+
+@dataclass(eq=False)
+class TargetHost:
+    """Represents target host"""
+
+    hostname: str
+    nixosconfig: str
+
+
+# Below dictionary defines the set of ghaf-infra hosts:
+#  - Name (e.g. 'build01-dev) defines the aliasname for each target.
+#  - TargetHost.hostname: host name or IP address of the target.
+#  - TargetHost.nixosconfig: name of the nixosConfiguration installed/deployed
+#    on the given host.
+TARGETS = OrderedDict(
+    {
+        "build01-dev": TargetHost(hostname="51.12.57.124", nixosconfig="build01"),
+        "ghafhydra-dev": TargetHost(hostname="51.12.56.79", nixosconfig="ghafhydra"),
+    }
+)
+
+
+def _get_target(alias: str) -> TargetHost:
+    if alias not in TARGETS:
+        LOG.fatal("Unknown alias '%s'", alias)
+        sys.exit(1)
+    return TARGETS[alias]
+
 
 ################################################################################
 
@@ -96,11 +131,17 @@ def _init_logging(verbosity: int = 1) -> None:
 set_log_verbosity(1)
 
 
-def exec_cmd(cmd, raise_on_error=True):
+def exec_cmd(cmd, raise_on_error=True, capture_output=True):
     """Run shell command cmd"""
-    LOG.debug("Running: %s", cmd)
+    LOG.info("Running: %s", cmd)
     try:
-        return subprocess.run(cmd.split(), capture_output=True, text=True, check=True)
+        if capture_output:
+            return subprocess.run(
+                cmd.split(), capture_output=True, text=True, check=True
+            )
+        return subprocess.run(
+            cmd.split(), text=True, check=True, stdout=subprocess.PIPE
+        )
     except subprocess.CalledProcessError as error:
         warn = [f"'{cmd}':"]
         if error.stdout:
@@ -114,6 +155,23 @@ def exec_cmd(cmd, raise_on_error=True):
 
 
 ################################################################################
+
+
+@task
+def alias_list(_c: Any) -> None:
+    """
+    List available targets (i.e. configurations and alias names)
+
+    Example usage:
+    inv list-name
+    """
+    table_rows = []
+    table_rows.append(["alias", "nixosconfig", "hostname"])
+    for alias, host in TARGETS.items():
+        row = [alias, host.nixosconfig, host.hostname]
+        table_rows.append(row)
+    table = tabulate(table_rows, headers="firstrow", tablefmt="fancy_outline")
+    print(f"\nCurrent ghaf-infra targets:\n\n{table}")
 
 
 @task
@@ -135,15 +193,16 @@ find . \
 
 
 @task
-def print_keys(_c: Any, target: str) -> None:
+def print_keys(_c: Any, alias: str) -> None:
     """
-    Decrypt host private key, print ssh and age public keys for `target`.
+    Decrypt host private key, print ssh and age public keys for `alias` config.
 
     Example usage:
-    inv print-keys --target ghafhydra
+    inv print-keys --target ghafhydra-dev
     """
     with TemporaryDirectory() as tmpdir:
-        decrypt_host_key(target, tmpdir)
+        nixosconfig = _get_target(alias).nixosconfig
+        decrypt_host_key(nixosconfig, tmpdir)
         key = f"{tmpdir}/etc/ssh/ssh_host_ed25519_key"
         pubkey = subprocess.run(
             ["ssh-keygen", "-y", "-f", f"{key}"],
@@ -162,13 +221,13 @@ def print_keys(_c: Any, target: str) -> None:
         )
 
 
-def get_deploy_host(target: str = "", hostname: str = "") -> DeployHost:
+def get_deploy_host(alias: str = "") -> DeployHost:
     """
-    Return DeployHost object, given `hostname` and `target`
+    Return DeployHost object, given `alias`
     """
+    hostname = _get_target(alias).hostname
     deploy_host = DeployHost(
         host=hostname,
-        meta={"target": target},
         host_key_check=HostKeyCheck.NONE,
         # verbose_ssh=True,
     )
@@ -176,14 +235,14 @@ def get_deploy_host(target: str = "", hostname: str = "") -> DeployHost:
 
 
 @task
-def deploy(_c: Any, target: str, hostname: str) -> None:
+def deploy(_c: Any, alias: str) -> None:
     """
-    Deploy NixOS configuration `target` to host `hostname`.
+    Deploy the configuration for `alias`.
 
     Example usage:
-    inv deploy --target ghafhydra --hostname 192.168.1.107
+    inv deploy --alias ghafhydra-dev
     """
-    h = get_deploy_host(target, hostname)
+    h = get_deploy_host(alias)
     command = "sudo nixos-rebuild"
     res = h.run_local(
         ["nix", "flake", "archive", "--to", f"ssh://{h.host}", "--json"],
@@ -193,12 +252,13 @@ def deploy(_c: Any, target: str, hostname: str) -> None:
     path = data["path"]
     LOG.debug("data['path']: %s", path)
     flags = "--option accept-flake-config true"
-    h.run(f"{command} switch {flags} --flake {path}#{h.meta['target']}")
+    nixosconfig = _get_target(alias).nixosconfig
+    h.run(f"{command} switch {flags} --flake {path}#{nixosconfig}")
 
 
-def decrypt_host_key(target: str, tmpdir: str) -> None:
+def decrypt_host_key(nixosconfig: str, tmpdir: str) -> None:
     """
-    Run sops to extract `target` secret 'ssh_host_ed25519_key'
+    Run sops to extract `nixosconfig` secret 'ssh_host_ed25519_key'
     """
 
     def opener(path: str, flags: int) -> Union[str, int]:
@@ -217,13 +277,15 @@ def decrypt_host_key(target: str, tmpdir: str) -> None:
                     "--extract",
                     '["ssh_host_ed25519_key"]',
                     "--decrypt",
-                    f"{ROOT}/hosts/{target}/secrets.yaml",
+                    f"{ROOT}/hosts/{nixosconfig}/secrets.yaml",
                 ],
                 check=True,
                 stdout=fh,
             )
         except subprocess.CalledProcessError:
-            LOG.warning("Failed reading secret 'ssh_host_ed25519_key' for '%s'", target)
+            LOG.warning(
+                "Failed reading secret 'ssh_host_ed25519_key' for '%s'", nixosconfig
+            )
             ask = input("Still continue? [y/N] ")
             if ask != "y":
                 sys.exit(1)
@@ -240,27 +302,28 @@ def decrypt_host_key(target: str, tmpdir: str) -> None:
 
 
 @task
-def install(c: Any, target: str, hostname: str) -> None:
+def install(c: Any, alias) -> None:
     """
-    Install `target` on `hostname` using nixos-anywhere, deploying host private key.
-    Note: this will automatically partition and re-format `hostname` hard drive,
+    Install `alias` configuration using nixos-anywhere, deploying host private key.
+    Note: this will automatically partition and re-format the target hard drive,
     meaning all data on the target will be completely overwritten with no option
     to rollback.
 
     Example usage:
-    inv install --target ghafscan --hostname 192.168.1.109
+    inv install --alias ghafscan-dev
     """
-    ask = input(f"Install configuration '{target}' on host '{hostname}'? [y/N] ")
+    h = get_deploy_host(alias)
+
+    ask = input(f"Install configuration '{alias}'? [y/N] ")
     if ask != "y":
         return
 
-    h = get_deploy_host(target, hostname)
     # Check sudo nopasswd
     try:
         h.run("sudo -nv", become_root=True)
     except subprocess.CalledProcessError:
         LOG.warning(
-            "sudo on '%s' needs password: installation will likely fail", hostname
+            "sudo on '%s' needs password: installation will likely fail", h.host
         )
         ask = input("Still continue? [y/N] ")
         if ask != "y":
@@ -271,7 +334,7 @@ def install(c: Any, target: str, hostname: str) -> None:
     except subprocess.CalledProcessError:
         pass
     else:
-        LOG.warning("Above address(es) on '%s' use dynamic addressing.", hostname)
+        LOG.warning("Above address(es) on '%s' use dynamic addressing.", h.host)
         LOG.warning(
             "This might cause issues if you assume the target host is reachable "
             "from any such address also after kexec switch. "
@@ -282,55 +345,40 @@ def install(c: Any, target: str, hostname: str) -> None:
         if ask != "y":
             sys.exit(1)
 
+    nixosconfig = _get_target(alias).nixosconfig
     with TemporaryDirectory() as tmpdir:
-        decrypt_host_key(target, tmpdir)
+        decrypt_host_key(nixosconfig, tmpdir)
         command = "nix run github:numtide/nixos-anywhere --"
-        command += f" {hostname} --extra-files {tmpdir} --flake .#{target}"
+        command += f" {h.host} --extra-files {tmpdir} --flake .#{nixosconfig}"
         command += " --option accept-flake-config true"
+        LOG.warning(command)
         c.run(command)
+
     # Reboot
-    print(f"Wait for {hostname} to start", end="")
-    wait_for_port(hostname, 22)
-    reboot(c, hostname)
+    print(f"Wait for {h.host} to start", end="")
+    wait_for_port(h.host, 22)
+    reboot(c, alias)
 
 
 @task
-def build_local(_c: Any, target: str = "") -> None:
+def build_local(_c: Any, alias: str = "") -> None:
     """
-    Build NixOS configuration `target` locally.
-    If `target` is not specificied, builds all nixosConfigurations in the flake.
+    Build NixOS configuration `alias` locally.
+    If `alias` is not specificied, builds all TARGETS.
 
     Example usage:
-    inv build-local --target ghafhydra
+    inv build-local --alias ghafhydra-dev
     """
-    if target:
-        # For local builds, we pretend hostname is the target
-        g = DeployGroup([get_deploy_host(hostname=target)])
+    if alias:
+        target_configs = [_get_target(alias).nixosconfig]
     else:
-        res = subprocess.run(
-            ["nix", "flake", "show", "--json"],
-            check=True,
-            text=True,
-            stdout=subprocess.PIPE,
+        target_configs = [target.nixosconfig for _, target in TARGETS.items()]
+    for nixosconfig in target_configs:
+        cmd = (
+            "nixos-rebuild build --option accept-flake-config true "
+            f" -v --flake .#{nixosconfig}"
         )
-        data = json.loads(res.stdout)
-        targets = data["nixosConfigurations"]
-        g = DeployGroup([get_deploy_host(hostname=t) for t in targets])
-
-    def _build_local(h: DeployHost) -> None:
-        h.run_local(
-            [
-                "nixos-rebuild",
-                "build",
-                "--option",
-                "accept-flake-config",
-                "true",
-                "--flake",
-                f".#{h.host}",
-            ]
-        )
-
-    g.run_function(_build_local)
+        exec_cmd(cmd, capture_output=False)
 
 
 def wait_for_port(host: str, port: int, shutdown: bool = False) -> None:
@@ -351,14 +399,14 @@ def wait_for_port(host: str, port: int, shutdown: bool = False) -> None:
 
 
 @task
-def reboot(_c: Any, hostname: str) -> None:
+def reboot(_c: Any, alias: str) -> None:
     """
-    Reboot host `hostname`.
+    Reboot host identified as `alias`.
 
     Example usage:
-    inv reboot --hostname 192.168.1.112
+    inv reboot --alias ghafhydra-dev
     """
-    h = get_deploy_host(hostname=hostname)
+    h = get_deploy_host(alias)
     h.run("sudo reboot &")
 
     print(f"Wait for {h.host} to shutdown", end="")
@@ -383,42 +431,34 @@ def pre_push(c: Any) -> None:
     cmd = "find . -type f -name *.py ! -path *result* ! -path *eggs*"
     ret = exec_cmd(cmd)
     pyfiles = ret.stdout.replace("\n", " ")
-    LOG.info("Running black")
     cmd = f"black -q {pyfiles}"
     ret = exec_cmd(cmd, raise_on_error=False)
     if not ret:
         sys.exit(1)
-    LOG.info("Running pylint")
     cmd = f"pylint --disable duplicate-code -rn {pyfiles}"
     ret = exec_cmd(cmd, raise_on_error=False)
     if not ret:
         sys.exit(1)
-    LOG.info("Running pycodestyle")
     cmd = f"pycodestyle --max-line-length=90 {pyfiles}"
     ret = exec_cmd(cmd, raise_on_error=False)
     if not ret:
         sys.exit(1)
-    LOG.info("Running reuse lint")
     cmd = "reuse lint"
     ret = exec_cmd(cmd, raise_on_error=False)
     if not ret:
         sys.exit(1)
-    LOG.info("Running terraform fmt")
     cmd = "terraform fmt -check -recursive"
     ret = exec_cmd(cmd, raise_on_error=False)
     if not ret:
         LOG.warning("Run `terraform fmt -recursive` locally to fix formatting")
         sys.exit(1)
-    LOG.info("Running nix fmt")
     cmd = "nix fmt"
     ret = exec_cmd(cmd, raise_on_error=False)
     if not ret:
         sys.exit(1)
-    LOG.info("Running nix flake check")
-    cmd = "nix flake check -v --log-format raw"
+    cmd = "nix flake check -vv"
     ret = exec_cmd(cmd, raise_on_error=False)
     if not ret:
         sys.exit(1)
-    LOG.info("Building all nixosConfigurations")
     build_local(c)
     LOG.info("All pre-push checks passed")
