@@ -20,12 +20,3 @@ jobs:
       - uses: cachix/install-nix-action@v22
       - name: Run ghaf-infra CI tests
         run: nix develop --command inv pre-push
-      - name: Run terraform fmt
-        run: |
-          TF_LOG="DEBUG" bash -c 'nix develop .#terraform --command terraform -chdir=terraform fmt'
-          TF_LOG="DEBUG" bash -c 'nix develop .#terraform --command terraform -chdir=terraform/azure-storage fmt'
-      # TODO: Enable the below check when 'terraform validate' passes:
-      # - name: Run terraform validate
-      #   run: |
-      #     TF_LOG="DEBUG" bash -c 'nix develop .#terraform --command terraform -chdir=terraform validate'
-      #     TF_LOG="DEBUG" bash -c 'nix develop .#terraform --command terraform -chdir=terraform/azure-storage validate'

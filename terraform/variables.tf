@@ -11,7 +11,7 @@ variable "resource_group_location" {
 
 variable "resourcegroup" {
   description = "The Azure Resource Group Name within your Subscription in which this resource will be created."
-   default     = "ghaf-infra-swe"
+  default     = "ghaf-infra-swe"
 }
 
 variable "resource_group_name_prefix" {
