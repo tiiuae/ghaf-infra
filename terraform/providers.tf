@@ -9,10 +9,10 @@ provider "azurerm" {
 terraform {
   required_providers {
     azurerm = {
-      source  = "hashicorp/azurerm"
+      source = "hashicorp/azurerm"
     }
     sops = {
-      source  = "carlpett/sops"
+      source = "carlpett/sops"
     }
   }
 }

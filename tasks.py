@@ -403,13 +403,19 @@ def pre_push(c: Any) -> None:
     ret = exec_cmd(cmd, raise_on_error=False)
     if not ret:
         sys.exit(1)
+    LOG.info("Running terraform fmt")
+    cmd = "terraform fmt -check -recursive"
+    ret = exec_cmd(cmd, raise_on_error=False)
+    if not ret:
+        LOG.warning("Run `terraform fmt -recursive` locally to fix formatting")
+        sys.exit(1)
     LOG.info("Running nix fmt")
     cmd = "nix fmt"
     ret = exec_cmd(cmd, raise_on_error=False)
     if not ret:
         sys.exit(1)
     LOG.info("Running nix flake check")
-    cmd = "nix flake check"
+    cmd = "nix flake check -v --log-format raw"
     ret = exec_cmd(cmd, raise_on_error=False)
     if not ret:
         sys.exit(1)

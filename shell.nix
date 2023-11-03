@@ -26,8 +26,9 @@ pkgs.mkShell {
     python3.pkgs.invoke
     python3.pkgs.pycodestyle
     python3.pkgs.pylint
+    reuse
     sops
     ssh-to-age
-    reuse
+    terraform
   ];
 }
