@@ -67,11 +67,10 @@ class TargetHost:
     nixosconfig: str
 
 
-# Below dictionary defines the set of ghaf-infra hosts:
-#  - Name (e.g. 'build01-dev) defines the aliasname for each target.
+# Below dictionary defines the set of ghaf-infra configuration aliases:
+#  - Name (e.g. 'build01-dev) defines the alias name for each target.
 #  - TargetHost.hostname: host name or IP address of the target.
-#  - TargetHost.nixosconfig: name of the nixosConfiguration installed/deployed
-#    on the given host.
+#  - TargetHost.nixosconfig: name of the target nixosConfiguration.
 TARGETS = OrderedDict(
     {
         "build01-dev": TargetHost(hostname="51.12.57.124", nixosconfig="build01"),
@@ -348,7 +347,8 @@ def install(c: Any, alias) -> None:
     nixosconfig = _get_target(alias).nixosconfig
     with TemporaryDirectory() as tmpdir:
         decrypt_host_key(nixosconfig, tmpdir)
-        command = "nix run github:numtide/nixos-anywhere --"
+        gitrev = "0a929da703b18b9191cbbd92c3092b38514d450b"
+        command = f"nix run github:numtide/nixos-anywhere?rev={gitrev} --"
         command += f" {h.host} --extra-files {tmpdir} --flake .#{nixosconfig}"
         command += " --option accept-flake-config true"
         LOG.warning(command)
@@ -456,7 +456,7 @@ def pre_push(c: Any) -> None:
     ret = exec_cmd(cmd, raise_on_error=False)
     if not ret:
         sys.exit(1)
-    cmd = "nix flake check -vv"
+    cmd = "nix flake check -v"
     ret = exec_cmd(cmd, raise_on_error=False)
     if not ret:
         sys.exit(1)
