@@ -48,50 +48,72 @@ Run the following command to list the available tasks:
 $ invoke --list
 Available tasks:
 
-  build-local         Build NixOS configuration `target` locally.
-  deploy              Deploy NixOS configuration `target` to host `hostname`.
-  install             Install `target` on `hostname` using nixos-anywhere, deploying host private key.
+  alias-list          List available targets (i.e. configurations and alias names)
+  build-local         Build NixOS configuration `alias` locally.
+  deploy              Deploy the configuration for `alias`.
+  install             Install `alias` configuration using nixos-anywhere, deploying host private key.
   pre-push            Run 'pre-push' checks: black, pylint, pycodestyle, reuse lint, nix fmt.
-  print-keys          Decrypt host private key, print ssh and age public keys for `target`.
-  reboot              Reboot host `hostname`.
+  print-keys          Decrypt host private key, print ssh and age public keys for `alias` config.
+  reboot              Reboot host identified as `alias`.
   update-sops-files   Update all sops yaml and json files according to .sops.yaml rules.
+
 ```
 
 In the following sections, we will explain the intended usage of the most common above deployment tasks.
 
+#### alias-list
+The `alias-list` task lists the alias names for ghaf-infra targets. Alias is simply a name given for the combination of nixosConfig and hostname. All ghaf-infra tasks that need to identify a target, accept an alias name as an argument.
+
+```bash
+$ invoke alias-list
+
+Current ghaf-infra targets:
+
+╒═══════════════╤═══════════════╤══════════════╕
+│ alias         │ nixosconfig   │ hostname     │
+╞═══════════════╪═══════════════╪══════════════╡
+│ build01-dev   │ build01       │ 51.12.57.124 │
+│ ghafhydra-dev │ ghafhydra     │ 51.12.56.79  │
+╘═══════════════╧═══════════════╧══════════════╛
+```
+
 #### build-local
-The `build-local` task builds the given nix flake target NixOS configuration locally. If the target is not specified `build-local` builds all NixOS configurations in the flake:
+The `build-local` task builds the given alias configuration locally. If the alias name is not specified `build-local` builds all alias configurations:
 
 ```bash
 $ invoke build-local
-..
-[build01] building '/nix/store/chhh3zqmy0zqy7fx4cgiy7rn0w6zz5gh-nixos-system-build01-23.05.20231013.898cb20.drv'...
-[ghafhydra] building '/nix/store/wnlmh040h1gyrx31gigmc6940h4ipzh0-nixos-system-ghafhydra-23.05.20231013.898cb20.drv'...
+INFO     Running: nixos-rebuild build --option accept-flake-config true  -v --flake .#build01
+...
+INFO     Running: nixos-rebuild build --option accept-flake-config true  -v --flake .#ghafhydra
+...
+building '/nix/store/m0z520c0rpz1qjjw391srjw50426626z-etc.drv'...
+building '/nix/store/7jx57i82zmkcjsimb761vqsdcx2sc8yq-nixos-system-ghafhydra-23.05.20231021.5550a85.drv'...
 ```
 
 #### pre-push
-The `pre-push` task runs a set of checks for the contents of this repository. The checks include: python linters, license compliance checks, and nix formatting checks. The `pre-push` task also locally builds all the NixOS configurations in the flake:
+The `pre-push` task runs a set of checks for the contents of this repository. The checks include: python linters, license compliance checks, formatting checks for nix and terraform files and nix flake check for the ghaf-infra flake. The `pre-push` task also locally builds all the alias configurations:
 
 ```bash
 $ invoke pre-push 
-INFO     Running black
-INFO     Running pylint
-INFO     Running pycodestyle
-INFO     Running reuse lint
-INFO     Running nix fmt
-INFO     Building all nixosConfigurations
+INFO     Running: find . -type f -name *.py ! -path *result* ! -path *eggs*
+INFO     Running: black -q ./tasks.py 
+INFO     Running: pylint --disable duplicate-code -rn ./tasks.py 
+INFO     Running: pycodestyle --max-line-length=90 ./tasks.py 
+INFO     Running: reuse lint
+INFO     Running: terraform fmt -check -recursive
+INFO     Running: nix fmt
+INFO     Running: nix flake check -v
 ...
-[ghafhydra] building '/nix/store/c8a3pfv1f9hgq8km4grrnnh315fzb5k7-nixos-system-ghafhydra-23.05.20231013.898cb20.drv'...
 INFO     All pre-push checks passed
 ```
 
 #### install
-The `install` task installs the given NixOS configuration on the specified host with [nixos-anywhere](https://github.com/nix-community/nixos-anywhere). It will automatically partition and re-format the host hard drive, meaning all data on the target will be completely overwritten with no option to rollback. During installation, it will also decrypt and deploy the host private key from the sops secrets. The intended use of the `install` task is to install NixOS configuration on a non-NixOS host, or to repurpose an existing server.
+The `install` task installs the given alias configuration on the target host with [nixos-anywhere](https://github.com/nix-community/nixos-anywhere). It will automatically partition and re-format the host hard drive, meaning all data on the target will be completely overwritten with no option to rollback. During installation, it will also decrypt and deploy the host private key from the sops secrets. The intended use of the `install` task is to install NixOS configuration on a non-NixOS host, or to repurpose an existing server.
 
 Note: `ìnstall` task assumes the given NixOS configuration is compatible with the specified host. In the existing Ghaf CI/CD infrastructure you can safely assume this holds true. However, if you plan to apply the NixOS configurations from this repository on a new infrastructure or onboard new hosts, please read the documentation in [adapting-to-new-environments.md](./docs/adapting-to-new-environments.md).
 
 ```bash
-$ invoke install --target ghafhydra --hostname 51.12.50.33
+$ invoke install --alias ghafhydra-dev
 Install configuration 'ghafhydra' on host '51.12.50.33'? [y/N] y
 ...
 ### Uploading install SSH keys ###
@@ -107,12 +129,12 @@ Install configuration 'ghafhydra' on host '51.12.50.33'? [y/N] y
 ```
 
 #### deploy
-The `deploy` task deploys the given NixOS configuration to the specified host with [nixos-rebuild](https://nixos.wiki/wiki/Nixos-rebuild) `switch` subcommand. This task assumes the target host is already running NixOS, and fails if it's not.
+The `deploy` task deploys the given alias configuration to the target host with [nixos-rebuild](https://nixos.wiki/wiki/Nixos-rebuild) `switch` subcommand. This task assumes the target host is already running NixOS, and fails if it's not.
 
 Note: unlike the changes made with `install` task, `deploy` changes can be [reverted](https://zero-to-nix.com/concepts/nixos#rollbacks) with `nixos-rebuild switch --rollback` or similar.
 
 ```bash
-$ invoke deploy --target ghafhydra --hostname 51.12.50.33
+$ invoke deploy --alias ghafhydra-dev
 [51.12.50.33] $ nix flake archive --to ssh://51.12.50.33 --json
 [51.12.50.33] copying path '/nix/store/dbppismymjc6382g4v6d6sb99pjby37b-source' from 'https://cache.vedenemo.dev'...
 [51.12.50.33] copying path '/nix/store/r2ip1850igy8kciyaagw502s3c6ph1s4-source' to 'ssh://51.12.50.33'...
@@ -146,8 +168,10 @@ $ nix flake update
 
 Then, deploy the updated configuration to the target host(s):
 ```bash
-$ invoke deploy --target ghafhydra --hostname 51.12.50.33
+$ invoke deploy --alias ghafhydra-dev
 ```
+
+Notice: be sure to manually verify the target services work as expected after the update. Also, make sure the `install` task still works after the flake update by running the `invoke install alias-name-here` against a test (dev) configuration.
 
 ### Onboarding new admins
 Onboarding new admins requires the following manual steps:
