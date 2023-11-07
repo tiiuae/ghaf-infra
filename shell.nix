@@ -17,6 +17,7 @@
 pkgs.mkShell {
   NIX_CONFIG = "extra-experimental-features = nix-command flakes";
   nativeBuildInputs = with pkgs; [
+    azure-cli
     git
     nix
     nixos-rebuild
@@ -30,6 +31,11 @@ pkgs.mkShell {
     reuse
     sops
     ssh-to-age
-    terraform
+    (terraform.withPlugins (p: [
+      p.azurerm
+      p.external
+      p.null
+      p.sops
+    ]))
   ];
 }
