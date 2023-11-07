@@ -41,7 +41,6 @@
         pkgs = import nixpkgs {inherit system;};
       };
     ghaf-infra-shell = importExpectingSystem ./shell.nix;
-    terraform-shell = importExpectingSystem ./terraform/shell.nix;
     templateTargets = import ./hosts/templates/targets.nix {inherit nixpkgs disko;};
   in {
     # nix fmt
@@ -51,8 +50,6 @@
     devShells = forEachSystem (system: {
       # nix develop
       default = ghaf-infra-shell system;
-      # nix develop .#terraform
-      terraform = terraform-shell system;
     });
 
     # NixOS configuration entrypoint

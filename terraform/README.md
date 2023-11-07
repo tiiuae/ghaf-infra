@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 
 # Ghaf-infra: Terraform
 
-This project uses terraform to automate the creation of infrastructure resources. The inteded usage together with NixOS configurations in the main [flake.nix](../flake.nix) is as follows:
+This project uses terraform to automate the creation of infrastructure resources. The intended usage together with NixOS configurations in the main [flake.nix](../flake.nix) is as follows:
 - We use the terraform configuration in this directory for the inital setup of the infrastructure resources (VMs, networks, etc.)
 - We use the NixOS configurations in [flake.nix](../flake.nix) to [install](../README.md#install) NixOS on the VMs
 - We maintain the infrastructure by [deploying](../README.md#deploy) changes to the NixOS configurations via [flake.nix](../flake.nix)
@@ -23,15 +23,18 @@ $ git clone https://github.com/tiiuae/ghaf-infra.git
 $ cd ghaf-infra
 ```
 
-All commands in this document are executed from terraform nix-shell inside the `terraform` directory.
+All commands in this document are executed from nix-shell inside the `terraform` directory.
 
-Bootstrap terraform nix-shell with the required dependencies:
+Bootstrap nix-shell with the required dependencies:
 ```bash
-$ cd terraform
+# Start a nix-shell with required dependencies:
 $ nix-shell
 
 # Authenticate with az login:
 $ az login
+
+# Terraform comands are executed under the terraform directory:
+$ cd terraform/
 ```
 
 ## Initializing Azure Storage 
@@ -41,14 +44,14 @@ This project stores the terraform state in a remote storage in an azure storage 
 
 When starting a new infrastructure you need to initialize the terraform state storage:
 ```bash
-$ cd azure-storage/
+$ cd azure-storage
 $ terraform init
 $ terraform apply
 ```
 
 ## Terraform workflow
 
-Following describes the intended workflow, with commands executed from the terraform nix-shell.
+Following describes the intended workflow, with commands executed from the nix-shell.
 
 First, change the terraform code by modifying the relevant files in this directory. Then:
 
