@@ -77,6 +77,20 @@ Current ghaf-infra targets:
 ╘═══════════════╧═══════════════╧══════════════╛
 ```
 
+In case `hostname` is not directly accessible for your current `$USER`, use `~/.ssh/config` to specify the ssh connection details such as username, port, or key file used to access the specific host.
+
+As an example, to access host `51.12.56.79` with a specific username and key, you would add the following to `~/.ssh/config`:
+
+```
+$ cat ~/.ssh/config
+Host 51.12.56.79
+    HostName 51.12.56.79
+    User my_remote_user_name
+    IdentityFile /path/to/my/private_key
+```
+
+Since `task.py` internally uses ssh when accessing hosts, the above example configuration would be applied when accessing the `ghafhydra-dev` alias.
+
 #### build-local
 The `build-local` task builds the given alias configuration locally. If the alias name is not specified `build-local` builds all alias configurations:
 
