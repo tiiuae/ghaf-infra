@@ -90,6 +90,24 @@ resource "azurerm_network_security_group" "ghaf_infra_tf_nsg" {
     destination_address_prefix = "*"
   }
 }
+
+
+# DNS ZOne
+
+resource "azurerm_dns_zone" "ghaf_infra_tf_zone" {
+  name                = "ghaf-infra-tf-dev.swedencentral.cloudapp.azure.com"
+  resource_group_name = azurerm_resource_group.ghaf_infra_tf_dev.name
+}
+
+# DNS Record
+resource "azurerm_dns_a_record" "ghaf-infra-tf-record" {
+  name                = "ghaf-infra-tf-dev.swedencentral.cloudapp.azure.com"
+  resource_group_name = azurerm_resource_group.ghaf_infra_tf_dev.name
+  zone_name           = azurerm_dns_zone.ghaf_infra_tf_zone.name
+  ttl                 = 300
+  records             = [azurerm_public_ip.ghaf_infra_tf_public_ip.ip_address]
+}
+
 # Example Linux Virtual Machine
 resource "azurerm_linux_virtual_machine" "ghafinfra_tf" {
   name                = "ghafinfratf"
