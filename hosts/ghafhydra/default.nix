@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 {
+  self,
   inputs,
   lib,
   config,
-  pkgs,
   ...
 }: {
   sops.defaultSopsFile = ./secrets.yaml;
@@ -14,19 +14,23 @@
   sops.secrets.id_buildfarm.owner = "hydra-queue-runner";
   sops.secrets.cache-sig-key.owner = "root";
 
-  imports = [
-    inputs.nix-serve-ng.nixosModules.default
-    inputs.sops-nix.nixosModules.sops
-    inputs.disko.nixosModules.disko
-    ../generic-disk-config.nix
-    ../common.nix
-    ../azure-common.nix
-    ../../services/hydra/hydra.nix
-    ../../services/openssh/openssh.nix
-    ../../services/binarycache/binary-cache.nix
-    ../../services/nginx/nginx.nix
-    ../../users/hrosten.nix
-    ../../users/bmg.nix
+  imports = lib.flatten [
+    (with inputs; [
+      nix-serve-ng.nixosModules.default
+      sops-nix.nixosModules.sops
+      disko.nixosModules.disko
+    ])
+    (with self.nixosModules; [
+      common
+      azure-common
+      generic-disk-config
+      service-hydra
+      service-openssh
+      service-binary-cache
+      service-nginx
+      user-bmg
+      user-hrosten
+    ])
   ];
 
   networking.hostName = "ghafhydra";
@@ -46,7 +50,7 @@
       "ghafhydra.swedencentral.cloudapp.azure.com" = {
         forceSSL = true;
         enableACME = true;
-        locations."/".proxyPass = "http://localhost:${toString (config.services.hydra.port)}";
+        locations."/".proxyPass = "http://localhost:${toString config.services.hydra.port}";
       };
     };
   };

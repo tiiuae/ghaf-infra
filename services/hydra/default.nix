@@ -108,7 +108,7 @@ in {
     wantedBy = ["multi-user.target"];
     requires = ["hydra-init.service"];
     after = ["hydra-init.service"];
-    environment = builtins.removeAttrs (config.systemd.services.hydra-init.environment) ["PATH"];
+    environment = builtins.removeAttrs config.systemd.services.hydra-init.environment ["PATH"];
     path = with pkgs; [config.services.hydra.package netcat];
     script = ''
       if [ -e ~hydra/.setup-is-complete ]; then

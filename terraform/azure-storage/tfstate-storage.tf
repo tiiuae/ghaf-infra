@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
 #
 # SPDX-License-Identifier: Apache-2.0
+
 terraform {
   required_providers {
     azurerm = {

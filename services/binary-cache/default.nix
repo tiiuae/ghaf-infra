@@ -1,11 +1,7 @@
 # SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
 #
 # SPDX-License-Identifier: Apache-2.0
-{
-  config,
-  pkgs,
-  ...
-}: {
+{config, ...}: {
   services = {
     nix-serve = {
       enable = true;

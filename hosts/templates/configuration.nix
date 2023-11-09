@@ -2,17 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 {
-  inputs,
+  self,
   lib,
-  config,
   pkgs,
-  modulesPath,
   ...
 }: {
   imports = [
-    ../generic-disk-config.nix
-    ../../services/openssh/openssh.nix
-    ../../users/hrosten.nix
+    self.nixosModules.generic-disk-config
+    self.nixosModules.service-openssh
+    self.nixosModules.user-hrosten
   ];
 
   boot.loader.grub = {

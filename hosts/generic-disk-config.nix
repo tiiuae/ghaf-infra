@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
 #
 # SPDX-License-Identifier: Apache-2.0
-# BIOS compatible gpt partition
 {lib, ...}: {
   disko.devices = {
     disk.disk1 = {

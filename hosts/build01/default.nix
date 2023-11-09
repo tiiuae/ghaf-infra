@@ -2,21 +2,24 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 {
+  self,
   inputs,
   lib,
-  config,
-  pkgs,
   ...
 }: {
-  imports = [
-    inputs.disko.nixosModules.disko
-    ../generic-disk-config.nix
-    ../common.nix
-    ../azure-common.nix
-    ../../services/openssh/openssh.nix
-    ../../users/builder.nix
-    ../../users/hrosten.nix
-    ../../users/bmg.nix
+  imports = lib.flatten [
+    [
+      inputs.disko.nixosModules.disko
+    ]
+    (with self.nixosModules; [
+      common
+      azure-common
+      generic-disk-config
+      service-openssh
+      user-bmg
+      user-builder
+      user-hrosten
+    ])
   ];
   networking.hostName = "build01";
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
