@@ -7,6 +7,9 @@
   inputs = {
     # Nixpkgs
     nixpkgs.url = "github:nixos/nixpkgs/nixos-23.05";
+    # Allows us to structure the flake with the NixOS module system
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    flake-root.url = "github:srid/flake-root";
     # Secrets with sops-nix
     sops-nix = {
       url = "github:mic92/sops-nix";
@@ -15,60 +18,50 @@
     };
     # Binary cache with nix-serve-ng
     nix-serve-ng = {
-      url = github:aristanetworks/nix-serve-ng;
+      url = "github:aristanetworks/nix-serve-ng";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     # Disko for disk partitioning
     disko = {
-      url = github:nix-community/disko;
+      url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-  };
-  outputs = {
-    self,
-    nixpkgs,
-    disko,
-    ...
-  } @ inputs: let
-    inherit (self) outputs;
-    # Supported systems for your flake packages, shell, etc.
-    systems = ["x86_64-linux"];
-    # forEachSystem [ "x86_64-linux" ] { example = true; } -> { x86_64-linux.example = true }
-    forEachSystem = nixpkgs.lib.genAttrs systems;
-    # Imports a module expecting a system to be passed in
-    importExpectingSystem = module: system:
-      import module {
-        pkgs = import nixpkgs {inherit system;};
-      };
-    ghaf-infra-shell = importExpectingSystem ./shell.nix;
-    templateTargets = import ./hosts/templates/targets.nix {inherit nixpkgs disko;};
-  in {
-    # nix fmt
-    formatter = forEachSystem (system: nixpkgs.legacyPackages.${system}.alejandra);
-
-    # Development shells
-    devShells = forEachSystem (system: {
-      # nix develop
-      default = ghaf-infra-shell system;
-    });
-
-    # NixOS configuration entrypoint
-    nixosConfigurations = {
-      # Generic template configurations
-      template-azure-x86_64-linux = templateTargets.azure-x86_64-linux;
-      template-generic-x86_64-linux = templateTargets.generic-x86_64-linux;
-
-      # Hydra host: ghafhydra
-      ghafhydra = nixpkgs.lib.nixosSystem {
-        specialArgs = {inherit inputs outputs;};
-        modules = [./hosts/ghafhydra/configuration.nix];
-      };
-
-      # Builder host: build01
-      build01 = nixpkgs.lib.nixosSystem {
-        specialArgs = {inherit inputs outputs;};
-        modules = [./hosts/build01/configuration.nix];
-      };
+    # Format all the things
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    # For preserving compatibility with non-Flake users
+    flake-compat = {
+      url = "github:edolstra/flake-compat";
+      flake = false;
     };
   };
+
+  outputs = inputs @ {
+    flake-parts,
+    nixpkgs,
+    ...
+  }:
+    flake-parts.lib.mkFlake
+    {
+      inherit inputs;
+      specialArgs = {
+        inherit (nixpkgs) lib;
+      };
+    } {
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
+
+      imports = [
+        ./hosts
+        ./nix
+        ./services
+        ./users
+      ];
+    };
 }

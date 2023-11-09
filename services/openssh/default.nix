@@ -2,11 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 {
-  lib,
-  pkgs,
-  config,
-  ...
-}: {
   services.openssh = {
     enable = true;
     settings.PermitRootLogin = "no";

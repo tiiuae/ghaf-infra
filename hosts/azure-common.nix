@@ -1,13 +1,7 @@
 # SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
 #
 # SPDX-License-Identifier: Apache-2.0
-{
-  inputs,
-  lib,
-  config,
-  pkgs,
-  ...
-}: {
+{inputs, ...}: {
   require = [
     "${inputs.nixpkgs}/nixos/modules/virtualisation/azure-agent.nix"
   ];

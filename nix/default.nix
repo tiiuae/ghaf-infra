@@ -1,14 +1,11 @@
 # SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
 #
 # SPDX-License-Identifier: Apache-2.0
-
-# Nix
-result
-result-*
-
-# Terraform
-.terraform
-.terraform.*
-terraform.tfstate
-terraform.tfstate.backup
-.idea
+{
+  imports = [
+    ./checks.nix
+    ./devshell.nix
+    ./nixpkgs.nix
+    ./treefmt.nix
+  ];
+}
