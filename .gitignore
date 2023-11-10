@@ -2,13 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Nix
 result
 result-*
-
-# Terraform
 .terraform
 .terraform.*
 terraform.tfstate
 terraform.tfstate.backup
 .idea
+.direnv

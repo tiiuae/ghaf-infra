@@ -11,6 +11,13 @@ terraform {
       source = "carlpett/sops"
     }
   }
+  # Backend for storing tfstate (see ./azure-storage)
+  backend "azurerm" {
+    resource_group_name  = "ghaf-infra-storage"
+    storage_account_name = "ghafinfrastatestorage"
+    container_name       = "ghaf-infra-tfstate-container"
+    key                  = "ghaf-infra.tfstate"
+  }
 }
 provider "azurerm" {
   features {}
@@ -19,19 +26,10 @@ provider "azurerm" {
 data "sops_file" "ghaf_infra" {
   source_file = "secrets.yaml"
 }
-# Backend for storing tfstate (see ./azure-storage)
-terraform {
-  backend "azurerm" {
-    resource_group_name  = "ghaf-infra-storage"
-    storage_account_name = "ghafinfrastatestorage"
-    container_name       = "ghaf-infra-tfstate-container"
-    key                  = "ghaf-infra.tfstate"
-  }
-}
 # Resource group
 resource "azurerm_resource_group" "ghaf_infra_tf_dev" {
   name     = "ghaf-infra-tf-dev"
-  location = "swedencentral"
+  location = "northeurope"
 }
 # Virtual Network
 resource "azurerm_virtual_network" "ghaf_infra_tf_vnet" {
@@ -47,34 +45,7 @@ resource "azurerm_subnet" "ghaf_infra_tf_subnet" {
   virtual_network_name = azurerm_virtual_network.ghaf_infra_tf_vnet.name
   address_prefixes     = ["10.0.2.0/24"]
 }
-# Network interface
-resource "azurerm_network_interface" "ghaf_infra_tf_network_interface" {
-  name                = "ghaf-infratf286-z1"
-  location            = azurerm_resource_group.ghaf_infra_tf_dev.location
-  resource_group_name = azurerm_resource_group.ghaf_infra_tf_dev.name
-  ip_configuration {
-    name                          = "my_nic_configuration"
-    subnet_id                     = azurerm_subnet.ghaf_infra_tf_subnet.id
-    private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.ghaf_infra_tf_public_ip.id
-  }
-}
-# Availability Set
-resource "azurerm_availability_set" "ghaf_infra_tf_availability_set" {
-  name                         = "ghaf-infra-tf-availability-set"
-  location                     = azurerm_resource_group.ghaf_infra_tf_dev.location
-  resource_group_name          = azurerm_resource_group.ghaf_infra_tf_dev.name
-  platform_fault_domain_count  = 2
-  platform_update_domain_count = 2
-}
-# Public IPs
-resource "azurerm_public_ip" "ghaf_infra_tf_public_ip" {
-  name                = "ghaf-infra-tf-public-ip"
-  location            = azurerm_resource_group.ghaf_infra_tf_dev.location
-  resource_group_name = azurerm_resource_group.ghaf_infra_tf_dev.name
-  allocation_method   = "Dynamic"
-}
-# Network Security Group and Rule
+# Network Security Group
 resource "azurerm_network_security_group" "ghaf_infra_tf_nsg" {
   name                = "ghaf-infra-tf-nsg"
   location            = azurerm_resource_group.ghaf_infra_tf_dev.location
@@ -91,18 +62,41 @@ resource "azurerm_network_security_group" "ghaf_infra_tf_nsg" {
     destination_address_prefix = "*"
   }
 }
-# Example Linux Virtual Machine
-resource "azurerm_linux_virtual_machine" "ghafinfra_tf" {
-  name                = "ghafinfratf"
+
+################################################################################
+
+# testhost
+
+# Public IP
+resource "azurerm_public_ip" "testhost_public_ip" {
+  name                = "testhost-public-ip"
   location            = azurerm_resource_group.ghaf_infra_tf_dev.location
   resource_group_name = azurerm_resource_group.ghaf_infra_tf_dev.name
-  availability_set_id = azurerm_availability_set.ghaf_infra_tf_availability_set.id
+  allocation_method   = "Static"
+}
+# Network interface
+resource "azurerm_network_interface" "testhost_ni" {
+  name                = "testhost-nic"
+  location            = azurerm_resource_group.ghaf_infra_tf_dev.location
+  resource_group_name = azurerm_resource_group.ghaf_infra_tf_dev.name
+  ip_configuration {
+    name                          = "testhost_nic_configuration"
+    subnet_id                     = azurerm_subnet.ghaf_infra_tf_subnet.id
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.testhost_public_ip.id
+  }
+}
+# Example Linux Virtual Machine (testhost)
+resource "azurerm_linux_virtual_machine" "testhost_vm" {
+  name                = "testhost"
+  location            = azurerm_resource_group.ghaf_infra_tf_dev.location
+  resource_group_name = azurerm_resource_group.ghaf_infra_tf_dev.name
   network_interface_ids = [
-    azurerm_network_interface.ghaf_infra_tf_network_interface.id
+    azurerm_network_interface.testhost_ni.id
   ]
   size = "Standard_B8ms"
   os_disk {
-    name                 = "ghafinfratfdisk1"
+    name                 = "testhost-disk"
     caching              = "ReadWrite"
     storage_account_type = "Premium_LRS"
     disk_size_gb         = 512
@@ -122,3 +116,57 @@ resource "azurerm_linux_virtual_machine" "ghafinfra_tf" {
     public_key = data.sops_file.ghaf_infra.data["vm_admin_rsa_pub"]
   }
 }
+
+################################################################################
+
+# azarm
+
+# Public IP
+resource "azurerm_public_ip" "azarm_public_ip" {
+  name                = "azarm-public-ip"
+  location            = azurerm_resource_group.ghaf_infra_tf_dev.location
+  resource_group_name = azurerm_resource_group.ghaf_infra_tf_dev.name
+  allocation_method   = "Static"
+}
+# Network interface
+resource "azurerm_network_interface" "azarm_ni" {
+  name                = "azarm-nic"
+  location            = azurerm_resource_group.ghaf_infra_tf_dev.location
+  resource_group_name = azurerm_resource_group.ghaf_infra_tf_dev.name
+  ip_configuration {
+    name                          = "azarm_nic_configuration"
+    subnet_id                     = azurerm_subnet.ghaf_infra_tf_subnet.id
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.azarm_public_ip.id
+  }
+}
+# Azure arm builder (azarm)
+resource "azurerm_linux_virtual_machine" "azarm_vm" {
+  name                = "azarm"
+  location            = azurerm_resource_group.ghaf_infra_tf_dev.location
+  resource_group_name = azurerm_resource_group.ghaf_infra_tf_dev.name
+  network_interface_ids = [
+    azurerm_network_interface.azarm_ni.id
+  ]
+  size = "Standard_D8ps_v5"
+  os_disk {
+    name                 = "azarm-disk"
+    caching              = "ReadWrite"
+    storage_account_type = "Premium_LRS"
+    disk_size_gb         = 512
+  }
+  source_image_reference {
+    publisher = "canonical"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts-arm64"
+    version   = "latest"
+  }
+  admin_username                  = data.sops_file.ghaf_infra.data["vm_admin_name"]
+  disable_password_authentication = true
+  admin_ssh_key {
+    username   = data.sops_file.ghaf_infra.data["vm_admin_name"]
+    public_key = data.sops_file.ghaf_infra.data["vm_admin_rsa_pub"]
+  }
+}
+
+################################################################################
