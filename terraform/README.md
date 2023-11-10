@@ -20,7 +20,7 @@ If you still don't have nix package manager on your local host, install it follo
 Then, clone this repository:
 ```bash
 $ git clone https://github.com/tiiuae/ghaf-infra.git
-$ cd ghaf-infra
+$ cd ghaf-infra/
 ```
 
 All commands in this document are executed from nix-shell inside the `terraform` directory.
@@ -44,7 +44,7 @@ This project stores the terraform state in a remote storage in an azure storage 
 
 When starting a new infrastructure you need to initialize the terraform state storage:
 ```bash
-$ cd azure-storage
+$ cd azure-storage/
 $ terraform init
 $ terraform apply
 ```
@@ -56,6 +56,12 @@ Following describes the intended workflow, with commands executed from the nix-s
 First, change the terraform code by modifying the relevant files in this directory. Then:
 
 ```bash
+# Terraform comands are executed under the terraform directory:
+$ cd terraform/
+
+# Initialize terraform working directory
+$ terraform init
+
 # Format the terraform code files:
 $ terraform fmt
 

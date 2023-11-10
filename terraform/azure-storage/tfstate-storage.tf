@@ -28,7 +28,7 @@ resource "azurerm_resource_group" "rg" {
 }
 
 
-# Create storage container
+# Storage container
 
 resource "azurerm_storage_account" "tfstate" {
   name                            = "ghafinfrastatestorage"
