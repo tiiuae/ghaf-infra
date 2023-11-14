@@ -53,8 +53,14 @@ configure_builder () {
     chown -R nix:nix /home/nix/.ssh
     chmod 700 /home/nix/.ssh
     chmod 600 /home/nix/.ssh/authorized_keys
-    # Extra nix config for the builder
+    # Extra nix config for the builder,
+    # for detailed description of each of the below options see:
+    # https://nixos.org/manual/nix/stable/command-ref/conf-file
     extra_nix_conf="
+# 20 GB (20*1024*1024*1024)
+min-free = 21474836480
+# 200 GB (200*1024*1024*1024)
+max-free = 214748364800
 system-features = nixos-test benchmark big-parallel kvm
 trusted-users = nix
 substituters = https://ghaf-dev.cachix.org?priority=20 https://cache.vedenemo.dev https://cache.nixos.org
