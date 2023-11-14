@@ -75,7 +75,9 @@ TARGETS = OrderedDict(
     {
         "build01-dev": TargetHost(hostname="51.12.57.124", nixosconfig="build01"),
         "ghafhydra-dev": TargetHost(hostname="51.12.56.79", nixosconfig="ghafhydra"),
-        "binarycache-ficolo": TargetHost(hostname="172.18.20.109", nixosconfig="binarycache"),
+        "binarycache-ficolo": TargetHost(
+            hostname="172.18.20.109", nixosconfig="binarycache"
+        ),
     }
 )
 

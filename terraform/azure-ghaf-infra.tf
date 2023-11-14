@@ -168,5 +168,16 @@ resource "azurerm_linux_virtual_machine" "azarm_vm" {
     public_key = data.sops_file.ghaf_infra.data["vm_admin_rsa_pub"]
   }
 }
-
+resource "azurerm_virtual_machine_extension" "deploy_ubuntu_builder" {
+  name                 = "azarm-vmext"
+  virtual_machine_id   = azurerm_linux_virtual_machine.azarm_vm.id
+  publisher            = "Microsoft.Azure.Extensions"
+  type                 = "CustomScript"
+  type_handler_version = "2.1"
+  settings             = <<EOF
+    {
+        "script": "${base64encode(file("scripts/ubuntu-builder.sh"))}"
+    }
+    EOF
+}
 ################################################################################

@@ -68,16 +68,30 @@ $ terraform fmt
 # Test the changes:
 $ terraform validate
 
-# Once the changes are ready to be deployed, create a new PR
-# attaching the output of `terraform plan` to the PR:
-$ terraform plan
-# Notice: `terraform plan` only outputs the execution plan,
-# showing what actions terraform would take. It does not
-# perform the planned actions.
-
-# Once the PR is merged, apply your configuration changes:
+# Test applying your configuration changes:
 $ terraform apply
 ```
+
+### Common Terraform Errors
+
+Below are some common Terraform errors with tips on how to resolve each.
+
+#### Error: A resource with the ID <ID> already exists
+```bash
+$ terraform apply
+...
+azurerm_virtual_machine_extension.deploy_ubuntu_builder: Creating...
+╷
+│ Error: A resource with the ID "/subscriptions/<SUBID>/resourceGroups/ghaf-infra-tf-dev/providers/Microsoft.Compute/virtualMachines/azarm/extensions/azarm-vmext" already exists - to be managed via Terraform this resource needs to be imported into the State. Please see the resource documentation for "azurerm_virtual_machine_extension" for more information.
+```
+
+Example fix:
+```bash
+$ terraform import azurerm_virtual_machine_extension.deploy_ubuntu_builder /subscriptions/<SUBID>/resourceGroups/ghaf-infra-tf-dev/providers/Microsoft.Compute/virtualMachines/azarm/extensions/azarm-vmext
+
+# Ref: https://stackoverflow.com/questions/61418168/terraform-resource-with-the-id-already-exists
+```
+
 
 ## References
 - Azure secrets: https://registry.terraform.io/providers/hashicorp/azuread/0.9.0/docs/guides/service_principal_client_secret
