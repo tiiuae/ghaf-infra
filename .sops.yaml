@@ -10,6 +10,7 @@ keys:
   - &karim age122lvqyrdqz30fkfututykl0yle9u63u2em6e4aut7e5draws83ns3npt3a
   - &jrautiola age15jq5gjjd7ypsdlqfjtqy4red57v8ggqq9na6u3xffznu678nydpsuuwjg0
   - &binarycache age1s47a3y44j695gemcl0kqgjlxxvaa50de9s69jy2l6vc8xtmk5pcskhpknl
+  - &monitoring age17s9sc2cgt9t30cyl65zya8p4zmwnndrx2r896e7gzgl08sjn0qmq3t6shs
 creation_rules:
   - path_regex: terraform/secrets.yaml$
     key_groups:
@@ -34,3 +35,8 @@ creation_rules:
     - age:
       - *jrautiola
       - *binarycache
+  - path_regex: hosts/monitoring/secrets.yaml$
+    key_groups:
+    - age:
+      - *jrautiola
+      - *monitoring
