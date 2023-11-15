@@ -23,17 +23,16 @@
       localhost x86_64-linux - 8 2 kvm,benchmark,big-parallel,nixos-test - -
     '';
   };
-  build01Machine = pkgs.writeTextFile {
-    name = "build-build01Machine";
-    # TODO: get rid of static IP config:
+  azarmMachine = pkgs.writeTextFile {
+    name = "build-azarmMachine";
     text = ''
-      ssh://nix@10.3.0.5 x86_64-linux ${config.sops.secrets.id_buildfarm.path} 8 2 kvm,benchmark,big-parallel,nixos-test - -
+      ssh://nix@10.0.2.10 aarch64-linux ${config.sops.secrets.id_buildfarm.path} 8 2 kvm,benchmark,big-parallel,nixos-test - -
     '';
   };
   awsarmMachine = pkgs.writeTextFile {
     name = "build-awsarmMachine";
     text = ''
-      ssh://nix@awsarm.vedenemo.dev aarch64-linux ${config.sops.secrets.id_buildfarm.path} 8 2 kvm,benchmark,big-parallel,nixos-test - -
+      ssh://nix@awsarm.vedenemo.dev aarch64-linux ${config.sops.secrets.id_buildfarm.path} 16 4 kvm,benchmark,big-parallel,nixos-test - -
     '';
   };
   createJobsetsScript = pkgs.stdenv.mkDerivation {
@@ -49,12 +48,11 @@
 in {
   programs.ssh.knownHosts = {
     # Add builder machines' public ids to ssh known_hosts
-    build01 = {
-      # TODO: get rid of static IP config:
-      hostNames = ["10.3.0.5"];
-      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID+hx/Ff8U123lI8wMYvmVYn5M3Cv4m+XQxxNYFgJGTo";
+    azarm = {
+      hostNames = ["10.0.2.10"];
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILWojItdbPn0dNbGKfCSJv+duYsb+xzJ6hPWOu+TZ4rm";
     };
-    armbuild01 = {
+    awsarm = {
       hostNames = ["awsarm.vedenemo.dev"];
       publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL3f7tAAO3Fc+8BqemsBQc/Yl/NmRfyhzr5SFOSKqrv0";
     };
@@ -73,7 +71,7 @@ in {
 
     buildMachinesFiles = [
       "${localMachine}"
-      "${build01Machine}"
+      "${azarmMachine}"
       "${awsarmMachine}"
     ];
 

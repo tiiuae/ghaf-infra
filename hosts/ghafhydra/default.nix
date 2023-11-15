@@ -47,7 +47,7 @@
   security.acme.acceptTerms = true;
   services.nginx = {
     virtualHosts = {
-      "ghafhydra.swedencentral.cloudapp.azure.com" = {
+      "ghafhydra.northeurope.cloudapp.azure.com" = {
         forceSSL = true;
         enableACME = true;
         locations."/".proxyPass = "http://localhost:${toString config.services.hydra.port}";
@@ -58,10 +58,10 @@
   # TODO: demo with static IP:
   networking.useDHCP = false;
   networking.nameservers = ["1.1.1.1" "8.8.8.8"];
-  networking.defaultGateway = "10.3.0.1";
+  networking.defaultGateway = "10.0.2.1";
   networking.interfaces.eth0.ipv4.addresses = [
     {
-      address = "10.3.0.4";
+      address = "10.0.2.4";
       prefixLength = 24;
     }
   ];

@@ -23,10 +23,11 @@
     # make self and inputs available in nixos modules
     specialArgs = {inherit self inputs;};
   in {
-    build01 = lib.nixosSystem {
-      inherit specialArgs;
-      modules = [self.nixosModules.host-build01];
-    };
+    # Currently not used for anything:
+    # build01 = lib.nixosSystem {
+    #   inherit specialArgs;
+    #   modules = [self.nixosModules.host-build01];
+    # };
     ghafhydra = lib.nixosSystem {
       inherit specialArgs;
       modules = [self.nixosModules.host-ghafhydra];
