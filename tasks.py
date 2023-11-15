@@ -68,13 +68,14 @@ class TargetHost:
 
 
 # Below dictionary defines the set of ghaf-infra configuration aliases:
-#  - Name (e.g. 'build01-dev) defines the alias name for each target.
+#  - Name (e.g. 'ghafhydra-dev) defines the alias name for each target.
 #  - TargetHost.hostname: host name or IP address of the target.
 #  - TargetHost.nixosconfig: name of the target nixosConfiguration.
 TARGETS = OrderedDict(
     {
-        "build01-dev": TargetHost(hostname="51.12.57.124", nixosconfig="build01"),
-        "ghafhydra-dev": TargetHost(hostname="51.12.56.79", nixosconfig="ghafhydra"),
+        "ghafhydra-dev": TargetHost(
+            hostname="ghafhydra.northeurope.cloudapp.azure.com", nixosconfig="ghafhydra"
+        ),
         "binarycache-ficolo": TargetHost(
             hostname="172.18.20.109", nixosconfig="binarycache"
         ),
@@ -245,7 +246,6 @@ def deploy(_c: Any, alias: str) -> None:
     inv deploy --alias ghafhydra-dev
     """
     h = get_deploy_host(alias)
-    command = "sudo nixos-rebuild"
     res = h.run_local(
         ["nix", "flake", "archive", "--to", f"ssh://{h.host}", "--json"],
         stdout=subprocess.PIPE,
@@ -255,6 +255,7 @@ def deploy(_c: Any, alias: str) -> None:
     LOG.debug("data['path']: %s", path)
     flags = "--option accept-flake-config true"
     nixosconfig = _get_target(alias).nixosconfig
+    command = "sudo nixos-rebuild"
     h.run(f"{command} switch {flags} --flake {path}#{nixosconfig}")
 
 

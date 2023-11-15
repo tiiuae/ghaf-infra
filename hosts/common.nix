@@ -44,9 +44,9 @@ in {
       # perform a garbage-collection until max-free bytes are available or there
       # is no more garbage.
       min-free = asGB 20;
-      max-free = asGB 100;
-      # check the free disk space every 10 seconds
-      min-free-check-interval = 10;
+      max-free = asGB 200;
+      # check the free disk space every 5 seconds
+      min-free-check-interval = 5;
     };
     # Garbage collection
     gc.automatic = true;
