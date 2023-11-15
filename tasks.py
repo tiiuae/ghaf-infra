@@ -79,6 +79,9 @@ TARGETS = OrderedDict(
         "binarycache-ficolo": TargetHost(
             hostname="172.18.20.109", nixosconfig="binarycache"
         ),
+        "monitoring-ficolo": TargetHost(
+            hostname="172.18.20.108", nixosconfig="monitoring"
+        ),
     }
 )
 

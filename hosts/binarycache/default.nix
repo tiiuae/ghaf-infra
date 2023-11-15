@@ -23,6 +23,7 @@
       service-openssh
       service-binary-cache
       service-nginx
+      service-node-exporter
       user-jrautiola
       user-cazfi
       user-hydra
@@ -37,13 +38,6 @@
   };
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-  services.openssh.enable = true;
-
-  boot.loader.grub = {
-    enable = true;
-    # qemu vms are using SeaBIOS which is not UEFI
-    efiSupport = false;
-  };
 
   networking = {
     hostName = "binarycache";
