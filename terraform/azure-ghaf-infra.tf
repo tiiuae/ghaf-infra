@@ -45,13 +45,15 @@ resource "azurerm_subnet" "ghaf_infra_tf_subnet" {
   virtual_network_name = azurerm_virtual_network.ghaf_infra_tf_vnet.name
   address_prefixes     = ["10.0.2.0/24"]
 }
-# Network Security Group
-resource "azurerm_network_security_group" "ghaf_infra_tf_nsg" {
-  name                = "ghaf-infra-tf-nsg"
+
+# AllowSSH rule for the Common Security Group
+
+resource "azurerm_network_security_group" "common_nsg" {
+  name                = "common-nsg"
   location            = azurerm_resource_group.ghaf_infra_tf_dev.location
   resource_group_name = azurerm_resource_group.ghaf_infra_tf_dev.name
   security_rule {
-    name                       = "SSH"
+    name                       = "AllowSSHInbound"
     priority                   = 300
     direction                  = "Inbound"
     access                     = "Allow"
@@ -63,40 +65,87 @@ resource "azurerm_network_security_group" "ghaf_infra_tf_nsg" {
   }
 }
 
+
+
+
 ################################################################################
 
-# testhost
+# ghafhydra:
+
+# Security Group
+
+resource "azurerm_network_security_group" "ghafhydra_nsg" {
+  name                = "ghafhydra-nsg"
+  location            = azurerm_resource_group.ghaf_infra_tf_dev.location
+  resource_group_name = azurerm_resource_group.ghaf_infra_tf_dev.name
+
+  security_rule {
+    name                       = "CustomRuleForghafhydra"
+    priority                   = 310
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "5000"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+}
+
 
 # Public IP
-resource "azurerm_public_ip" "testhost_public_ip" {
-  name                = "testhost-public-ip"
+resource "azurerm_public_ip" "ghafhydra_public_ip" {
+  name                = "ghafhydra-public-ip"
+  domain_name_label   = "ghafhydra"
   location            = azurerm_resource_group.ghaf_infra_tf_dev.location
   resource_group_name = azurerm_resource_group.ghaf_infra_tf_dev.name
   allocation_method   = "Static"
 }
 # Network interface
-resource "azurerm_network_interface" "testhost_ni" {
-  name                = "testhost-nic"
+resource "azurerm_network_interface" "ghafhydra_ni" {
+  name                = "ghafhydra-nic"
   location            = azurerm_resource_group.ghaf_infra_tf_dev.location
   resource_group_name = azurerm_resource_group.ghaf_infra_tf_dev.name
+
   ip_configuration {
-    name                          = "testhost_nic_configuration"
+    name                          = "ghafhydra_nic_configuration"
     subnet_id                     = azurerm_subnet.ghaf_infra_tf_subnet.id
-    private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.testhost_public_ip.id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "10.0.2.4"
+    public_ip_address_id          = azurerm_public_ip.ghafhydra_public_ip.id
   }
 }
-# Example Linux Virtual Machine (testhost)
-resource "azurerm_linux_virtual_machine" "testhost_vm" {
-  name                = "testhost"
+
+# specfic NSG
+resource "azurerm_network_interface_security_group_association" "association_ghafhydra_nsg" {
+  network_interface_id      = azurerm_network_interface.ghafhydra_ni.id
+  network_security_group_id = azurerm_network_security_group.ghafhydra_nsg.id
+
+}
+
+# common NSG 
+resource "azurerm_network_interface_security_group_association" "association_common_nsg" {
+  network_interface_id      = azurerm_network_interface.ghafhydra_ni.id
+  network_security_group_id = azurerm_network_security_group.common_nsg.id
+}
+
+
+
+
+
+
+
+# Ghafhydra VM
+resource "azurerm_linux_virtual_machine" "ghafhydra_vm" {
+  name                = "ghafhydra"
   location            = azurerm_resource_group.ghaf_infra_tf_dev.location
   resource_group_name = azurerm_resource_group.ghaf_infra_tf_dev.name
   network_interface_ids = [
-    azurerm_network_interface.testhost_ni.id
+    azurerm_network_interface.ghafhydra_ni.id
   ]
   size = "Standard_B8ms"
   os_disk {
-    name                 = "testhost-disk"
+    name                 = "ghafhydra-disk"
     caching              = "ReadWrite"
     storage_account_type = "Premium_LRS"
     disk_size_gb         = 512
@@ -119,11 +168,17 @@ resource "azurerm_linux_virtual_machine" "testhost_vm" {
 
 ################################################################################
 
-# azarm
+# azarm:
+# aarch64-linux builder - Ubuntu host with nix package manager.
+# Why not NixOS? The reason is: we have not managed to get nixos-anywhere
+# working with azure arm VMs.
+# Since the host is not NixOS, all the host configuration is done on
+# terraform apply using the configuration script at scripts/ubuntu-builder.sh
 
 # Public IP
 resource "azurerm_public_ip" "azarm_public_ip" {
   name                = "azarm-public-ip"
+  domain_name_label   = "azarm"
   location            = azurerm_resource_group.ghaf_infra_tf_dev.location
   resource_group_name = azurerm_resource_group.ghaf_infra_tf_dev.name
   allocation_method   = "Static"
@@ -136,10 +191,19 @@ resource "azurerm_network_interface" "azarm_ni" {
   ip_configuration {
     name                          = "azarm_nic_configuration"
     subnet_id                     = azurerm_subnet.ghaf_infra_tf_subnet.id
-    private_ip_address_allocation = "Dynamic"
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "10.0.2.10"
     public_ip_address_id          = azurerm_public_ip.azarm_public_ip.id
   }
 }
+
+
+# common NSG 
+resource "azurerm_network_interface_security_group_association" "association_common_nsg_azarm" {
+  network_interface_id      = azurerm_network_interface.azarm_ni.id
+  network_security_group_id = azurerm_network_security_group.common_nsg.id
+}
+
 # Azure arm builder (azarm)
 resource "azurerm_linux_virtual_machine" "azarm_vm" {
   name                = "azarm"
