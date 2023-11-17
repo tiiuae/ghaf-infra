@@ -45,23 +45,6 @@ resource "azurerm_subnet" "ghaf_infra_tf_subnet" {
   virtual_network_name = azurerm_virtual_network.ghaf_infra_tf_vnet.name
   address_prefixes     = ["10.0.2.0/24"]
 }
-# Network Security Group
-resource "azurerm_network_security_group" "ghaf_infra_tf_nsg" {
-  name                = "ghaf-infra-tf-nsg"
-  location            = azurerm_resource_group.ghaf_infra_tf_dev.location
-  resource_group_name = azurerm_resource_group.ghaf_infra_tf_dev.name
-  security_rule {
-    name                       = "SSH"
-    priority                   = 300
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
-}
 
 ################################################################################
 
@@ -80,6 +63,7 @@ resource "azurerm_network_interface" "ghafhydra_ni" {
   name                = "ghafhydra-nic"
   location            = azurerm_resource_group.ghaf_infra_tf_dev.location
   resource_group_name = azurerm_resource_group.ghaf_infra_tf_dev.name
+
   ip_configuration {
     name                          = "ghafhydra_nic_configuration"
     subnet_id                     = azurerm_subnet.ghaf_infra_tf_subnet.id
@@ -87,6 +71,60 @@ resource "azurerm_network_interface" "ghafhydra_ni" {
     private_ip_address            = "10.0.2.4"
     public_ip_address_id          = azurerm_public_ip.ghafhydra_public_ip.id
   }
+}
+# Network Security Group
+resource "azurerm_network_security_group" "ghafhydra_nsg" {
+  name                = "ghafhydra-nsg"
+  location            = azurerm_resource_group.ghaf_infra_tf_dev.location
+  resource_group_name = azurerm_resource_group.ghaf_infra_tf_dev.name
+  security_rule {
+    name                       = "AllowSSHInbound"
+    priority                   = 300
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+  security_rule {
+    name                       = "AllowBinaryCacheInbound"
+    priority                   = 310
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "5000"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+  security_rule {
+    name                       = "AllowHttpInbound"
+    priority                   = 320
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "80"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+  security_rule {
+    name                       = "AllowHttpsInbound"
+    priority                   = 321
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+}
+resource "azurerm_network_interface_security_group_association" "ghafhydra_nsg_apply" {
+  network_interface_id      = azurerm_network_interface.ghafhydra_ni.id
+  network_security_group_id = azurerm_network_security_group.ghafhydra_nsg.id
 }
 # Ghafhydra VM
 resource "azurerm_linux_virtual_machine" "ghafhydra_vm" {
@@ -149,6 +187,27 @@ resource "azurerm_network_interface" "azarm_ni" {
     public_ip_address_id          = azurerm_public_ip.azarm_public_ip.id
   }
 }
+# Network Security Group
+resource "azurerm_network_security_group" "azarm_nsg" {
+  name                = "azarm-nsg"
+  location            = azurerm_resource_group.ghaf_infra_tf_dev.location
+  resource_group_name = azurerm_resource_group.ghaf_infra_tf_dev.name
+  security_rule {
+    name                       = "AllowSSHInbound"
+    priority                   = 300
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+}
+resource "azurerm_network_interface_security_group_association" "nsg_azarm_apply" {
+  network_interface_id      = azurerm_network_interface.azarm_ni.id
+  network_security_group_id = azurerm_network_security_group.azarm_nsg.id
+}
 # Azure arm builder (azarm)
 resource "azurerm_linux_virtual_machine" "azarm_vm" {
   name                = "azarm"
@@ -189,4 +248,5 @@ resource "azurerm_virtual_machine_extension" "deploy_ubuntu_builder" {
     }
     EOF
 }
+
 ################################################################################
