@@ -50,18 +50,16 @@
     nameservers = ["1.1.1.1" "8.8.8.8"];
   };
 
-  # acme gets https certificates when we have dns
-  # security.acme = {
-  #   acceptTerms = true;
-  #   defaults.email = "trash@unikie.com";
-  # };
+  security.acme = {
+    acceptTerms = true;
+    defaults.email = "trash@unikie.com";
+  };
 
   services.nginx = {
     virtualHosts = {
-      # "cache.vedenemo.dev" = {
-      "_" = {
-        # enableACME = true;
-        # forceSSL = true;
+      "cache.vedenemo.dev" = {
+        enableACME = true;
+        forceSSL = true;
         default = true;
         locations."/" = {
           proxyPass = "http://${config.services.nix-serve.bindAddress}:${toString config.services.nix-serve.port}";
