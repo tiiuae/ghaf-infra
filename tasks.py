@@ -321,9 +321,35 @@ def install(c: Any, alias) -> None:
     if ask != "y":
         return
 
+    # Check ssh and remote user
+    try:
+        remote_user = h.run(cmd="whoami", stdout=subprocess.PIPE).stdout.strip()
+        local_user = exec_cmd("whoami").stdout.strip()
+        if remote_user and local_user and remote_user != local_user:
+            LOG.warning(
+                "Remote user '%s' is not your current local user. "
+                "You will likely not be able to login to the remote host '%s' "
+                "after nixos-anywhere installation. Consider adding your local "
+                "user to the remote host and make sure user '%s' "
+                "also has access to remote host after nixos-anywhere installation "
+                "by adding your local user as a user to nixos configuration '%s'. "
+                "Hint: you might want to try the helper script at "
+                "'terraform/scripts/add-remote-user.sh' to add your current local "
+                "user to the remote host.",
+                remote_user,
+                _get_target(alias).hostname,
+                local_user,
+                _get_target(alias).nixosconfig,
+            )
+            ask = input("Still continue? [y/N] ")
+            if ask != "y":
+                sys.exit(1)
+    except subprocess.CalledProcessError:
+        LOG.fatal("No ssh access to the remote host")
+        sys.exit(1)
     # Check sudo nopasswd
     try:
-        h.run("sudo -nv", become_root=True)
+        h.run("sudo -n true", become_root=True)
     except subprocess.CalledProcessError:
         LOG.warning(
             "sudo on '%s' needs password: installation will likely fail", h.host
@@ -331,7 +357,7 @@ def install(c: Any, alias) -> None:
         ask = input("Still continue? [y/N] ")
         if ask != "y":
             sys.exit(1)
-    # Check static ip
+    # Check dynamic ip
     try:
         h.run("ip a | grep dynamic")
     except subprocess.CalledProcessError:
