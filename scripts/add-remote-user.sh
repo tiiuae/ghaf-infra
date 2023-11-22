@@ -74,7 +74,7 @@ exit_unless_file_exists () {
 test_remote_sudo () {
     # shellcheck disable=SC2086 # intented word splitting of $OPT_s
     if ! ssh -o ConnectTimeout=5 $OPT_s "sudo -n true"; then
-        echo "Error: sudo on remote host failed"
+        echo "Error: ssh connection or sudo on remote host failed"
         exit 1
     fi
 }
