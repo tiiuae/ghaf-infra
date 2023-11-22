@@ -28,10 +28,6 @@
       inherit specialArgs;
       modules = [./binarycache/configuration.nix];
     };
-    monitoring = lib.nixosSystem {
-      inherit specialArgs;
-      modules = [./monitoring/configuration.nix];
-    };
     ficolobuild3 = lib.nixosSystem {
       inherit specialArgs;
       modules = [./ficolobuild/build3.nix];
@@ -40,9 +36,17 @@
       inherit specialArgs;
       modules = [./ficolobuild/build4.nix];
     };
+    jenkins-controller = lib.nixosSystem {
+      inherit specialArgs;
+      modules = [./jenkins-controller/configuration.nix];
+    };
     prbuilder = lib.nixosSystem {
       inherit specialArgs;
       modules = [./prbuilder/configuration.nix];
+    };
+    monitoring = lib.nixosSystem {
+      inherit specialArgs;
+      modules = [./monitoring/configuration.nix];
     };
   };
 }
