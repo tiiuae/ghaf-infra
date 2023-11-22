@@ -20,7 +20,7 @@
   localMachine = pkgs.writeTextFile {
     name = "build-localMachine";
     text = ''
-      localhost x86_64-linux - 8 2 kvm,benchmark,big-parallel,nixos-test - -
+      localhost x86_64-linux - 14 4 kvm,benchmark,big-parallel,nixos-test - -
     '';
   };
   azarmMachine = pkgs.writeTextFile {
@@ -50,7 +50,7 @@ in {
     # Add builder machines' public ids to ssh known_hosts
     azarm = {
       hostNames = ["10.0.2.10"];
-      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILWojItdbPn0dNbGKfCSJv+duYsb+xzJ6hPWOu+TZ4rm";
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPIuqtmsPNK6bR+OUfLjtjC3zcwMgG+ZLlWlLihDzUOF";
     };
     awsarm = {
       hostNames = ["awsarm.vedenemo.dev"];

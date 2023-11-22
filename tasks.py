@@ -334,7 +334,7 @@ def install(c: Any, alias) -> None:
                 "also has access to remote host after nixos-anywhere installation "
                 "by adding your local user as a user to nixos configuration '%s'. "
                 "Hint: you might want to try the helper script at "
-                "'terraform/scripts/add-remote-user.sh' to add your current local "
+                "'scripts/add-remote-user.sh' to add your current local "
                 "user to the remote host.",
                 remote_user,
                 _get_target(alias).hostname,

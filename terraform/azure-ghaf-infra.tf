@@ -134,12 +134,12 @@ resource "azurerm_linux_virtual_machine" "ghafhydra_vm" {
   network_interface_ids = [
     azurerm_network_interface.ghafhydra_ni.id
   ]
-  size = "Standard_B8ms"
+  size = "Standard_B16ms"
   os_disk {
     name                 = "ghafhydra-disk"
     caching              = "ReadWrite"
     storage_account_type = "Premium_LRS"
-    disk_size_gb         = 512
+    disk_size_gb         = 1024
   }
   source_image_reference {
     publisher = "canonical"
