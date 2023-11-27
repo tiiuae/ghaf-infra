@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 {
+  pkgs,
   self,
   inputs,
   lib,
@@ -10,15 +11,21 @@
 }: let
   # "public" but really only available with ficolo vpn
   public-ip = "172.18.20.108";
+  sshified = pkgs.callPackage ../../pkgs/sshified/default.nix {};
 in {
+  sops.defaultSopsFile = ./secrets.yaml;
+  sops.secrets.sshified_private_key.owner = "sshified";
+
   imports = lib.flatten [
     (with inputs; [
       nix-serve-ng.nixosModules.default
+      sops-nix.nixosModules.sops
       disko.nixosModules.disko
     ])
     (with self.nixosModules; [
       common
       qemu-common
+      ficolo-hosts
       service-openssh
       service-nginx
       service-node-exporter
@@ -38,6 +45,36 @@ in {
     };
   };
 
+  environment.systemPackages = [
+    sshified
+  ];
+
+  users.users."sshified" = {
+    isNormalUser = true;
+  };
+
+  services.openssh.knownHosts = {
+    "[awsarm.vedenemo.dev]:20220".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL3f7tAAO3Fc+8BqemsBQc/Yl/NmRfyhzr5SFOSKqrv0";
+  };
+
+  systemd.services."sshified" = {
+    wantedBy = ["multi-user.target"];
+    after = ["network.target"];
+    description = "Run the sshified http-to-ssh proxy";
+    serviceConfig = {
+      User = "sshified";
+      ExecStart = ''
+        ${sshified}/bin/sshified \
+        --proxy.listen-addr 127.0.0.1:8888 \
+        --ssh.user sshified \
+        --ssh.key-file ${config.sops.secrets.sshified_private_key.path} \
+        --ssh.known-hosts-file /etc/ssh/ssh_known_hosts \
+        --ssh.port 20220 \
+        -v
+      '';
+    };
+  };
+
   services.grafana = {
     enable = true;
 
@@ -54,6 +91,7 @@ in {
       };
 
       # allow read-only access to dashboards without login
+      # this is fine because the page is only accessible with vpn
       "auth.anonymous".enabled = true;
     };
 
@@ -77,12 +115,27 @@ in {
 
     scrapeConfigs = [
       {
-        job_name = "ficolo-node-exporter";
+        job_name = "ficolo-internal-node-exporter";
         static_configs = [
           {
             targets = [
-              "172.18.20.109:9002" # binarycache
-              "172.18.20.105:9999" # build4
+              "172.18.20.102:9100" # build1
+              "172.18.20.105:9100" # build4
+              "172.18.20.106:9100" # old cache
+              "172.18.20.107:9100" # gerrit
+              "172.18.20.109:9100" # binarycache
+            ];
+          }
+        ];
+      }
+      {
+        job_name = "awsarm-ssh-node-exporter";
+        scheme = "http";
+        proxy_url = "http://127.0.0.1:8888";
+        static_configs = [
+          {
+            targets = [
+              "awsarm.vedenemo.dev:9100"
             ];
           }
         ];

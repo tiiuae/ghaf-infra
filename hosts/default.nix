@@ -11,6 +11,7 @@
     # shared modules
     azure-common = import ./azure-common.nix;
     qemu-common = import ./qemu-common.nix;
+    ficolo-hosts = import ./ficolo-hosts.nix;
     common = import ./common.nix;
     generic-disk-config = import ./generic-disk-config.nix;
   };
