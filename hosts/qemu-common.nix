@@ -17,8 +17,4 @@
       efiSupport = false;
     };
   };
-
-  networking.extraHosts = ''
-    172.18.20.109 cache.vedenemo.dev
-  '';
 }

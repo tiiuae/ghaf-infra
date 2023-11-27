@@ -20,6 +20,7 @@
     (with self.nixosModules; [
       common
       qemu-common
+      ficolo-hosts
       service-openssh
       service-binary-cache
       service-nginx
