@@ -37,6 +37,9 @@
     trusted-users = ["hydra"];
   };
 
+  # do not run garbage collection, we have enough disk space
+  nix.gc.automatic = lib.mkForce false;
+
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 
   networking = {
