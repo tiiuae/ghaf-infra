@@ -18,6 +18,7 @@
     host-ghafhydra = import ./ghafhydra;
     host-binarycache = import ./binarycache;
     host-monitoring = import ./monitoring;
+    host-ficolobuild = import ./ficolobuild;
   };
 
   flake.nixosConfigurations = let
@@ -40,6 +41,10 @@
     monitoring = lib.nixosSystem {
       inherit specialArgs;
       modules = [self.nixosModules.host-monitoring];
+    };
+    ficolobuild = lib.nixosSystem {
+      inherit specialArgs;
+      modules = [self.nixosModules.host-ficolobuild];
     };
   };
 }
