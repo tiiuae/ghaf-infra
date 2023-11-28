@@ -17,9 +17,12 @@
             };
             ESP = {
               size = "512M";
-              type = "EFOO";
-              format = "vfat";
-              mountpoint = "/boot";
+              type = "EF00";
+              content = {
+                type = "filesystem";
+                format = "vfat";
+                mountpoint = "/boot";
+              };
             };
             root = {
               size = "100%";
