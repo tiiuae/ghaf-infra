@@ -31,5 +31,9 @@
       inherit specialArgs;
       modules = [./monitoring/configuration.nix];
     };
+    ficolobuild = lib.nixosSystem {
+      inherit specialArgs;
+      modules = [./ficolobuild/configuration.nix];
+    };
   };
 }
