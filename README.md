@@ -10,15 +10,12 @@ This repository contains NixOS configurations for the [Ghaf](https://github.com/
 ## Highlights
 This repository defines flakes-based NixOS configurations for the following targets:
 - **[ghafhydra](./hosts/ghafhydra/configuration.nix)** - *[Hydra](https://nixos.wiki/wiki/Hydra) with pre-configured jobset for Ghaf*:
-    - Hydra: declaratively configured with Ghaf flake jobset, using host 'build01' as remote builder, but also building on localhost.
+    - Hydra: declaratively configured with Ghaf flake jobset, building on localhost.
     - Binary cache: using [nix-serve-ng](https://github.com/aristanetworks/nix-serve-ng) signing packages that [can be verified](https://github.com/tiiuae/ghaf-infra/blob/c528714a310b420592ec6e73666d80288c5d0f12/docs/adapting-to-new-environments.md?plain=1#L231) with public key: `cache.ghafhydra:XQx1U4555ZzfCCQOZAjOKKPTavumCMbRNd3TJt/NzbU=`.
     - Automatic nix store garbage collection: when free disk space in `/nix/store` drops below [threshold value](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/hosts/common.nix#L46) automatically remove garbage.
     - Pre-defined users: allow ssh access for a set of users based on ssh public keys.
     - Secrets: uses [sops-nix](https://github.com/Mic92/sops-nix) to manage secrets - secrets, such as hydra admin password and binary cache signing key, are stored encrypted based on host ssh key.
     - Openssh server with pre-defined host ssh key. Server private key is stored encrypted as [sops secret](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/hosts/ghafhydra/secrets.yaml#L5) and automatically deployed on [host installation](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/tasks.py#L243).
-- **[build01](./hosts/build01/configuration.nix)** - *Remote builder for ghafhydra*:
-    - Openssh server with pre-defined host ssh key. Server private key is stored encrypted as [sops secret](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/hosts/build01/secrets.yaml#L1) and automatically deployed on [host installation](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/tasks.py#L243).
-    - Extensible buildfarm setup: build01 [allows ssh access](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/hosts/build01/configuration.nix#L16) with private key `id_buildfarm` [stored in sops secrets](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/hosts/ghafhydra/secrets.yaml#L3) on the hosts that need access to the builder. This setup makes it possible to use [build01](./hosts/build01/configuration.nix) and other hosts that are accessible with `id_buildfarm` as a [remote builder for hydra](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/services/hydra/hydra.nix#L61).
 
 ## Usage
 **Important**:
@@ -72,7 +69,6 @@ Current ghaf-infra targets:
 ╒═══════════════╤═══════════════╤══════════════╕
 │ alias         │ nixosconfig   │ hostname     │
 ╞═══════════════╪═══════════════╪══════════════╡
-│ build01-dev   │ build01       │ 51.12.57.124 │
 │ ghafhydra-dev │ ghafhydra     │ 51.12.56.79  │
 ╘═══════════════╧═══════════════╧══════════════╛
 ```
@@ -96,8 +92,6 @@ The `build-local` task builds the given alias configuration locally. If the alia
 
 ```bash
 $ invoke build-local
-INFO     Running: nixos-rebuild build --option accept-flake-config true  -v --flake .#build01
-...
 INFO     Running: nixos-rebuild build --option accept-flake-config true  -v --flake .#ghafhydra
 ...
 building '/nix/store/m0z520c0rpz1qjjw391srjw50426626z-etc.drv'...
@@ -162,8 +156,6 @@ The `update-sops-files` task updates all sops yaml and json files according to t
 
 ```bash
 $ invoke update-sops-files 
-2023/10/23 08:37:34 Syncing keys for file ghaf-infra/hosts/build01/secrets.yaml
-2023/10/23 08:37:34 File ghaf-infra/hosts/build01/secrets.yaml already up to date
 2023/10/23 08:37:34 Syncing keys for file ghaf-infra/hosts/ghafhydra/secrets.yaml
 2023/10/23 08:37:34 File ghaf-infra/hosts/ghafhydra/secrets.yaml already up to date
 ```
