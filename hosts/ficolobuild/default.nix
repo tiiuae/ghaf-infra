@@ -14,6 +14,7 @@
     inputs.disko.nixosModules.disko
     (with self.nixosModules; [
       common
+      service-openssh
       user-cazfi
       user-hrosten
       user-jrautiola
@@ -22,10 +23,10 @@
     ./disk-config.nix
   ];
 
+  # Hardwre Configuration:
+
   boot.initrd.availableKernelModules = ["ahci" "xhci_pci" "megaraid_sas" "nvme" "usbhid" "sd_mod"];
-  boot.initrd.kernelModules = [];
   boot.kernelModules = ["kvm-intel"];
-  boot.extraModulePackages = [];
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
   # (the default) this is the recommended approach. When using systemd-networkd it's
@@ -36,13 +37,9 @@
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
+  # Installation:
+
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-
-  # networking.hostName = "nixos"; # Define your hostname.
-  networking.networkmanager.enable = true; # Easiest to use and most distros use this by default.
-
-  # Enable the OpenSSH daemon.
-  services.openssh.enable = true;
 }
