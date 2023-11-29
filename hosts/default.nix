@@ -19,11 +19,6 @@
     # make self and inputs available in nixos modules
     specialArgs = {inherit self inputs;};
   in {
-    # Currently not used for anything:
-    # build01 = lib.nixosSystem {
-    #   inherit specialArgs;
-    #   modules = [./build01/configuration.nix];
-    # };
     ghafhydra = lib.nixosSystem {
       inherit specialArgs;
       modules = [./ghafhydra/configuration.nix];
