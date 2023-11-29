@@ -13,11 +13,6 @@
     qemu-common = import ./qemu-common.nix;
     common = import ./common.nix;
     generic-disk-config = import ./generic-disk-config.nix;
-    # host modules
-    host-build01 = import ./build01;
-    host-ghafhydra = import ./ghafhydra;
-    host-binarycache = import ./binarycache;
-    host-monitoring = import ./monitoring;
   };
 
   flake.nixosConfigurations = let
@@ -27,19 +22,19 @@
     # Currently not used for anything:
     # build01 = lib.nixosSystem {
     #   inherit specialArgs;
-    #   modules = [self.nixosModules.host-build01];
+    #   modules = [./build01/configuration.nix];
     # };
     ghafhydra = lib.nixosSystem {
       inherit specialArgs;
-      modules = [self.nixosModules.host-ghafhydra];
+      modules = [./ghafhydra/configuration.nix];
     };
     binarycache = lib.nixosSystem {
       inherit specialArgs;
-      modules = [self.nixosModules.host-binarycache];
+      modules = [./binarycache/configuration.nix];
     };
     monitoring = lib.nixosSystem {
       inherit specialArgs;
-      modules = [self.nixosModules.host-monitoring];
+      modules = [./monitoring/configuration.nix];
     };
   };
 }
