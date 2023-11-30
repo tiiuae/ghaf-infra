@@ -5,8 +5,8 @@
 {
   disko.devices = {
     disk = {
-      sdb = {
-        device = "/dev/sdb";
+      sda = {
+        device = "/dev/sda";
         type = "disk";
         content = {
           type = "gpt";
@@ -35,8 +35,8 @@
           };
         };
       };
-      sda = {
-        device = "/dev/sda";
+      sdb = {
+        device = "/dev/sdb";
         type = "disk";
         content = {
           type = "gpt";
