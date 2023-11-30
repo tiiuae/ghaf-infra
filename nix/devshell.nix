@@ -7,6 +7,7 @@
       packages = with pkgs; [
         azure-cli
         git
+        jq
         nix
         nixos-rebuild
         python3.pkgs.black
