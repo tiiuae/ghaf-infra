@@ -12,5 +12,6 @@
     user-cazfi = import ./cazfi.nix;
     user-mkaapu = import ./mkaapu.nix;
     user-karim = import ./karim.nix;
+    user-themisto = import ./themisto.nix;
   };
 }
