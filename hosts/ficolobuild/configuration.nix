@@ -19,6 +19,7 @@
       user-hrosten
       user-jrautiola
       user-mkaapu
+      user-themisto
     ])
     ./disk-config.nix
   ];
