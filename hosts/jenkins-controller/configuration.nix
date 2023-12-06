@@ -2,11 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 {
+  self,
   lib,
   modulesPath,
   ...
 }: {
-  imports = ["${modulesPath}/virtualisation/azure-config.nix"];
+  imports = [
+    "${modulesPath}/virtualisation/azure-config.nix"
+    self.nixosModules.service-openssh
+  ];
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 
