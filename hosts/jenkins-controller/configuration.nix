@@ -18,5 +18,11 @@
   # cloud-config for ssh key management.
   services.cloud-init.enable = true;
 
+  # Use systemd-networkd for network configuration, but keep systemd-resolved disabled.
+  services.cloud-init.network.enable = true;
+  networking.useDHCP = false;
+  networking.useNetworkd = true;
+  services.resolved.enable = false;
+
   system.stateVersion = "23.05";
 }
