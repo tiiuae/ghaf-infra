@@ -3,15 +3,17 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   pkgs,
+  lib,
+  ...
 }: {
   services.openssh = {
     enable = true;
 
     settings = {
-      PermitRootLogin = "no";
+      PermitRootLogin = lib.mkForce "no";
       KbdInteractiveAuthentication = false;
       PasswordAuthentication = false;
-      ClientAliveInterval = 60;
+      ClientAliveInterval = lib.mkDefault 60;
     };
 
     # Only allow ed25519 keys
