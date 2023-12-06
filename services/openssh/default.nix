@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 {
+  pkgs,
+}: {
   services.openssh = {
     enable = true;
     settings.PermitRootLogin = "no";
@@ -18,4 +20,8 @@
   networking.firewall.allowedTCPPorts = [22];
   # Ban brute force SSH
   services.fail2ban.enable = true;
+
+  environment.systemPackages = [
+    pkgs.kitty.terminfo
+  ];
 }
