@@ -21,6 +21,20 @@ resource "azurerm_linux_virtual_machine" "main" {
   network_interface_ids = [azurerm_network_interface.default.id]
   source_image_id       = var.virtual_machine_source_image
 
+  # We only set custom_data here, not user_data.
+  # user_data is more recent, and allows updates without recreating the machine,
+  # but at least cloud-init 23.1.2 blocks boot if custom_data is not set.
+  # (It logs about not being able to mount /dev/sr0 to /metadata).
+  # This can be worked around by setting custom_data to a static placeholder,
+  # but user_data is still ignored.
+  # TODO: check this again with a more recent cloud-init version.
+  custom_data = (var.virtual_machine_custom_data == "") ? null : base64encode(var.virtual_machine_custom_data)
+
+  # Enable boot diagnostics, use the managed storage account to store them
+  boot_diagnostics {
+    storage_account_uri = null
+  }
+
   os_disk {
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
