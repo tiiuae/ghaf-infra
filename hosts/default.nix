@@ -28,6 +28,10 @@
       inherit specialArgs;
       modules = [./binarycache/configuration.nix];
     };
+    binary-cache = lib.nixosSystem {
+      inherit specialArgs;
+      modules = [./binary-cache/configuration.nix];
+    };
     ficolobuild3 = lib.nixosSystem {
       inherit specialArgs;
       modules = [./ficolobuild/build3.nix];
