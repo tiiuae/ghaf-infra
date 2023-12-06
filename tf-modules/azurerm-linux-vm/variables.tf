@@ -22,6 +22,11 @@ variable "virtual_machine_source_image" {
   type = string
 }
 
+variable "virtual_machine_custom_data" {
+  type    = string
+  default = ""
+}
+
 variable "subnet_id" {
   type        = string
   description = "The subnet ID to attach to the VM and allocate an IP from"
