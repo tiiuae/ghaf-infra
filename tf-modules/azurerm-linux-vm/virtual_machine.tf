@@ -21,6 +21,10 @@ resource "azurerm_linux_virtual_machine" "main" {
   network_interface_ids = [azurerm_network_interface.default.id]
   source_image_id       = var.virtual_machine_source_image
 
+  identity {
+    type = "SystemAssigned"
+  }
+
   # We only set custom_data here, not user_data.
   # user_data is more recent, and allows updates without recreating the machine,
   # but at least cloud-init 23.1.2 blocks boot if custom_data is not set.
@@ -81,4 +85,8 @@ resource "azurerm_public_ip" "default" {
   resource_group_name = var.resource_group_name
   location            = var.location
   allocation_method   = "Static"
+}
+
+output "virtual_machine_identity_principal_id" {
+  value = azurerm_linux_virtual_machine.main.identity[0].principal_id
 }
