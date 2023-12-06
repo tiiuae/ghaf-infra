@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 {
+  pkgs,
+}: {
   services.openssh = {
     enable = true;
 
@@ -30,4 +32,8 @@
 
   # Ban brute force SSH
   services.fail2ban.enable = true;
+
+  environment.systemPackages = [
+    pkgs.kitty.terminfo
+  ];
 }
