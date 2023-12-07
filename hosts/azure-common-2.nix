@@ -21,4 +21,9 @@
   # but the way nixpkgs configures cloud-init prevents it from picking up DNS
   # settings from elsewhere.
   # services.resolved.enable = false;
+
+  # Add filesystem-related tools to cloud-inits path, so it can format data disks.
+  services.cloud-init.btrfs.enable = true;
+  services.cloud-init.ext4.enable = true;
+  services.cloud-init.xfs.enable = true;
 }
