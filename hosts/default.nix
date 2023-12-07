@@ -4,7 +4,6 @@
 {
   self,
   inputs,
-  lib,
   ...
 }: {
   flake.nixosModules = {
@@ -15,25 +14,33 @@
     generic-disk-config = import ./generic-disk-config.nix;
   };
 
-  flake.nixosConfigurations = let
-    # make self and inputs available in nixos modules
-    specialArgs = {inherit self inputs;};
-  in {
-    ghafhydra = lib.nixosSystem {
-      inherit specialArgs;
-      modules = [./ghafhydra/configuration.nix];
-    };
-    binarycache = lib.nixosSystem {
-      inherit specialArgs;
-      modules = [./binarycache/configuration.nix];
-    };
-    monitoring = lib.nixosSystem {
-      inherit specialArgs;
-      modules = [./monitoring/configuration.nix];
-    };
-    ficolobuild = lib.nixosSystem {
-      inherit specialArgs;
-      modules = [./ficolobuild/configuration.nix];
-    };
+  perSystem = {
+    pkgs,
+    lib,
+    system,
+    ...
+  }: {
+    nixosConfigurations = let
+      # make self and inputs available in nixos modules
+      specialArgs = {inherit self inputs;};
+    in
+      lib.mkIf (system == "x86_64-linux") {
+        ghafhydra = lib.nixosSystem {
+          inherit pkgs specialArgs;
+          modules = [./ghafhydra/configuration.nix];
+        };
+        binarycache = lib.nixosSystem {
+          inherit pkgs specialArgs;
+          modules = [./binarycache/configuration.nix];
+        };
+        monitoring = lib.nixosSystem {
+          inherit pkgs specialArgs;
+          modules = [./monitoring/configuration.nix];
+        };
+        ficolobuild = lib.nixosSystem {
+          inherit pkgs specialArgs;
+          modules = [./ficolobuild/configuration.nix];
+        };
+      };
   };
 }
