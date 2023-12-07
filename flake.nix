@@ -19,7 +19,8 @@
     # Binary cache with nix-serve-ng
     nix-serve-ng = {
       url = "github:aristanetworks/nix-serve-ng";
-      inputs.nixpkgs.follows = "nixpkgs";
+      # Broken with 23.11, base32 misses text >=2.0 && <2.1
+      # inputs.nixpkgs.follows = "nixpkgs";
     };
     # Disko for disk partitioning
     disko = {
