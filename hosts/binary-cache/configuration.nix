@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   self,
+  config,
   pkgs,
   lib,
   ...
@@ -68,6 +69,14 @@
       }
     '';
   };
+
+  # workaround for https://github.com/NixOS/nixpkgs/issues/272532
+  # FUTUREWORK: rebase once https://github.com/NixOS/nixpkgs/pull/272617 landed
+  services.caddy.enableReload = false;
+  systemd.services.caddy.serviceConfig.ExecStart = lib.mkForce [
+    ""
+    "${pkgs.caddy}/bin/caddy run --environ --config ${config.services.caddy.configFile}/Caddyfile"
+  ];
 
   # Expose the HTTP and HTTPS port.
   networking.firewall.allowedTCPPorts = [80 443];
