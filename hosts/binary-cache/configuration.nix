@@ -44,6 +44,7 @@
 
   # Expose the rclone-http unix socket over a HTTPS, limiting to certain
   # keys only, disallowing listing too.
+  # TODO: use https://caddyserver.com/docs/caddyfile-tutorial#environment-variables for domain
   services.caddy = {
     enable = true;
     configFile = pkgs.writeTextDir "Caddyfile" ''
@@ -53,7 +54,7 @@
       }
 
       # Proxy a subset of requests to rclone.
-      * {
+      ghaf-binary-cache.northeurope.cloudapp.azure.com {
         handle /nix-cache-info {
           reverse_proxy unix///run/rclone-http/socket
         }
