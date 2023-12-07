@@ -41,3 +41,26 @@ module "jenkins_controller_vm" {
 
   subnet_id = azurerm_subnet.jenkins.id
 }
+
+resource "azurerm_network_interface_security_group_association" "jenkins_controller_vm" {
+  network_interface_id      = module.jenkins_controller_vm.virtual_machine_network_interface_id
+  network_security_group_id = azurerm_network_security_group.jenkins_controller_vm.id
+}
+
+resource "azurerm_network_security_group" "jenkins_controller_vm" {
+  name                = "jenkins-controller-vm"
+  resource_group_name = azurerm_resource_group.default.name
+  location            = azurerm_resource_group.default.location
+
+  security_rule {
+    name                       = "AllowSSHInbound"
+    priority                   = 400
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_ranges    = [22]
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+}

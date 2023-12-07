@@ -45,27 +45,6 @@ resource "azurerm_linux_virtual_machine" "main" {
   }
 }
 
-resource "azurerm_network_security_group" "ssh_inbound" {
-  name                = "${var.virtual_machine_name}-nsg-ssh-inbound"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  security_rule {
-    name                       = "AllowSSHInbound"
-    priority                   = 300
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
-}
-resource "azurerm_network_interface_security_group_association" "apply_ssh_inbound" {
-  network_interface_id      = azurerm_network_interface.default.id
-  network_security_group_id = azurerm_network_security_group.ssh_inbound.id
-}
-
 resource "azurerm_network_interface" "default" {
   name                = "${var.virtual_machine_name}-nic"
   resource_group_name = var.resource_group_name
@@ -87,6 +66,14 @@ resource "azurerm_public_ip" "default" {
   allocation_method   = "Static"
 }
 
+output "virtual_machine_id" {
+  value = azurerm_linux_virtual_machine.main.id
+}
+
 output "virtual_machine_identity_principal_id" {
   value = azurerm_linux_virtual_machine.main.identity[0].principal_id
+}
+
+output "virtual_machine_network_interface_id" {
+  value = azurerm_network_interface.default.id
 }
