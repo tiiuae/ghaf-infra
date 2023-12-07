@@ -37,6 +37,24 @@ module "jenkins_controller_vm" {
         ssh_authorized_keys = local.ssh_keys[user]
       }
     ]
+    # mount /dev/disk/by-lun/10 to /var/lib/jenkins
+    disk_setup = {
+      "/dev/disk/by-lun/10" = {
+        layout  = false # don't partition
+        timeout = 60    # wait for device to appear
+      }
+    }
+    fs_setup = [
+      {
+        filesystem = "ext4"
+        partition  = "auto"
+        device     = "/dev/disk/by-lun/10"
+        label      = "jenkins"
+      }
+    ]
+    mounts = [
+      ["/dev/disk/by-label/jenkins", "/var/lib/jenkins"]
+    ]
   })])
 
   subnet_id = azurerm_subnet.jenkins.id
@@ -63,4 +81,22 @@ resource "azurerm_network_security_group" "jenkins_controller_vm" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
+}
+
+# Create a data disk
+resource "azurerm_managed_disk" "jenkins_controller_jenkins_state" {
+  name                 = "jenkins-controller-vm-jenkins-state"
+  resource_group_name  = azurerm_resource_group.default.name
+  location             = azurerm_resource_group.default.location
+  storage_account_type = "Standard_LRS"
+  create_option        = "Empty"
+  disk_size_gb         = 10
+}
+
+# Attach to the VM
+resource "azurerm_virtual_machine_data_disk_attachment" "jenkins_controller_vm_jenkins_state" {
+  managed_disk_id    = azurerm_managed_disk.jenkins_controller_jenkins_state.id
+  virtual_machine_id = module.jenkins_controller_vm.virtual_machine_id
+  lun                = "10"
+  caching            = "None"
 }

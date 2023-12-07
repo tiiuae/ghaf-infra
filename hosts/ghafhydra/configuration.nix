@@ -16,7 +16,6 @@
 
   imports = lib.flatten [
     (with inputs; [
-      nix-serve-ng.nixosModules.default
       sops-nix.nixosModules.sops
       disko.nixosModules.disko
     ])
