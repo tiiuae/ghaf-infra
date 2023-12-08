@@ -164,7 +164,6 @@ $ cat hosts/mytarget/configuration.nix
   # Define the services you want to run on your target, as well as the users
   # who can access the target with ssh:
   imports = [
-    inputs.nix-serve-ng.nixosModules.default
     inputs.sops-nix.nixosModules.sops
     inputs.disko.nixosModules.disko
     ../generic-disk-config.nix
