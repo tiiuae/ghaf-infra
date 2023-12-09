@@ -79,6 +79,10 @@
     "${pkgs.caddy}/bin/caddy run --environ --config ${config.services.caddy.configFile}/Caddyfile"
   ];
 
+  # Wait for cloud-init mounting before we start caddy.
+  systemd.services.caddy.after = ["cloud-init.service"];
+  systemd.services.caddy.requires = ["cloud-init.service"];
+
   # Expose the HTTP and HTTPS port.
   networking.firewall.allowedTCPPorts = [80 443];
 
