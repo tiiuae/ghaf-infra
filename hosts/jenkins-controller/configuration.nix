@@ -22,6 +22,10 @@
   # https://github.com/NixOS/nixpkgs/pull/272679
   systemd.services.jenkins.serviceConfig.StateDirectory = "jenkins";
 
+  # Wait for cloud-init mounting before we start jenkins.
+  systemd.services.jenkins.after = ["cloud-init.service"];
+  systemd.services.jenkins.requires = ["cloud-init.service"];
+
   # TODO: deploy reverse proxy, sort out authentication (SSO?)
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
