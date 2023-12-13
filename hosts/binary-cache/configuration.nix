@@ -28,12 +28,10 @@
       RestartSec = 2;
       DynamicUser = true;
       RuntimeDirectory = "rclone-http";
-      # FUTUREWORK: set AZURE_STORAGE_ACCOUNT_NAME and storage container name through EnvironmentFile
       ExecStart =
         "${pkgs.rclone}/bin/rclone "
         + "serve http "
         + "--azureblob-env-auth "
-        + "--azureblob-account ghafbinarycache "
         + "--read-only "
         + "--addr unix://%t/rclone-http/socket "
         + ":azureblob:binary-cache-v1";
@@ -54,7 +52,7 @@
       }
 
       # Proxy a subset of requests to rclone.
-      ghaf-binary-cache.northeurope.cloudapp.azure.com {
+      https://{$SITE_ADDRESS} {
         handle /nix-cache-info {
           reverse_proxy unix///run/rclone-http/socket
         }
@@ -83,8 +81,8 @@
   systemd.services.caddy.after = ["cloud-init.service"];
   systemd.services.caddy.requires = ["cloud-init.service"];
 
-  # Expose the HTTP and HTTPS port.
-  networking.firewall.allowedTCPPorts = [80 443];
+  # Expose the HTTPS port. No need for HTTP, as caddy can use TLS-ALPN-01.
+  networking.firewall.allowedTCPPorts = [443];
 
   system.stateVersion = "23.05";
 }
