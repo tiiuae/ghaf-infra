@@ -32,3 +32,6 @@ variable "subnet_id" {
   description = "The subnet ID to attach to the VM and allocate an IP from"
 }
 
+variable "data_disks" {
+  description = "List of dict containing keys of the storage_data_disk block"
+}
