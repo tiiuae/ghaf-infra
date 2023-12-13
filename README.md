@@ -197,4 +197,12 @@ Each host's private ssh key is stored as sops secret and automatically deployed 
 The secrets configuration and the usage of `sops` is adopted from [nix-community infra](https://github.com/nix-community/infra) project.
 
 ## License
-This project is licensed under the Apache-2.0 license - see the [Apache-2.0.txt](LICENSES/Apache-2.0.txt) file for details.
+This repository follows the Ghaf team licensing:
+
+| License Full Name | SPDX Short Identifier | Description
+| --- | --- | ---
+| Apache License 2.0 | [Apache-2.0](https://spdx.org/licenses/Apache-2.0.html) | Source code
+| Creative Commons Attribution Share Alike 4.0 International | [CC-BY-SA-4.0](https://spdx.org/licenses/CC-BY-SA-4.0.html) | Documentation
+| MIT License | [MIT](https://spdx.org/licenses/MIT.html) | Source code copied from nix community projects
+
+See `./LICENSES/` for the full license text.
