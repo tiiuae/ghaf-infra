@@ -49,6 +49,17 @@ module "binary_cache_vm" {
   })])
 
   subnet_id = azurerm_subnet.binary_cache.id
+
+  # Attach disk to the VM
+  data_disks = [{
+    name               = azurerm_managed_disk.binary_cache_caddy_state.name
+    managed_disk_id    = azurerm_managed_disk.binary_cache_caddy_state.id
+    virtual_machine_id = module.jenkins_controller_vm.virtual_machine_id
+    lun                = "10"
+    create_option      = "Attach"
+    caching            = "None"
+    disk_size_gb       = azurerm_managed_disk.binary_cache_caddy_state.disk_size_gb
+  }]
 }
 
 resource "azurerm_subnet" "binary_cache" {
@@ -97,12 +108,4 @@ resource "azurerm_managed_disk" "binary_cache_caddy_state" {
   storage_account_type = "Standard_LRS"
   create_option        = "Empty"
   disk_size_gb         = 1
-}
-
-# Attach to the VM
-resource "azurerm_virtual_machine_data_disk_attachment" "binary_cache_vm_caddy_state" {
-  managed_disk_id    = azurerm_managed_disk.binary_cache_caddy_state.id
-  virtual_machine_id = module.binary_cache_vm.virtual_machine_id
-  lun                = "10"
-  caching            = "None"
 }
