@@ -37,24 +37,6 @@ module "jenkins_controller_vm" {
         ssh_authorized_keys = local.ssh_keys[user]
       }
     ]
-    # mount /dev/disk/by-lun/10 to /var/lib/jenkins
-    disk_setup = {
-      "/dev/disk/by-lun/10" = {
-        layout  = false # don't partition
-        timeout = 60    # wait for device to appear
-      }
-    }
-    fs_setup = [
-      {
-        filesystem = "ext4"
-        partition  = "auto"
-        device     = "/dev/disk/by-lun/10"
-        label      = "jenkins"
-      }
-    ]
-    mounts = [
-      ["/dev/disk/by-label/jenkins", "/var/lib/jenkins"]
-    ]
   })])
 
   subnet_id = azurerm_subnet.jenkins.id

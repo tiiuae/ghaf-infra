@@ -15,6 +15,22 @@
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 
+  # Configure /var/lib/caddy in /etc/fstab.
+  # Due to an implicit RequiresMountsFor=$state-dir, systemd
+  # will block starting the service until this mounted.
+  fileSystems."/var/lib/caddy" = {
+    device = "/dev/disk/by-lun/10";
+    fsType = "ext4";
+    options = [
+      # Due to https://github.com/hashicorp/terraform-provider-azurerm/issues/6117
+      # disks get attached later during boot.
+      # The default of 90s doesn't seem to be sufficient.
+      "x-systemd.device-timeout=5min"
+      "x-systemd.makefs"
+      "x-systemd.growfs"
+    ];
+  };
+
   # Run a read-only HTTP webserver proxying to the "binary-cache-v1" storage
   # container at a unix socket.
   # This relies on IAM to grant access to the storage container.
