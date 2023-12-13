@@ -35,24 +35,6 @@ module "binary_cache_vm" {
         ssh_authorized_keys = local.ssh_keys[user]
       }
     ]
-    # mount /dev/disk/by-lun/10 to /var/lib/caddy
-    disk_setup = {
-      "/dev/disk/by-lun/10" = {
-        layout  = false # don't partition
-        timeout = 60    # wait for device to appear
-      }
-    }
-    fs_setup = [
-      {
-        filesystem = "ext4"
-        partition  = "auto"
-        device     = "/dev/disk/by-lun/10"
-        label      = "caddy"
-      }
-    ]
-    mounts = [
-      ["/dev/disk/by-label/caddy", "/var/lib/caddy"]
-    ]
     # TODO: this should be EnvironmentFile, so we don't need to restart
     write_files = [
       {
