@@ -24,6 +24,7 @@
           p.azurerm
           p.external
           p.null
+          p.random
           p.sops
         ]))
       ];
