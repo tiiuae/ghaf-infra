@@ -40,6 +40,16 @@ module "jenkins_controller_vm" {
   })])
 
   subnet_id = azurerm_subnet.jenkins.id
+
+  # Attach disk to the VM
+  data_disks = [{
+    name            = azurerm_managed_disk.jenkins_controller_jenkins_state.name
+    managed_disk_id = azurerm_managed_disk.jenkins_controller_jenkins_state.id
+    lun             = "10"
+    # create_option = "Attach"
+    caching      = "None"
+    disk_size_gb = azurerm_managed_disk.jenkins_controller_jenkins_state.disk_size_gb
+  }]
 }
 
 resource "azurerm_network_interface_security_group_association" "jenkins_controller_vm" {
@@ -73,12 +83,4 @@ resource "azurerm_managed_disk" "jenkins_controller_jenkins_state" {
   storage_account_type = "Standard_LRS"
   create_option        = "Empty"
   disk_size_gb         = 10
-}
-
-# Attach to the VM
-resource "azurerm_virtual_machine_data_disk_attachment" "jenkins_controller_vm_jenkins_state" {
-  managed_disk_id    = azurerm_managed_disk.jenkins_controller_jenkins_state.id
-  virtual_machine_id = module.jenkins_controller_vm.virtual_machine_id
-  lun                = "10"
-  caching            = "None"
 }

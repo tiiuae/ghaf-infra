@@ -18,10 +18,6 @@
     device = "/dev/disk/by-lun/10";
     fsType = "ext4";
     options = [
-      # Due to https://github.com/hashicorp/terraform-provider-azurerm/issues/6117
-      # disks get attached later during boot.
-      # The default of 90s doesn't seem to be sufficient.
-      "x-systemd.device-timeout=5min"
       "x-systemd.makefs"
       "x-systemd.growfs"
     ];
