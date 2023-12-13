@@ -11,6 +11,22 @@
     self.nixosModules.service-openssh
   ];
 
+  # Configure /var/lib/jenkins in /etc/fstab.
+  # Due to an implicit RequiresMountsFor=$state-dir, systemd
+  # will block starting the service until this mounted.
+  fileSystems."/var/lib/jenkins" = {
+    device = "/dev/disk/by-lun/10";
+    fsType = "ext4";
+    options = [
+      # Due to https://github.com/hashicorp/terraform-provider-azurerm/issues/6117
+      # disks get attached later during boot.
+      # The default of 90s doesn't seem to be sufficient.
+      "x-systemd.device-timeout=5min"
+      "x-systemd.makefs"
+      "x-systemd.growfs"
+    ];
+  };
+
   services.jenkins = {
     enable = true;
     listenAddress = "localhost";
@@ -19,12 +35,9 @@
   };
 
   # set StateDirectory=jenkins, so state volume has the right permissions
+  # and we wait on the mountpoint to appear.
   # https://github.com/NixOS/nixpkgs/pull/272679
   systemd.services.jenkins.serviceConfig.StateDirectory = "jenkins";
-
-  # Wait for cloud-init mounting before we start jenkins.
-  systemd.services.jenkins.after = ["cloud-init.service"];
-  systemd.services.jenkins.requires = ["cloud-init.service"];
 
   # TODO: deploy reverse proxy, sort out authentication (SSO?)
 
