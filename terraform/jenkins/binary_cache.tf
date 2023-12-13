@@ -53,6 +53,22 @@ module "binary_cache_vm" {
     mounts = [
       ["/dev/disk/by-label/caddy", "/var/lib/caddy"]
     ]
+    # TODO: this should be EnvironmentFile, so we don't need to restart
+    write_files = [
+      {
+        content = "[Service]\nEnvironment=AZURE_STORAGE_ACCOUNT_NAME=ghafbinarycache",
+        "path" = "/run/systemd/system/rclone-http.service.d/cloud-init.conf"
+      },
+      {
+        content = "[Service]\nEnvironment=SITE_ADDRESS=ghaf-binary-cache.northeurope.cloudapp.azure.com",
+        "path" = "/run/systemd/system/caddy.service.d/cloud-init.conf"
+      },
+    ],
+    runcmd = [
+      "systemctl daemon-reload", # pick up drop-ins
+      "systemctl restart caddy.service",
+      "systemctl restart rclone-http.service"
+    ]
   })])
 
   subnet_id = azurerm_subnet.binary_cache.id
