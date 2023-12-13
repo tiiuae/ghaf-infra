@@ -53,6 +53,7 @@
         + ":azureblob:binary-cache-v1";
       # On successful startup, grant caddy write permissions to the socket.
       ExecStartPost = "${pkgs.acl.bin}/bin/setfacl -m u:caddy:rw %t/rclone-http/socket";
+      EnvironmentFile = "/run/rclone-http.env";
     };
   };
 
@@ -92,6 +93,7 @@
     ""
     "${pkgs.caddy}/bin/caddy run --environ --config ${config.services.caddy.configFile}/Caddyfile"
   ];
+  systemd.services.caddy.serviceConfig.EnvironmentFile = "/run/caddy.env";
 
   # Wait for cloud-init mounting before we start caddy.
   systemd.services.caddy.after = ["cloud-init.service"];

@@ -35,22 +35,17 @@ module "binary_cache_vm" {
         ssh_authorized_keys = local.ssh_keys[user]
       }
     ]
-    # TODO: this should be EnvironmentFile, so we don't need to restart
+    # See corresponding EnvironmentFile= directives in services
     write_files = [
       {
-        content = "[Service]\nEnvironment=AZURE_STORAGE_ACCOUNT_NAME=ghafbinarycache",
-        "path" = "/run/systemd/system/rclone-http.service.d/cloud-init.conf"
+        content = "AZURE_STORAGE_ACCOUNT_NAME=ghafbinarycache",
+        "path"  = "/run/rclone-http.env"
       },
       {
-        content = "[Service]\nEnvironment=SITE_ADDRESS=ghaf-binary-cache.northeurope.cloudapp.azure.com",
-        "path" = "/run/systemd/system/caddy.service.d/cloud-init.conf"
+        content = "SITE_ADDRESS=ghaf-binary-cache.northeurope.cloudapp.azure.com",
+        "path"  = "/run/caddy.env"
       },
     ],
-    runcmd = [
-      "systemctl daemon-reload", # pick up drop-ins
-      "systemctl restart caddy.service",
-      "systemctl restart rclone-http.service"
-    ]
   })])
 
   subnet_id = azurerm_subnet.binary_cache.id
