@@ -43,4 +43,9 @@
     172.18.20.102 vedenemo.dev # for fetching Gala app sources
     172.18.20.109 cache.vedenemo.dev # Binary cache
   ";
+
+  # Trust Themisto Hydra user
+  nix.settings = {
+    trusted-users = ["root" "themisto"];
+  };
 }
