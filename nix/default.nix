@@ -6,6 +6,7 @@
     ./checks.nix
     ./devshell.nix
     ./nixpkgs.nix
+    ./nixos.nix
     ./treefmt.nix
   ];
 }
