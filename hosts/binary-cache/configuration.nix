@@ -10,6 +10,7 @@
 }: {
   imports = [
     ../azure-common-2.nix
+    ../azure-scratch-store-common.nix
     self.nixosModules.service-openssh
   ];
 
