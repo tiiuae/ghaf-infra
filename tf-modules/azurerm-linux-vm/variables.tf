@@ -27,6 +27,11 @@ variable "virtual_machine_custom_data" {
   default = ""
 }
 
+variable "allocate_public_ip" {
+  type    = bool
+  default = false
+}
+
 variable "subnet_id" {
   type        = string
   description = "The subnet ID to attach to the VM and allocate an IP from"
