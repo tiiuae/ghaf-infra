@@ -85,11 +85,13 @@ resource "azurerm_network_interface" "default" {
     name                          = "internal"
     subnet_id                     = var.subnet_id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.default.id
+    public_ip_address_id          = (var.allocate_public_ip) ? azurerm_public_ip.default[0].id : null
   }
 }
 
 resource "azurerm_public_ip" "default" {
+  count = (var.allocate_public_ip) ? 1 : 0
+
   name                = "${var.virtual_machine_name}-pub-ip"
   domain_name_label   = var.virtual_machine_name
   resource_group_name = var.resource_group_name
