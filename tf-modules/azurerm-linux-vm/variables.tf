@@ -34,4 +34,5 @@ variable "subnet_id" {
 
 variable "data_disks" {
   description = "List of dict containing keys of the storage_data_disk block"
+  default     = []
 }
