@@ -28,6 +28,7 @@
   environment.systemPackages = with pkgs; [
     git
     emacs
+    screen
   ];
   # docker daemon running
   virtualisation.docker.enable=true;
