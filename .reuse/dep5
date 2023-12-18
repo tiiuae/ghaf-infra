@@ -2,4 +2,4 @@ Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 
 Copyright: 2023 Technology Innovation Institute (TII)
 License: Apache-2.0
-Files: *.lock *.png *.svg *.csv *.yaml
+Files: *.lock *.png *.svg *.csv *.yaml *.pub
