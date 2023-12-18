@@ -39,7 +39,8 @@ module "jenkins_controller_vm" {
     ]
   })])
 
-  subnet_id = azurerm_subnet.jenkins.id
+  allocate_public_ip = true
+  subnet_id          = azurerm_subnet.jenkins.id
 
   # Attach disk to the VM
   data_disks = [{
