@@ -44,7 +44,7 @@ module "builder_vm" {
       ], [{
         name = "remote-build"
         ssh_authorized_keys = [
-          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAFdY1Nnn5JkkrvwoDfqtBFfn7oZaW2YJPwtsh/UzRZO remote-build"
+          tls_private_key.ed25519_remote_build.public_key_openssh
         ]
     }])
     write_files = [
