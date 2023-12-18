@@ -38,7 +38,7 @@ module "binary_cache_vm" {
     # See corresponding EnvironmentFile= directives in services
     write_files = [
       {
-        content = "AZURE_STORAGE_ACCOUNT_NAME=ghafbinarycache",
+        content = "AZURE_STORAGE_ACCOUNT_NAME=${azurerm_storage_account.binary_cache.name}",
         "path"  = "/run/rclone-http.env"
       },
       {
