@@ -48,7 +48,8 @@ module "binary_cache_vm" {
     ],
   })])
 
-  subnet_id = azurerm_subnet.binary_cache.id
+  allocate_public_ip = true
+  subnet_id          = azurerm_subnet.binary_cache.id
 
   # Attach disk to the VM
   data_disks = [{
