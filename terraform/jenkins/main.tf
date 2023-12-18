@@ -17,7 +17,7 @@ resource "azurerm_resource_group" "default" {
   location = "northeurope"
 }
 
-# Create a virtual network and slice out a subnet for jenkins.
+# Create a virtual network
 resource "azurerm_virtual_network" "vnet" {
   name                = "ghaf-infra-vnet"
   address_space       = ["10.0.0.0/16"]
@@ -25,9 +25,18 @@ resource "azurerm_virtual_network" "vnet" {
   resource_group_name = azurerm_resource_group.default.name
 }
 
+# Slice out a subnet for jenkins.
 resource "azurerm_subnet" "jenkins" {
   name                 = "ghaf-infra-jenkins"
   resource_group_name  = azurerm_resource_group.default.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.2.0/24"]
+}
+
+# Slice out a subnet for the buidlers.
+resource "azurerm_subnet" "builders" {
+  name                 = "ghaf-infra-builders"
+  resource_group_name  = azurerm_resource_group.default.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = ["10.0.4.0/28"]
 }
