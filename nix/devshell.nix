@@ -23,9 +23,11 @@
         (terraform.withPlugins (p: [
           p.azurerm
           p.external
+          p.local
           p.null
           p.random
           p.sops
+          p.tls
         ]))
       ];
     };
