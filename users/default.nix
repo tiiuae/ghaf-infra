@@ -11,5 +11,6 @@
     user-hydra = import ./hydra.nix;
     user-cazfi = import ./cazfi.nix;
     user-mkaapu = import ./mkaapu.nix;
+    user-karim = import ./karim.nix;
   };
 }

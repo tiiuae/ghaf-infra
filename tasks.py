@@ -85,6 +85,9 @@ TARGETS = OrderedDict(
         "build3-ficolo": TargetHost(
             hostname="172.18.20.104", nixosconfig="ficolobuild"
         ),
+        "prbuilder": TargetHost(
+            hostname="172.18.20.106", nixosconfig="prbuilder"
+        ),
     }
 )
 
