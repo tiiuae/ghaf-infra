@@ -126,3 +126,8 @@ output "virtual_machine_identity_principal_id" {
 output "virtual_machine_network_interface_id" {
   value = azurerm_network_interface.default.id
 }
+
+output "virtual_machine_private_ip_address" {
+  description = "The first private IP address of the network interface."
+  value       = azurerm_network_interface.default.private_ip_address
+}
