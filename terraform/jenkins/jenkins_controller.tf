@@ -60,6 +60,11 @@ module "jenkins_controller_vm" {
           for ip in toset(module.builder_vm[*].virtual_machine_private_ip_address) : "ssh://remote-build@${ip} x86_64-linux /etc/secrets/remote-build-ssh-key 10 10 kvm,big-parallel - -"
         ]),
         "path" = "/etc/nix/machines"
+      },
+      # Render /var/lib/builder-keyscan/scanlist, so known_hosts can be populated.
+      {
+        content = join("\n", toset(module.builder_vm[*].virtual_machine_private_ip_address))
+        "path"  = "/var/lib/builder-keyscan/scanlist"
       }
     ]
   })])
