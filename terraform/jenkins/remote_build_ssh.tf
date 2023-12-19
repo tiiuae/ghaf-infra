@@ -47,8 +47,8 @@ resource "azurerm_key_vault_secret" "ssh_remote_build" {
 resource "azurerm_key_vault_access_policy" "ssh_remote_build_terraform" {
   key_vault_id = azurerm_key_vault.ssh_remote_build.id
   tenant_id    = data.azurerm_client_config.current.tenant_id
-  # TODO: set some common group as object_id?
-  object_id = data.azurerm_client_config.current.object_id
+  # "TerraformAdminsGHAFInfra" group
+  object_id = "f80c2488-2301-4de8-89d6-4954b77f453e"
 
   secret_permissions = [
     "Get",
