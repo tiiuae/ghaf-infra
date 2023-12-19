@@ -32,23 +32,22 @@
 """ Misc dev and deployment helper tasks """
 
 import json
+import logging
 import os
+import socket
 import subprocess
 import sys
-import logging
-import socket
 import time
+from collections import OrderedDict
+from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Union
-from collections import OrderedDict
-from dataclasses import dataclass
 
-from tabulate import tabulate
 from colorlog import ColoredFormatter, default_log_colors
 from deploykit import DeployHost, HostKeyCheck
 from invoke import task
-
+from tabulate import tabulate
 
 ################################################################################
 
@@ -74,19 +73,24 @@ class TargetHost:
 TARGETS = OrderedDict(
     {
         "ghafhydra-dev": TargetHost(
-            hostname="ghafhydra.northeurope.cloudapp.azure.com", nixosconfig="ghafhydra"
+            hostname="ghafhydra.northeurope.cloudapp.azure.com",
+            nixosconfig="ghafhydra",
         ),
         "binarycache-ficolo": TargetHost(
-            hostname="172.18.20.109", nixosconfig="binarycache"
+            hostname="172.18.20.109",
+            nixosconfig="binarycache",
         ),
         "monitoring-ficolo": TargetHost(
-            hostname="172.18.20.108", nixosconfig="monitoring"
+            hostname="172.18.20.108",
+            nixosconfig="monitoring",
         ),
         "build3-ficolo": TargetHost(
-            hostname="172.18.20.104", nixosconfig="ficolobuild"
+            hostname="172.18.20.104",
+            nixosconfig="ficolobuild",
         ),
         "prbuilder": TargetHost(
-            hostname="172.18.20.106", nixosconfig="prbuilder"
+            hostname="172.18.20.106",
+            nixosconfig="prbuilder",
         ),
     }
 )
