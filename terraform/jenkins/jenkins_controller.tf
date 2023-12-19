@@ -42,6 +42,16 @@ module "jenkins_controller_vm" {
       {
         content = "KEY_VAULT_NAME=${azurerm_key_vault.ssh_remote_build.name}\nSECRET_NAME=${azurerm_key_vault_secret.ssh_remote_build.name}",
         "path"  = "/var/lib/fetch-build-ssh-key/env"
+      },
+      # Render /etc/nix/machines with terraform. In the future, we might want to
+      # autodiscover this, or better, have agents register with the controller,
+      # rather than having to recreate the VM whenever the list of builders is
+      # changed.
+      {
+        content = join("\n", [
+          for ip in toset(module.builder_vm[*].virtual_machine_private_ip_address) : "ssh://remote-build@${ip} x86_64-linux /etc/secrets/remote-build-ssh-key 10 10 kvm,big-parallel - -"
+        ]),
+        "path" = "/etc/nix/machines"
       }
     ]
   })])
