@@ -24,13 +24,13 @@
     ./disk-config.nix
   ];
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-   # List packages installed in system profile
+  # List packages installed in system profile
   environment.systemPackages = with pkgs; [
     git
     emacs
   ];
   # docker daemon running
-  virtualisation.docker.enable=true;
+  virtualisation.docker.enable = true;
 
   networking = {
     hostName = "prbuilder";
