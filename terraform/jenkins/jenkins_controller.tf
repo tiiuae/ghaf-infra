@@ -37,11 +37,19 @@ module "jenkins_controller_vm" {
         ssh_authorized_keys = local.ssh_keys[user]
       }
     ]
-    # See corresponding EnvironmentFile= directives in services
     write_files = [
+      # See corresponding EnvironmentFile= directives in services
       {
         content = "KEY_VAULT_NAME=${azurerm_key_vault.ssh_remote_build.name}\nSECRET_NAME=${azurerm_key_vault_secret.ssh_remote_build.name}",
         "path"  = "/var/lib/fetch-build-ssh-key/env"
+      },
+      {
+        content = "KEY_VAULT_NAME=${azurerm_key_vault.binary_cache_signing_key.name}\nSECRET_NAME=${azurerm_key_vault_secret.binary_cache_signing_key.name}",
+        "path"  = "/var/lib/fetch-binary-cache-signing-key/env"
+      },
+      {
+        content = "AZURE_STORAGE_ACCOUNT_NAME=${azurerm_storage_account.binary_cache.name}",
+        "path"  = "/var/lib/rclone-http/env"
       },
       # Render /etc/nix/machines with terraform. In the future, we might want to
       # autodiscover this, or better, have agents register with the controller,
@@ -107,6 +115,25 @@ resource "azurerm_managed_disk" "jenkins_controller_jenkins_state" {
 # ed25519 private key used to connect to remote builders.
 resource "azurerm_key_vault_access_policy" "ssh_remote_build_jenkins_controller" {
   key_vault_id = azurerm_key_vault.ssh_remote_build.id
+  tenant_id    = data.azurerm_client_config.current.tenant_id
+  object_id    = module.jenkins_controller_vm.virtual_machine_identity_principal_id
+
+  secret_permissions = [
+    "Get",
+  ]
+}
+
+# Allow the VM to *write* to (and read from) the binary cache bucket
+resource "azurerm_role_assignment" "jenkins_controller_access_storage" {
+  scope                = azurerm_storage_container.binary_cache_1.resource_manager_id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = module.jenkins_controller_vm.virtual_machine_identity_principal_id
+}
+
+# Grant the VM read-only access to the Azure Key Vault Secret containing the
+# binary cache signing key.
+resource "azurerm_key_vault_access_policy" "binary_cache_signing_key_jenkins_controller" {
+  key_vault_id = azurerm_key_vault.binary_cache_signing_key.id
   tenant_id    = data.azurerm_client_config.current.tenant_id
   object_id    = module.jenkins_controller_vm.virtual_machine_identity_principal_id
 
