@@ -34,19 +34,12 @@ module "builder_vm" {
   virtual_machine_source_image = module.builder_image.image_id
 
   virtual_machine_custom_data = join("\n", ["#cloud-config", yamlencode({
-    users = concat([
-      # TODO: drop once this is known to work.
-      for user in toset(["bmg", "flokli", "hrosten"]) : {
-        name                = user
-        sudo                = "ALL=(ALL) NOPASSWD:ALL"
-        ssh_authorized_keys = local.ssh_keys[user]
-      }
-      ], [{
-        name = "remote-build"
-        ssh_authorized_keys = [
-          tls_private_key.ed25519_remote_build.public_key_openssh
-        ]
-    }])
+    users = [{
+      name = "remote-build"
+      ssh_authorized_keys = [
+        tls_private_key.ed25519_remote_build.public_key_openssh
+      ]
+    }]
     write_files = [
       {
         content = "AZURE_STORAGE_ACCOUNT_NAME=${azurerm_storage_account.binary_cache.name}",
