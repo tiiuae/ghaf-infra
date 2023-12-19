@@ -6,6 +6,17 @@ provider "azurerm" {
   features {}
 }
 
+terraform {
+  required_providers {
+    azurerm = {
+      source = "hashicorp/azurerm"
+    }
+    secret = {
+      source = "numtide/secret"
+    }
+  }
+}
+
 # read ssh-keys.yaml into local.ssh_keys
 locals {
   ssh_keys = yamldecode(file("../../ssh-keys.yaml"))
