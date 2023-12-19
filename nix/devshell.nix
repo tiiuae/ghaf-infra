@@ -26,6 +26,7 @@
           p.local
           p.null
           p.random
+          p.secret
           p.sops
           p.tls
         ]))
