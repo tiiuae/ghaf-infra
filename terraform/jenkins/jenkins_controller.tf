@@ -37,6 +37,13 @@ module "jenkins_controller_vm" {
         ssh_authorized_keys = local.ssh_keys[user]
       }
     ]
+    # See corresponding EnvironmentFile= directives in services
+    write_files = [
+      {
+        content = "KEY_VAULT_NAME=${azurerm_key_vault.ssh_remote_build.name}\nSECRET_NAME=${azurerm_key_vault_secret.ssh_remote_build.name}",
+        "path"  = "/var/lib/fetch-build-ssh-key/env"
+      }
+    ]
   })])
 
   allocate_public_ip = true
