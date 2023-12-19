@@ -17,3 +17,14 @@ resource "azurerm_storage_container" "binary_cache_1" {
   storage_account_name  = azurerm_storage_account.binary_cache.name
   container_access_type = "private"
 }
+
+# Create a file inside the nar/ subdir.
+# It seems rclone doesn't create the parent directory and fails to upload the
+# first NAR otherwise.
+resource "azurerm_storage_blob" "nar_keep" {
+  name                   = "nar/.keep"
+  storage_account_name   = azurerm_storage_account.binary_cache.name
+  storage_container_name = azurerm_storage_container.binary_cache_1.name
+  type                   = "Block"
+  source_content         = ""
+}
