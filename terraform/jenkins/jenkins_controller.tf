@@ -85,3 +85,15 @@ resource "azurerm_managed_disk" "jenkins_controller_jenkins_state" {
   create_option        = "Empty"
   disk_size_gb         = 10
 }
+
+# Grant the VM read-only access to the Azure Key Vault Secret containing the
+# ed25519 private key used to connect to remote builders.
+resource "azurerm_key_vault_access_policy" "ssh_remote_build_jenkins_controller" {
+  key_vault_id = azurerm_key_vault.ssh_remote_build.id
+  tenant_id    = data.azurerm_client_config.current.tenant_id
+  object_id    = module.jenkins_controller_vm.virtual_machine_identity_principal_id
+
+  secret_permissions = [
+    "Get",
+  ]
+}
