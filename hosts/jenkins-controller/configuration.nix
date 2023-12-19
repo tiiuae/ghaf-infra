@@ -77,6 +77,31 @@ in {
     '';
   };
 
+  # populate-known-hosts populates /root/.ssh/known_hosts with all hosts in the
+  # builder subnet.
+  systemd.services.populate-known-hosts = {
+    after = ["network.target"];
+    before = ["nix-daemon.service"];
+    requires = ["network.target"];
+    wantedBy = [
+      # nix-daemon is socket-activated, and having it here should be sufficient
+      # to fetch the keys whenever a jenkins job connects to the daemon first.
+      # This means this service will effectively get socket-activated on the
+      # first nix-daemon connection.
+      "nix-daemon.service"
+    ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      Restart = "on-failure";
+    };
+    script = ''
+      umask 077
+      mkdir -p /root/.ssh
+      ${pkgs.openssh}/bin/ssh-keyscan -f /var/lib/builder-keyscan/scanlist -v -t ed25519 > /root/.ssh/known_hosts
+    '';
+  };
+
   # Define a fetch-binary-cache-signing-key unit populating
   # /etc/secrets/nix-signing-key from Azure Key Vault.
   # Make it before and requiredBy nix-daemon.service.
