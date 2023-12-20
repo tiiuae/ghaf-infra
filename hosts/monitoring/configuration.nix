@@ -30,6 +30,7 @@ in {
       service-nginx
       service-node-exporter
       user-jrautiola
+      user-tervis
     ])
     ./disk-config.nix
   ];

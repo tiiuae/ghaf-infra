@@ -20,6 +20,7 @@
       user-jrautiola
       user-cazfi
       user-karim
+      user-tervis
     ])
     ./disk-config.nix
   ];

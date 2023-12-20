@@ -13,5 +13,6 @@
     user-mkaapu = import ./mkaapu.nix;
     user-karim = import ./karim.nix;
     user-themisto = import ./themisto.nix;
+    user-tervis = import ./tervis.nix;
   };
 }
