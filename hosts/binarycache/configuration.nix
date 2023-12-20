@@ -28,6 +28,7 @@
       user-jrautiola
       user-cazfi
       user-hydra
+      user-tervis
     ])
     ./disk-config.nix
   ];
