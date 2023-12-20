@@ -21,6 +21,7 @@
       user-cazfi
       user-karim
       user-tervis
+      user-barna
     ])
     ./disk-config.nix
   ];
