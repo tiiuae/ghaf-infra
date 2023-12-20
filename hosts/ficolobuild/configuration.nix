@@ -15,6 +15,7 @@
     (with self.nixosModules; [
       common
       service-openssh
+      ficolo-hosts
       user-cazfi
       user-hrosten
       user-jrautiola
@@ -38,12 +39,6 @@
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-
-  # Connect hosts in the same network.
-  networking.extraHosts = "
-    172.18.20.102 vedenemo.dev # for fetching Gala app sources
-    172.18.20.109 cache.vedenemo.dev # Binary cache
-  ";
 
   # Trust Themisto Hydra user
   nix.settings = {
