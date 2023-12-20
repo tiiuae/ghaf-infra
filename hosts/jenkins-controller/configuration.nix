@@ -20,6 +20,36 @@
     echo "Uploading paths" $OUT_PATHS
     exec nix --extra-experimental-features nix-command copy --to 'http://localhost:8080?secret-key=/etc/secrets/nix-signing-key&compression=zstd' $OUT_PATHS
   '';
+
+  get-secret =
+    pkgs.writers.writePython3 "get-secret" {
+      libraries = with pkgs.python3.pkgs; [azure-keyvault-secrets azure-identity];
+    } ''
+      """
+      This script retrieves a secret specified in $SECRET_NAME
+      from an Azure Key Vault in $KEY_VAULT_NAME
+      and prints it to stdout.
+
+      It uses the default Azure credential client.
+      """
+
+      from azure.keyvault.secrets import SecretClient
+      from azure.identity import DefaultAzureCredential
+
+      import os
+
+      key_vault_name = os.environ["KEY_VAULT_NAME"]
+      secret_name = os.environ["SECRET_NAME"]
+
+      credential = DefaultAzureCredential()
+      client = SecretClient(
+          vault_url=f"https://{key_vault_name}.vault.azure.net",
+          credential=credential
+      )
+
+      s = client.get_secret(secret_name)
+      print(s.value)
+    '';
 in {
   imports = [
     ../azure-common-2.nix
@@ -71,11 +101,7 @@ in {
       EnvironmentFile = "/var/lib/fetch-build-ssh-key/env";
       Restart = "on-failure";
     };
-    script = let
-      get-secret = pkgs.writers.writePython3 "get-secret" {
-        libraries = with pkgs.python3.pkgs; [azure-keyvault-secrets azure-identity];
-      } (builtins.readFile ./get_secret.py);
-    in ''
+    script = ''
       umask 077
       mkdir -p /etc/secrets/
       ${get-secret} > /etc/secrets/remote-build-ssh-key
@@ -127,11 +153,7 @@ in {
       EnvironmentFile = "/var/lib/fetch-binary-cache-signing-key/env";
       Restart = "on-failure";
     };
-    script = let
-      get-secret = pkgs.writers.writePython3 "get-secret" {
-        libraries = with pkgs.python3.pkgs; [azure-keyvault-secrets azure-identity];
-      } (builtins.readFile ./get_secret.py);
-    in ''
+    script = ''
       umask 077
       mkdir -p /etc/secrets/
       ${get-secret} > /etc/secrets/nix-signing-key
