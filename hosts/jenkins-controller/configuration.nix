@@ -7,6 +7,11 @@
   lib,
   ...
 }: let
+  # whenever a build is done, upload it to the blob storage via http (going
+  # through the rclone proxy).
+  # The secret-key= URL parameter configures the store, and which signing key it
+  # should use while uploading, but neither the key nor its location is sent
+  # over HTTP.
   post-build-hook = pkgs.writeScript "upload" ''
     set -eu
     set -f # disable globbing
