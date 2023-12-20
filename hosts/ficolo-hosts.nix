@@ -4,7 +4,6 @@
 {
   networking.extraHosts = ''
     172.18.20.102 vedenemo.dev
-    172.18.20.105 ganymede.vedenemo.dev
     172.18.20.109 cache.vedenemo.dev
   '';
 }
