@@ -17,6 +17,7 @@
       common
       qemu-common
       service-openssh
+      service-node-exporter
       user-jrautiola
       user-cazfi
       user-karim
