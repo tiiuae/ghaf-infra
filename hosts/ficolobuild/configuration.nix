@@ -22,6 +22,7 @@
       user-mkaapu
       user-themisto
       user-tervis
+      user-karim
     ])
     ./disk-config.nix
   ];
