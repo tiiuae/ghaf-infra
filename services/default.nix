@@ -6,7 +6,8 @@
     service-binary-cache = import ./binary-cache;
     service-hydra = import ./hydra;
     service-nginx = import ./nginx;
-    service-openssh = import ./openssh;
     service-node-exporter = import ./node-exporter;
+    service-openssh = import ./openssh;
+    service-remote-build = import ./remote-build;
   };
 }

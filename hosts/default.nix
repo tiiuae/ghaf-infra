@@ -28,17 +28,29 @@
       inherit specialArgs;
       modules = [./binarycache/configuration.nix];
     };
-    monitoring = lib.nixosSystem {
+    binary-cache = lib.nixosSystem {
       inherit specialArgs;
-      modules = [./monitoring/configuration.nix];
+      modules = [./binary-cache/configuration.nix];
+    };
+    builder = lib.nixosSystem {
+      inherit specialArgs;
+      modules = [./builder/configuration.nix];
     };
     ficolobuild = lib.nixosSystem {
       inherit specialArgs;
       modules = [./ficolobuild/configuration.nix];
     };
+    jenkins-controller = lib.nixosSystem {
+      inherit specialArgs;
+      modules = [./jenkins-controller/configuration.nix];
+    };
     prbuilder = lib.nixosSystem {
       inherit specialArgs;
       modules = [./prbuilder/configuration.nix];
+    };
+    monitoring = lib.nixosSystem {
+      inherit specialArgs;
+      modules = [./monitoring/configuration.nix];
     };
   };
 }

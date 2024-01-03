@@ -7,6 +7,7 @@
       packages = with pkgs; [
         azure-cli
         git
+        jq
         nix
         nixos-rebuild
         python3.pkgs.black
@@ -22,8 +23,12 @@
         (terraform.withPlugins (p: [
           p.azurerm
           p.external
+          p.local
           p.null
+          p.random
+          p.secret
           p.sops
+          p.tls
         ]))
       ];
     };

@@ -6,7 +6,7 @@
 
   inputs = {
     # Nixpkgs
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.05";
+    nixpkgs.url = "github:nixos/nixpkgs/master";
     # Allows us to structure the flake with the NixOS module system
     flake-parts.url = "github:hercules-ci/flake-parts";
     flake-root.url = "github:srid/flake-root";
@@ -19,7 +19,8 @@
     # Binary cache with nix-serve-ng
     nix-serve-ng = {
       url = "github:aristanetworks/nix-serve-ng";
-      inputs.nixpkgs.follows = "nixpkgs";
+      # Broken with 23.11, base32 misses text >=2.0 && <2.1
+      # inputs.nixpkgs.follows = "nixpkgs";
     };
     # Disko for disk partitioning
     disko = {
