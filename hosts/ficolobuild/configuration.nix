@@ -15,6 +15,7 @@
     (with self.nixosModules; [
       common
       service-openssh
+      service-node-exporter
       ficolo-hosts
       user-cazfi
       user-hrosten
