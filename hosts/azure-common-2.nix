@@ -4,10 +4,28 @@
 #
 # Profile to import for Azure VMs. Imports azure-common.nix from nixpkgs,
 # and configures cloud-init.
-{modulesPath, ...}: {
+{
+  modulesPath,
+  pkgs,
+  ...
+}: {
   imports = [
     "${modulesPath}/virtualisation/azure-config.nix"
   ];
+
+  nix = {
+    settings = {
+      # Enable flakes and new 'nix' command
+      experimental-features = "nix-command flakes";
+      # Subsituters
+      trusted-public-keys = [
+        "cache.vedenemo.dev:8NhplARANhClUSWJyLVk4WMyy1Wb4rhmWW2u8AejH9E="
+      ];
+      substituters = [
+        "https://cache.vedenemo.dev"
+      ];
+    };
+  };
 
   # enable cloud-init, so instance metadata is set accordingly and we can use
   # cloud-config for ssh key management.
@@ -21,4 +39,11 @@
   # but the way nixpkgs configures cloud-init prevents it from picking up DNS
   # settings from elsewhere.
   # services.resolved.enable = false;
+
+  # List packages installed in system profile
+  environment.systemPackages = with pkgs; [
+    git
+    vim
+    htop
+  ];
 }
