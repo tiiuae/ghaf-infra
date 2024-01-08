@@ -26,7 +26,7 @@ module "jenkins_controller_vm" {
   location            = azurerm_resource_group.default.location
 
   virtual_machine_name         = "ghaf-jenkins-controller"
-  virtual_machine_size         = "Standard_D1_v2"
+  virtual_machine_size         = "Standard_D2_v2"
   virtual_machine_source_image = module.jenkins_controller_image.image_id
 
   virtual_machine_custom_data = join("\n", ["#cloud-config", yamlencode({
