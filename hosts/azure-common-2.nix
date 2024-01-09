@@ -19,9 +19,11 @@
       experimental-features = "nix-command flakes";
       # Subsituters
       trusted-public-keys = [
+        "ghaf-dev.cachix.org-1:S3M8x3no8LFQPBfHw1jl6nmP8A7cVWKntoMKN3IsEQY="
         "cache.vedenemo.dev:8NhplARANhClUSWJyLVk4WMyy1Wb4rhmWW2u8AejH9E="
       ];
       substituters = [
+        "https://ghaf-dev.cachix.org?priority=20"
         "https://cache.vedenemo.dev"
       ];
     };
