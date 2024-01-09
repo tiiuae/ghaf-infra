@@ -24,7 +24,7 @@ module "binary_cache_vm" {
   location            = azurerm_resource_group.default.location
 
   virtual_machine_name         = "ghaf-binary-cache"
-  virtual_machine_size         = "Standard_D2_v5"
+  virtual_machine_size         = "Standard_D1_v2"
   virtual_machine_source_image = module.binary_cache_image.image_id
 
   virtual_machine_custom_data = join("\n", ["#cloud-config", yamlencode({
