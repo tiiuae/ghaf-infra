@@ -18,7 +18,7 @@ module "builder_image" {
 }
 
 locals {
-  num_builders = 2
+  num_builders = 1
 }
 
 module "builder_vm" {
@@ -34,12 +34,17 @@ module "builder_vm" {
   virtual_machine_source_image = module.builder_image.image_id
 
   virtual_machine_custom_data = join("\n", ["#cloud-config", yamlencode({
-    users = [{
-      name = "remote-build"
-      ssh_authorized_keys = [
-        tls_private_key.ed25519_remote_build.public_key_openssh
-      ]
-    }]
+    users = [
+      {
+        name                = "hrosten"
+        sudo                = "ALL=(ALL) NOPASSWD:ALL"
+        ssh_authorized_keys = local.ssh_keys["hrosten"]
+      },
+      {
+        name                = "remote-build"
+        ssh_authorized_keys = tls_private_key.ed25519_remote_build.public_key_openssh
+      },
+    ]
     write_files = [
       {
         content = "AZURE_STORAGE_ACCOUNT_NAME=${azurerm_storage_account.binary_cache.name}",
@@ -48,7 +53,8 @@ module "builder_vm" {
     ],
   })])
 
-  subnet_id = azurerm_subnet.builders.id
+  allocate_public_ip = true
+  subnet_id          = azurerm_subnet.builders.id
 }
 
 # Allow inbound SSH from the jenkins subnet (only)
@@ -74,7 +80,7 @@ resource "azurerm_network_security_group" "builder_vm" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_ranges    = [22]
-    source_address_prefix      = azurerm_subnet.jenkins.address_prefixes[0]
+    source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
 }
