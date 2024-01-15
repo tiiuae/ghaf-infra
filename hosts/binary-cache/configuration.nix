@@ -66,7 +66,7 @@
       }
 
       # Proxy a subset of requests to rclone.
-      https://{$SITE_ADDRESS} {
+      https://ghaf-binary-cache.northeurope.cloudapp.azure.com {
         handle /nix-cache-info {
           reverse_proxy unix///run/rclone-http/socket
         }
@@ -90,8 +90,6 @@
     ""
     "${pkgs.caddy}/bin/caddy run --environ --config ${config.services.caddy.configFile}/Caddyfile"
   ];
-  systemd.services.caddy.serviceConfig.EnvironmentFile = "/run/caddy.env";
-
   # Wait for cloud-init mounting before we start caddy.
   systemd.services.caddy.after = ["cloud-init.service"];
   systemd.services.caddy.requires = ["cloud-init.service"];
