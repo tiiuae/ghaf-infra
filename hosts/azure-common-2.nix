@@ -4,7 +4,11 @@
 #
 # Profile to import for Azure VMs. Imports azure-common.nix from nixpkgs,
 # and configures cloud-init.
-{modulesPath, ...}: {
+{
+  modulesPath,
+  pkgs,
+  ...
+}: {
   imports = [
     "${modulesPath}/virtualisation/azure-config.nix"
   ];
@@ -21,4 +25,11 @@
   # but the way nixpkgs configures cloud-init prevents it from picking up DNS
   # settings from elsewhere.
   # services.resolved.enable = false;
+
+  # List packages installed in system profile
+  environment.systemPackages = with pkgs; [
+    git
+    vim
+    htop
+  ];
 }
