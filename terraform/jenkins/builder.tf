@@ -18,7 +18,7 @@ module "builder_image" {
 }
 
 locals {
-  num_builders = 2
+  num_builders = 1
 }
 
 module "builder_vm" {
@@ -30,7 +30,7 @@ module "builder_vm" {
   location            = azurerm_resource_group.default.location
 
   virtual_machine_name         = "ghaf-builder-${count.index}"
-  virtual_machine_size         = "Standard_D16_v3"
+  virtual_machine_size         = "Standard_D4_v3"
   virtual_machine_source_image = module.builder_image.image_id
 
   virtual_machine_custom_data = join("\n", ["#cloud-config", yamlencode({
