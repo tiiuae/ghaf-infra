@@ -13,6 +13,13 @@
     "${modulesPath}/virtualisation/azure-config.nix"
   ];
 
+  nix = {
+    settings = {
+      # Enable flakes and 'nix' command
+      experimental-features = "nix-command flakes";
+    };
+  };
+
   # enable cloud-init, so instance metadata is set accordingly and we can use
   # cloud-config for ssh key management.
   services.cloud-init.enable = true;
