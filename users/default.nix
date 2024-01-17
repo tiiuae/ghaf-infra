@@ -15,5 +15,6 @@
     user-themisto = import ./themisto.nix;
     user-tervis = import ./tervis.nix;
     user-barna = import ./barna.nix;
+    user-mika = import ./mika.nix;
   };
 }
