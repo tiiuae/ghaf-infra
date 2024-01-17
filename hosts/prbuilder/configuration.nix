@@ -23,6 +23,7 @@
       user-karim
       user-tervis
       user-barna
+      user-mika
     ])
     ./disk-config.nix
   ];
