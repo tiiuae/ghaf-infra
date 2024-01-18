@@ -1,6 +1,6 @@
-# SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
-#
+# SPDX-FileCopyrightText: 2023-2024 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
+#
 {
   pkgs,
   self,
@@ -25,7 +25,7 @@ in {
     (with self.nixosModules; [
       common
       qemu-common
-      ficolo-hosts
+      ficolo-common
       service-openssh
       service-nginx
       service-node-exporter
@@ -39,7 +39,6 @@ in {
 
   networking = {
     hostName = "monitoring";
-    nameservers = ["1.1.1.1" "8.8.8.8"];
     firewall = {
       allowedTCPPorts = [config.services.prometheus.port config.services.grafana.settings.server.http_port];
       allowedUDPPorts = [config.services.prometheus.port config.services.grafana.settings.server.http_port];

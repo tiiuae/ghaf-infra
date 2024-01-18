@@ -1,6 +1,6 @@
-# SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
-#
+# SPDX-FileCopyrightText: 2023-2024 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
+#
 {
   self,
   inputs,
@@ -16,6 +16,7 @@
     (with self.nixosModules; [
       common
       qemu-common
+      ficolo-common
       service-openssh
       service-node-exporter
       user-jrautiola
@@ -46,6 +47,5 @@
 
   networking = {
     hostName = "prbuilder";
-    nameservers = ["1.1.1.1" "8.8.8.8"];
   };
 }

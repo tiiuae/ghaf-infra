@@ -1,6 +1,6 @@
-# SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
-#
+# SPDX-FileCopyrightText: 2023-2024 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
+#
 {
   self,
   inputs,
@@ -20,7 +20,7 @@
     (with self.nixosModules; [
       common
       qemu-common
-      ficolo-hosts
+      ficolo-common
       service-openssh
       service-binary-cache
       service-nginx
@@ -46,7 +46,6 @@
 
   networking = {
     hostName = "binarycache";
-    nameservers = ["1.1.1.1" "8.8.8.8"];
   };
 
   security.acme = {
