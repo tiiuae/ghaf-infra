@@ -1,6 +1,6 @@
-# SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
-#
+# SPDX-FileCopyrightText: 2023-2024 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
+#
 {
   self,
   inputs,
@@ -11,7 +11,7 @@
     # shared modules
     azure-common = import ./azure-common.nix;
     qemu-common = import ./qemu-common.nix;
-    ficolo-hosts = import ./ficolo-hosts.nix;
+    ficolo-common = import ./ficolo-common.nix;
     common = import ./common.nix;
     generic-disk-config = import ./generic-disk-config.nix;
   };

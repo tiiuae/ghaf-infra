@@ -1,6 +1,6 @@
-# SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
-#
+# SPDX-FileCopyrightText: 2023-2024 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
+#
 {
   self,
   config,
@@ -14,9 +14,9 @@
     inputs.disko.nixosModules.disko
     (with self.nixosModules; [
       common
+      ficolo-common
       service-openssh
       service-node-exporter
-      ficolo-hosts
       user-cazfi
       user-hrosten
       user-jrautiola
