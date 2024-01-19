@@ -24,6 +24,7 @@
       user-themisto
       user-tervis
       user-karim
+      user-mika
     ])
     ./disk-config.nix
   ];
