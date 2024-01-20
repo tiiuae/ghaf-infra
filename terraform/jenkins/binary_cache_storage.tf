@@ -4,7 +4,7 @@
 
 # Create the storage account and storage container
 resource "azurerm_storage_account" "binary_cache" {
-  name                            = "ghafbinarycache"
+  name                            = "bche${local.name_postfix}"
   resource_group_name             = azurerm_resource_group.default.name # TODO: separate resource group?
   location                        = azurerm_resource_group.default.location
   account_tier                    = "Standard"

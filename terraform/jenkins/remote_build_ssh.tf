@@ -9,8 +9,11 @@ resource "tls_private_key" "ed25519_remote_build" {
 }
 
 # Dump the ed25519 public key to disk
+# TODO: why do we need to dump the builder public key to disk and store it
+# in git?
 resource "local_file" "ed25519_remote_build_pubkey" {
-  filename        = "${path.module}/id_ed25519_remote_build.pub"
+  # For non-default workspaces, add extension .tmp to the filename
+  filename        = terraform.workspace == "default" ? "${path.module}/id_ed25519_remote_build.pub" : "${path.module}/id_ed25519_remote_build.pub.tmp"
   file_permission = "0644"
   content         = tls_private_key.ed25519_remote_build.public_key_openssh
 }
@@ -18,7 +21,7 @@ resource "local_file" "ed25519_remote_build_pubkey" {
 # Create an Azure key vault.
 resource "azurerm_key_vault" "ssh_remote_build" {
   # this must be globally unique
-  name                = "ghaf-ssh-remote-build"
+  name                = "ssh-${local.name_postfix}"
   location            = azurerm_resource_group.default.location
   resource_group_name = azurerm_resource_group.default.name
   sku_name            = "standard"
