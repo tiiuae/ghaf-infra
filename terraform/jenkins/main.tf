@@ -17,14 +17,18 @@ terraform {
   }
 }
 
-# read ssh-keys.yaml into local.ssh_keys
 locals {
+  # read ssh-keys.yaml into local.ssh_keys
   ssh_keys = yamldecode(file("../../ssh-keys.yaml"))
+  # postfix used in the resource group name
+  rg_postfix = terraform.workspace == "default" ? "prod" : terraform.workspace
+  # postfix used in various resource names
+  name_postfix = terraform.workspace == "default" ? "ghafprod" : terraform.workspace
 }
 
 # The resource group everything in this terraform module lives in
 resource "azurerm_resource_group" "default" {
-  name     = "ghaf-infra-jenkins"
+  name     = "ghaf-infra-jenkins-${local.rg_postfix}"
   location = "northeurope"
 }
 

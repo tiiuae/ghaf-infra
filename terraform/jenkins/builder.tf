@@ -29,8 +29,10 @@ module "builder_vm" {
   resource_group_name = azurerm_resource_group.default.name
   location            = azurerm_resource_group.default.location
 
-  virtual_machine_name         = "ghaf-builder-${count.index}"
-  virtual_machine_size         = "Standard_D4_v3"
+  virtual_machine_name = "ghaf-builder-${count.index}-${local.name_postfix}"
+  # Use 'Standard_D4_v3' if the workspace is 'default' (4 vCPUs, 16 GiB RAM)
+  # Use 'Standard_D2_v3' if the workspace is anything but 'default' (2 vCPU, 8 GiB RAM)
+  virtual_machine_size         = terraform.workspace == "default" ? "Standard_D4_v3" : "Standard_D2_v3"
   virtual_machine_source_image = module.builder_image.image_id
 
   virtual_machine_custom_data = join("\n", ["#cloud-config", yamlencode({

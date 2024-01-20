@@ -23,8 +23,10 @@ module "binary_cache_vm" {
   resource_group_name = azurerm_resource_group.default.name
   location            = azurerm_resource_group.default.location
 
-  virtual_machine_name         = "ghaf-binary-cache"
-  virtual_machine_size         = "Standard_D1_v2"
+  virtual_machine_name = "ghaf-binary-cache-${local.name_postfix}"
+  # Use 'Standard_D2_v2' if the workspace is 'default' (2 vCPUs, 7 GiB RAM)
+  # Use 'Standard_D1_v2' if the workspace is anything but 'default' (1 vCPU, 3.5 GiB RAM)
+  virtual_machine_size         = terraform.workspace == "default" ? "Standard_D2_v2" : "Standard_D1_v2"
   virtual_machine_source_image = module.binary_cache_image.image_id
 
   virtual_machine_custom_data = join("\n", ["#cloud-config", yamlencode({
