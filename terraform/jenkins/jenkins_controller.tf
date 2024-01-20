@@ -25,7 +25,7 @@ module "jenkins_controller_vm" {
   resource_group_name = azurerm_resource_group.default.name
   location            = azurerm_resource_group.default.location
 
-  virtual_machine_name         = "ghaf-jenkins-controller"
+  virtual_machine_name         = "ghaf-jenkins-controller-${local.name_postfix}"
   virtual_machine_size         = "Standard_D2_v2"
   virtual_machine_source_image = module.jenkins_controller_image.image_id
 
