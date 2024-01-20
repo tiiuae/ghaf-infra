@@ -6,14 +6,17 @@
 # terraform import secret_resource.binary_cache_signing_key "$(< ./secret-key)"
 resource "secret_resource" "binary_cache_signing_key" {
   lifecycle {
-    prevent_destroy = true
+    # To support automatically generating and destroying temp signing keys
+    # with playground/terraform-az-dev.sh, `prevent_destroy` needs to be set
+    # to `false`:
+    prevent_destroy = false
   }
 }
 
 # Create an Azure key vault.
 resource "azurerm_key_vault" "binary_cache_signing_key" {
   # this must be globally unique
-  name                = "ghaf-binarycache-signing"
+  name                = "sig-${local.name_postfix}"
   location            = azurerm_resource_group.default.location
   resource_group_name = azurerm_resource_group.default.name
   sku_name            = "standard"
