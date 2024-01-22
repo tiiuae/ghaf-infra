@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
+# SPDX-FileCopyrightText: 2023-2024 Technology Innovation Institute (TII)
 # SPDX-FileCopyrightText: 2023 Nix community projects
 #
 # SPDX-License-Identifier: MIT
@@ -86,7 +86,7 @@ TARGETS = OrderedDict(
         ),
         "build3-ficolo": TargetHost(
             hostname="172.18.20.104",
-            nixosconfig="ficolobuild",
+            nixosconfig="ficolobuild3",
         ),
         "prbuilder": TargetHost(
             hostname="172.18.20.106",
