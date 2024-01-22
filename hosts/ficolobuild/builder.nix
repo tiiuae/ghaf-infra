@@ -21,7 +21,6 @@
       user-hrosten
       user-jrautiola
       user-mkaapu
-      user-themisto
       user-tervis
       user-karim
       user-mika
@@ -42,9 +41,4 @@
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-
-  # Trust Themisto Hydra user
-  nix.settings = {
-    trusted-users = ["root" "themisto"];
-  };
 }
