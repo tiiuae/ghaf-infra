@@ -36,6 +36,10 @@
       inherit specialArgs;
       modules = [./ficolobuild/build3.nix];
     };
+    ficolobuild4 = lib.nixosSystem {
+      inherit specialArgs;
+      modules = [./ficolobuild/build4.nix];
+    };
     prbuilder = lib.nixosSystem {
       inherit specialArgs;
       modules = [./prbuilder/configuration.nix];
