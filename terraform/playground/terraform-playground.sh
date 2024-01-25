@@ -54,11 +54,12 @@ generate_azure_private_workspace_name () {
     # - cut removes everything up until the first '@'
     # - sed keeps only letter and number characters
     # - final cut keeps at most 20 characters
+    # - tr converts the string to lower case
     # Thus, given a signed-in user 'foo.bar@baz.com', the workspace name
     # becomes 'foobar'.
     # Below command errors out with the azure error message if the azure user
     # is not signed-in.
-    WORKSPACE=$(az ad signed-in-user show | jq -cr .userPrincipalName | cut -d'@' -f1 | sed 's/[^a-zA-Z0-9]//g' | cut -c 1-20)
+    WORKSPACE=$(az ad signed-in-user show | jq -cr .userPrincipalName | cut -d'@' -f1 | sed 's/[^a-zA-Z0-9]//g' | cut -c 1-20 | tr '[:upper:]' '[:lower:]')
     # Check WORKSPACE is non-empty and not 'default'
     if [ -z "$WORKSPACE" ] || [ "$WORKSPACE" = "default" ]; then
         echo "Error: invalid workspace name: '$WORKSPACE'"
@@ -148,6 +149,7 @@ main () {
     exit_unless_command_exists jq
     exit_unless_command_exists sed
     exit_unless_command_exists cut
+    exit_unless_command_exists tr
     
     # Assigns $WORKSPACE variable
     generate_azure_private_workspace_name
