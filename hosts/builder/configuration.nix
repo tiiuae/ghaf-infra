@@ -40,11 +40,14 @@
   };
 
   # Configure Nix to use this as a substitutor, and the public key used for signing.
+  # TODO: remove cache.vedenemo.dev substituter
   nix.settings.trusted-public-keys = [
     "ghaf-jenkins:5OXpzoevBwH4sBR0S0HaIQCik2adrOrGawIXO+WADCk="
+    "cache.vedenemo.dev:8NhplARANhClUSWJyLVk4WMyy1Wb4rhmWW2u8AejH9E="
   ];
   nix.settings.substituters = [
     "http://localhost:8080"
+    "https://cache.vedenemo.dev"
   ];
 
   system.stateVersion = "23.05";
