@@ -26,6 +26,8 @@
   # enable cloud-init, so instance metadata is set accordingly and we can use
   # cloud-config for ssh key management.
   services.cloud-init.enable = true;
+  systemd.services.cloud-config.after = ["mnt-resource.mount"];
+  systemd.services.cloud-config.requires = ["mnt-resource.mount"];
 
   # Use systemd-networkd for network configuration.
   services.cloud-init.network.enable = true;
