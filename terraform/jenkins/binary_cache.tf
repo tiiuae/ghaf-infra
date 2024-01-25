@@ -43,6 +43,10 @@ module "binary_cache_vm" {
         content = "AZURE_STORAGE_ACCOUNT_NAME=${azurerm_storage_account.binary_cache.name}",
         "path"  = "/var/lib/rclone-http/env"
       },
+      {
+        content = "SITE_ADDRESS=ghaf-binary-cache.northeurope.cloudapp.azure.com",
+        "path"  = "/run/caddy.env"
+      },
     ],
   })])
 
