@@ -44,7 +44,7 @@ module "binary_cache_vm" {
         "path"  = "/var/lib/rclone-http/env"
       },
       {
-        content = "SITE_ADDRESS=ghaf-binary-cache.northeurope.cloudapp.azure.com",
+        content = "SITE_ADDRESS=ghaf-binary-cache-${local.name_postfix}.northeurope.cloudapp.azure.com",
         "path"  = "/run/caddy.env"
       },
     ],
