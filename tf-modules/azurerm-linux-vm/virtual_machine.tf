@@ -56,6 +56,7 @@ resource "azurerm_virtual_machine" "main" {
     caching           = "ReadWrite"
     create_option     = "FromImage"
     managed_disk_type = "Standard_LRS"
+    disk_size_gb      = "100"
   }
 
   dynamic "storage_data_disk" {
