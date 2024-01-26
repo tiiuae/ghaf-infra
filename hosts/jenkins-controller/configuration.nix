@@ -184,7 +184,7 @@ in {
 
   # Configure Nix to use this as a substitutor, and the public key used for signing.
   nix.settings.trusted-public-keys = [
-    "ghaf-jenkins:5OXpzoevBwH4sBR0S0HaIQCik2adrOrGawIXO+WADCk="
+    "ghaf-jenkins:5mkxSJ9AQd7qVhsbtNV8eBGiHOm7oeMxFXVAr8VHTlI="
   ];
   nix.settings.substituters = [
     "http://localhost:8080"
