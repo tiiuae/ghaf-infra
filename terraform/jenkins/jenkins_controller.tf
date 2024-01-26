@@ -44,7 +44,7 @@ module "jenkins_controller_vm" {
         "path"  = "/var/lib/fetch-build-ssh-key/env"
       },
       {
-        content = "KEY_VAULT_NAME=${azurerm_key_vault.binary_cache_signing_key.name}\nSECRET_NAME=${azurerm_key_vault_secret.binary_cache_signing_key.name}",
+        content = "KEY_VAULT_NAME=${data.azurerm_key_vault.binary_cache_signing_key.name}\nSECRET_NAME=${data.azurerm_key_vault_secret.binary_cache_signing_key.name}",
         "path"  = "/var/lib/fetch-binary-cache-signing-key/env"
       },
       {
@@ -138,7 +138,7 @@ resource "azurerm_role_assignment" "jenkins_controller_access_storage" {
 # Grant the VM read-only access to the Azure Key Vault Secret containing the
 # binary cache signing key.
 resource "azurerm_key_vault_access_policy" "binary_cache_signing_key_jenkins_controller" {
-  key_vault_id = azurerm_key_vault.binary_cache_signing_key.id
+  key_vault_id = data.azurerm_key_vault.binary_cache_signing_key.id
   tenant_id    = data.azurerm_client_config.current.tenant_id
   object_id    = module.jenkins_controller_vm.virtual_machine_identity_principal_id
 
