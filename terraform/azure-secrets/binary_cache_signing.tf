@@ -16,7 +16,7 @@ terraform {
     resource_group_name  = "ghaf-infra-storage"
     storage_account_name = "ghafinfrastatestorage"
     container_name       = "ghaf-infra-tfstate-container"
-    key                  = "ghaf-infra-sigkey.tfstate"
+    key                  = "ghaf-infra-secrets.tfstate"
   }
 }
 provider "azurerm" {
@@ -24,7 +24,7 @@ provider "azurerm" {
 }
 # Resource group
 resource "azurerm_resource_group" "default" {
-  name     = "ghaf-infra-sigkey"
+  name     = "ghaf-infra-secrets"
   location = "northeurope"
 }
 

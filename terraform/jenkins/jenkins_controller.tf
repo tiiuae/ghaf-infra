@@ -40,7 +40,7 @@ module "jenkins_controller_vm" {
     write_files = [
       # See corresponding EnvironmentFile= directives in services
       {
-        content = "KEY_VAULT_NAME=${azurerm_key_vault.ssh_remote_build.name}\nSECRET_NAME=${azurerm_key_vault_secret.ssh_remote_build.name}",
+        content = "KEY_VAULT_NAME=${data.azurerm_key_vault.ssh_remote_build.name}\nSECRET_NAME=${data.azurerm_key_vault_secret.ssh_remote_build.name}",
         "path"  = "/var/lib/fetch-build-ssh-key/env"
       },
       {
@@ -116,10 +116,12 @@ resource "azurerm_managed_disk" "jenkins_controller_jenkins_state" {
   disk_size_gb         = 10
 }
 
+data "azurerm_client_config" "current" {}
+
 # Grant the VM read-only access to the Azure Key Vault Secret containing the
 # ed25519 private key used to connect to remote builders.
 resource "azurerm_key_vault_access_policy" "ssh_remote_build_jenkins_controller" {
-  key_vault_id = azurerm_key_vault.ssh_remote_build.id
+  key_vault_id = data.azurerm_key_vault.ssh_remote_build.id
   tenant_id    = data.azurerm_client_config.current.tenant_id
   object_id    = module.jenkins_controller_vm.virtual_machine_identity_principal_id
 

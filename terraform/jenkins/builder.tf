@@ -39,7 +39,7 @@ module "builder_vm" {
     users = [{
       name = "remote-build"
       ssh_authorized_keys = [
-        tls_private_key.ed25519_remote_build.public_key_openssh
+        "${data.azurerm_key_vault_secret.ssh_remote_build_pub.value}"
       ]
     }]
     write_files = [
