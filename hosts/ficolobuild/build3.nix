@@ -10,6 +10,7 @@
     (with self.nixosModules; [
       user-themisto
       user-barna
+      user-bmg
     ])
     ./builder.nix
   ];
@@ -20,6 +21,6 @@
 
   # Trust Themisto Hydra user
   nix.settings = {
-    trusted-users = ["root" "themisto" "barna"];
+    trusted-users = ["root" "themisto" "barna" "bmg"];
   };
 }
