@@ -35,7 +35,7 @@ usage () {
     echo " "
     echo "    Deactivate and destroy the private development infra that was previously"
     echo "    created with the 'activate' command. This command deletes all the infra"
-    echo "    resources and removes the terraform workspace."
+    echo "    resources."
     echo ""
 }
 
@@ -69,7 +69,7 @@ generate_azure_private_workspace_name () {
 
 activate () {
     echo "[+] Activating workspace: '$WORKSPACE'"
-    if terraform workspace list | grep -q "$WORKSPACE"; then
+    if terraform workspace list | grep -qP "\s$WORKSPACE\$"; then
         terraform workspace select "$WORKSPACE"
     else
         terraform workspace new "$WORKSPACE"
@@ -79,14 +79,13 @@ activate () {
 }
 
 destroy () {
-    if ! terraform workspace list | grep -q "$WORKSPACE"; then
+    if ! terraform workspace list | grep -qP "\s$WORKSPACE\$"; then
         echo "[+] Devenv workspace '$WORKSPACE' does not exist, nothing to destroy"
         exit 0
     fi
     echo "[+] Destroying workspace: '$WORKSPACE'"
     terraform workspace select "$WORKSPACE"
     terraform apply -destroy -auto-approve
-    terraform workspace select default
 }
 
 list () {
@@ -114,7 +113,8 @@ main () {
     exit_unless_command_exists sed
     exit_unless_command_exists cut
     exit_unless_command_exists tr
-    
+    exit_unless_command_exists grep
+
     # Assigns $WORKSPACE variable
     generate_azure_private_workspace_name
 
