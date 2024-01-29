@@ -67,40 +67,6 @@ generate_azure_private_workspace_name () {
     fi
 }
 
-import_sigkey () {
-    # This function is a hack to automatically generate the binary cache
-    # signing key for the (ghaf-infra) private dev environment.
-
-    # No need to import anything if the below key isn't defined in the infra
-    if ! grep -q secret_resource.binary_cache_signing_key -- *.tf; then
-        return
-    fi
-
-    # Skip import if signing key is imported already
-    if terraform state list | grep -q secret_resource.binary_cache_signing_key ; then
-        return
-    fi
-
-    # Generate and import the key
-    nix-store --generate-binary-cache-key "$WORKSPACE" sigkey-secret.tmp sigkey-public.tmp
-    terraform import secret_resource.binary_cache_signing_key "$(< ./sigkey-secret.tmp)"
-}
-
-delete_keyvault () {
-    # This function is a hack to automatically delete keyvaults
-    # from the (ghaf-infra) private dev environment.
-    set +e
-    if grep -qP "sig-.*name_postfix" -- *.tf; then
-        az keyvault delete --name "sig-$WORKSPACE" 2>/dev/null
-        az keyvault purge  --name "sig-$WORKSPACE" 2>/dev/null
-    fi
-    if grep -qP "ssh-.*name_postfix" -- *.tf; then
-        az keyvault delete --name "ssh-$WORKSPACE" 2>/dev/null
-        az keyvault purge  --name "ssh-$WORKSPACE" 2>/dev/null
-    fi
-    set -e
-}
-
 activate () {
     echo "[+] Activating workspace: '$WORKSPACE'"
     if terraform workspace list | grep -q "$WORKSPACE"; then
@@ -109,7 +75,6 @@ activate () {
         terraform workspace new "$WORKSPACE"
         terraform workspace select "$WORKSPACE"
     fi
-    import_sigkey
     echo "[+] Done, use terraform [validate|plan|apply] to work with your dev infra"
 }
 
@@ -120,7 +85,6 @@ destroy () {
     fi
     echo "[+] Destroying workspace: '$WORKSPACE'"
     terraform workspace select "$WORKSPACE"
-    delete_keyvault
     terraform apply -destroy -auto-approve
     terraform workspace select default
 }
