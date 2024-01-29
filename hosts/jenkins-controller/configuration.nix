@@ -74,6 +74,8 @@ in {
     port = 8081;
     withCLI = true;
   };
+  systemd.services.jenkins.after = ["cloud-config.service"];
+  systemd.services.jenkins.requires = ["cloud-config.service"];
 
   # set StateDirectory=jenkins, so state volume has the right permissions
   # and we wait on the mountpoint to appear.
