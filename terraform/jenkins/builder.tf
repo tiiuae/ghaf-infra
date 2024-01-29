@@ -58,7 +58,7 @@ resource "azurerm_network_interface_security_group_association" "builder_vm" {
   count = local.num_builders
 
   network_interface_id      = module.builder_vm[count.index].virtual_machine_network_interface_id
-  network_security_group_id = azurerm_network_security_group.binary_cache_vm.id
+  network_security_group_id = azurerm_network_security_group.builder_vm[count.index].id
 }
 
 resource "azurerm_network_security_group" "builder_vm" {
