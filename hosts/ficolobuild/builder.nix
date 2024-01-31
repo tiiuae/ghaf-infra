@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2023-2024 Technology Innovation Institute (TII)
-# SPDX-License-Identifier: Apache-2.0
 #
+# SPDX-License-Identifier: Apache-2.0
 {
   self,
   config,
