@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2024 Technology Innovation Institute (TII)
-# SPDX-License-Identifier: Apache-2.0
 #
+# SPDX-License-Identifier: Apache-2.0
 {
   self,
   lib,
@@ -10,7 +10,6 @@
     (with self.nixosModules; [
       user-themisto
     ])
-    # Import Ficolo x86 builder specific configuration
     ./builder.nix
   ];
 

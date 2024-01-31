@@ -28,7 +28,6 @@
       service-openssh
       service-binary-cache
       service-nginx
-      user-bmg
       user-hrosten
       user-tervis
     ])
