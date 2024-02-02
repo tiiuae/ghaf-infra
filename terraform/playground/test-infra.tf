@@ -8,10 +8,10 @@ terraform {
       source = "hashicorp/azurerm"
     }
   }
-  # Backend for storing tfstate (see ./azure-storage)
+  # Backend for storing tfstate (see ../state-storage)
   backend "azurerm" {
-    resource_group_name  = "ghaf-infra-storage"
-    storage_account_name = "ghafinfrastatestorage"
+    resource_group_name  = "ghaf-infra-state"
+    storage_account_name = "ghafinfratfstatestorage"
     container_name       = "ghaf-infra-tfstate-container"
     key                  = "ghaf-infra-playground.tfstate"
   }
@@ -74,7 +74,7 @@ resource "azurerm_storage_container" "vm_images" {
 # VM
 
 module "test_image" {
-  source = "../../tf-modules/azurerm-nix-vm-image"
+  source = "../modules/azurerm-nix-vm-image"
 
   nix_attrpath   = "outputs.nixosConfigurations.builder.config.system.build.azureImage"
   nix_entrypoint = "${path.module}/../.."
@@ -92,7 +92,7 @@ locals {
 }
 
 module "test_vm" {
-  source = "../../tf-modules/azurerm-linux-vm"
+  source = "../modules/azurerm-linux-vm"
 
   count = local.num_vms
 
