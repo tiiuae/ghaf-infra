@@ -9,6 +9,7 @@
   imports = lib.flatten [
     (with self.nixosModules; [
       user-themisto
+      user-ktu
     ])
     ./builder.nix
     ./developers.nix
@@ -20,6 +21,6 @@
 
   # Trust Themisto Hydra user
   nix.settings = {
-    trusted-users = ["root" "themisto"];
+    trusted-users = ["root" "themisto" "@wheel"];
   };
 }
