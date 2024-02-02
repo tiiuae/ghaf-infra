@@ -19,6 +19,12 @@
         "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIA/pwHnzGNM+ZU4lANGROTRe2ZHbes7cnZn72Oeun/MCAAAABHNzaDo="
       ];
     }
+    {
+      name = "milval";
+      keys = [
+        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC27Bw23c+I+h1Ppwf8++glx5yzKdgZ/tFFFcORtl7vlH5vbAr5umRj7DOijeyFMSUc/KuH7F5wMHwzTSkXYjhQINc1plzD1RXorC3mHBIrBqtAUTRgKU9t70FF1sNVyUy97Lu5hrnVEtQnqaBLm5EJdIyLxGfu1kzjvcvOA05KnwXqcehlsEASU8HnEs6tBUITqvkegePqIXU+z7KMG0pCpfOj76ImZq82Ih34o+D7cz8LiGdT1BiSBUl6CO/Q55oRwo9Eew/MCkj/jr9XKzX1biv3B1yqzIFTYcUsF/KqjX57w19KX+5crgvyJ5uN8GdKzw/Y8CtHrQqJU6UPLOnqqIixHPomoVPUNbpPW9aWTqhwZ8PG1KBuN/3XeJuPvW0EVYiQrnXFD2dnGz86QCZUSyIXicEoGjxUviFICPc8iFljQqNvUpehMtnMAgy1Wfl5F9o9NgFWOvvmFoxU9vVUVsS4aOLb3ke3mEg65m8YOL2vho3q+Ex5lnqynvHSsY0= root@nixos"
+      ];
+    }
   ];
 in {
   users = {
