@@ -4,29 +4,26 @@
 
 # Build the Jenkins controller image
 module "jenkins_controller_image" {
-  source = "../../tf-modules/azurerm-nix-vm-image"
+  source = "./modules/azurerm-nix-vm-image"
 
   nix_attrpath   = "outputs.nixosConfigurations.jenkins-controller.config.system.build.azureImage"
-  nix_entrypoint = "${path.module}/../.."
+  nix_entrypoint = "${path.module}/.."
 
-
-  name                = "jenkins-controller"
-  resource_group_name = azurerm_resource_group.default.name
-  location            = azurerm_resource_group.default.location
-
+  name                   = "jenkins-controller"
+  resource_group_name    = azurerm_resource_group.infra.name
+  location               = azurerm_resource_group.infra.location
   storage_account_name   = azurerm_storage_account.vm_images.name
   storage_container_name = azurerm_storage_container.vm_images.name
 }
 
 # Create a machine using this image
 module "jenkins_controller_vm" {
-  source = "../../tf-modules/azurerm-linux-vm"
+  source = "./modules/azurerm-linux-vm"
 
-  resource_group_name = azurerm_resource_group.default.name
-  location            = azurerm_resource_group.default.location
-
-  virtual_machine_name         = "ghaf-jenkins-controller-${local.name_postfix}"
-  virtual_machine_size         = "Standard_D2_v2"
+  resource_group_name          = azurerm_resource_group.infra.name
+  location                     = azurerm_resource_group.infra.location
+  virtual_machine_name         = "ghaf-jenkins-controller-${local.env}"
+  virtual_machine_size         = local.opts[local.conf].vm_size_controller
   virtual_machine_source_image = module.jenkins_controller_image.image_id
 
   virtual_machine_custom_data = join("\n", ["#cloud-config", yamlencode({
@@ -48,7 +45,7 @@ module "jenkins_controller_vm" {
         "path"  = "/var/lib/fetch-binary-cache-signing-key/env"
       },
       {
-        content = "AZURE_STORAGE_ACCOUNT_NAME=${azurerm_storage_account.binary_cache.name}",
+        content = "AZURE_STORAGE_ACCOUNT_NAME=${data.azurerm_storage_account.binary_cache.name}",
         "path"  = "/var/lib/rclone-http/env"
       },
       # Render /etc/nix/machines with terraform. In the future, we might want to
@@ -90,8 +87,8 @@ resource "azurerm_network_interface_security_group_association" "jenkins_control
 
 resource "azurerm_network_security_group" "jenkins_controller_vm" {
   name                = "jenkins-controller-vm"
-  resource_group_name = azurerm_resource_group.default.name
-  location            = azurerm_resource_group.default.location
+  resource_group_name = azurerm_resource_group.infra.name
+  location            = azurerm_resource_group.infra.location
 
   security_rule {
     name                       = "AllowSSHInbound"
@@ -109,14 +106,12 @@ resource "azurerm_network_security_group" "jenkins_controller_vm" {
 # Create a data disk
 resource "azurerm_managed_disk" "jenkins_controller_jenkins_state" {
   name                 = "jenkins-controller-vm-jenkins-state"
-  resource_group_name  = azurerm_resource_group.default.name
-  location             = azurerm_resource_group.default.location
+  resource_group_name  = azurerm_resource_group.infra.name
+  location             = azurerm_resource_group.infra.location
   storage_account_type = "Standard_LRS"
   create_option        = "Empty"
   disk_size_gb         = 10
 }
-
-data "azurerm_client_config" "current" {}
 
 # Grant the VM read-only access to the Azure Key Vault Secret containing the
 # ed25519 private key used to connect to remote builders.
@@ -132,7 +127,7 @@ resource "azurerm_key_vault_access_policy" "ssh_remote_build_jenkins_controller"
 
 # Allow the VM to *write* to (and read from) the binary cache bucket
 resource "azurerm_role_assignment" "jenkins_controller_access_storage" {
-  scope                = azurerm_storage_container.binary_cache_1.resource_manager_id
+  scope                = data.azurerm_storage_container.binary_cache_1.resource_manager_id
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = module.jenkins_controller_vm.virtual_machine_identity_principal_id
 }
