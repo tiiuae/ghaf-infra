@@ -42,7 +42,7 @@
   # Configure Nix to use this as a substitutor, and the public key used for signing.
   # TODO: remove cache.vedenemo.dev substituter
   nix.settings.trusted-public-keys = [
-    "ghaf-jenkins:5mkxSJ9AQd7qVhsbtNV8eBGiHOm7oeMxFXVAr8VHTlI="
+    "ghaf-infra-dev:zPj3qUkGtUcnMehhQY89bayLOZBpMClIfFb5KkasLQE="
     "cache.vedenemo.dev:8NhplARANhClUSWJyLVk4WMyy1Wb4rhmWW2u8AejH9E="
   ];
   nix.settings.substituters = [

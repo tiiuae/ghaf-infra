@@ -3,36 +3,31 @@
 # SPDX-License-Identifier: Apache-2.0
 
 module "builder_image" {
-  source = "../../tf-modules/azurerm-nix-vm-image"
+  source = "./modules/azurerm-nix-vm-image"
 
   nix_attrpath   = "outputs.nixosConfigurations.builder.config.system.build.azureImage"
-  nix_entrypoint = "${path.module}/../.."
+  nix_entrypoint = "${path.module}/.."
 
-
-  name                = "builder"
-  resource_group_name = azurerm_resource_group.default.name
-  location            = azurerm_resource_group.default.location
-
+  name                   = "builder"
+  resource_group_name    = azurerm_resource_group.infra.name
+  location               = azurerm_resource_group.infra.location
   storage_account_name   = azurerm_storage_account.vm_images.name
   storage_container_name = azurerm_storage_container.vm_images.name
 }
 
 locals {
-  num_builders = 1
+  num_builders = local.opts[local.conf].num_builders
 }
 
 module "builder_vm" {
-  source = "../../tf-modules/azurerm-linux-vm"
+  source = "./modules/azurerm-linux-vm"
 
   count = local.num_builders
 
-  resource_group_name = azurerm_resource_group.default.name
-  location            = azurerm_resource_group.default.location
-
-  virtual_machine_name = "ghaf-builder-${count.index}-${local.name_postfix}"
-  # Use 'Standard_D4_v3' if the workspace is 'default' (4 vCPUs, 16 GiB RAM)
-  # Use 'Standard_D2_v3' if the workspace is anything but 'default' (2 vCPU, 8 GiB RAM)
-  virtual_machine_size         = terraform.workspace == "default" ? "Standard_D4_v3" : "Standard_D2_v3"
+  resource_group_name          = azurerm_resource_group.infra.name
+  location                     = azurerm_resource_group.infra.location
+  virtual_machine_name         = "ghaf-builder-${count.index}-${local.env}"
+  virtual_machine_size         = local.opts[local.conf].vm_size_builder
   virtual_machine_source_image = module.builder_image.image_id
 
   virtual_machine_custom_data = join("\n", ["#cloud-config", yamlencode({
@@ -44,7 +39,7 @@ module "builder_vm" {
     }]
     write_files = [
       {
-        content = "AZURE_STORAGE_ACCOUNT_NAME=${azurerm_storage_account.binary_cache.name}",
+        content = "AZURE_STORAGE_ACCOUNT_NAME=${data.azurerm_storage_account.binary_cache.name}",
         "path"  = "/var/lib/rclone-http/env"
       }
     ],
@@ -65,8 +60,8 @@ resource "azurerm_network_security_group" "builder_vm" {
   count = local.num_builders
 
   name                = "builder-vm-${count.index}"
-  resource_group_name = azurerm_resource_group.default.name
-  location            = azurerm_resource_group.default.location
+  resource_group_name = azurerm_resource_group.infra.name
+  location            = azurerm_resource_group.infra.location
 
   security_rule {
     name                       = "AllowSSHFromJenkins"
@@ -83,9 +78,8 @@ resource "azurerm_network_security_group" "builder_vm" {
 
 # Allow the VMs to read from the binary cache bucket
 resource "azurerm_role_assignment" "builder_access_binary_cache" {
-  count = local.num_builders
-
-  scope                = azurerm_storage_container.binary_cache_1.resource_manager_id
+  count                = local.num_builders
+  scope                = data.azurerm_storage_container.binary_cache_1.resource_manager_id
   role_definition_name = "Storage Blob Data Reader"
   principal_id         = module.builder_vm[count.index].virtual_machine_identity_principal_id
 }

@@ -2,11 +2,29 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+################################################################################
+
+# Can only consist of lowercase letters and numbers, and must be between 3
+# and 24 characters long, must be globally unique
+variable "bincache_storage_account_name" {
+  type = string
+}
+
+variable "resource_group_name" {
+  type = string
+}
+
+variable "location" {
+  type = string
+}
+
+################################################################################
+
 # Create the storage account and storage container
 resource "azurerm_storage_account" "binary_cache" {
-  name                            = "bche${local.name_postfix}"
-  resource_group_name             = azurerm_resource_group.default.name # TODO: separate resource group?
-  location                        = azurerm_resource_group.default.location
+  name                            = var.bincache_storage_account_name
+  resource_group_name             = var.resource_group_name
+  location                        = var.location
   account_tier                    = "Standard"
   account_replication_type        = "LRS"
   allow_nested_items_to_be_public = false

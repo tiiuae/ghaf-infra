@@ -16,22 +16,16 @@ provider "azurerm" {
 
 # Resource group
 
-variable "resource_group_location" {
-  type        = string
-  default     = "northeurope"
-  description = "Location of the resource group."
-}
-
 resource "azurerm_resource_group" "rg" {
-  name     = "ghaf-infra-storage"
-  location = var.resource_group_location
+  name     = "ghaf-infra-state"
+  location = "northeurope"
 }
-
 
 # Storage container
 
 resource "azurerm_storage_account" "tfstate" {
-  name                            = "ghafinfrastatestorage"
+  # This must be globally unique, max 24 characters
+  name                            = "ghafinfratfstatestorage"
   resource_group_name             = azurerm_resource_group.rg.name
   location                        = azurerm_resource_group.rg.location
   account_tier                    = "Standard"
