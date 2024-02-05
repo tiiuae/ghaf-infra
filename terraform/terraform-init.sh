@@ -63,7 +63,7 @@ init_persistent () {
     pushd "$MYDIR/persistent" >/dev/null
     terraform init > /dev/null
     # Default persistent instance: 'eun' (northeurope)
-    terraform workspace select eun 2>/dev/null || terraform workspace new eun
+    terraform workspace select eun &>/dev/null || terraform workspace new eun
     import_bincache_sigkey "prod"
     import_bincache_sigkey "dev"
     echo "[+] Applying possible changes"

@@ -53,7 +53,7 @@ locals {
   # this is a workaround to missing asserts in terraform:
   assert_workspace_not_default = regex(
     (terraform.workspace == "default") ?
-  "((Force invalid regex pattern)\n\nERROR: default workspace not allowed" : "", "")
+  "((Force invalid regex pattern)\n\nERROR: workspace 'default' is not allowed" : "", "")
 
   # Short name of the Azure region, see:
   # https://github.com/claranet/terraform-azurerm-regions/blob/master/REGIONS.md
@@ -80,7 +80,7 @@ locals {
       num_builders        = 1
     }
     prod = {
-      vm_size_binarycache = "Standard_D2_v2"
+      vm_size_binarycache = "Standard_D2_v3"
       vm_size_builder     = "Standard_D8_v3"
       vm_size_controller  = "Standard_D8_v3"
       num_builders        = 2
