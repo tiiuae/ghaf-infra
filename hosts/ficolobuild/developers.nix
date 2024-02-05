@@ -25,6 +25,12 @@
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHRGczoQ78cjHdjEgKTyZeLKu/flWlvf+HepdUezZCDr root@nixos"
       ];
     }
+    {
+      name = "milval";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGll9sWYdGc2xi9oQ25TEcI1D3T4n8MMXoMT+lJdE/KC root@nixos"
+      ];
+    }
   ];
 in {
   users = {
