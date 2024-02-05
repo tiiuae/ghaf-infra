@@ -10,7 +10,7 @@ set -o pipefail # exit if any pipeline command fails
 
 ################################################################################
 
-# This script is a helper to initialize the ghaf-infra:
+# This script is a helper to initialize the ghaf terraform infra:
 # - init terraform state storage
 # - init persistent secrets such as binary cache signing key (per environment)
 # - init persistent binary cache storage (per environment)
@@ -62,6 +62,8 @@ init_persistent () {
     # See: ./persistent
     pushd "$MYDIR/persistent" >/dev/null
     terraform init > /dev/null
+    # Default persistent instance: 'eun' (northeurope)
+    terraform workspace select eun 2>/dev/null || terraform workspace new eun
     import_bincache_sigkey "prod"
     import_bincache_sigkey "dev"
     echo "[+] Applying possible changes"
@@ -71,7 +73,6 @@ init_persistent () {
 
 init_terraform () {
     echo "[+] Running terraform init"
-    # It's safe to run terraform init multiple times
     terraform -chdir="$MYDIR" init >/dev/null
 }
 
