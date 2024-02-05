@@ -38,21 +38,21 @@ variable "location" {
   description = "Azure region into which the resources will be deployed"
 }
 
-# Use azure_region module to get the short name of the Azure region,
-# see: https://registry.terraform.io/modules/claranet/regions/azurerm/latest 
-# and: https://github.com/claranet/terraform-azurerm-regions/blob/master/REGIONS.md
-module "azure_region" {
-  source       = "claranet/regions/azurerm"
-  azure_region = var.location
-}
-
 locals {
-  shortloc = module.azure_region.location_short
+  # Raise an error if workspace is 'default',
+  # this is a workaround to missing asserts in terraform:
+  assert_workspace_not_default = regex(
+    (terraform.workspace == "default") ?
+  "((Force invalid regex pattern)\n\nERROR: workspace 'default' is not allowed" : "", "")
+
+  # Sanitize workspace name:
+  # Workspace name defines the persistent instance
+  ws = substr(replace(lower(terraform.workspace), "/[^a-z0-9]/", ""), 0, 16)
 }
 
 # Resource group
 resource "azurerm_resource_group" "persistent" {
-  name     = "ghaf-infra-persistent"
+  name     = "ghaf-infra-persistent-${local.ws}"
   location = var.location
 }
 
@@ -84,7 +84,7 @@ resource "secret_resource" "binary_cache_signing_key_prod" {
 module "builder_ssh_key_prod" {
   source = "./builder-ssh-key"
   # Must be globally unique
-  builder_ssh_keyvault_name = "ssh-builder-prod-${local.shortloc}"
+  builder_ssh_keyvault_name = "ssh-builder-prod-${local.ws}"
   resource_group_name       = azurerm_resource_group.persistent.name
   location                  = azurerm_resource_group.persistent.location
   tenant_id                 = data.azurerm_client_config.current.tenant_id
@@ -93,7 +93,7 @@ module "builder_ssh_key_prod" {
 module "builder_ssh_key_dev" {
   source = "./builder-ssh-key"
   # Must be globally unique
-  builder_ssh_keyvault_name = "ssh-builder-dev-${local.shortloc}"
+  builder_ssh_keyvault_name = "ssh-builder-dev-${local.ws}"
   resource_group_name       = azurerm_resource_group.persistent.name
   location                  = azurerm_resource_group.persistent.location
   tenant_id                 = data.azurerm_client_config.current.tenant_id
@@ -102,7 +102,7 @@ module "builder_ssh_key_dev" {
 module "binary_cache_sigkey_prod" {
   source = "./binary-cache-sigkey"
   # Must be globally unique
-  bincache_keyvault_name = "bche-sigkey-prod-${local.shortloc}"
+  bincache_keyvault_name = "bche-sigkey-prod-${local.ws}"
   secret_resource        = secret_resource.binary_cache_signing_key_prod
   resource_group_name    = azurerm_resource_group.persistent.name
   location               = azurerm_resource_group.persistent.location
@@ -112,7 +112,7 @@ module "binary_cache_sigkey_prod" {
 module "binary_cache_sigkey_dev" {
   source = "./binary-cache-sigkey"
   # Must be globally unique
-  bincache_keyvault_name = "bche-sigkey-dev-${local.shortloc}"
+  bincache_keyvault_name = "bche-sigkey-dev-${local.ws}"
   secret_resource        = secret_resource.binary_cache_signing_key_dev
   resource_group_name    = azurerm_resource_group.persistent.name
   location               = azurerm_resource_group.persistent.location
@@ -122,7 +122,7 @@ module "binary_cache_sigkey_dev" {
 module "binary_cache_storage_prod" {
   source = "./binary-cache-storage"
   # Must be globally unique
-  bincache_storage_account_name = "ghafbincacheprod${local.shortloc}"
+  bincache_storage_account_name = "ghafbincacheprod${local.ws}"
   resource_group_name           = azurerm_resource_group.persistent.name
   location                      = azurerm_resource_group.persistent.location
 }
@@ -130,7 +130,7 @@ module "binary_cache_storage_prod" {
 module "binary_cache_storage_dev" {
   source = "./binary-cache-storage"
   # Must be globally unique
-  bincache_storage_account_name = "ghafbincachedev${local.shortloc}"
+  bincache_storage_account_name = "ghafbincachedev${local.ws}"
   resource_group_name           = azurerm_resource_group.persistent.name
   location                      = azurerm_resource_group.persistent.location
 }
