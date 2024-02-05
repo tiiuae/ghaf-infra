@@ -167,7 +167,7 @@ resource "azurerm_storage_container" "vm_images" {
 
 data "azurerm_storage_account" "binary_cache" {
   name                = "ghafbincache${local.persistent_data}${local.shortloc}"
-  resource_group_name = "ghaf-infra-persistent"
+  resource_group_name = "ghaf-infra-persistent-${local.shortloc}"
 }
 data "azurerm_storage_container" "binary_cache_1" {
   name                 = "binary-cache-v1"
@@ -176,7 +176,7 @@ data "azurerm_storage_container" "binary_cache_1" {
 
 data "azurerm_key_vault" "ssh_remote_build" {
   name                = "ssh-builder-${local.persistent_data}-${local.shortloc}"
-  resource_group_name = "ghaf-infra-persistent"
+  resource_group_name = "ghaf-infra-persistent-${local.shortloc}"
   provider            = azurerm
 }
 
@@ -194,7 +194,7 @@ data "azurerm_key_vault_secret" "ssh_remote_build_pub" {
 
 data "azurerm_key_vault" "binary_cache_signing_key" {
   name                = "bche-sigkey-${local.persistent_data}-${local.shortloc}"
-  resource_group_name = "ghaf-infra-persistent"
+  resource_group_name = "ghaf-infra-persistent-${local.shortloc}"
   provider            = azurerm
 }
 

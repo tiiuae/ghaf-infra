@@ -7,9 +7,9 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 # Terraform Playground
 
 This project uses terraform to automate the creation of infrastructure resources.
-To support infrastructure development in isolated development environments, we use [terraform workspaces](https://developer.hashicorp.com/terraform/cli/workspaces).
+To support infrastructure development in isolated development environments, this project uses [terraform workspaces](https://developer.hashicorp.com/terraform/cli/workspaces).
 
-The tooling under this `playground` directory is provided to facilitate the usage of terraform workspaces in setting-up a distinct copy of the target infrastructure to test a set of changes before modifying shared (dev/prod) infrastructure.
+The tooling under the `playground` directory is provided to facilitate the usage of terraform workspaces in setting-up a distinct copy of the target infrastructure to test a set of changes before modifying shared (dev/prod) infrastructure.
 
 This page documents the usage of `terraform-playground.sh` to help facilitate the usage of private development environments for testing infra changes.
 
