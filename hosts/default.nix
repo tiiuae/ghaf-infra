@@ -9,7 +9,6 @@
 }: {
   flake.nixosModules = {
     # shared modules
-    azure-common = import ./azure-common.nix;
     qemu-common = import ./qemu-common.nix;
     ficolo-common = import ./ficolo-common.nix;
     common = import ./common.nix;
@@ -20,10 +19,6 @@
     # make self and inputs available in nixos modules
     specialArgs = {inherit self inputs;};
   in {
-    ghafhydra = lib.nixosSystem {
-      inherit specialArgs;
-      modules = [./ghafhydra/configuration.nix];
-    };
     binarycache = lib.nixosSystem {
       inherit specialArgs;
       modules = [./binarycache/configuration.nix];
