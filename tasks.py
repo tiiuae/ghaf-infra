@@ -67,15 +67,11 @@ class TargetHost:
 
 
 # Below dictionary defines the set of ghaf-infra configuration aliases:
-#  - Name (e.g. 'ghafhydra-dev) defines the alias name for each target.
+#  - Name (e.g. 'binarycache-ficolo') defines the alias name for each target.
 #  - TargetHost.hostname: host name or IP address of the target.
 #  - TargetHost.nixosconfig: name of the target nixosConfiguration.
 TARGETS = OrderedDict(
     {
-        "ghafhydra-dev": TargetHost(
-            hostname="ghafhydra.northeurope.cloudapp.azure.com",
-            nixosconfig="ghafhydra",
-        ),
         "binarycache-ficolo": TargetHost(
             hostname="172.18.20.109",
             nixosconfig="binarycache",
@@ -218,7 +214,7 @@ def print_keys(_c: Any, alias: str) -> None:
     Decrypt host private key, print ssh and age public keys for `alias` config.
 
     Example usage:
-    inv print-keys --target ghafhydra-dev
+    inv print-keys --target binarycache-ficolo
     """
     with TemporaryDirectory() as tmpdir:
         nixosconfig = _get_target(alias).nixosconfig
@@ -260,7 +256,7 @@ def deploy(_c: Any, alias: str) -> None:
     Deploy the configuration for `alias`.
 
     Example usage:
-    inv deploy --alias ghafhydra-dev
+    inv deploy --alias binarycache-ficolo
     """
     h = get_deploy_host(alias)
     res = h.run_local(
@@ -414,7 +410,7 @@ def build_local(_c: Any, alias: str = "") -> None:
     If `alias` is not specificied, builds all TARGETS.
 
     Example usage:
-    inv build-local --alias ghafhydra-dev
+    inv build-local --alias binarycache-ficolo
     """
     if alias:
         target_configs = [_get_target(alias).nixosconfig]
@@ -451,7 +447,7 @@ def reboot(_c: Any, alias: str) -> None:
     Reboot host identified as `alias`.
 
     Example usage:
-    inv reboot --alias ghafhydra-dev
+    inv reboot --alias binarycache-ficolo
     """
     h = get_deploy_host(alias)
     h.run("sudo reboot &")
