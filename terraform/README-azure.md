@@ -4,7 +4,7 @@ SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
 SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 
-# terraform/jenkins
+# terraform
 
 This directory contains the root terraform module describing the image-based CI
 setup in Azure.

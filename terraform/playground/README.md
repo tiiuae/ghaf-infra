@@ -17,15 +17,7 @@ This page documents the usage of `terraform-playground.sh` to help facilitate th
 
 ## Usage
 
-If you still don't have nix package manager on your local host, install it following the package manager installation instructions from https://nixos.org/download.html.
-
-Then, clone this repository:
-```bash
-$ git clone https://github.com/tiiuae/ghaf-infra.git
-$ cd ghaf-infra/
-```
-
-All commands in this document are executed from nix-shell inside the `terraform/jenkins` directory.
+All commands in this document are executed from nix-shell inside the `terraform/` directory.
 
 Bootstrap nix-shell with the required dependencies:
 ```bash
@@ -35,21 +27,21 @@ $ nix-shell
 # Authenticate with az login:
 $ az login
 
-# We use the configuration under terraform/jenkins as an example:
-$ cd terraform/jenkins
+# We use the infrastructure configuration under terraform/playground as an example:
+$ cd terraform/playground
 ```
 
 ## Activating Playground Environment
 ```bash
 # Activate private development environment
-$ ../playground/terraform-playground.sh activate
+$ ./terraform-playground.sh activate
 # ...
 [+] Done, use terraform [validate|plan|apply] to work with your dev infra
 ```
 The `activate` command sets-up a terraform workspace for your private development environment:
 ```bash
 # List the current terraform worskapce
-$ ../playground/terraform-playground.sh list
+$ ./terraform-playground.sh list
 Terraform workspaces:
   default
 * henrirosten       # <-- indicates active workspace
@@ -58,9 +50,7 @@ Terraform workspaces:
 ## Testing Infrastructure Changes
 With the private development workspace now setup, we can test infrastructure changes in a private development environment:
 ```bash
-# In directory terraform/jenkins
-$ pwd
-[..]/ghaf-infra/terraform/jenkins
+# In directory terraform/playground
 
 # Check terraform configuration files format:
 $ terraform fmt -recursive
@@ -72,17 +62,17 @@ $ terraform validate
 $ terraform plan
 
 # Deploy the infrastructure:
-$ terraform apply -auto-approve
+$ terraform apply
 ```
 
 Once `terraform apply` completes, the private development infrastructure is deployed.
-You can now play around in your isolated copy of the infrastructure, testing and updating the changes, making sure the changes work as expected before proposing the changes to a shared (prod/dev) environment.
+You can now play around in your isolated copy of the infrastructure, testing and updating the changes, making sure the changes work as expected before merging the changes.
 
 ## Destroying Playground Environment
 Once the configuration changes have been tested, the private development environment can be destroyed:
 ```bash
 # Destroy the private terraform worskapce
-$ ../playground/terraform-playground.sh destroy
+$ ./terraform-playground.sh destroy
 ```
 The above command removes all the resources that were created for the private development environment.
 
@@ -90,4 +80,3 @@ The above command removes all the resources that were created for the private de
 ## References
 - Terraform workspaces: https://developer.hashicorp.com/terraform/cli/workspaces
 - How to manage multiple environments with Terraform using workspaces: https://blog.gruntwork.io/how-to-manage-multiple-environments-with-terraform-using-workspaces-98680d89a03e
-
