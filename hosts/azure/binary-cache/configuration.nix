@@ -9,7 +9,7 @@
   ...
 }: {
   imports = [
-    ../../azure-common-2.nix
+    ../../azure-common.nix
     self.nixosModules.service-openssh
   ];
 
