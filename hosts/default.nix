@@ -19,17 +19,21 @@
     # make self and inputs available in nixos modules
     specialArgs = {inherit self inputs;};
   in {
+    az-binary-cache = lib.nixosSystem {
+      inherit specialArgs;
+      modules = [./azure/binary-cache/configuration.nix];
+    };
+    az-builder = lib.nixosSystem {
+      inherit specialArgs;
+      modules = [./azure/builder/configuration.nix];
+    };
+    az-jenkins-controller = lib.nixosSystem {
+      inherit specialArgs;
+      modules = [./azure/jenkins-controller/configuration.nix];
+    };
     binarycache = lib.nixosSystem {
       inherit specialArgs;
       modules = [./binarycache/configuration.nix];
-    };
-    binary-cache = lib.nixosSystem {
-      inherit specialArgs;
-      modules = [./binary-cache/configuration.nix];
-    };
-    builder = lib.nixosSystem {
-      inherit specialArgs;
-      modules = [./builder/configuration.nix];
     };
     ficolobuild3 = lib.nixosSystem {
       inherit specialArgs;
@@ -39,17 +43,13 @@
       inherit specialArgs;
       modules = [./ficolobuild/build4.nix];
     };
-    jenkins-controller = lib.nixosSystem {
+    monitoring = lib.nixosSystem {
       inherit specialArgs;
-      modules = [./jenkins-controller/configuration.nix];
+      modules = [./monitoring/configuration.nix];
     };
     prbuilder = lib.nixosSystem {
       inherit specialArgs;
       modules = [./prbuilder/configuration.nix];
-    };
-    monitoring = lib.nixosSystem {
-      inherit specialArgs;
-      modules = [./monitoring/configuration.nix];
     };
   };
 }

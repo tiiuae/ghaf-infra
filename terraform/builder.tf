@@ -5,7 +5,7 @@
 module "builder_image" {
   source = "./modules/azurerm-nix-vm-image"
 
-  nix_attrpath   = "outputs.nixosConfigurations.builder.config.system.build.azureImage"
+  nix_attrpath   = "outputs.nixosConfigurations.az-builder.config.system.build.azureImage"
   nix_entrypoint = "${path.module}/.."
 
   name                   = "builder"

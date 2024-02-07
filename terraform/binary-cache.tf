@@ -5,7 +5,7 @@
 module "binary_cache_image" {
   source = "./modules/azurerm-nix-vm-image"
 
-  nix_attrpath   = "outputs.nixosConfigurations.binary-cache.config.system.build.azureImage"
+  nix_attrpath   = "outputs.nixosConfigurations.az-binary-cache.config.system.build.azureImage"
   nix_entrypoint = "${path.module}/.."
 
   name                   = "binary-cache"
