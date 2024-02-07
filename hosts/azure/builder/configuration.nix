@@ -8,7 +8,7 @@
   ...
 }: {
   imports = [
-    ../azure-common-2.nix
+    ../../azure-common-2.nix
     self.nixosModules.service-openssh
     self.nixosModules.service-remote-build
   ];

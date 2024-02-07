@@ -6,7 +6,7 @@
 module "jenkins_controller_image" {
   source = "./modules/azurerm-nix-vm-image"
 
-  nix_attrpath   = "outputs.nixosConfigurations.jenkins-controller.config.system.build.azureImage"
+  nix_attrpath   = "outputs.nixosConfigurations.az-jenkins-controller.config.system.build.azureImage"
   nix_entrypoint = "${path.module}/.."
 
   name                   = "jenkins-controller"
