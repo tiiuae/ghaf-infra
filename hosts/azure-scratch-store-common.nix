@@ -1,6 +1,30 @@
 # SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
 #
 # SPDX-License-Identifier: Apache-2.0
+#
+# This configuration is currently not used, but kept here for reference.
+# The reason this isn't currently used is that the 'setup-resource-disk'
+# service that's setup in this file systematically fails on the first
+# boot-up, which then cascades other service failures.
+# It fails to mount the resource disk in initrd on the first boot.
+#
+# The changes from this file were originally introduced in the following PR
+# https://github.com/tiiuae/ghaf-infra/pull/35 in commit:
+# https://github.com/tiiuae/ghaf-infra/commit/7a7a1e40b24b6776c70f7e030c7608ed90b40e45
+# Later, the scratch disk was disabled due to the reason explained above
+# and worked-around by mounting /nix/store on the osdisk with the following change:
+# https://github.com/tiiuae/ghaf-infra/commit/f143ac92517a3588d038e88eda09f19471e42de3
+#
+# Note: if we decice to re-enable this config at some later time, it's worth
+# mentioning that originally this configuration did not work on nixos-23.11
+# as described here:
+# https://github.com/tiiuae/ghaf-infra/commit/e9b7db1c02c459c0b8d54a4d65aac1d400f4035d
+#
+# At the time of writing, ghaf-infra main branch follows 23.11:
+# https://github.com/tiiuae/ghaf-infra/pull/74/commits/dd42bf9191f8133aaedb65aebb5756d8b4d567af
+# which means these changes would not work without also changing the ghaf-infra
+# nixpkgs reference.
+#
 {
   pkgs,
   utils,
