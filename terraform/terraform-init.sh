@@ -58,7 +58,7 @@ import_bincache_sigkey () {
 }
 
 init_persistent () {
-    echo "[+] Initializing persistent data"
+    echo "[+] Initializing persistent"
     # See: ./persistent
     pushd "$MYDIR/persistent" >/dev/null
     terraform init > /dev/null
@@ -68,6 +68,22 @@ init_persistent () {
     import_bincache_sigkey "dev"
     echo "[+] Applying possible changes"
     terraform apply -auto-approve >/dev/null
+    popd >/dev/null
+    
+    # Assigns $WORKSPACE variable
+    # shellcheck source=/dev/null
+    source "$MYDIR/playground/terraform-playground.sh" &>/dev/null
+    generate_azure_private_workspace_name
+
+    echo "[+] Initializing workspace-specific persistent"
+    # See: ./persistent/workspace-specific
+    pushd "$MYDIR/persistent/workspace-specific" >/dev/null
+    terraform init > /dev/null
+    echo "[+] Applying possible changes"
+    for ws in "dev" "prod" "$WORKSPACE"; do
+        terraform workspace select "$ws" &>/dev/null || terraform workspace new "$ws"
+        terraform apply -auto-approve >/dev/null
+    done
     popd >/dev/null
 }
 

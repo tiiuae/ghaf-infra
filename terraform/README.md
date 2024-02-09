@@ -54,8 +54,9 @@ terraform
 │   ├── binary-cache-sigkey
 │   ├── binary-cache-storage
 │   ├── builder-ssh-key
+│   └── workspace-specific
 ├── playground
-│   ├── terraform-playground.sh
+│   └── terraform-playground.sh
 ├── state-storage
 │   └── tfstate-storage.tf
 ├── modules
@@ -68,7 +69,7 @@ terraform
 ```
 - The `terraform` directory contains the root terraform deployment files with the VM configurations `binary-cache.tf`, `builder.tf`, and `jenkins-controller.tf` matching the components described in [README-azure.md](./README-azure.md) in its [components section](./README-azure.md#components).
 - The `terraform/azarm` directory contains the terraform configuration for Azure `aarch64` builder which is used from ghaf github-actions [build.yml workflow](https://github.com/tiiuae/ghaf/blob/e81ccfb41d75eda0488b6b4325aeccb8385ce960/.github/workflows/build.yml#L151) to build `aarch64` targets for authorized PRs pre-merge. `azarm` is disconnected from the root terraform module: it's a separate configuration with its own state.
-- The `terraform/persistent` directory contains the terraform configuration for parts of the infrastructure that are shared between the ghaf-infra development instances. An example of such persistent ghaf-infra resource is the binary cache storage as well as the binary cache signing key. There may be many 'persistent' infrastructure instances - currently `dev` and `prod` deployments have their own instances of the persistent resources. Section [Multiple Environments with Terraform Workspaces](./README.md#multiple-environments-with-terraform-workspaces) discusses this topic with more details.
+- The `terraform/persistent` directory contains the terraform configuration for parts of the infrastructure that are considered persitent - resources defined under `terraform/persistent` will not be removed even if the ghaf-infra instance is otherwise removed. An example of such persistent ghaf-infra resource is the binary cache storage as well as the binary cache signing key. There may be many 'persistent' infrastructure instances - currently `dev` and `prod` deployments have their own instances of the persistent resources. Section [Multiple Environments with Terraform Workspaces](./README.md#multiple-environments-with-terraform-workspaces) discusses this topic with more details.
 - The `terraform/playground` directory contains tooling to facilitate the usage of terraform workspaces in setting-up distinct copies of the ghaf-infra infrastructure, i.e. 'playground' `dev` environments. It also includes an [example test infrastructure](./playground/test-infra.tf) that allows deploying example infrastructure including just one nix VM, highlighting the use of `terraform/modules` to build and upload the nix image on Azure.
 - The `terraform/state-storage` directory contains the terraform configuration for the ghaf-infra remote backend state storage using Azure storage blob. See section [Initializing Azure State and Persistent Data](./README.md#initializing-azure-state-and-persistent-data) for more details.
 - The `terraform/modules` directory contains terraform modules used from the ghaf-infra VM configurations to build, upload, and spin up Azure nix images.
@@ -95,7 +96,7 @@ In addition to the shared terraform state, some of the infrastructure resources 
 To support infrastructure development in isolated environments, this project uses [terraform workspaces](https://developer.hashicorp.com/terraform/cli/workspaces).
 The main reasons for using terraform workspaces include:
 - Different workspaces allow deploying different instances of ghaf-infra. Each instance has a completely separate state data, making it possible to deploy `dev`, `prod`, or even private development instances of ghaf-infra. This makes it possible to first develop and test infrastructure changes in a private development environment, before proposing changes to shared (e.g. `dev` or `prod`) environments. The configuration codebase is the same between all the environments, with the differentiation options defined in the [`main.tf`](./main.tf#L69).
-- Parts of the ghaf-infra infrastructure are persistent and shared between different environments. As an example, private `dev` environments share the binary cache storage. This arrangement makes it possible to treat, for instance, `dev` and private ghaf-infra instances dispensable: ghaf-infra instances can be temporary and short-lived as it's easy to spin-up new environments without losing any valuable data. The persistent data is configured outside the root ghaf-infra terraform deployment in the `terraform/persistent` directory. There may be many 'persistent' infrastructure instances - currently `dev` and `prod` deployments have their own instances of the persistent resources. This means that `dev` and `prod` instances of ghaf-infra do **not** share any persistent data. As an example, `dev` and `prod` deployments of ghaf-infra have a separate binary cache storage. The binding to persistent resources from ghaf-infra is done in the [`main.tf`](./main.tf#L166) based on the terraform workspace name and resource location.
+- Parts of the ghaf-infra infrastructure are persistent and shared between different environments. As an example, private `dev` environments share the binary cache storage. This arrangement makes it possible to treat, for instance, `dev` and private ghaf-infra instances dispensable: ghaf-infra instances can be temporary and short-lived as it's easy to spin-up new environments without losing any valuable data. The persistent data is configured outside the root ghaf-infra terraform deployment in the `terraform/persistent` directory. There may be many 'persistent' infrastructure instances - currently `dev` and `prod` deployments have their own instances of the persistent resources. This means that `dev` and `prod` instances of ghaf-infra do **not** share any persistent data. As an example, `dev` and `prod` deployments of ghaf-infra have a separate binary cache storage. The binding to persistent resources from ghaf-infra is done in the [`main.tf`](./main.tf#L166) based on the terraform workspace name and resource location. Persistent data initialization is automatically done with `terraform-init.sh` script.
 - Currently, the following resources are defined 'persistent', meaning `dev` and `prod` instances do not share the following resources:
     - Binary cache storage: [`binary-cache-storage.tf`](./persistent/binary-cache-storage/binary-cache-storage.tf)
     - Binray cache signing key: [`binary-cache-sigkey.ft`](./persistent/binary-cache-sigkey/binary-cache-sigkey.tf)
@@ -178,3 +179,33 @@ $ terraform import azurerm_virtual_machine_extension.deploy_ubuntu_builder /subs
 
 # Ref: https://stackoverflow.com/questions/61418168/terraform-resource-with-the-id-already-exists
 ```
+
+#### Error: creating/updating Image
+```bash
+$ terraform apply
+...
+│ Error: creating/updating Image (Subscription: "<SUBID>"
+│ Resource Group Name: "ghaf-infra-dev"
+│ Image Name: "<NAME>"): performing CreateOrUpdate: unexpected status 400 with error: InvalidParameter: The source blob https://<INSTANCE>.blob.core.windows.net/ghaf-infra-vm-images/<IMANE>.vhd is not accessible.
+│ 
+│   with module.builder_image.azurerm_image.default,
+│   on modules/azurerm-nix-vm-image/main.tf line 22, in resource "azurerm_image" "default":
+│   22: resource "azurerm_image" "default" {
+```
+Try running `terraform apply` again if you get an error similar to one shown above. 
+It's unclear why this error occasionally occurs, this issue should be analyzed in detail.
+
+#### Error: Disk
+```bash
+$ terraform apply
+...
+│ Error: Disk (Subscription: "<SUBID>"
+│ Resource Group Name: "ghaf-infra-persistent-eun"
+│ Disk Name: "binary-cache-vm-caddy-state-dev") was not found
+│ 
+│   with data.azurerm_managed_disk.binary_cache_caddy_state,
+│   on main.tf line 207, in data "azurerm_managed_disk" "binary_cache_caddy_state":
+│  207: data "azurerm_managed_disk" "binary_cache_caddy_state" {
+```
+Above error (or similar) is likely caused by missing initialization for some `persistent` resources.
+Fix the persistent initialization by running `terraform-init.sh` then run `terraform apply` again.

@@ -50,12 +50,12 @@ module "binary_cache_vm" {
 
   # Attach disk to the VM
   data_disks = [{
-    name            = azurerm_managed_disk.binary_cache_caddy_state.name
-    managed_disk_id = azurerm_managed_disk.binary_cache_caddy_state.id
+    name            = data.azurerm_managed_disk.binary_cache_caddy_state.name
+    managed_disk_id = data.azurerm_managed_disk.binary_cache_caddy_state.id
     lun             = "10"
     create_option   = "Attach"
     caching         = "None"
-    disk_size_gb    = azurerm_managed_disk.binary_cache_caddy_state.disk_size_gb
+    disk_size_gb    = data.azurerm_managed_disk.binary_cache_caddy_state.disk_size_gb
   }]
 }
 
@@ -95,14 +95,4 @@ resource "azurerm_role_assignment" "binary_cache_access_storage" {
   scope                = data.azurerm_storage_container.binary_cache_1.resource_manager_id
   role_definition_name = "Storage Blob Data Reader"
   principal_id         = module.binary_cache_vm.virtual_machine_identity_principal_id
-}
-
-# Create a data disk
-resource "azurerm_managed_disk" "binary_cache_caddy_state" {
-  name                 = "binary-cache-vm-caddy-state"
-  resource_group_name  = azurerm_resource_group.infra.name
-  location             = azurerm_resource_group.infra.location
-  storage_account_type = "Standard_LRS"
-  create_option        = "Empty"
-  disk_size_gb         = 1
 }
