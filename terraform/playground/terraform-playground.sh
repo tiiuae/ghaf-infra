@@ -133,6 +133,9 @@ main () {
     fi
 }
 
-main "$@"
+# Do not execute main() if this script is being sourced
+if [ "${0}" = "${BASH_SOURCE[0]}" ]; then
+    main "$@"
+fi
 
 ################################################################################
