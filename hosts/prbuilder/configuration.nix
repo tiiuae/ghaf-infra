@@ -34,6 +34,8 @@
     git
     emacs
     screen
+    certbot
+    nginx
     (python310.withPackages (ps:
       with ps; [
         requests
