@@ -26,8 +26,13 @@
   # enable cloud-init, so instance metadata is set accordingly and we can use
   # cloud-config for ssh key management.
   services.cloud-init.enable = true;
-  systemd.services.cloud-config.after = ["mnt-resource.mount"];
-  systemd.services.cloud-config.requires = ["mnt-resource.mount"];
+  # FUTUREWORK: below is a hack to make cloud-init usable with azure
+  # agent (waagent). The usage of azure agent together with cloud-init
+  # needs to be properly done later, perhaps by using the
+  # azure-scatch-store-common.nix or something similar.
+  systemd.services.cloud-config.serviceConfig = {
+    Restart = "on-failure";
+  };
 
   # Use systemd-networkd for network configuration.
   services.cloud-init.network.enable = true;
