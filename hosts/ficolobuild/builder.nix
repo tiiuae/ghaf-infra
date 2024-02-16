@@ -4,6 +4,7 @@
 {
   self,
   config,
+  pkgs,
   inputs,
   lib,
   modulesPath,
@@ -41,4 +42,10 @@
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+
+  # Environment for Yubikey provisioning
+  environment.systemPackages = with pkgs; [
+    usbutils
+  ];
+  virtualisation.docker.enable = true;
 }
