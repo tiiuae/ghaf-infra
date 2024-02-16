@@ -21,6 +21,28 @@
     exec nix --extra-experimental-features nix-command copy --to 'http://localhost:8080?secret-key=/etc/secrets/nix-signing-key&compression=zstd' $OUT_PATHS
   '';
 
+  # TODO: sort out jenkins authentication e.g.:
+  # https://plugins.jenkins.io/github-oauth/
+  # Below config requires admin to trigger builds or manage jenkins
+  # allowing read access for anonymous users:
+  jenkins-groovy = pkgs.writeText "groovy" ''
+    #!groovy
+
+    import jenkins.model.*
+    import jenkins.install.*
+    import hudson.security.*
+
+    def instance = Jenkins.getInstance()
+    // Disable Setup Wizard
+    instance.setInstallState(InstallState.INITIAL_SETUP_COMPLETED)
+
+    // Allow anonymous read access
+    def strategy = new FullControlOnceLoggedInAuthorizationStrategy()
+    strategy.setAllowAnonymousRead(true)
+    instance.setAuthorizationStrategy(strategy)
+    instance.save()
+  '';
+
   get-secret =
     pkgs.writers.writePython3 "get-secret" {
       libraries = with pkgs.python3.pkgs; [azure-keyvault-secrets azure-identity];
@@ -73,18 +95,87 @@ in {
     listenAddress = "localhost";
     port = 8081;
     withCLI = true;
+    packages = with pkgs; [
+      bashInteractive # 'sh' step in jenkins pipeline requires this
+      coreutils
+      nix
+      git
+      zstd
+    ];
+    extraJavaOptions = [
+      # Useful when the 'sh' step fails:
+      "-Dorg.jenkinsci.plugins.durabletask.BourneShellScript.LAUNCH_DIAGNOSTICS=true"
+    ];
+    # Configure jenkins job(s):
+    # https://jenkins-job-builder.readthedocs.io/en/latest/project_pipeline.html
+    # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/services/continuous-integration/jenkins/job-builder.nix
+    jobBuilder = {
+      enable = true;
+      nixJobs = [
+        {
+          job = {
+            name = "ghaf-pipeline";
+            project-type = "pipeline";
+            pipeline-scm = {
+              scm = [
+                {
+                  git = {
+                    # TODO: eventually the Jenkins pipeline script should probably
+                    # be part of Ghaf repo at: https://github.com/tiiuae/ghaf,
+                    # but we are not ready for that yet. For now, we read the
+                    # Jenkinsfile from the following repo:
+                    url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
+                    clean = true;
+                    branches = ["*/main"];
+                  };
+                }
+              ];
+              script-path = "ghaf-build-pipeline.groovy";
+              lightweight-checkout = true;
+            };
+          };
+        }
+      ];
+    };
   };
-  systemd.services.jenkins.after = ["multi-user.target"];
-  systemd.services.jenkins.requires = ["multi-user.target"];
-  systemd.services.jenkins.serviceConfig = {
+  systemd.services.jenkins.serviceConfig = {Restart = "on-failure";};
+  systemd.services.jenkins-job-builder.serviceConfig = {
     Restart = "on-failure";
-    RestartSec = 1;
+    RestartSec = 5;
   };
 
   # set StateDirectory=jenkins, so state volume has the right permissions
   # and we wait on the mountpoint to appear.
   # https://github.com/NixOS/nixpkgs/pull/272679
   systemd.services.jenkins.serviceConfig.StateDirectory = "jenkins";
+
+  # Install jenkins plugins, apply initial jenkins config
+  systemd.services.jenkins-config = {
+    after = ["jenkins-job-builder.service"];
+    wantedBy = ["multi-user.target"];
+    # Make `jenkins-cli` available
+    path = with pkgs; [jenkins];
+    # Implicit URL parameter for `jenkins-cli`
+    environment = {
+      JENKINS_URL = "http://localhost:8081";
+    };
+    serviceConfig = {
+      Restart = "on-failure";
+      RestartSec = 5;
+    };
+    script = let
+      jenkins-auth = "-auth admin:\"$(cat /var/lib/jenkins/secrets/initialAdminPassword)\"";
+    in ''
+      # Install plugins
+      jenkins-cli ${jenkins-auth} install-plugin "workflow-aggregator" "github" -deploy
+
+      # Jenkins groovy config
+      jenkins-cli ${jenkins-auth} groovy = < ${jenkins-groovy}
+
+      # Restart jenkins
+      jenkins-cli ${jenkins-auth} safe-restart
+    '';
+  };
 
   # Define a fetch-remote-build-ssh-key unit populating
   # /etc/secrets/remote-build-ssh-key from Azure Key Vault.
