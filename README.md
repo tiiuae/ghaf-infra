@@ -196,6 +196,22 @@ Each host's private ssh key is stored as sops secret and automatically deployed 
 
 The secrets configuration and the usage of `sops` is adopted from [nix-community infra](https://github.com/nix-community/infra) project.
 
+## Git commit hook
+
+When contributing to this repo you should take the git commit hook into use.
+
+This hook will check the commit message for most trivial mistakes against [current Ghaf commit message guidelines](https://github.com/tiiuae/ghaf/blob/main/CONTRIBUTING.md#commit-message-guidelines)
+
+### Installing git hooks
+
+Just run ``./githooks/install-git-hooks.sh`` in repository main directory, and you should be good to go. Commit message checking script will then run when you commit something.
+
+If you have branches before the git hooks were committed to the repo, you'll have to either rebase them on top of main branch or cherry pick the git hooks commit into your branch.
+
+Also note that any existing commit messages in any branch won't be checked, only new commit messages will be checked.
+
+If you encounter any issues with the git commit message hook, please report them. And while waiting for a fix, you may remove the hook by running ``rm -f .git/hooks/commit-msg`` in the main directory of the repository.
+
 ## License
 This repository follows the Ghaf team licensing:
 
