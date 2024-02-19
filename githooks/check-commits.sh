@@ -9,6 +9,9 @@ SDIR="$(realpath "$SDIR")"
 TMPF="/tmp/TEMP.MSG"
 
 function On_exit {
+    # My shellcheck did not complain, however github actions shellcheck did.
+    # Complaint was that this code is unreachable, it is actually reachable.
+    # shellcheck disable=SC2317
     rm -f "$TMPF"
 }
 
