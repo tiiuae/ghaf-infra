@@ -48,4 +48,22 @@
   networking = {
     hostName = "prbuilder";
   };
+
+  security.acme = {
+    acceptTerms = true;
+    defaults.email = "trash@unikie.com";
+  };
+
+  services.nginx = {
+    virtualHosts = {
+      "himalia.vedenemo.dev" = {
+        enableACME = true;
+        forceSSL = true;
+        default = true;
+        locations."/" = {
+          proxyPass = "http:127.0.0.1:3015";
+        };
+      };
+    };
+  };
 }
