@@ -18,6 +18,7 @@
       qemu-common
       ficolo-common
       service-openssh
+      service-nginx
       service-node-exporter
       user-jrautiola
       user-cazfi
