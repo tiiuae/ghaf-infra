@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   pkgs,
+  config,
   self,
   lib,
   ...
@@ -83,6 +84,18 @@ in {
   # will block starting the service until this mounted.
   fileSystems."/var/lib/jenkins" = {
     device = "/dev/disk/by-lun/10";
+    fsType = "ext4";
+    options = [
+      "x-systemd.makefs"
+      "x-systemd.growfs"
+    ];
+  };
+
+  # Configure /var/lib/caddy in /etc/fstab.
+  # Due to an implicit RequiresMountsFor=$state-dir, systemd
+  # will block starting the service until this mounted.
+  fileSystems."/var/lib/caddy" = {
+    device = "/dev/disk/by-lun/11";
     fsType = "ext4";
     options = [
       "x-systemd.makefs"
@@ -294,7 +307,37 @@ in {
     post-build-hook = ${post-build-hook}
   '';
 
-  # TODO: deploy reverse proxy, sort out authentication (SSO?)
+  # TODO: use https://caddyserver.com/docs/caddyfile-tutorial#environment-variables for domain
+  services.caddy = {
+    enable = true;
+    configFile = pkgs.writeTextDir "Caddyfile" ''
+      # Disable the admin API, we don't want to reconfigure Caddy at runtime.
+      {
+        admin off
+      }
+
+      # Proxy all requests to jenkins.
+      https://{$SITE_ADDRESS} {
+        reverse_proxy localhost:8081
+      }
+    '';
+  };
+
+  # workaround for https://github.com/NixOS/nixpkgs/issues/272532
+  # FUTUREWORK: rebase once https://github.com/NixOS/nixpkgs/pull/272617 landed
+  services.caddy.enableReload = false;
+  systemd.services.caddy.serviceConfig.ExecStart = lib.mkForce [
+    ""
+    "${pkgs.caddy}/bin/caddy run --environ --config ${config.services.caddy.configFile}/Caddyfile"
+  ];
+  systemd.services.caddy.serviceConfig.EnvironmentFile = "/run/caddy.env";
+
+  # Wait for cloud-init mounting before we start caddy.
+  systemd.services.caddy.after = ["cloud-init.service"];
+  systemd.services.caddy.requires = ["cloud-init.service"];
+
+  # Expose the HTTPS port. No need for HTTP, as caddy can use TLS-ALPN-01.
+  networking.firewall.allowedTCPPorts = [443];
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 

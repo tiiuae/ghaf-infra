@@ -42,7 +42,7 @@ variable "location" {
 }
 
 # Use azure_region module to get the short name of the Azure region,
-# see: https://registry.terraform.io/modules/claranet/regions/azurerm/latest 
+# see: https://registry.terraform.io/modules/claranet/regions/azurerm/latest
 module "azure_region" {
   source       = "claranet/regions/azurerm"
   azure_region = var.location
@@ -209,5 +209,9 @@ data "azurerm_managed_disk" "binary_cache_caddy_state" {
   resource_group_name = "ghaf-infra-persistent-${local.shortloc}"
 }
 
+data "azurerm_managed_disk" "jenkins_controller_caddy_state" {
+  name                = "jenkins-controller-vm-caddy-state-${local.ws}"
+  resource_group_name = "ghaf-infra-persistent-${local.shortloc}"
+}
 
 ################################################################################

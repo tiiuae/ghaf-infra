@@ -73,4 +73,13 @@ resource "azurerm_managed_disk" "binary_cache_caddy_state" {
   disk_size_gb         = 1
 }
 
+resource "azurerm_managed_disk" "jenkins_controller_caddy_state" {
+  name                 = "jenkins-controller-vm-caddy-state-${local.ws}"
+  resource_group_name  = data.azurerm_resource_group.persistent.name
+  location             = data.azurerm_resource_group.persistent.location
+  storage_account_type = "Standard_LRS"
+  create_option        = "Empty"
+  disk_size_gb         = 1
+}
+
 ################################################################################

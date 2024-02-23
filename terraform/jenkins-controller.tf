@@ -62,6 +62,10 @@ module "jenkins_controller_vm" {
       {
         content = join("\n", toset(module.builder_vm[*].virtual_machine_private_ip_address))
         "path"  = "/var/lib/builder-keyscan/scanlist"
+      },
+      {
+        content = "SITE_ADDRESS=ghaf-jenkins-controller-${local.env}.northeurope.cloudapp.azure.com",
+        "path"  = "/run/caddy.env"
       }
     ]
   })])
@@ -70,14 +74,24 @@ module "jenkins_controller_vm" {
   subnet_id          = azurerm_subnet.jenkins.id
 
   # Attach disk to the VM
-  data_disks = [{
-    name            = azurerm_managed_disk.jenkins_controller_jenkins_state.name
-    managed_disk_id = azurerm_managed_disk.jenkins_controller_jenkins_state.id
-    lun             = "10"
-    # create_option = "Attach"
-    caching      = "None"
-    disk_size_gb = azurerm_managed_disk.jenkins_controller_jenkins_state.disk_size_gb
-  }]
+  data_disks = [
+    {
+      name            = azurerm_managed_disk.jenkins_controller_jenkins_state.name
+      managed_disk_id = azurerm_managed_disk.jenkins_controller_jenkins_state.id
+      lun             = "10"
+      # create_option = "Attach"
+      caching      = "None"
+      disk_size_gb = azurerm_managed_disk.jenkins_controller_jenkins_state.disk_size_gb
+    },
+    {
+      name            = data.azurerm_managed_disk.jenkins_controller_caddy_state.name
+      managed_disk_id = data.azurerm_managed_disk.jenkins_controller_caddy_state.id
+      lun             = "11"
+      create_option   = "Attach"
+      caching         = "None"
+      disk_size_gb    = data.azurerm_managed_disk.jenkins_controller_caddy_state.disk_size_gb
+    }
+  ]
 }
 
 resource "azurerm_network_interface_security_group_association" "jenkins_controller_vm" {
@@ -91,13 +105,13 @@ resource "azurerm_network_security_group" "jenkins_controller_vm" {
   location            = azurerm_resource_group.infra.location
 
   security_rule {
-    name                       = "AllowSSHInbound"
+    name                       = "AllowSSHHTTPSInbound"
     priority                   = 400
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_ranges    = [22]
+    destination_port_ranges    = [22, 443]
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
