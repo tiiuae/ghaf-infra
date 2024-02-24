@@ -204,6 +204,9 @@ data "azurerm_key_vault_secret" "binary_cache_signing_key" {
   provider     = azurerm
 }
 
+# Data sources to access 'workspace-specific persistent' data
+# see: ./persistent/workspace-specific
+
 data "azurerm_managed_disk" "binary_cache_caddy_state" {
   name                = "binary-cache-vm-caddy-state-${local.ws}"
   resource_group_name = "ghaf-infra-persistent-${local.shortloc}"
