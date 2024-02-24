@@ -14,19 +14,21 @@ set -o pipefail # exit if any pipeline command fails
 # - init terraform state storage
 # - init persistent secrets such as binary cache signing key (per environment)
 # - init persistent binary cache storage (per environment)
+# - init workspace-specific persistent such as caddy disks (per environment)
 #
 # This script will not do anything if the initialization has already been done.
 # In other words, it's safe to run this script many times. It will not destroy
-# or re-initialize anything if the initialization has already taken place. 
+# or re-initialize anything if the initialization has already taken place.
 
 ################################################################################
 
 MYDIR=$(dirname "$0")
+DEBUG="false"
 
 ################################################################################
 
 exit_unless_command_exists () {
-    if ! command -v "$1" &> /dev/null; then
+    if ! command -v "$1" &>"$OUT"; then
         echo "Error: command '$1' is not installed" >&2
         exit 1
     fi
@@ -34,13 +36,13 @@ exit_unless_command_exists () {
 
 init_state_storage () {
     echo "[+] Initializing state storage"
-    # See: ./state-storage 
-    pushd "$MYDIR/state-storage" >/dev/null
-    terraform init >/dev/null
-    if ! terraform apply -auto-approve &>/dev/null; then
+    # See: ./state-storage
+    pushd "$MYDIR/state-storage" >"$OUT"
+    terraform init >"$OUT"
+    if ! terraform apply -auto-approve &>"$OUT"; then
         echo "[+] State storage is already initialized"
     fi
-    popd >/dev/null
+    popd >"$OUT"
 }
 
 import_bincache_sigkey () {
@@ -60,41 +62,76 @@ import_bincache_sigkey () {
 init_persistent () {
     echo "[+] Initializing persistent"
     # See: ./persistent
-    pushd "$MYDIR/persistent" >/dev/null
-    terraform init > /dev/null
+    pushd "$MYDIR/persistent" >"$OUT"
+    terraform init >"$OUT"
     # Default persistent instance: 'eun' (northeurope)
-    terraform workspace select eun &>/dev/null || terraform workspace new eun
+    terraform workspace select eun &>"$OUT" || terraform workspace new eun
     import_bincache_sigkey "prod"
     import_bincache_sigkey "dev"
-    echo "[+] Applying possible changes"
-    terraform apply -auto-approve >/dev/null
-    popd >/dev/null
-    
+    echo "[+] Applying possible changes in ./persistent"
+    terraform apply -auto-approve >"$OUT"
+    popd >"$OUT"
+
     # Assigns $WORKSPACE variable
     # shellcheck source=/dev/null
-    source "$MYDIR/playground/terraform-playground.sh" &>/dev/null
+    source "$MYDIR/playground/terraform-playground.sh" &>"$OUT"
     generate_azure_private_workspace_name
 
     echo "[+] Initializing workspace-specific persistent"
     # See: ./persistent/workspace-specific
-    pushd "$MYDIR/persistent/workspace-specific" >/dev/null
-    terraform init > /dev/null
-    echo "[+] Applying possible changes"
+    pushd "$MYDIR/persistent/workspace-specific" >"$OUT"
+    terraform init >"$OUT"
+    echo "[+] Applying possible changes in ./persistent/workspace-specific"
     for ws in "dev" "prod" "$WORKSPACE"; do
-        terraform workspace select "$ws" &>/dev/null || terraform workspace new "$ws"
-        terraform apply -auto-approve >/dev/null
+        terraform workspace select "$ws" &>"$OUT" || terraform workspace new "$ws"
+        if ! terraform apply -auto-approve &>"$OUT"; then
+            echo "[+] Workspace-specific persistent ($ws) is already initialized"
+        fi
+        # Stop terraform from tracking the state of 'workspace-specific'
+        # persistent resources. This script initially creates such resources
+        # (above), but tells terraform to not track them (below). This means,
+        # for instance, that removing such resources would need to happen
+        # manually through Azure web UI or az cli client. We assume the
+        # workspace-specific persistent resources really are persistent,
+        # meaning, it would be a rare occasion when they had to be
+        # (manually) removed.
+        #
+        # Why do we not track the state with terraform?
+        # If we let terraform track the state of such resources, we would
+        # end-up in a conflict when someone adds a new workspace-specific
+        # resource due the shared nature of 'prod' and 'dev' workspaces. In
+        # such a conflict condition, someone running this script with the
+        # old version of terraform code (i.e. version that does not include
+        # adding the new resource) would always remove the resource on
+        # `terraform apply`, whereas, someone running this script
+        # with the new workspace-specific resource would always add the new
+        # resource on apply, due to the shared 'dev' and 'prod' workspaces.
+        while read -r line; do
+            if [ -n "$line" ]; then
+                terraform state rm "$line" >"$OUT";
+            fi
+        # TODO: remove the 'binary_cache_caddy_state' filter from the below
+        # grep when all users have migrated to the version of this script
+        # on which the `terraform state rm` is included
+        done < <(terraform state list | grep -vP "(^data\.|binary_cache_caddy_state)")
     done
-    popd >/dev/null
+    popd >"$OUT"
 }
 
 init_terraform () {
     echo "[+] Running terraform init"
-    terraform -chdir="$MYDIR" init >/dev/null
+    terraform -chdir="$MYDIR" init >"$OUT"
 }
 
 ################################################################################
 
 main () {
+    if [ "$DEBUG" = "true" ]; then
+        set -x
+        OUT=/dev/stderr
+    else
+        OUT=/dev/null
+    fi
 
     exit_unless_command_exists az
     exit_unless_command_exists terraform
@@ -104,7 +141,11 @@ main () {
     init_state_storage
     init_persistent
     init_terraform
-
+    echo "[+] Listing workspaces:"
+    terraform workspace list
+    echo "[+] Done, use 'terraform workspace select <name>' to select a"\
+         "workspace, then 'terraform [validate|plan|apply]' to work with the"\
+         "given ghaf-infra environment"
 }
 
 main "$@"
