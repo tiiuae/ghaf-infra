@@ -8,7 +8,9 @@
   modulesPath,
   pkgs,
   ...
-}: {
+}: let
+  asGB = size: toString (size * 1024 * 1024 * 1024);
+in {
   imports = [
     "${modulesPath}/virtualisation/azure-config.nix"
   ];
@@ -17,7 +19,20 @@
     settings = {
       # Enable flakes and 'nix' command
       experimental-features = "nix-command flakes";
+      # When free disk space in /nix/store drops below min-free during build,
+      # perform a garbage-collection until max-free bytes are available or there
+      # is no more garbage.
+      min-free = asGB 10;
+      max-free = asGB 50;
+      # check the free disk space every 5 seconds
+      min-free-check-interval = 5;
     };
+    # Garbage collection
+    gc.automatic = true;
+    gc.options = pkgs.lib.mkDefault "--delete-older-than 7d";
+  };
+  systemd.services.nix-gc.serviceConfig = {
+    Restart = "on-failure";
   };
 
   # Enable azure agent
