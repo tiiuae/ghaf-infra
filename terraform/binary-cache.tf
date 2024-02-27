@@ -1,5 +1,4 @@
-# SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
-#
+# SPDX-FileCopyrightText: 2022-2024 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
 
 module "binary_cache_image" {
@@ -22,6 +21,7 @@ module "binary_cache_vm" {
   location                     = azurerm_resource_group.infra.location
   virtual_machine_name         = "ghaf-binary-cache-${local.env}"
   virtual_machine_size         = local.opts[local.conf].vm_size_binarycache
+  virtual_machine_osdisk_size  = "50"
   virtual_machine_source_image = module.binary_cache_image.image_id
 
   virtual_machine_custom_data = join("\n", ["#cloud-config", yamlencode({

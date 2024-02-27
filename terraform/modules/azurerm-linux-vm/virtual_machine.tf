@@ -1,5 +1,4 @@
-# SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
-#
+# SPDX-FileCopyrightText: 2022-2024 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
 
 resource "azurerm_virtual_machine" "main" {
@@ -56,7 +55,7 @@ resource "azurerm_virtual_machine" "main" {
     caching           = "ReadWrite"
     create_option     = "FromImage"
     managed_disk_type = "Standard_LRS"
-    disk_size_gb      = "100"
+    disk_size_gb      = var.virtual_machine_osdisk_size
   }
 
   dynamic "storage_data_disk" {
