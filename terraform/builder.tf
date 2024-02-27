@@ -1,5 +1,4 @@
-# SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
-#
+# SPDX-FileCopyrightText: 2022-2024 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
 
 module "builder_image" {
@@ -28,6 +27,7 @@ module "builder_vm" {
   location                     = azurerm_resource_group.infra.location
   virtual_machine_name         = "ghaf-builder-${count.index}-${local.env}"
   virtual_machine_size         = local.opts[local.conf].vm_size_builder
+  virtual_machine_osdisk_size  = "150"
   virtual_machine_source_image = module.builder_image.image_id
 
   virtual_machine_custom_data = join("\n", ["#cloud-config", yamlencode({

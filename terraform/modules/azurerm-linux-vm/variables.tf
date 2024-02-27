@@ -1,5 +1,4 @@
-# SPDX-FileCopyrightText: 2023 Technology Innovation Institute (TII)
-#
+# SPDX-FileCopyrightText: 2022-2024 Technology Innovation Institute (TII)
 # SPDX-License-Identifier: Apache-2.0
 
 variable "resource_group_name" {
@@ -15,6 +14,10 @@ variable "virtual_machine_name" {
 }
 
 variable "virtual_machine_size" {
+  type = string
+}
+
+variable "virtual_machine_osdisk_size" {
   type = string
 }
 
