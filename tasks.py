@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
-# SPDX-FileCopyrightText: 2023-2024 Technology Innovation Institute (TII)
+# SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-FileCopyrightText: 2023 Nix community projects
-#
 # SPDX-License-Identifier: MIT
 
 # This file originates from:
