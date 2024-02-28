@@ -292,6 +292,25 @@ in {
     };
   };
 
+  # Enable early out-of-memory killing.
+  # Make nix builds more likely to be killed over more important services.
+  services.earlyoom = {
+    enable = true;
+    # earlyoom sends SIGTERM once below 5% and SIGKILL when below half
+    # of freeMemThreshold
+    freeMemThreshold = 5;
+    extraArgs = [
+      "--prefer '^(nix-daemon)$'"
+      "--avoid '^(java|jenkins-.*|sshd|systemd|systemd-.*)$'"
+    ];
+  };
+
+  # Tell the Nix evaluator to garbage collect more aggressively
+  environment.variables.GC_INITIAL_HEAP_SIZE = "1M";
+  # Always overcommit: pretend there is always enough memory
+  # until it actually runs out
+  boot.kernel.sysctl."vm.overcommit_memory" = "1";
+
   # Configure Nix to use this as a substitutor, and the public key used for signing.
   nix.settings.trusted-public-keys = [
     "ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I="
