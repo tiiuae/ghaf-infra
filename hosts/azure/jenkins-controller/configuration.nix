@@ -179,7 +179,7 @@ in {
       jenkins-auth = "-auth admin:\"$(cat /var/lib/jenkins/secrets/initialAdminPassword)\"";
     in ''
       # Install plugins
-      jenkins-cli ${jenkins-auth} install-plugin "workflow-aggregator" "github" -deploy
+      jenkins-cli ${jenkins-auth} install-plugin "workflow-aggregator" "github" "timestamper" -deploy
 
       # Jenkins groovy config
       jenkins-cli ${jenkins-auth} groovy = < ${jenkins-groovy}
