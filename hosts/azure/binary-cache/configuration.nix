@@ -88,7 +88,7 @@
     ""
     "${pkgs.caddy}/bin/caddy run --environ --config ${config.services.caddy.configFile}/Caddyfile"
   ];
-  systemd.services.caddy.serviceConfig.EnvironmentFile = "/run/caddy.env";
+  systemd.services.caddy.serviceConfig.EnvironmentFile = "/var/lib/caddy/caddy.env";
 
   # Wait for cloud-init mounting before we start caddy.
   systemd.services.caddy.after = ["cloud-init.service"];
