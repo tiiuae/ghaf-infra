@@ -3,6 +3,7 @@
 {
   users.users = {
     nix = {
+      description = "Nix Builder";
       isNormalUser = true;
       group = "nix";
       home = "/var/lib/nix";
