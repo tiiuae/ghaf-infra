@@ -64,24 +64,24 @@ locals {
   # Environment-specific configuration options.
   # See Azure vm sizes and specs at:
   # https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux
-  # E.g. 'Standard_D1_v2' means: 1 vCPU, 3.5 GiB RAM
+  # E.g. 'Standard_D2_v3' means: 2 vCPU, 8 GiB RAM
   opts = {
     priv = {
       vm_size_binarycache = "Standard_D2_v3"
       vm_size_builder     = "Standard_D2_v3"
-      vm_size_controller  = "Standard_D4_v3"
+      vm_size_controller  = "Standard_E2_v5"
       num_builders        = 1
     }
     dev = {
       vm_size_binarycache = "Standard_D2_v3"
       vm_size_builder     = "Standard_D4_v3"
-      vm_size_controller  = "Standard_D4_v3"
+      vm_size_controller  = "Standard_E4_v5"
       num_builders        = 1
     }
     prod = {
       vm_size_binarycache = "Standard_D2_v3"
       vm_size_builder     = "Standard_D8_v3"
-      vm_size_controller  = "Standard_D8_v3"
+      vm_size_controller  = "Standard_E4_v5"
       num_builders        = 2
     }
   }
