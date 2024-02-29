@@ -19,6 +19,7 @@
   # Yubikey signer
   users.users = {
     yubimaster = {
+      description = "Yubikey Signer";
       isNormalUser = true;
       extraGroups = ["docker"];
       openssh.authorizedKeys.keys = [

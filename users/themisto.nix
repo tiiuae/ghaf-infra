@@ -3,6 +3,7 @@
 {
   users.users = {
     themisto = {
+      description = "Themisto Hydra";
       isNormalUser = true;
       openssh.authorizedKeys.keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMK29aVdB0Xucg9pFMqkY6fwUKV41enaWw4wP7fUjOvK cazfi@gerrit"

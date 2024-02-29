@@ -3,6 +3,7 @@
 {
   users.users = {
     jrautiola = {
+      description = "Joonas Rautiola";
       isNormalUser = true;
       openssh.authorizedKeys.keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII6EoeiMBiiwfGJfQYyuBKg8rDpswX0qh194DUQqUotL joonas@buutti"
