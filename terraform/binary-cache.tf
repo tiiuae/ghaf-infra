@@ -40,7 +40,7 @@ module "binary_cache_vm" {
       },
       {
         content = "SITE_ADDRESS=ghaf-binary-cache-${local.env}.northeurope.cloudapp.azure.com",
-        "path"  = "/run/caddy.env"
+        "path"  = "/var/lib/caddy/caddy.env"
       },
     ],
   })])
