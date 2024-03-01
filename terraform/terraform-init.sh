@@ -14,23 +14,85 @@ set -o pipefail # exit if any pipeline command fails
 # - init persistent secrets such as binary cache signing key (per environment)
 # - init persistent binary cache storage (per environment)
 # - init workspace-specific persistent such as caddy disks (per environment)
-#
-# This script will not do anything if the initialization has already been done.
-# In other words, it's safe to run this script many times. It will not destroy
-# or re-initialize anything if the initialization has already taken place.
 
 ################################################################################
 
 MYDIR=$(dirname "$0")
-DEBUG="false"
+MYNAME=$(basename "$0")
 
 ################################################################################
 
+usage () {
+    echo "Usage: $MYNAME [-h] [-v] [-l LOCATION]"
+    echo ""
+    echo "Initialize terraform state and persistent storage for ghaf-infra on Azure."
+    echo "By default, the Azure LOCATION for the ghaf-infra will be initialized to"
+    echo "North Europe. Use -l option to specify a different LOCATION."
+    echo ""
+    echo "This script will not do anything if the initialization has already been"
+    echo "done. In other words, it's safe to run this script many times. It will"
+    echo "not destroy or re-initialize anything if the initialization has already"
+    echo "taken place."
+    echo ""
+    echo "Options:"
+    echo " -h    Print this help message"
+    echo " -v    Set the script verbosity to DEBUG"
+    echo " -l    Azure location name on which the infra will be initialized. See the"
+    echo "       Azure location names with command 'az account list-locations -o table'."
+    echo "       By default, the LOCATION is set to 'northeurope' i.e. '-l northeurope'"
+    echo ""
+    echo "Example:"
+    echo ""
+    echo "  Following command initializes terraform state and persistent storage"
+    echo "  on Azure location uaenorth (United Arab Emirates North):"
+    echo ""
+    echo "  $MYNAME -l uaenorth"
+    echo ""
+}
+
+################################################################################
+
+argparse () {
+    DEBUG="false"; LOCATION="northeurope"; OPTIND=1
+    while getopts "hvl:" copt; do
+        case "${copt}" in
+            h)
+                usage; exit 0 ;;
+            v)
+                DEBUG="true" ;;
+            l)
+                LOCATION="$OPTARG" ;;
+            *)
+                echo "Error: unrecognized option"; usage; exit 1 ;;
+        esac
+    done
+    shift $((OPTIND-1))
+    if [ -n "$*" ]; then
+        echo "Error: unsupported positional argument(s): '$*'"; exit 1
+    fi
+}
+
 exit_unless_command_exists () {
     if ! command -v "$1" &>"$OUT"; then
-        echo "Error: command '$1' is not installed" >&2
+        echo "Error: command '$1' is not installed (Hint: are you inside a nix-shell?)" >&2
         exit 1
     fi
+}
+
+azure_location_to_shortloc () {
+    # Validate the LOCATION name and map it to SHORTLOC. Canonical source of
+    # the short location name information is:
+    # https://github.com/claranet/terraform-azurerm-regions/blob/master/regions.tf
+    #
+    # This script has been tested on following locations, we consdier other
+    # locations unsupported:
+    if [ "$LOCATION" = 'northeurope' ]; then SHORTLOC="eun"
+    elif [ "$LOCATION" = 'uaenorth' ]; then SHORTLOC="uaen"
+    else
+        echo "[+] Unsupported location '$LOCATION'"
+        exit 1
+    fi
+    echo "[+] Using location short name '$SHORTLOC'"
 }
 
 init_state_storage () {
@@ -63,12 +125,11 @@ init_persistent () {
     # See: ./persistent
     pushd "$MYDIR/persistent" >"$OUT"
     terraform init >"$OUT"
-    # Default persistent instance: 'eun' (northeurope)
-    terraform workspace select eun &>"$OUT" || terraform workspace new eun
+    terraform workspace select "$SHORTLOC" &>"$OUT" || terraform workspace new "$SHORTLOC"
     import_bincache_sigkey "prod"
     import_bincache_sigkey "dev"
     echo "[+] Applying possible changes in ./persistent"
-    terraform apply -auto-approve >"$OUT"
+    terraform apply -var="location=$LOCATION" -auto-approve >"$OUT"
     popd >"$OUT"
 
     # Assigns $WORKSPACE variable
@@ -81,9 +142,11 @@ init_persistent () {
     pushd "$MYDIR/persistent/workspace-specific" >"$OUT"
     terraform init >"$OUT"
     echo "[+] Applying possible changes in ./persistent/workspace-specific"
-    for ws in "dev" "prod" "$WORKSPACE"; do
+    for ws in "dev${SHORTLOC}" "prod${SHORTLOC}" "$WORKSPACE"; do
         terraform workspace select "$ws" &>"$OUT" || terraform workspace new "$ws"
-        if ! terraform apply -auto-approve &>"$OUT"; then
+        var_rg="persistent_resource_group=ghaf-infra-persistent-$SHORTLOC"
+        var_loc="location=$LOCATION"
+        if ! terraform apply -var="$var_loc" -var="$var_rg" -auto-approve &>"$OUT"; then
             echo "[+] Workspace-specific persistent ($ws) is already initialized"
         fi
         # Stop terraform from tracking the state of 'workspace-specific'
@@ -125,6 +188,7 @@ init_terraform () {
 ################################################################################
 
 main () {
+    argparse "$@"
     if [ "$DEBUG" = "true" ]; then
         set -x
         OUT=/dev/stderr
@@ -137,6 +201,7 @@ main () {
     exit_unless_command_exists nix-store
     exit_unless_command_exists grep
 
+    azure_location_to_shortloc
     init_state_storage
     init_persistent
     init_terraform
