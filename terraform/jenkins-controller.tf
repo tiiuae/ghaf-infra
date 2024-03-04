@@ -21,7 +21,7 @@ module "jenkins_controller_vm" {
 
   resource_group_name          = azurerm_resource_group.infra.name
   location                     = azurerm_resource_group.infra.location
-  virtual_machine_name         = "ghaf-jenkins-controller-${local.env}"
+  virtual_machine_name         = "ghaf-jenkins-controller-${local.ws}"
   virtual_machine_size         = local.opts[local.conf].vm_size_controller
   virtual_machine_osdisk_size  = local.opts[local.conf].osdisk_size_controller
   virtual_machine_source_image = module.jenkins_controller_image.image_id
@@ -64,7 +64,7 @@ module "jenkins_controller_vm" {
         "path"  = "/var/lib/builder-keyscan/scanlist"
       },
       {
-        content = "SITE_ADDRESS=ghaf-jenkins-controller-${local.env}.northeurope.cloudapp.azure.com",
+        content = "SITE_ADDRESS=ghaf-jenkins-controller-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com",
         "path"  = "/var/lib/caddy/caddy.env"
       }
     ]
