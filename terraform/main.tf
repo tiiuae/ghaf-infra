@@ -40,6 +40,16 @@ variable "location" {
   description = "Azure region into which the resources will be deployed"
 }
 
+variable "envtype" {
+  type        = string
+  description = "Set the environment type; determines e.g. the Azure VM sizes"
+  default     = "priv"
+  validation {
+    condition     = contains(["priv", "dev", "prod"], var.envtype)
+    error_message = "Must be either \"priv\", \"dev\", or \"prod\""
+  }
+}
+
 # Use azure_region module to get the short name of the Azure region,
 # see: https://registry.terraform.io/modules/claranet/regions/azurerm/latest
 module "azure_region" {
@@ -98,21 +108,17 @@ locals {
   # Read ssh-keys.yaml into local.ssh_keys
   ssh_keys = yamldecode(file("../ssh-keys.yaml"))
 
-  # Map workspace name to configuration name:
-  #  !"dev" && !"prod" ==> "priv"
-  #  "dev"             ==> "dev"
-  #  "prod"            ==> "prod"
   # This determines the configuration options used in the
-  # ghaf-infra instance (defines e.g. vm_sizes and number of builders)
-  # TODO: allow overwriting this with an input variable
-  conf = local.ws != "dev" && local.ws != "prod" ? "priv" : local.ws
+  # ghaf-infra instance (defines e.g. vm_sizes and number of builders).
+  # If workspace name is "dev" or "prod" use the workspace name as
+  # envtype, otherwise, use the value from var.envtype.
+  conf = local.ws == "dev" || local.ws == "prod" ? local.ws : var.envtype
 
-  # env is used to identify workspace-specific resources:
-  env = local.ws
-
-  # Selects the persistent data used in the ghaf-infra instance, currently
-  # either "dev" or "prod"
-  # (see ./persistent)
+  # Selects the persistent data (see ./persistent) used in the ghaf-infra
+  # instance; currently either "dev" or "prod" based on the environment type:
+  #   "priv" ==> "dev"
+  #   "dev"  ==> "dev"
+  #   "prod" ==> "prod"
   persistent_data = local.conf == "priv" ? "dev" : local.conf
 }
 
@@ -120,7 +126,7 @@ locals {
 
 # Resource group for this ghaf-infra instance
 resource "azurerm_resource_group" "infra" {
-  name     = "ghaf-infra-${local.env}"
+  name     = "ghaf-infra-${local.ws}"
   location = var.location
 }
 
@@ -155,7 +161,7 @@ resource "azurerm_subnet" "builders" {
 # Storage account and storage container used to store VM images
 
 resource "azurerm_storage_account" "vm_images" {
-  name                            = "img${local.env}${local.shortloc}"
+  name                            = "img${local.ws}${local.shortloc}"
   resource_group_name             = azurerm_resource_group.infra.name
   location                        = azurerm_resource_group.infra.location
   account_tier                    = "Standard"
