@@ -45,6 +45,8 @@
   # Environment for Yubikey provisioning
   environment.systemPackages = with pkgs; [
     usbutils
+    screen
+    python310
   ];
   virtualisation.docker.enable = true;
 }
