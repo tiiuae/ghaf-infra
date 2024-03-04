@@ -110,7 +110,7 @@ module "test_vm" {
   # https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/#pricing
   virtual_machine_size         = terraform.workspace == "default" ? "Standard_D2_v2" : "Standard_D1_v2"
   virtual_machine_source_image = module.test_image.image_id
-
+  virtual_machine_osdisk_size  = "50"
   virtual_machine_custom_data = join("\n", ["#cloud-config", yamlencode({
     users = [
       {
