@@ -46,7 +46,10 @@
   environment.systemPackages = with pkgs; [
     usbutils
     screen
-    python310
+    (python310.withPackages (ps:
+      with ps; [
+        requests
+      ]))
   ];
   virtualisation.docker.enable = true;
 }
