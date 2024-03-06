@@ -36,11 +36,11 @@ while getopts "hu:s:k:" copt; do
     case "${copt}" in
         h)
             usage; exit 0 ;;
-        u) 
+        u)
             OPT_u="$OPTARG" ;;
-        s) 
+        s)
             OPT_s="$OPTARG" ;;
-        k) 
+        k)
             OPT_k="$OPTARG" ;;
         *)
             echo "Error: unrecognized option"; usage; exit 1 ;;

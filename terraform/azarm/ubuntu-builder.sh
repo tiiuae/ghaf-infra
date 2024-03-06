@@ -16,7 +16,7 @@ set -x # debug
 apt_update () {
     sudo apt-get update -y
     sudo apt-get upgrade -y
-    sudo apt-get install -y ca-certificates curl xz-utils 
+    sudo apt-get install -y ca-certificates curl xz-utils
 }
 
 install_nix () {
@@ -80,7 +80,7 @@ restart_nix_daemon () {
 
 uninstall_nix () {
     # https://github.com/NixOS/nix/issues/1402
-    if grep -q nixbld /etc/passwd; then 
+    if grep -q nixbld /etc/passwd; then
         grep nixbld /etc/passwd | awk -F ":" '{print $1}' | xargs -t -n 1 sudo userdel -r
     fi
     if grep -q nixbld /etc/group; then
@@ -92,9 +92,9 @@ uninstall_nix () {
         sudo rm -rf /nix
     fi
     if [ -d "/etc/nix" ]; then
-        sudo rm -fr /etc/nix 
+        sudo rm -fr /etc/nix
     fi
-    sudo find /etc -iname "*backup-before-nix*" -delete 
+    sudo find /etc -iname "*backup-before-nix*" -delete
     sudo find -L /usr/bin -iname "nix*" -delete
     [ -f "$HOME/.profile" ] && sed -i "/\/nix/d" "$HOME/.profile"
     [ -f "$HOME/.bash_profile" ] && sed -i "/\/nix/d" "$HOME/.bash_profile"

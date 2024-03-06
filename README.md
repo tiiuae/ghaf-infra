@@ -101,11 +101,11 @@ building '/nix/store/7jx57i82zmkcjsimb761vqsdcx2sc8yq-nixos-system-ghafhydra-23.
 The `pre-push` task runs a set of checks for the contents of this repository. The checks include: python linters, license compliance checks, formatting checks for nix and terraform files and nix flake check for the ghaf-infra flake. The `pre-push` task also locally builds all the alias configurations:
 
 ```bash
-$ invoke pre-push 
+$ invoke pre-push
 INFO     Running: find . -type f -name *.py ! -path *result* ! -path *eggs*
-INFO     Running: black -q ./tasks.py 
-INFO     Running: pylint --disable duplicate-code -rn ./tasks.py 
-INFO     Running: pycodestyle --max-line-length=90 ./tasks.py 
+INFO     Running: black -q ./tasks.py
+INFO     Running: pylint --disable duplicate-code -rn ./tasks.py
+INFO     Running: pycodestyle --max-line-length=90 ./tasks.py
 INFO     Running: reuse lint
 INFO     Running: terraform fmt -check -recursive
 INFO     Running: nix fmt
@@ -154,7 +154,7 @@ $ invoke deploy --alias ghafhydra-dev
 The `update-sops-files` task updates all sops yaml and json files according to the rules in [`.sops.yaml`](.sops.yaml). The intended use is to update the secrets after adding new hosts, admins, or secrets:
 
 ```bash
-$ invoke update-sops-files 
+$ invoke update-sops-files
 2023/10/23 08:37:34 Syncing keys for file ghaf-infra/hosts/ghafhydra/secrets.yaml
 2023/10/23 08:37:34 File ghaf-infra/hosts/ghafhydra/secrets.yaml already up to date
 ```
@@ -189,7 +189,7 @@ For deployment secrets (such as the binary cache signing key), this project uses
 
 The general idea is: each host have `secrets.yaml` file that contains the encrypted secrets required by that host. As an example, the `secrets.yaml` file for the host ghafhydra defines a secret [`cache-sig-key`](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/hosts/ghafhydra/secrets.yaml#L2) which is used by the host ghafhydra in [its](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/hosts/ghafhydra/configuration.nix#L15) binary cache [configuration](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/services/binarycache/binary-cache.nix#L12) to sign packages in the nix binary cache. All secrets in `secrets.yaml` can be decrypted with each host's ssh key - sops automatically decrypts the host secrets when the system activates (i.e. on boot or whenever nixos-rebuild switch occurs) and places the decrypted secrets in the configured file paths. An [admin user](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/.sops.yaml#L6) manages the secrets by using the `sops` command line tool.
 
-Each host's private ssh key is stored as sops secret and automatically deployed on [host installation](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/tasks.py#L243). 
+Each host's private ssh key is stored as sops secret and automatically deployed on [host installation](https://github.com/tiiuae/ghaf-infra/blob/4624f751e38f0d3dfd0fee37e1a4bdfdcf6308be/tasks.py#L243).
 
 `secrets.yaml` files are created and edited with the `sops` utility. The [`.sops.yaml`](.sops.yaml) file tells sops what secrets get encrypted with what keys.
 
