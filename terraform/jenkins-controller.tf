@@ -23,7 +23,7 @@ module "jenkins_controller_vm" {
   location                     = azurerm_resource_group.infra.location
   virtual_machine_name         = "ghaf-jenkins-controller-${local.env}"
   virtual_machine_size         = local.opts[local.conf].vm_size_controller
-  virtual_machine_osdisk_size  = "150"
+  virtual_machine_osdisk_size  = local.opts[local.conf].osdisk_size_controller
   virtual_machine_source_image = module.jenkins_controller_image.image_id
 
   virtual_machine_custom_data = join("\n", ["#cloud-config", yamlencode({
