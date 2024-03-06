@@ -15,7 +15,7 @@ module "builder_image" {
 }
 
 locals {
-  num_builders = local.opts[local.conf].num_builders
+  num_builders = local.opts[local.conf].num_builders_x86
 }
 
 module "builder_vm" {
@@ -25,8 +25,8 @@ module "builder_vm" {
 
   resource_group_name          = azurerm_resource_group.infra.name
   location                     = azurerm_resource_group.infra.location
-  virtual_machine_name         = "ghaf-builder-${count.index}-${local.ws}"
-  virtual_machine_size         = local.opts[local.conf].vm_size_builder
+  virtual_machine_name         = "ghaf-builder-x86-${count.index}-${local.ws}"
+  virtual_machine_size         = local.opts[local.conf].vm_size_builder_x86
   virtual_machine_osdisk_size  = local.opts[local.conf].osdisk_size_builder
   virtual_machine_source_image = module.builder_image.image_id
 

@@ -28,7 +28,7 @@ module "jenkins_controller_vm" {
 
   virtual_machine_custom_data = join("\n", ["#cloud-config", yamlencode({
     users = [
-      for user in toset(["bmg", "flokli", "hrosten"]) : {
+      for user in toset(["bmg", "flokli", "hrosten", "jrautiola"]) : {
         name                = user
         sudo                = "ALL=(ALL) NOPASSWD:ALL"
         ssh_authorized_keys = local.ssh_keys[user]
@@ -53,15 +53,19 @@ module "jenkins_controller_vm" {
       # rather than having to recreate the VM whenever the list of builders is
       # changed.
       {
-        content = join("\n", [
-          for ip in toset(module.builder_vm[*].virtual_machine_private_ip_address) : "ssh://remote-build@${ip} x86_64-linux /etc/secrets/remote-build-ssh-key 10 10 kvm,big-parallel - -"
-        ]),
+        content = join("\n", concat(
+          [for ip in toset(module.builder_vm[*].virtual_machine_private_ip_address) : "ssh://remote-build@${ip} x86_64-linux /etc/secrets/remote-build-ssh-key 10 1 kvm,nixos-test,benchmark,big-parallel - -"],
+          [for ip in toset(module.arm_builder_vm[*].virtual_machine_private_ip_address) : "ssh://remote-build@${ip} aarch64-linux /etc/secrets/remote-build-ssh-key 8 1 kvm,nixos-test,benchmark,big-parallel - -"]
+        )),
         "path" = "/etc/nix/machines"
       },
       # Render /var/lib/builder-keyscan/scanlist, so known_hosts can be populated.
       {
-        content = join("\n", toset(module.builder_vm[*].virtual_machine_private_ip_address))
-        "path"  = "/var/lib/builder-keyscan/scanlist"
+        content = join("\n", toset(concat(
+          module.builder_vm[*].virtual_machine_private_ip_address,
+          module.arm_builder_vm[*].virtual_machine_private_ip_address
+        ))),
+        "path" = "/var/lib/builder-keyscan/scanlist"
       },
       {
         content = "SITE_ADDRESS=ghaf-jenkins-controller-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com",
