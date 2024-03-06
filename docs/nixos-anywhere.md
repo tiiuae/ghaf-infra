@@ -99,9 +99,9 @@ NAME    MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
 loop0     7:0    0  63.5M  1 loop /snap/core20/2015
 loop1     7:1    0  40.8M  1 loop /snap/snapd/20092
 loop2     7:2    0 111.9M  1 loop /snap/lxd/24322
-sda       8:0    0    30G  0 disk 
+sda       8:0    0    30G  0 disk
 ├─sda1    8:1    0  29.9G  0 part /           # <== rootfs
-├─sda14   8:14   0     4M  0 part 
+├─sda14   8:14   0     4M  0 part
 └─sda15   8:15   0   106M  0 part /boot/efi
 sdb       8:16   0     8G  0 disk             # <== temporary storage
 └─sdb1    8:17   0     8G  0 part /mnt
@@ -303,7 +303,7 @@ GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX console=tty1 console=ttyS0 earlyprintk=t
 $ sudo update-grub && sudo reboot now
 
 # ... however, disabling IMA is not allowed if secure boot is enabled:
-$ cat /proc/cmdline 
+$ cat /proc/cmdline
 BOOT_IMAGE=/boot/vmlinuz-6.2.0-1014-azure root=PARTUUID=c621eaf2-7308-403f-b164-8b75e44d7028 ro console=tty1 console=ttyS0 earlyprintk=ttyS0 ima_appraise=off panic=-1
 
 $ sudo dmesg | grep -i  -e EVM -e IMA

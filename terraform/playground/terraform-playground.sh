@@ -128,7 +128,7 @@ main () {
         destroy
     fi
     if [ "$1" == "list" ]; then
-        list 
+        list
     fi
 }
 

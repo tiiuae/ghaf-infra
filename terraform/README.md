@@ -11,12 +11,12 @@ For architectural description, see [README-azure.md](./README-azure.md) original
 
 > The setup uses Nix to build disk images, uploads them to Azure, and then boots
 > virtual machines off of them.
->     
+>
 > Images are considered "appliance images", meant the Nix code describing their
 > configuration describes the exact same purpose of the machine (no two-staged
 > deployment process, the machine does the thing it's supposed to do after
 > bootup), allowing to remove the need for e.g. ssh access as much as possible.
-> 
+>
 > Machines are considered ephemeral, every change in the appliance image / nixos
 > configuration causes a new image to be built, and a new VM to be booted with
 > that new image.
@@ -80,7 +80,7 @@ To initialize the backend storage, use the `terraform-init-sh`:
 
 ```bash
 # Inside the terraform directory
-$ ./terraform-init.sh 
+$ ./terraform-init.sh
 [+] Initializing state storage
 [+] Initializing persistent data
 ...
@@ -186,12 +186,12 @@ $ terraform apply
 │ Error: creating/updating Image (Subscription: "<SUBID>"
 │ Resource Group Name: "ghaf-infra-dev"
 │ Image Name: "<NAME>"): performing CreateOrUpdate: unexpected status 400 with error: InvalidParameter: The source blob https://<INSTANCE>.blob.core.windows.net/ghaf-infra-vm-images/<IMANE>.vhd is not accessible.
-│ 
+│
 │   with module.builder_image.azurerm_image.default,
 │   on modules/azurerm-nix-vm-image/main.tf line 22, in resource "azurerm_image" "default":
 │   22: resource "azurerm_image" "default" {
 ```
-Try running `terraform apply` again if you get an error similar to one shown above. 
+Try running `terraform apply` again if you get an error similar to one shown above.
 It's unclear why this error occasionally occurs, this issue should be analyzed in detail.
 
 #### Error: Disk
@@ -201,7 +201,7 @@ $ terraform apply
 │ Error: Disk (Subscription: "<SUBID>"
 │ Resource Group Name: "ghaf-infra-persistent-eun"
 │ Disk Name: "binary-cache-vm-caddy-state-dev") was not found
-│ 
+│
 │   with data.azurerm_managed_disk.binary_cache_caddy_state,
 │   on main.tf line 207, in data "azurerm_managed_disk" "binary_cache_caddy_state":
 │  207: data "azurerm_managed_disk" "binary_cache_caddy_state" {

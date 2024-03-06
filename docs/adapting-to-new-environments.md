@@ -7,7 +7,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 This document outlines the initial manual setup to help those who plan to apply the configurations from this repository - or something based on them - on a new environment.
 
-We will do this with a help of an example: the following sections show how to setup a simple infra with one azure VM that runs hydra with an example jobset. 
+We will do this with a help of an example: the following sections show how to setup a simple infra with one azure VM that runs hydra with an example jobset.
 
 This document uses the term **host** to refer the host system you use to setup and deploy the configurations. The only requirement for the host system is that it needs to have [nix](https://nixos.org/download.html) package manager installed - Ubuntu, Debian, NixOS, or any other system on which you can install nix package manager should all work fine.
 
@@ -116,7 +116,7 @@ $ cat users/myadmin.nix
 }
 ```
 
-### Add your target configuration 
+### Add your target configuration
 Copy one of the system configurations under [hosts](./hosts/) as template for your target, or directly edit one of the existing configurations. For this example, we'll use the configuration 'ghafhydra' as a basis of our target configuration.
 
 ```bash
@@ -140,12 +140,12 @@ You will also need to add your new target configuration to the [`flake.nix`](../
    ...
 ```
 
-### Modify your target configuration 
+### Modify your target configuration
 Modify the server `mytarget` configuration based on your needs. For this example, since our target is an azure VM, we will copy the relevant configuration from the 'azure-x86_64-linux' target defined in [./hosts/templates/targets.nix](./hosts/templates/targets.nix). The final configuration in `hosts/mytarget/configuration.nix` becomes something like:
 
 ```bash
 # Run in nix-shell on your host
-$ cat hosts/mytarget/configuration.nix 
+$ cat hosts/mytarget/configuration.nix
 {
   inputs,
   lib,
@@ -203,7 +203,7 @@ While editing the `hosts/mytarget/configuration.nix`, you might want to remove s
 ### Generate and encrypt your secrets
 At this point, the configuration is otherwise ready, but you have not generated any secrets yet.
 
-First, remove possible earlier secrets you might have copied from ghafhydra. 
+First, remove possible earlier secrets you might have copied from ghafhydra.
 (Note: you will obviously not be able to decrypt the secrets from the original ghafhydra [`secrets.yaml`](./hosts/ghafhydra/secrets.yaml) since you don't have the private key that matches one of the age keys in the original [`.sops.yaml`](.sops.yaml) file.)
 ```bash
 $ rm hosts/mytarget/secrets.yaml
