@@ -28,6 +28,7 @@
       user-cazfi
       user-hydra
       user-tervis
+      user-hrosten
     ])
     ./disk-config.nix
   ];
