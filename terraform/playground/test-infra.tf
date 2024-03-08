@@ -75,7 +75,7 @@ resource "azurerm_storage_container" "vm_images" {
 module "test_image" {
   source = "../modules/azurerm-nix-vm-image"
 
-  nix_attrpath   = "outputs.nixosConfigurations.builder.config.system.build.azureImage"
+  nix_attrpath   = "outputs.nixosConfigurations.az-builder.config.system.build.azureImage"
   nix_entrypoint = "${path.module}/../.."
 
   name                = "playground_vm_img"
