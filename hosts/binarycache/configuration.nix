@@ -56,6 +56,7 @@
   };
 
   services.nginx = {
+    recommendedZstdSettings = true;
     virtualHosts = {
       "cache.vedenemo.dev" = {
         enableACME = true;
@@ -63,6 +64,10 @@
         default = true;
         locations."/" = {
           proxyPass = "http://${config.services.nix-serve.bindAddress}:${toString config.services.nix-serve.port}";
+          extraConfig = ''
+            zstd on;
+            zstd_types application/x-nix-archive;
+          '';
         };
       };
     };
