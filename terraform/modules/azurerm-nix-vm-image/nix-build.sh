@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-# SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
+# SPDX-FileCopyrightText: 2023 The TVL Authors
+#
 # SPDX-License-Identifier: MIT
 
 #
