@@ -48,11 +48,24 @@ in {
       max-free = asGB 200;
       # check the free disk space every 5 seconds
       min-free-check-interval = 5;
+      # Fallback quickly if substituters are not available.
+      connect-timeout = lib.mkDefault 5;
+      # The default at 10 is rarely enough.
+      log-lines = lib.mkDefault 25;
     };
     # Garbage collection
     gc.automatic = true;
     gc.options = pkgs.lib.mkDefault "--delete-older-than 7d";
+
+    daemonCPUSchedPolicy = lib.mkDefault "batch";
+    daemonIOSchedClass = lib.mkDefault "idle";
+    daemonIOSchedPriority = lib.mkDefault 7;
   };
+
+  # Make builds to be more likely killed than important services.
+  # 100 is the default for user slices and 500 is systemd-coredumpd@
+  # We rather want a build to be killed than our precious user sessions as builds can be easily restarted.
+  systemd.services.nix-daemon.serviceConfig.OOMScoreAdjust = lib.mkDefault 250;
 
   # Sometimes it fails if a store path is still in use.
   # This should fix intermediate issues.
