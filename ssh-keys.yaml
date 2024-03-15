@@ -10,3 +10,6 @@ hrosten:
 jrautiola:
  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGlFqSQFoSSuAS1IjmWBFXie329I5Aqf71QhVOnLTBG+ joonas@x1
  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB3h/Aj66ndKFtqpQ8H53tE9KbbO0obThC0qbQQKFQRr joonas@zeus
+mkaapu:
+ - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJYpWmLovw4yIfjhWZ75PgtVfk9ZUcYHRLORcDltoufa mkaapu@nixzure
+ - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE6WDXGfrD+WfY2+eP+/c4NrEOeCGpEOE2TcTlwxWXho marko.kaapu@unikie.com
