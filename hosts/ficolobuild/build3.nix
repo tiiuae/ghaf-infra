@@ -9,6 +9,7 @@
     (with self.nixosModules; [
       user-themisto
       user-ktu
+      user-avnik
     ])
     ./builder.nix
     ./developers.nix
