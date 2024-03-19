@@ -13,3 +13,5 @@ jrautiola:
 mkaapu:
  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJYpWmLovw4yIfjhWZ75PgtVfk9ZUcYHRLORcDltoufa mkaapu@nixzure
  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE6WDXGfrD+WfY2+eP+/c4NrEOeCGpEOE2TcTlwxWXho marko.kaapu@unikie.com
+mika:
+ - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKoroafXsrWkoLewJ7EYcHodqlYILV2T8xtRo6RL99vz mika@nixos
