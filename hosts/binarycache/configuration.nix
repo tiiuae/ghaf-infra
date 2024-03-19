@@ -30,6 +30,7 @@
       user-tervis
       user-hrosten
       user-mkaapu
+      user-avnik
     ])
     ./disk-config.nix
   ];
