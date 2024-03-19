@@ -15,5 +15,6 @@
     user-barna = import ./barna.nix;
     user-mika = import ./mika.nix;
     user-ktu = import ./ktu.nix;
+    user-avnik = import ./avnik.nix;
   };
 }
