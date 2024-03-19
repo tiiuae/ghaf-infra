@@ -29,6 +29,7 @@
       user-hydra
       user-tervis
       user-hrosten
+      user-mkaapu
     ])
     ./disk-config.nix
   ];
