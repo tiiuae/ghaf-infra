@@ -1,6 +1,12 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 
+locals {
+  # Both var.allocate_public_ip and var.access_over_public_ip
+  # will enable assigning public IP to the VM
+  set_public_ip = var.allocate_public_ip || var.access_over_public_ip
+}
+
 resource "azurerm_virtual_machine" "main" {
   name                = var.virtual_machine_name
   resource_group_name = var.resource_group_name
@@ -85,12 +91,12 @@ resource "azurerm_network_interface" "default" {
     name                          = "internal"
     subnet_id                     = var.subnet_id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = (var.allocate_public_ip) ? azurerm_public_ip.default[0].id : null
+    public_ip_address_id          = (local.set_public_ip) ? azurerm_public_ip.default[0].id : null
   }
 }
 
 resource "azurerm_public_ip" "default" {
-  count = (var.allocate_public_ip) ? 1 : 0
+  count = (local.set_public_ip) ? 1 : 0
 
   name                = "${var.virtual_machine_name}-pub-ip"
   domain_name_label   = var.virtual_machine_name
@@ -127,7 +133,7 @@ output "virtual_machine_network_interface_id" {
   value = azurerm_network_interface.default.id
 }
 
-output "virtual_machine_private_ip_address" {
-  description = "The first private IP address of the network interface."
-  value       = azurerm_network_interface.default.private_ip_address
+output "virtual_machine_ip_address" {
+  description = "IP address other VMs in the infra will use to access the VM."
+  value       = var.access_over_public_ip ? azurerm_public_ip.default[0].ip_address : azurerm_network_interface.default.private_ip_address
 }

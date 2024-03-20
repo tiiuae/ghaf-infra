@@ -154,7 +154,7 @@ resource "azurerm_subnet" "jenkins" {
   address_prefixes     = ["10.0.2.0/24"]
 }
 
-# Slice out a subnet for the buidlers
+# Slice out a subnet for the builders
 resource "azurerm_subnet" "builders" {
   name                 = "ghaf-infra-builders"
   resource_group_name  = azurerm_resource_group.infra.name
