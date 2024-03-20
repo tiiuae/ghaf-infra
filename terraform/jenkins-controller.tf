@@ -58,16 +58,16 @@ module "jenkins_controller_vm" {
       # changed.
       {
         content = join("\n", concat(
-          [for ip in toset(module.builder_vm[*].virtual_machine_private_ip_address) : "ssh://remote-build@${ip} x86_64-linux /etc/secrets/remote-build-ssh-key 10 1 kvm,nixos-test,benchmark,big-parallel - -"],
-          [for ip in toset(module.arm_builder_vm[*].virtual_machine_private_ip_address) : "ssh://remote-build@${ip} aarch64-linux /etc/secrets/remote-build-ssh-key 8 1 kvm,nixos-test,benchmark,big-parallel - -"]
+          [for ip in toset(module.builder_vm[*].virtual_machine_ip_address) : "ssh://remote-build@${ip} x86_64-linux /etc/secrets/remote-build-ssh-key 10 1 kvm,nixos-test,benchmark,big-parallel - -"],
+          [for ip in toset(module.arm_builder_vm[*].virtual_machine_ip_address) : "ssh://remote-build@${ip} aarch64-linux /etc/secrets/remote-build-ssh-key 8 1 kvm,nixos-test,benchmark,big-parallel - -"]
         )),
         "path" = "/etc/nix/machines"
       },
       # Render /var/lib/builder-keyscan/scanlist, so known_hosts can be populated.
       {
         content = join("\n", toset(concat(
-          module.builder_vm[*].virtual_machine_private_ip_address,
-          module.arm_builder_vm[*].virtual_machine_private_ip_address
+          module.builder_vm[*].virtual_machine_ip_address,
+          module.arm_builder_vm[*].virtual_machine_ip_address
         ))),
         "path" = "/var/lib/builder-keyscan/scanlist"
       },
@@ -78,8 +78,9 @@ module "jenkins_controller_vm" {
     ]
   })])
 
-  allocate_public_ip = true
-  subnet_id          = azurerm_subnet.jenkins.id
+  allocate_public_ip    = true
+  access_over_public_ip = true
+  subnet_id             = azurerm_subnet.jenkins.id
 
   # Attach disk to the VM
   data_disks = [
