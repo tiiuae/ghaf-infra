@@ -15,14 +15,14 @@ set -ueo pipefail
 #  - `entrypoint`: the path to the Nix file to invoke.
 #    Optional. If omitted, will shell out to git to determine the repo root,
 #    and Nix will use `default.nix` in there.
-#  - `argstr`: A map containing string keys and values
-#    which are passed to Nix as `--argstr $key $value`
+#  - `argstr_json`: A string JSON-encoding a map containing string keys and
+#    values which should be passed to Nix as `--argstr $key $value`.
 #    command line args. Optional.
 #  - `build`: A boolean (or string being "true" or "false") stating whether the
 #    expression should also be built/substituted on the machine executing this script.
 #
 # jq's @sh format takes care of escaping.
-eval "$(jq -r '@sh "attrpath=\(.attrpath) && entrypoint=\(.entrypoint) && argstr=\((.argstr // {}) | to_entries | map ("--argstr", .key, .value) | join(" ")) build=\(.build)"')"
+eval "$(jq -r '@sh "attrpath=\(.attrpath) && entrypoint=\(.entrypoint) && argstr=\((.argstr_json // "{}"|fromjson) | to_entries | map ("--argstr", .key, .value) | join(" ")) build=\(.build)"')"
 
 # Evaluate the expression.
 [[ -z "$entrypoint" ]] && entrypoint=$(git rev-parse --show-toplevel)
