@@ -311,9 +311,6 @@ in {
   boot.kernel.sysctl."vm.overcommit_memory" = "1";
 
   # Configure Nix to use this as a substitutor, and the public key used for signing.
-  nix.settings.trusted-public-keys = [
-    "ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I="
-  ];
   nix.settings.substituters = [
     "http://localhost:8080"
   ];
