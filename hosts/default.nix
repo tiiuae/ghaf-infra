@@ -6,50 +6,65 @@
   inputs,
   lib,
   ...
-}: {
+}: let
+  # make self and inputs available in nixos modules
+  specialArgs = {inherit self inputs;};
+
+  # Calls nixosSystem with a toplevel config
+  # (needs to be a "nixos-"-prefixed module in `self.nixosModules`),
+  # and optional extra configuration.
+  mkNixOS = {
+    systemName,
+    extraConfig ? null,
+  }:
+    lib.nixosSystem {
+      inherit specialArgs;
+      modules =
+        [self.nixosModules."nixos-${systemName}"]
+        ++ lib.optional (extraConfig != null) extraConfig;
+    };
+in {
   flake.nixosModules = {
     # shared modules
     qemu-common = import ./qemu-common.nix;
     ficolo-common = import ./ficolo-common.nix;
     common = import ./common.nix;
     generic-disk-config = import ./generic-disk-config.nix;
+
+    # All flake.nixosConfigurations, before we call lib.nixosSystem over them.
+    # We use a 'nixos-' prefix to distinguish them from regular modules.
+    #
+    # These are available to allow extending system configuration with
+    # out-of-tree additional config (like additional trusted cache public keys)
+    nixos-az-binary-cache = ./azure/binary-cache/configuration.nix;
+    nixos-az-builder = ./azure/builder/configuration.nix;
+    nixos-az-jenkins-controller = ./azure/jenkins-controller/configuration.nix;
+    nixos-binarycache = ./binarycache/configuration.nix;
+    nixos-ficolobuild3 = ./ficolobuild/build3.nix;
+    nixos-ficolobuild4 = ./ficolobuild/build4.nix;
+    nixos-monitoring = ./monitoring/configuration.nix;
+    nixos-prbuilder = ./prbuilder/configuration.nix;
   };
 
-  flake.nixosConfigurations = let
-    # make self and inputs available in nixos modules
-    specialArgs = {inherit self inputs;};
-  in {
-    az-binary-cache = lib.nixosSystem {
-      inherit specialArgs;
-      modules = [./azure/binary-cache/configuration.nix];
-    };
-    az-builder = lib.nixosSystem {
-      inherit specialArgs;
-      modules = [./azure/builder/configuration.nix];
-    };
-    az-jenkins-controller = lib.nixosSystem {
-      inherit specialArgs;
-      modules = [./azure/jenkins-controller/configuration.nix];
-    };
-    binarycache = lib.nixosSystem {
-      inherit specialArgs;
-      modules = [./binarycache/configuration.nix];
-    };
-    ficolobuild3 = lib.nixosSystem {
-      inherit specialArgs;
-      modules = [./ficolobuild/build3.nix];
-    };
-    ficolobuild4 = lib.nixosSystem {
-      inherit specialArgs;
-      modules = [./ficolobuild/build4.nix];
-    };
-    monitoring = lib.nixosSystem {
-      inherit specialArgs;
-      modules = [./monitoring/configuration.nix];
-    };
-    prbuilder = lib.nixosSystem {
-      inherit specialArgs;
-      modules = [./prbuilder/configuration.nix];
-    };
+  # Expose as flake.lib.mkNixOS.
+  flake.lib = {
+    inherit mkNixOS;
   };
+
+  # for each systemName, call mkNixOS on it, and set flake.nixosConfigurations
+  # to an attrset from systemName to the result of that mkNixOS call.
+  flake.nixosConfigurations = builtins.listToAttrs (builtins.map
+    (name: {
+      inherit name;
+      value = mkNixOS {systemName = name;};
+    }) [
+      "az-binary-cache"
+      "az-builder"
+      "az-jenkins-controller"
+      "binarycache"
+      "ficolobuild3"
+      "ficolobuild4"
+      "monitoring"
+      "prbuilder"
+    ]);
 }
