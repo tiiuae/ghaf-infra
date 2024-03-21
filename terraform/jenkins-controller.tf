@@ -5,8 +5,13 @@
 module "jenkins_controller_image" {
   source = "./modules/azurerm-nix-vm-image"
 
-  nix_attrpath   = "outputs.nixosConfigurations.az-jenkins-controller.config.system.build.azureImage"
-  nix_entrypoint = "${path.module}/.."
+  nix_attrpath   = ""
+  nix_entrypoint = "${path.module}/custom-nixos.nix"
+  nix_argstr = {
+    extraNixPublicKey   = local.opts[local.conf].binary_cache_public_key
+    extraNixSubstituter = local.opts[local.conf].binary_cache_url
+    systemName          = "az-jenkins-controller"
+  }
 
   name                   = "jenkins-controller"
   resource_group_name    = azurerm_resource_group.infra.name
