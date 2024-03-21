@@ -10,11 +10,12 @@ resource "azurerm_storage_blob" "default" {
 }
 
 data "external" "nix_build" {
-  program = ["${path.module}/nix-build.sh"]
+  program = ["${path.module}/nix-eval.sh"]
 
   query = {
     attrpath   = var.nix_attrpath
     entrypoint = var.nix_entrypoint
+    build      = "true"
   }
 }
 
