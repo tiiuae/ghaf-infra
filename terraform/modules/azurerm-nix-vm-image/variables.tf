@@ -11,6 +11,12 @@ variable "nix_entrypoint" {
   description = "Path to the .nix file exposing the attribute path"
 }
 
+variable "nix_argstr" {
+  type        = map(any)
+  description = "Additional arguments passed to the nix build as --argstr k v"
+  default     = {}
+}
+
 variable "resource_group_name" {
   type = string
 }
