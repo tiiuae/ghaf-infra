@@ -88,7 +88,7 @@ locals {
       num_builders_aarch64    = 1
       # TODO: set to the real pubkey used in priv
       binary_cache_public_key = "ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I="
-      binary_cache_url        = "https://changeme"
+      binary_cache_url        = ""
     }
     dev = {
       vm_size_binarycache     = "Standard_D2_v3"
@@ -101,7 +101,7 @@ locals {
       num_builders_x86        = 1
       num_builders_aarch64    = 1
       binary_cache_public_key = "ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I="
-      binary_cache_url        = "https://changeme"
+      binary_cache_url        = ""
     }
     prod = {
       vm_size_binarycache     = "Standard_D2_v3"
@@ -115,7 +115,7 @@ locals {
       num_builders_aarch64    = 2
       # TODO: set to the real pubkey used in prod
       binary_cache_public_key = "ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I="
-      binary_cache_url        = "https://changeme"
+      binary_cache_url        = ""
     }
   }
 
