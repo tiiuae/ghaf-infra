@@ -310,10 +310,6 @@ in {
   # until it actually runs out
   boot.kernel.sysctl."vm.overcommit_memory" = "1";
 
-  # Configure Nix to use this as a substitutor, and the public key used for signing.
-  nix.settings.substituters = [
-    "http://localhost:8080"
-  ];
   nix.extraOptions = ''
     builders-use-substitutes = true
     builders = @/etc/nix/machines
@@ -346,6 +342,12 @@ in {
     "${pkgs.caddy}/bin/caddy run --environ --config ${config.services.caddy.configFile}/Caddyfile"
   ];
   systemd.services.caddy.serviceConfig.EnvironmentFile = "/var/lib/caddy/caddy.env";
+
+  # Configure Nix to use the bucket (through rclone-http) as a substitutor.
+  # The public key is passed in externally.
+  nix.settings.substituters = [
+    "http://localhost:8080"
+  ];
 
   # Wait for cloud-init mounting before we start caddy.
   systemd.services.caddy.after = ["cloud-init.service"];

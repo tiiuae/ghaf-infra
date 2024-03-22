@@ -7,9 +7,8 @@ module "binary_cache_image" {
   nix_attrpath   = ""
   nix_entrypoint = "${path.module}/custom-nixos.nix"
   nix_argstr = {
-    extraNixPublicKey   = local.opts[local.conf].binary_cache_public_key
-    extraNixSubstituter = local.opts[local.conf].binary_cache_url
-    systemName          = "az-binary-cache"
+    extraNixPublicKey = local.opts[local.conf].binary_cache_public_key
+    systemName        = "az-binary-cache"
   }
 
   name                   = "binary-cache"
@@ -44,7 +43,7 @@ module "binary_cache_vm" {
         "path"  = "/var/lib/rclone-http/env"
       },
       {
-        content = "SITE_ADDRESS=ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com",
+        content = "SITE_ADDRESS=${local.opts[local.conf].binary_cache_url}"
         "path"  = "/var/lib/caddy/caddy.env"
       },
     ],
