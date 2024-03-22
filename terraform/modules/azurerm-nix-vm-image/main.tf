@@ -13,10 +13,13 @@ data "external" "nix_build" {
   program = ["${path.module}/nix-eval.sh"]
 
   query = {
-    argstr_json = jsonencode(var.nix_argstr)
-    attrpath    = var.nix_attrpath
-    entrypoint  = var.nix_entrypoint
-    build       = "true"
+    argstr_json = jsonencode({
+      # filter out null values and empty strings before rendering argstr_json.
+      for k, v in var.nix_argstr : k => v if v != null && v != ""
+    })
+    attrpath   = var.nix_attrpath
+    entrypoint = var.nix_entrypoint
+    build      = "true"
   }
 }
 
