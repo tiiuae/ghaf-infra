@@ -12,9 +12,9 @@
   # so we can just use foobar.config.system.build.azureImage as attrpath
   systemName,
   # Additional nix binary cache public keys
-  extraNixPublicKey ? null,
+  extraNixPublicKey ? "",
   # Additional nix substituters
-  extraNixSubstituter ? null,
+  extraNixSubstituter ? "",
 }: let
   flake = import ../. {inherit system;};
   inherit (flake.inputs.nixpkgs) lib;
@@ -22,8 +22,8 @@
   out = flake.lib.mkNixOS {
     inherit systemName;
     extraConfig = {
-      nix.settings.trusted-public-keys = lib.optional (extraNixPublicKey != null) extraNixPublicKey;
-      nix.settings.substituters = lib.optional (extraNixSubstituter != null) extraNixSubstituter;
+      nix.settings.trusted-public-keys = lib.optional (extraNixPublicKey != "") extraNixPublicKey;
+      nix.settings.substituters = lib.optional (extraNixSubstituter != "") extraNixSubstituter;
     };
   };
 in
