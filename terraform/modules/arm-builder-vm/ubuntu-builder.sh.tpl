@@ -8,8 +8,8 @@ set -x # debug
 ################################################################################
 
 # Assume root if HOME and USER are unset
-[ -z "${HOME}" ] && export HOME="/root"
-[ -z "${USER}" ] && export USER="root"
+[ -z "$HOME" ] && export HOME="/root"
+[ -z "$USER" ] && export USER="root"
 
 ################################################################################
 
@@ -52,12 +52,12 @@ configure_builder() {
 # 20 GB (20*1024*1024*1024)
 min-free = 21474836480
 # 500 GB (500*1024*1024*1024)
-# osdisk size for prod builders 
+# osdisk size for prod builders
 max-free = 536870912000
 system-features = nixos-test benchmark big-parallel kvm
 trusted-users = remote-build
-substituters = http://localhost:8080 https://cache.vedenemo.dev https://cache.nixos.org
-trusted-public-keys = ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I= cache.vedenemo.dev:8NhplARANhClUSWJyLVk4WMyy1Wb4rhmWW2u8AejH9E= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+substituters = ${bincache_url} https://cache.vedenemo.dev https://cache.nixos.org
+trusted-public-keys = ${bincache_pubkey} cache.vedenemo.dev:8NhplARANhClUSWJyLVk4WMyy1Wb4rhmWW2u8AejH9E= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
     sudo sh -c "printf '$extra_nix_conf\n' >> /etc/nix/nix.conf"
 }
 
