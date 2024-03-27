@@ -45,3 +45,12 @@ variable "data_disks" {
   description = "List of dict containing keys of the storage_data_disk block"
   default     = []
 }
+
+variable "binary_cache_public_key" {
+  type = string
+}
+
+variable "binary_cache_url" {
+  type    = string
+  default = "http://localhost:8080"
+}

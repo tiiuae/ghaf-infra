@@ -131,7 +131,7 @@ resource "azurerm_virtual_machine_extension" "deploy_ubuntu_builder" {
   type_handler_version = "2.1"
   settings             = <<EOF
     {
-        "script": "${base64encode(file("./modules/arm-builder-vm/ubuntu-builder.sh"))}"
+        "script": "${base64encode(templatefile("./modules/arm-builder-vm/ubuntu-builder.sh.tpl", { bincache_url = "${var.binary_cache_url}", bincache_pubkey = "${var.binary_cache_public_key}" }))}"
     }
     EOF
 }
