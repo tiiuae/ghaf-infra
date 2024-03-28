@@ -3,6 +3,12 @@
 
 provider "azurerm" {
   features {}
+
+  # TODO: Authenticate with service principal
+  subscription_id   = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+  tenant_id         = "0f8c9257-a4ad-4069-916f-9bfb26c42d38"
+  client_id         = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+  client_secret     = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 }
 
 terraform {
@@ -22,7 +28,7 @@ terraform {
   # Backend for storing terraform state (see ../state-storage)
   backend "azurerm" {
     resource_group_name  = "ghaf-infra-state"
-    storage_account_name = "ghafinfratfstatestorage"
+    storage_account_name = "ghafinfrauaestatestorage"
     container_name       = "ghaf-infra-tfstate-container"
     key                  = "ghaf-infra.tfstate"
   }
@@ -31,7 +37,7 @@ terraform {
 ################################################################################
 
 # Current signed-in user
-data "azurerm_client_config" "current" {}
+# data "azurerm_client_config" "current" {}
 
 # Variables
 variable "location" {
@@ -88,7 +94,7 @@ locals {
       num_builders_aarch64    = 1
       # 'priv' and 'dev' environments use the same binary cache signing key
       binary_cache_public_key = "ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I="
-      binary_cache_url        = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
+      binary_cache_url        = "https://ghaf-binary-cache-mod-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
     }
     dev = {
       vm_size_binarycache     = "Standard_D2_v3"
@@ -100,9 +106,8 @@ locals {
       osdisk_size_controller  = "500"
       num_builders_x86        = 1
       num_builders_aarch64    = 1
-      # 'priv' and 'dev' environments use the same binary cache signing key
-      binary_cache_public_key = "ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I="
-      binary_cache_url        = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
+      binary_cache_public_key = "ghaf-infra-dev:KDasXk8mv7YSzYIZyIM6gER8QoqnL1wAOf9LP/bPqwk="
+      binary_cache_url        = "https://ghaf-binary-cache-mod-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
     }
     prod = {
       vm_size_binarycache     = "Standard_D2_v3"
@@ -114,8 +119,8 @@ locals {
       osdisk_size_controller  = "1000"
       num_builders_x86        = 2
       num_builders_aarch64    = 2
-      binary_cache_public_key = "ghaf-infra-prod:DIrhJsqehIxjuUQ93Fqx6gmo4cDgn5srW5dedvMbqD0="
-      binary_cache_url        = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
+      binary_cache_public_key = "ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I="
+      binary_cache_url        = "https://ghaf-binary-cache-mod-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
     }
   }
 
@@ -175,7 +180,7 @@ resource "azurerm_subnet" "builders" {
 # Storage account and storage container used to store VM images
 
 resource "azurerm_storage_account" "vm_images" {
-  name                            = "img${local.ws}${local.shortloc}"
+  name                            = "img2${local.ws}${local.shortloc}"
   resource_group_name             = azurerm_resource_group.infra.name
   location                        = azurerm_resource_group.infra.location
   account_tier                    = "Standard"
@@ -194,7 +199,7 @@ resource "azurerm_storage_container" "vm_images" {
 # Data sources to access 'persistent' data, see ./persistent
 
 data "azurerm_storage_account" "binary_cache" {
-  name                = "ghafbincache${local.persistent_data}${local.shortloc}"
+  name                = "ghafbincache${local.persistent_data}2${local.shortloc}"
   resource_group_name = "ghaf-infra-persistent-${local.shortloc}"
 }
 data "azurerm_storage_container" "binary_cache_1" {

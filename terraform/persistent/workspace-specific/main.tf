@@ -19,7 +19,7 @@ terraform {
   # Backend for storing terraform state (see ../../state-storage)
   backend "azurerm" {
     resource_group_name  = "ghaf-infra-state"
-    storage_account_name = "ghafinfratfstatestorage"
+    storage_account_name = "ghafinfrauaestatestorage"
     container_name       = "ghaf-infra-tfstate-container"
     key                  = "ghaf-infra-persistent.tfstate"
   }
@@ -56,7 +56,7 @@ data "azurerm_resource_group" "persistent" {
 }
 
 # Current signed-in user
-data "azurerm_client_config" "current" {}
+# data "azurerm_client_config" "current" {}
 
 
 ################################################################################

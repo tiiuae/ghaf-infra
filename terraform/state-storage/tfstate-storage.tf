@@ -17,14 +17,14 @@ provider "azurerm" {
 
 resource "azurerm_resource_group" "rg" {
   name     = "ghaf-infra-state"
-  location = "northeurope"
+  location = "uaenorth"
 }
 
 # Storage container
 
 resource "azurerm_storage_account" "tfstate" {
   # This must be globally unique, max 24 characters
-  name                            = "ghafinfratfstatestorage"
+  name                            = "ghafinfrauaestatestorage"
   resource_group_name             = azurerm_resource_group.rg.name
   location                        = azurerm_resource_group.rg.location
   account_tier                    = "Standard"

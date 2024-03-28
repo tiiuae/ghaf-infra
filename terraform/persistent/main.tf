@@ -3,6 +3,12 @@
 
 provider "azurerm" {
   features {}
+
+  # TODO: Authenticate with service principal
+  subscription_id   = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+  tenant_id         = "0f8c9257-a4ad-4069-916f-9bfb26c42d38"
+  client_id         = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+  client_secret     = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 }
 
 terraform {
@@ -22,7 +28,7 @@ terraform {
   # Backend for storing terraform state (see ../state-storage)
   backend "azurerm" {
     resource_group_name  = "ghaf-infra-state"
-    storage_account_name = "ghafinfratfstatestorage"
+    storage_account_name = "ghafinfrauaestatestorage"
     container_name       = "ghaf-infra-tfstate-container"
     key                  = "ghaf-infra-persistent.tfstate"
   }
@@ -56,7 +62,7 @@ resource "azurerm_resource_group" "persistent" {
 }
 
 # Current signed-in user
-data "azurerm_client_config" "current" {}
+#data "azurerm_client_config" "current" {}
 
 ################################################################################
 
@@ -86,7 +92,8 @@ module "builder_ssh_key_prod" {
   builder_ssh_keyvault_name = "ssh-builder-prod-${local.ws}"
   resource_group_name       = azurerm_resource_group.persistent.name
   location                  = azurerm_resource_group.persistent.location
-  tenant_id                 = data.azurerm_client_config.current.tenant_id
+  tenant_id                 = "0f8c9257-a4ad-4069-916f-9bfb26c42d38"
+  #tenant_id                 = data.azurerm_client_config.current.tenant_id
 }
 
 module "builder_ssh_key_dev" {
@@ -95,7 +102,8 @@ module "builder_ssh_key_dev" {
   builder_ssh_keyvault_name = "ssh-builder-dev-${local.ws}"
   resource_group_name       = azurerm_resource_group.persistent.name
   location                  = azurerm_resource_group.persistent.location
-  tenant_id                 = data.azurerm_client_config.current.tenant_id
+  tenant_id                 = "0f8c9257-a4ad-4069-916f-9bfb26c42d38"
+  #tenant_id                 = data.azurerm_client_config.current.tenant_id
 }
 
 module "binary_cache_sigkey_prod" {
@@ -105,7 +113,8 @@ module "binary_cache_sigkey_prod" {
   secret_resource        = secret_resource.binary_cache_signing_key_prod
   resource_group_name    = azurerm_resource_group.persistent.name
   location               = azurerm_resource_group.persistent.location
-  tenant_id              = data.azurerm_client_config.current.tenant_id
+  tenant_id              = "0f8c9257-a4ad-4069-916f-9bfb26c42d38"
+  #tenant_id              = data.azurerm_client_config.current.tenant_id
 }
 
 module "binary_cache_sigkey_dev" {
@@ -115,13 +124,14 @@ module "binary_cache_sigkey_dev" {
   secret_resource        = secret_resource.binary_cache_signing_key_dev
   resource_group_name    = azurerm_resource_group.persistent.name
   location               = azurerm_resource_group.persistent.location
-  tenant_id              = data.azurerm_client_config.current.tenant_id
+  tenant_id              = "0f8c9257-a4ad-4069-916f-9bfb26c42d38"
+  #tenant_id              = data.azurerm_client_config.current.tenant_id
 }
 
 module "binary_cache_storage_prod" {
   source = "./binary-cache-storage"
   # Must be globally unique
-  bincache_storage_account_name = "ghafbincacheprod${local.ws}"
+  bincache_storage_account_name = "ghafbincacheprod2${local.ws}"
   resource_group_name           = azurerm_resource_group.persistent.name
   location                      = azurerm_resource_group.persistent.location
 }
@@ -129,7 +139,7 @@ module "binary_cache_storage_prod" {
 module "binary_cache_storage_dev" {
   source = "./binary-cache-storage"
   # Must be globally unique
-  bincache_storage_account_name = "ghafbincachedev${local.ws}"
+  bincache_storage_account_name = "ghafbincachedev2${local.ws}"
   resource_group_name           = azurerm_resource_group.persistent.name
   location                      = azurerm_resource_group.persistent.location
 }

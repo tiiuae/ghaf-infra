@@ -43,7 +43,7 @@ module "arm_builder_vm" {
 
   resource_group_name         = azurerm_resource_group.infra.name
   location                    = local.arm_vm_location
-  virtual_machine_name        = "ghaf-builder-aarch64-${count.index}-${local.ws}"
+  virtual_machine_name        = "ghaf-builder-aarch64-mod-${count.index}-${local.ws}"
   virtual_machine_size        = local.opts[local.conf].vm_size_builder_aarch64
   virtual_machine_osdisk_size = local.opts[local.conf].osdisk_size_builder
   binary_cache_public_key     = local.opts[local.conf].binary_cache_public_key

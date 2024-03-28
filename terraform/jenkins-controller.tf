@@ -25,7 +25,7 @@ module "jenkins_controller_vm" {
 
   resource_group_name          = azurerm_resource_group.infra.name
   location                     = azurerm_resource_group.infra.location
-  virtual_machine_name         = "ghaf-jenkins-controller-${local.ws}"
+  virtual_machine_name         = "ghaf-jenkins-controller-mod-${local.ws}"
   virtual_machine_size         = local.opts[local.conf].vm_size_controller
   virtual_machine_osdisk_size  = local.opts[local.conf].osdisk_size_controller
   virtual_machine_source_image = module.jenkins_controller_image.image_id
@@ -72,7 +72,7 @@ module "jenkins_controller_vm" {
         "path" = "/var/lib/builder-keyscan/scanlist"
       },
       {
-        content = "SITE_ADDRESS=ghaf-jenkins-controller-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com",
+        content = "SITE_ADDRESS=ghaf-jenkins-controller-mod-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com",
         "path"  = "/var/lib/caddy/caddy.env"
       }
     ]
@@ -140,7 +140,7 @@ resource "azurerm_managed_disk" "jenkins_controller_jenkins_state" {
 # ed25519 private key used to connect to remote builders.
 resource "azurerm_key_vault_access_policy" "ssh_remote_build_jenkins_controller" {
   key_vault_id = data.azurerm_key_vault.ssh_remote_build.id
-  tenant_id    = data.azurerm_client_config.current.tenant_id
+  tenant_id    = "0f8c9257-a4ad-4069-916f-9bfb26c42d38"
   object_id    = module.jenkins_controller_vm.virtual_machine_identity_principal_id
 
   secret_permissions = [
@@ -159,7 +159,7 @@ resource "azurerm_role_assignment" "jenkins_controller_access_storage" {
 # binary cache signing key.
 resource "azurerm_key_vault_access_policy" "binary_cache_signing_key_jenkins_controller" {
   key_vault_id = data.azurerm_key_vault.binary_cache_signing_key.id
-  tenant_id    = data.azurerm_client_config.current.tenant_id
+  tenant_id    = "0f8c9257-a4ad-4069-916f-9bfb26c42d38"
   object_id    = module.jenkins_controller_vm.virtual_machine_identity_principal_id
 
   secret_permissions = [
