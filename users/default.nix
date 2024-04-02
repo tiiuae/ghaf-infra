@@ -16,5 +16,7 @@
     user-mika = import ./mika.nix;
     user-ktu = import ./ktu.nix;
     user-avnik = import ./avnik.nix;
+    user-flokli = import ./flokli.nix;
+    user-vjuntunen = import ./vjuntunen.nix;
   };
 }
