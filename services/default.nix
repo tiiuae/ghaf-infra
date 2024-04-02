@@ -8,5 +8,6 @@
     service-node-exporter = import ./node-exporter;
     service-openssh = import ./openssh;
     service-remote-build = import ./remote-build;
+    service-rclone-http = import ./rclone-http;
   };
 }
