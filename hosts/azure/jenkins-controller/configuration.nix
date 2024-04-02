@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   pkgs,
-  config,
   self,
   lib,
   ...
@@ -76,6 +75,7 @@ in {
   imports = [
     ../../azure-common.nix
     self.nixosModules.service-openssh
+    self.nixosModules.service-rclone-http
   ];
 
   # Configure /var/lib/jenkins in /etc/fstab.
@@ -268,29 +268,6 @@ in {
     '';
   };
 
-  # Run a read-write HTTP webserver proxying to the "binary-cache-v1" storage
-  # This is used by the post-build-hook to upload to the binary cache.
-  # This relies on IAM to grant access to the storage container.
-  systemd.services.rclone-http = {
-    after = ["network.target"];
-    requires = ["network.target"];
-    wantedBy = ["multi-user.target"];
-    serviceConfig = {
-      Type = "notify";
-      Restart = "always";
-      RestartSec = 2;
-      DynamicUser = true;
-      RuntimeDirectory = "rclone-http";
-      ExecStart =
-        "${pkgs.rclone}/bin/rclone "
-        + "serve webdav "
-        + "--azureblob-env-auth "
-        + "--addr localhost:8080 "
-        + ":azureblob:binary-cache-v1";
-      EnvironmentFile = "/var/lib/rclone-http/env";
-    };
-  };
-
   # Enable early out-of-memory killing.
   # Make nix builds more likely to be killed over more important services.
   services.earlyoom = {
@@ -318,10 +295,15 @@ in {
     post-build-hook = ${post-build-hook}
   '';
 
-  # TODO: use https://caddyserver.com/docs/caddyfile-tutorial#environment-variables for domain
+  services.rclone-http = {
+    enable = true;
+    protocol = "webdav";
+    remote = ":azureblob:binary-cache-v1";
+  };
+
   services.caddy = {
     enable = true;
-    configFile = pkgs.writeTextDir "Caddyfile" ''
+    configFile = pkgs.writeText "Caddyfile" ''
       # Disable the admin API, we don't want to reconfigure Caddy at runtime.
       {
         admin off
@@ -334,13 +316,6 @@ in {
     '';
   };
 
-  # workaround for https://github.com/NixOS/nixpkgs/issues/272532
-  # FUTUREWORK: rebase once https://github.com/NixOS/nixpkgs/pull/272617 landed
-  services.caddy.enableReload = false;
-  systemd.services.caddy.serviceConfig.ExecStart = lib.mkForce [
-    ""
-    "${pkgs.caddy}/bin/caddy run --environ --config ${config.services.caddy.configFile}/Caddyfile"
-  ];
   systemd.services.caddy.serviceConfig.EnvironmentFile = "/var/lib/caddy/caddy.env";
 
   # Configure Nix to use the bucket (through rclone-http) as a substitutor.
