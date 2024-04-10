@@ -8,6 +8,9 @@ keys:
   - &jrautiola age15jq5gjjd7ypsdlqfjtqy4red57v8ggqq9na6u3xffznu678nydpsuuwjg0
   - &binarycache age1s47a3y44j695gemcl0kqgjlxxvaa50de9s69jy2l6vc8xtmk5pcskhpknl
   - &monitoring age17s9sc2cgt9t30cyl65zya8p4zmwnndrx2r896e7gzgl08sjn0qmq3t6shs
+  - &tervis age1ehmv0gg6xmj8nguakmj6tnhdhphjfnfwzpfshfupcrv67djn49hqzehl6y
+  - &vjuntunen age194hljejmy63ph884cnuuume7z33txlkp9an7l3yt2n3sjjere52qkvlfju
+  - &testagent age12nrv5a9rk9vqvx2tqvghn4kt9ps6gdszmmynhjegl2ewefkh03fsexuy9y
 creation_rules:
   - path_regex: terraform/azarm/secrets.yaml$
     key_groups:
@@ -24,3 +27,10 @@ creation_rules:
     - age:
       - *jrautiola
       - *monitoring
+  - path_regex: hosts/testagent/secrets.yaml$
+    key_groups:
+    - age:
+      - *tervis
+      - *flokli
+      - *vjuntunen
+      - *testagent
