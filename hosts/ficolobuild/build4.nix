@@ -1,16 +1,13 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
-{
-  self,
-  lib,
-  ...
-}: {
-  imports = lib.flatten [
-    (with self.nixosModules; [
+{self, ...}: {
+  imports =
+    [
+      ./builder.nix
+    ]
+    ++ (with self.nixosModules; [
       user-themisto
-    ])
-    ./builder.nix
-  ];
+    ]);
 
   # build4 specific configuration
 
