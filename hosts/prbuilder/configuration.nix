@@ -8,12 +8,13 @@
   pkgs,
   ...
 }: {
-  imports = lib.flatten [
-    (with inputs; [
-      nix-serve-ng.nixosModules.default
-      disko.nixosModules.disko
-    ])
-    (with self.nixosModules; [
+  imports =
+    [
+      ./disk-config.nix
+      inputs.nix-serve-ng.nixosModules.default
+      inputs.disko.nixosModules.disko
+    ]
+    ++ (with self.nixosModules; [
       common
       qemu-common
       ficolo-common
@@ -26,9 +27,7 @@
       user-tervis
       user-barna
       user-mika
-    ])
-    ./disk-config.nix
-  ];
+    ]);
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   # List packages installed in system profile
   environment.systemPackages = with pkgs; [

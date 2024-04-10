@@ -16,12 +16,13 @@ in {
   sops.defaultSopsFile = ./secrets.yaml;
   sops.secrets.sshified_private_key.owner = "sshified";
 
-  imports = lib.flatten [
-    (with inputs; [
-      sops-nix.nixosModules.sops
-      disko.nixosModules.disko
-    ])
-    (with self.nixosModules; [
+  imports =
+    [
+      ./disk-config.nix
+      inputs.sops-nix.nixosModules.sops
+      inputs.disko.nixosModules.disko
+    ]
+    ++ (with self.nixosModules; [
       common
       qemu-common
       ficolo-common
@@ -30,9 +31,7 @@ in {
       service-node-exporter
       user-jrautiola
       user-tervis
-    ])
-    ./disk-config.nix
-  ];
+    ]);
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 

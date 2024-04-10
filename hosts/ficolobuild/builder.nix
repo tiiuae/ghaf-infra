@@ -9,10 +9,13 @@
   modulesPath,
   ...
 }: {
-  imports = lib.flatten [
-    (modulesPath + "/installer/scan/not-detected.nix")
-    inputs.disko.nixosModules.disko
-    (with self.nixosModules; [
+  imports =
+    [
+      ./disk-config.nix
+      (modulesPath + "/installer/scan/not-detected.nix")
+      inputs.disko.nixosModules.disko
+    ]
+    ++ (with self.nixosModules; [
       common
       ficolo-common
       service-openssh
@@ -24,9 +27,7 @@
       user-tervis
       user-karim
       user-mika
-    ])
-    ./disk-config.nix
-  ];
+    ]);
 
   # Hardwre Configuration:
 

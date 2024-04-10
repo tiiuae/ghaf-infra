@@ -11,12 +11,13 @@
   sops.defaultSopsFile = ./secrets.yaml;
   sops.secrets.cache-sig-key.owner = "root";
 
-  imports = lib.flatten [
-    (with inputs; [
-      sops-nix.nixosModules.sops
-      disko.nixosModules.disko
-    ])
-    (with self.nixosModules; [
+  imports =
+    [
+      ./disk-config.nix
+      inputs.sops-nix.nixosModules.sops
+      inputs.disko.nixosModules.disko
+    ]
+    ++ (with self.nixosModules; [
       common
       qemu-common
       ficolo-common
@@ -31,9 +32,7 @@
       user-hrosten
       user-mkaapu
       user-avnik
-    ])
-    ./disk-config.nix
-  ];
+    ]);
 
   nix.settings = {
     # we don't want the cache to be a substitutor for itself
