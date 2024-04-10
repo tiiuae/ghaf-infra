@@ -86,7 +86,7 @@ locals {
       osdisk_size_controller  = "150"
       num_builders_x86        = 1
       num_builders_aarch64    = 1
-      # TODO: set to the real pubkey used in priv
+      # 'priv' and 'dev' environments use the same binary cache signing key
       binary_cache_public_key = "ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I="
       binary_cache_url        = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
     }
@@ -100,6 +100,7 @@ locals {
       osdisk_size_controller  = "500"
       num_builders_x86        = 1
       num_builders_aarch64    = 1
+      # 'priv' and 'dev' environments use the same binary cache signing key
       binary_cache_public_key = "ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I="
       binary_cache_url        = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
     }
@@ -113,8 +114,7 @@ locals {
       osdisk_size_controller  = "1000"
       num_builders_x86        = 2
       num_builders_aarch64    = 2
-      # TODO: set to the real pubkey used in prod
-      binary_cache_public_key = "ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I="
+      binary_cache_public_key = "ghaf-infra-prod:DIrhJsqehIxjuUQ93Fqx6gmo4cDgn5srW5dedvMbqD0="
       binary_cache_url        = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
     }
   }
