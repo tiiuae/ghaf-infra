@@ -12,7 +12,7 @@
   imports =
     [
       # Include the results of the hardware scan.
-      ./testagent-hardware-configuration.nix
+      ./hardware-configuration.nix
     ]
     ++ (with inputs; [
       sops-nix.nixosModules.sops
