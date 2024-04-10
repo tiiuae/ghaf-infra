@@ -44,6 +44,7 @@ in {
     nixos-ficolobuild4 = ./ficolobuild/build4.nix;
     nixos-monitoring = ./monitoring/configuration.nix;
     nixos-prbuilder = ./prbuilder/configuration.nix;
+    nixos-testagent = ./testagent/configuration.nix;
   };
 
   # Expose as flake.lib.mkNixOS.
@@ -66,5 +67,6 @@ in {
       "ficolobuild4"
       "monitoring"
       "prbuilder"
+      "testagent"
     ]);
 }

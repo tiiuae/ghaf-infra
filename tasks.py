@@ -91,6 +91,10 @@ TARGETS = OrderedDict(
             hostname="172.18.20.106",
             nixosconfig="prbuilder",
         ),
+        "testagent": TargetHost(
+            hostname="172.18.16.60",
+            nixosconfig="testagent",
+        ),
     }
 )
 
