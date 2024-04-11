@@ -56,8 +56,8 @@ min-free = 21474836480
 max-free = 536870912000
 system-features = nixos-test benchmark big-parallel kvm
 trusted-users = remote-build
-substituters = ${bincache_url} https://cache.vedenemo.dev https://cache.nixos.org
-trusted-public-keys = ${bincache_pubkey} cache.vedenemo.dev:8NhplARANhClUSWJyLVk4WMyy1Wb4rhmWW2u8AejH9E= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+substituters = ${bincache_url} https://cache.nixos.org
+trusted-public-keys = ${bincache_pubkey} cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
     sudo sh -c "printf '$extra_nix_conf\n' >> /etc/nix/nix.conf"
 }
 
