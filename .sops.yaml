@@ -2,15 +2,20 @@
 # SPDX-License-Identifier: Apache-2.0
 
 keys:
+  # users
   - &flokli age1lvpj49ewyx9a4uxevl05wfevmqld2d25juc65acjqpmerzdpc9kq2kxdgs
   - &hrosten age1hc6hszepd5xezxkgd3yx74pn3scxjm5w6px48m4rq9yj7w6rke7q72zhgn
   - &karim age122lvqyrdqz30fkfututykl0yle9u63u2em6e4aut7e5draws83ns3npt3a
   - &jrautiola age1hszrldafdz09hzze4lgq58r0r66p4sjftn6q8z6h0leer77jhf4qd9vu9v
-  - &binarycache age1s47a3y44j695gemcl0kqgjlxxvaa50de9s69jy2l6vc8xtmk5pcskhpknl
-  - &monitoring age17s9sc2cgt9t30cyl65zya8p4zmwnndrx2r896e7gzgl08sjn0qmq3t6shs
   - &tervis age1ehmv0gg6xmj8nguakmj6tnhdhphjfnfwzpfshfupcrv67djn49hqzehl6y
   - &vjuntunen age194hljejmy63ph884cnuuume7z33txlkp9an7l3yt2n3sjjere52qkvlfju
+
+  # hosts
+  - &binarycache age1s47a3y44j695gemcl0kqgjlxxvaa50de9s69jy2l6vc8xtmk5pcskhpknl
+  - &monitoring age17s9sc2cgt9t30cyl65zya8p4zmwnndrx2r896e7gzgl08sjn0qmq3t6shs
   - &testagent age12nrv5a9rk9vqvx2tqvghn4kt9ps6gdszmmynhjegl2ewefkh03fsexuy9y
+  - &build3 age1q7c2wlrpj0dvthdg7v9j4jmee0kzda8ggtp4nq8jay9u4catee3sn9pa0w
+
 creation_rules:
   - path_regex: terraform/azarm/secrets.yaml$
     key_groups:
@@ -34,3 +39,8 @@ creation_rules:
       - *flokli
       - *vjuntunen
       - *testagent
+  - path_regex: hosts/ficolobuild/build3/secrets.yaml$
+    key_groups:
+    - age:
+      - *jrautiola
+      - *build3
