@@ -40,8 +40,8 @@ in {
     nixos-az-builder = ./azure/builder/configuration.nix;
     nixos-az-jenkins-controller = ./azure/jenkins-controller/configuration.nix;
     nixos-binarycache = ./binarycache/configuration.nix;
-    nixos-ficolobuild3 = ./ficolobuild/build3.nix;
-    nixos-ficolobuild4 = ./ficolobuild/build4.nix;
+    nixos-ficolobuild3 = ./ficolobuild/build3/configuration.nix;
+    nixos-ficolobuild4 = ./ficolobuild/build4/configuration.nix;
     nixos-monitoring = ./monitoring/configuration.nix;
     nixos-prbuilder = ./prbuilder/configuration.nix;
     nixos-testagent = ./testagent/configuration.nix;
