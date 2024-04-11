@@ -1,11 +1,18 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
-{self, ...}: {
+{
+  self,
+  inputs,
+  ...
+}: {
+  sops.defaultSopsFile = ./secrets.yaml;
+
   imports =
     [
       ../builder.nix
       ../developers.nix
     ]
+    inputs.sops-nix.nixosModules.sops
     ++ (with self.nixosModules; [
       user-themisto
       user-ktu
