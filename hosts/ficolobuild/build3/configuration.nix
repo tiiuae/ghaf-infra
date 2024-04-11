@@ -3,15 +3,18 @@
 {self, ...}: {
   imports =
     [
-      ./builder.nix
+      ../builder.nix
+      ../developers.nix
     ]
     ++ (with self.nixosModules; [
       user-themisto
+      user-ktu
+      user-avnik
     ]);
 
-  # build4 specific configuration
+  # build3 specific configuration
 
-  networking.hostName = "build4";
+  networking.hostName = "build3";
 
   # Yubikey signer
   users.users = {
@@ -20,13 +23,13 @@
       isNormalUser = true;
       extraGroups = ["docker"];
       openssh.authorizedKeys.keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA2BcpFzSXOuK9AzN+J1HBVnuVV8D3wgdEwPuILNy2aM signer"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMDfEUoARtE5ZMYofegtm3lECzaQeAktLQ2SqlHcV9jL signer"
       ];
     };
   };
 
   # Trust Themisto Hydra user
   nix.settings = {
-    trusted-users = ["root" "themisto"];
+    trusted-users = ["root" "themisto" "@wheel"];
   };
 }
