@@ -7,8 +7,12 @@
 {
   self,
   inputs,
+  pkgs,
   ...
-}: {
+}: let
+  # Vendored in until our nixpkgs pin includes https://github.com/NixOS/nixpkgs/pull/302833.
+  brainstem = pkgs.callPackage ./brainstem.nix {};
+in {
   imports =
     [
       # Include the results of the hardware scan.
@@ -32,6 +36,10 @@
 
   networking.hostName = "testagent";
   networking.useNetworkd = true;
+
+  # Enable Acroname USB Smart switch support.
+  services.udev.packages = [brainstem];
+  environment.systemPackages = [brainstem];
 
   # Disable suspend and hibernate - systemd settings
   services.logind.extraConfig = ''
