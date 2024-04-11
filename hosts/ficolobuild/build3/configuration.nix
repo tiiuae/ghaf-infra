@@ -3,16 +3,18 @@
 {
   self,
   inputs,
+  config,
   ...
 }: {
   sops.defaultSopsFile = ./secrets.yaml;
+  sops.secrets.awsarm_ssh_key.owner = "root";
 
   imports =
     [
       ../builder.nix
       ../developers.nix
+      inputs.sops-nix.nixosModules.sops
     ]
-    inputs.sops-nix.nixosModules.sops
     ++ (with self.nixosModules; [
       user-themisto
       user-ktu
@@ -35,8 +37,37 @@
     };
   };
 
-  # Trust Themisto Hydra user
-  nix.settings = {
-    trusted-users = ["root" "themisto" "@wheel"];
+  programs.ssh.extraConfig = ''
+    Host awsarm
+      HostName awsarm.vedenemo.dev
+      Port 20220
+  '';
+
+  services.openssh.knownHosts = {
+    "[awsarm.vedenemo.dev]:20220".publicKey = "ssh-ed25519  AAAAC3NzaC1lZDI1NTE5AAAAIL3f7tAAO3Fc+8BqemsBQc/Yl/NmRfyhzr5SFOSKqrv0";
+  };
+
+  nix = {
+    settings = {
+      # avoid copying stuff over ssh
+      builders-use-substitutes = true;
+      # trust Themisto Hydra user
+      trusted-users = ["root" "themisto" "@wheel" "build3"];
+    };
+
+    distributedBuilds = true;
+
+    buildMachines = [
+      {
+        hostName = "awsarm";
+        system = "aarch64-linux";
+        maxJobs = 8;
+        speedFactor = 1;
+        supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
+        mandatoryFeatures = [];
+        sshUser = "build3";
+        sshKey = config.sops.secrets.awsarm_ssh_key.path;
+      }
+    ];
   };
 }
