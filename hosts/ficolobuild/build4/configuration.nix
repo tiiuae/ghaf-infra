@@ -7,6 +7,7 @@
     ]
     ++ (with self.nixosModules; [
       user-themisto
+      service-nginx
     ]);
 
   # build4 specific configuration
@@ -28,5 +29,23 @@
   # Trust Themisto Hydra user
   nix.settings = {
     trusted-users = ["root" "themisto"];
+  };
+
+  security.acme = {
+    acceptTerms = true;
+    defaults.email = "trash@unikie.com";
+  };
+
+  services.nginx = {
+    virtualHosts = {
+      "pandia.vedenemo.dev" = {
+        enableACME = true;
+        forceSSL = true;
+        default = true;
+        locations."/" = {
+          proxyPass = "http://127.0.0.1:3015";
+        };
+      };
+    };
   };
 }
