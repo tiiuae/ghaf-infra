@@ -31,6 +31,7 @@ in {
       service-node-exporter
       user-jrautiola
       user-tervis
+      user-karim
     ]);
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
