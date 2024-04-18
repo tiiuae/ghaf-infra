@@ -7,7 +7,8 @@
     service-nginx = import ./nginx;
     service-node-exporter = import ./node-exporter;
     service-openssh = import ./openssh;
-    service-remote-build = import ./remote-build;
     service-rclone-http = import ./rclone-http;
+    service-remote-build = import ./remote-build;
+    service-jenkins-upload-artifacts = import ./jenkins-upload-artifacts;
   };
 }

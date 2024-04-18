@@ -49,6 +49,7 @@ in {
         RestartSec = 2;
         DynamicUser = true;
         RuntimeDirectory = "rclone-http";
+        # TODO: migrate setting these values to terraform/custom-nixos.nix
         EnvironmentFile = "/var/lib/rclone-http/env";
 
         ExecStart =

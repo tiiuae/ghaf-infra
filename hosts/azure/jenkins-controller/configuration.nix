@@ -24,6 +24,7 @@
   # https://plugins.jenkins.io/github-oauth/
   # Below config requires admin to trigger builds or manage jenkins
   # allowing read access for anonymous users:
+  # TODO: configure Jenkins HTTP Post plugin to post to the listen address configured below
   jenkins-groovy = pkgs.writeText "groovy" ''
     #!groovy
 
@@ -74,6 +75,7 @@
 in {
   imports = [
     ../../azure-common.nix
+    self.nixosModules.service-jenkins-upload-artifacts
     self.nixosModules.service-openssh
     self.nixosModules.service-rclone-http
   ];
@@ -179,7 +181,7 @@ in {
       jenkins-auth = "-auth admin:\"$(cat /var/lib/jenkins/secrets/initialAdminPassword)\"";
     in ''
       # Install plugins
-      jenkins-cli ${jenkins-auth} install-plugin "workflow-aggregator" "github" "timestamper" "pipeline-stage-view" "blueocean" "pipeline-graph-view" -deploy
+      jenkins-cli ${jenkins-auth} install-plugin "workflow-aggregator" "github" "timestamper" "pipeline-stage-view" "blueocean" "pipeline-graph-view" "http-post" -deploy
 
       # Jenkins groovy config
       jenkins-cli ${jenkins-auth} groovy = < ${jenkins-groovy}
@@ -187,6 +189,16 @@ in {
       # Restart jenkins
       jenkins-cli ${jenkins-auth} safe-restart
     '';
+  };
+
+  # Enable jenkins-upload-artifacts.
+  # Have the artifact-receiving part listen on http://[::1]:12345,
+  # Jenkins cannot talk to unix domain sockets.
+  services.jenkins-upload-artifacts = {
+    enable = true;
+    listenAddress = "[::1]:12345";
+    # TODO: create this in Terraform
+    remote = ":azureblob:jenkins-artifacts-v1";
   };
 
   # Define a fetch-remote-build-ssh-key unit populating

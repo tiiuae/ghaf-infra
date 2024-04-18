@@ -20,6 +20,10 @@
         statix.enable = true; # prevents use of nix anti-patterns https://github.com/nerdypepper/statix
         shellcheck.enable = true; # lints shell scripts https://github.com/koalaman/shellcheck
       };
+
+      # vendored in
+      settings.formatter.alejandra.excludes = ["hosts/azure/jenkins-controller/buildGo.nix"];
+      settings.formatter.deadnix.excludes = ["hosts/azure/jenkins-controller/buildGo.nix"];
     };
 
     formatter = config.treefmt.build.wrapper;
