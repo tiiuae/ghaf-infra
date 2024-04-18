@@ -28,6 +28,7 @@ in {
       user-tervis
       user-vjuntunen
       user-flokli
+      user-jrautiola
     ]);
 
   # Bootloader.
