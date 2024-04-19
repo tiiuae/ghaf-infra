@@ -138,7 +138,7 @@ in {
                     # Jenkinsfile from the following repo:
                     url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
                     clean = true;
-                    branches = ["*/main"];
+                    branches = ["*/WIP-PoC-matrix"];
                   };
                 }
               ];
