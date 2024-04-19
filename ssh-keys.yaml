@@ -21,3 +21,6 @@ tervis:
  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDJau0tg0qHhqFVarjNOJLi+ekSZNNqxal4iRD/pwM5W tervis@tervis-thinkpad
 cazfi:
  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHzAww8Md+anrVfg93jNYey35Lu/YPEdbEh9QRu+riyf cazfi@cazfi-wlt
+vjuntunen:
+ - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBJvhDUiX05DpsnQ1T8Fmoj2qVrInF8NeDSm8WiDeIxR vjuntunen@ubuntu-laptop
+ - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINEaLCXGOAwSlCqd+X5kQcEtntnVNUZe+lFcugyiNkzF vjuntunen@jenkins-controller
