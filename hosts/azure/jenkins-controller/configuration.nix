@@ -143,7 +143,6 @@ in {
                   };
                 }
               ];
-              script-path = "ghaf-build-pipeline.groovy";
               lightweight-checkout = true;
             };
           };
