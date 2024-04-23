@@ -117,15 +117,32 @@ in {
         job_name = "ficolo-internal-node-exporter";
         static_configs = [
           {
-            targets = [
-              "172.18.20.102:9100" # build1
-              "172.18.20.103:9100" # build2
-              "172.18.20.104:9100" # build3
-              "172.18.20.105:9100" # build4
-              "172.18.20.106:9100" # prbuilder
-              "172.18.20.107:9100" # gerrit
-              "172.18.20.109:9100" # binarycache
-            ];
+            targets = ["172.18.20.102:9100"];
+            labels = {machine_name = "build1";};
+          }
+          {
+            targets = ["172.18.20.103:9100"];
+            labels = {machine_name = "build2";};
+          }
+          {
+            targets = ["172.18.20.104:9100"];
+            labels = {machine_name = "build3";};
+          }
+          {
+            targets = ["172.18.20.105:9100"];
+            labels = {machine_name = "build4";};
+          }
+          {
+            targets = ["172.18.20.106:9100"];
+            labels = {machine_name = "prbuilder";};
+          }
+          {
+            targets = ["172.18.20.107:9100"];
+            labels = {machine_name = "gerrit";};
+          }
+          {
+            targets = ["172.18.20.109:9100"];
+            labels = {machine_name = "binarycache";};
           }
         ];
       }
