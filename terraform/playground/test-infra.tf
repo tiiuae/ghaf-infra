@@ -117,12 +117,13 @@ module "test_vm" {
   virtual_machine_source_image = module.test_image.image_id
   virtual_machine_osdisk_size  = "50"
   virtual_machine_custom_data = join("\n", ["#cloud-config", yamlencode({
+
     users = [
-      {
-        name                = "hrosten"
+      for user in toset(["hrosten", "karim", "mkaapu", "jrautiola", "mika", "cazfi"]) : {
+        name                = user
         sudo                = "ALL=(ALL) NOPASSWD:ALL"
-        ssh_authorized_keys = local.ssh_keys["hrosten"]
-      },
+        ssh_authorized_keys = local.ssh_keys[user]
+      }
     ]
   })])
 
