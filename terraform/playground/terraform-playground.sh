@@ -66,7 +66,7 @@ generate_azure_private_workspace_name () {
     fi
 }
 
-activate () {
+activate_workspace () {
     echo "[+] Activating workspace: '$WORKSPACE'"
     if terraform workspace list | grep -qP "\s$WORKSPACE\$"; then
         terraform workspace select "$WORKSPACE"
@@ -74,10 +74,9 @@ activate () {
         terraform workspace new "$WORKSPACE"
         terraform workspace select "$WORKSPACE"
     fi
-    echo "[+] Done, use terraform [validate|plan|apply] to work with your dev infra"
 }
 
-destroy () {
+destroy_workspace () {
     if ! terraform workspace list | grep -qP "\s$WORKSPACE\$"; then
         echo "[+] Devenv workspace '$WORKSPACE' does not exist, nothing to destroy"
         exit 0
@@ -85,11 +84,6 @@ destroy () {
     echo "[+] Destroying workspace: '$WORKSPACE'"
     terraform workspace select "$WORKSPACE"
     terraform apply -destroy -auto-approve
-}
-
-list () {
-    echo "Terraform workspaces:"
-    terraform workspace list
 }
 
 ################################################################################
@@ -122,13 +116,15 @@ main () {
 
     # Run the given command
     if [ "$1" == "activate" ]; then
-        activate
+        activate_workspace
+        echo "[+] Done, use terraform [validate|plan|apply] to work with your dev infra"
     fi
     if [ "$1" == "destroy" ]; then
-        destroy
+        destroy_workspace
     fi
     if [ "$1" == "list" ]; then
-        list
+        echo "Terraform workspaces:"
+        terraform workspace list
     fi
 }
 

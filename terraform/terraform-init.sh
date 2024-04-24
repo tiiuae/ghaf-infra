@@ -84,10 +84,11 @@ azure_location_to_shortloc () {
     # the short location name information is:
     # https://github.com/claranet/terraform-azurerm-regions/blob/master/regions.tf
     #
-    # This script has been tested on following locations, we consdier other
+    # This script has been tested on following locations, we consider other
     # locations unsupported:
     if [ "$LOCATION" = 'northeurope' ]; then SHORTLOC="eun"
     elif [ "$LOCATION" = 'uaenorth' ]; then SHORTLOC="uaen"
+    elif [ "$LOCATION" = 'swedencentral' ]; then SHORTLOC="swec"
     else
         echo "[+] Unsupported location '$LOCATION'"
         exit 1
@@ -97,10 +98,26 @@ azure_location_to_shortloc () {
 
 init_state_storage () {
     echo "[+] Initializing state storage"
+    # Assign variables STATE_RG and STATE_ACCOUNT: these variables are
+    # used to select the remote state storage used in this instance.
+    if [ "$SHORTLOC" = "eun" ]; then
+        # State file for 'eun' is named differently to not have to move
+        # all existing state files to new 'ghaf-infra-state-eun' resource
+        # group from the one currently used (see below).
+        # At some point we might want to rename the 'eun' state also,
+        # but it would require manual actions to import existing environments.
+        STATE_RG="ghaf-infra-state"
+        STATE_ACCOUNT="ghafinfratfstatestorage"
+    else
+        STATE_RG="ghaf-infra-state-$SHORTLOC"
+        STATE_ACCOUNT="ghafinfrastate$SHORTLOC"
+    fi
+    echo -e "storage_account_rg_name=$STATE_RG\nstorage_account_name=$STATE_ACCOUNT" >"$MYDIR/.env"
     # See: ./state-storage
     pushd "$MYDIR/state-storage" >"$OUT"
     terraform init >"$OUT"
-    if ! terraform apply -auto-approve &>"$OUT"; then
+    terraform workspace select "$SHORTLOC" &>"$OUT" || terraform workspace new "$SHORTLOC" >"$OUT"
+    if ! terraform apply -var="location=$LOCATION" -auto-approve &>"$OUT"; then
         echo "[+] State storage is already initialized"
     fi
     popd >"$OUT"
@@ -124,29 +141,26 @@ init_persistent () {
     echo "[+] Initializing persistent"
     # See: ./persistent
     pushd "$MYDIR/persistent" >"$OUT"
-    terraform init >"$OUT"
-    terraform workspace select "$SHORTLOC" &>"$OUT" || terraform workspace new "$SHORTLOC"
+    # Init persistent, setting the backend resource group and storage account
+    # names from command-line:
+    # https://developer.hashicorp.com/terraform/language/settings/backends/azurerm#backend-azure-ad-user-via-azure-cli
+    terraform init -backend-config="resource_group_name=$STATE_RG" -backend-config="storage_account_name=$STATE_ACCOUNT" >"$OUT"
+    terraform workspace select "$SHORTLOC" &>"$OUT" || terraform workspace new "$SHORTLOC" >"$OUT"
     import_bincache_sigkey "prod"
     import_bincache_sigkey "dev"
     echo "[+] Applying possible changes in ./persistent"
     terraform apply -var="location=$LOCATION" -auto-approve >"$OUT"
     popd >"$OUT"
 
-    # Assigns $WORKSPACE variable
-    # shellcheck source=/dev/null
-    source "$MYDIR/playground/terraform-playground.sh" &>"$OUT"
-    generate_azure_private_workspace_name
-
     echo "[+] Initializing workspace-specific persistent"
     # See: ./persistent/workspace-specific
     pushd "$MYDIR/persistent/workspace-specific" >"$OUT"
-    terraform init >"$OUT"
+    terraform init -backend-config="resource_group_name=$STATE_RG" -backend-config="storage_account_name=$STATE_ACCOUNT" >"$OUT"
     echo "[+] Applying possible changes in ./persistent/workspace-specific"
     for ws in "dev${SHORTLOC}" "prod${SHORTLOC}" "$WORKSPACE"; do
-        terraform workspace select "$ws" &>"$OUT" || terraform workspace new "$ws"
+        terraform workspace select "$ws" &>"$OUT" || terraform workspace new "$ws" >"$OUT"
         var_rg="persistent_resource_group=ghaf-infra-persistent-$SHORTLOC"
-        var_loc="location=$LOCATION"
-        if ! terraform apply -var="$var_loc" -var="$var_rg" -auto-approve &>"$OUT"; then
+        if ! terraform apply -var="$var_rg" -auto-approve &>"$OUT"; then
             echo "[+] Workspace-specific persistent ($ws) is already initialized"
         fi
         # Stop terraform from tracking the state of 'workspace-specific'
@@ -182,7 +196,11 @@ init_persistent () {
 
 init_terraform () {
     echo "[+] Running terraform init"
-    terraform -chdir="$MYDIR" init >"$OUT"
+    pushd "$MYDIR" >"$OUT"
+    terraform init -backend-config="resource_group_name=$STATE_RG" -backend-config="storage_account_name=$STATE_ACCOUNT" >"$OUT"
+    # By default, switch to the private workspace
+    activate_workspace
+    popd >"$OUT"
 }
 
 ################################################################################
@@ -200,6 +218,11 @@ main () {
     exit_unless_command_exists terraform
     exit_unless_command_exists nix-store
     exit_unless_command_exists grep
+
+    # Assigns $WORKSPACE variable
+    # shellcheck source=/dev/null
+    source "$MYDIR/playground/terraform-playground.sh" &>"$OUT"
+    generate_azure_private_workspace_name
 
     azure_location_to_shortloc
     init_state_storage

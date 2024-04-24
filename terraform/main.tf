@@ -21,10 +21,10 @@ terraform {
 terraform {
   # Backend for storing terraform state (see ../state-storage)
   backend "azurerm" {
-    resource_group_name  = "ghaf-infra-state"
-    storage_account_name = "ghafinfratfstatestorage"
-    container_name       = "ghaf-infra-tfstate-container"
-    key                  = "ghaf-infra.tfstate"
+    # resource_group_name and storage_account_name are set by the callee
+    # from command line in terraform init, see terraform-init.sh
+    container_name = "ghaf-infra-tfstate-container"
+    key            = "ghaf-infra.tfstate"
   }
 }
 
@@ -32,13 +32,6 @@ terraform {
 
 # Current signed-in user
 data "azurerm_client_config" "current" {}
-
-# Variables
-variable "location" {
-  type        = string
-  default     = "northeurope"
-  description = "Azure region into which the resources will be deployed"
-}
 
 variable "envtype" {
   type        = string
@@ -50,11 +43,21 @@ variable "envtype" {
   }
 }
 
+variable "envfile" {
+  type        = string
+  description = "Error out if .env-file is missing"
+  default     = ".env"
+  validation {
+    condition     = fileexists(var.envfile)
+    error_message = "ERROR: missing .env-file: (re-)run terraform-init.sh to initialize your environment"
+  }
+}
+
 # Use azure_region module to get the short name of the Azure region,
 # see: https://registry.terraform.io/modules/claranet/regions/azurerm/latest
 module "azure_region" {
   source       = "claranet/regions/azurerm"
-  azure_region = var.location
+  azure_region = data.azurerm_storage_account.tfstate.location
 }
 
 locals {
@@ -64,9 +67,19 @@ locals {
     (terraform.workspace == "default") ?
   "((Force invalid regex pattern)\n\nERROR: workspace 'default' is not allowed" : "", "")
 
+  envs = { for tuple in regexall("(.*)=(.*)", file(var.envfile)) : tuple[0] => tuple[1] }
+
   # Short name of the Azure region, see:
   # https://github.com/claranet/terraform-azurerm-regions/blob/master/REGIONS.md
   shortloc = module.azure_region.location_short
+
+  assert_region_mismatch_1 = regex(
+    ("${local.shortloc}" != "eun" && local.envs["storage_account_rg_name"] != "ghaf-infra-state-${local.shortloc}") ?
+  "((Force invalid regex pattern)\n\nERROR: region (non-eun) mismatch, re-run terraform-init.sh" : "", "")
+
+  assert_region_mismatch_2 = regex(
+    ("${local.shortloc}" == "eun" && local.envs["storage_account_rg_name"] != "ghaf-infra-state") ?
+  "((Force invalid regex pattern)\n\nERROR: region (eun) mismatch, re-run terraform-init.sh" : "", "")
 
   # Sanitize workspace name
   ws = substr(replace(lower(terraform.workspace), "/[^a-z0-9]/", ""), 0, 16)
@@ -141,7 +154,7 @@ locals {
 # Resource group for this ghaf-infra instance
 resource "azurerm_resource_group" "infra" {
   name     = "ghaf-infra-${local.ws}"
-  location = var.location
+  location = data.azurerm_storage_account.tfstate.location
 }
 
 ################################################################################
@@ -190,6 +203,13 @@ resource "azurerm_storage_container" "vm_images" {
 }
 
 ################################################################################
+
+# Data sources to access state data, see ./state-storage
+
+data "azurerm_storage_account" "tfstate" {
+  name                = local.envs["storage_account_name"]
+  resource_group_name = local.envs["storage_account_rg_name"]
+}
 
 # Data sources to access 'persistent' data, see ./persistent
 
