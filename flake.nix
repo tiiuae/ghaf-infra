@@ -36,6 +36,11 @@
       url = "github:nix-community/flake-compat";
       flake = false;
     };
+    # Nix-based monorepo tooling
+    tvl-kit = {
+      url = "github:tvlfyi/kit";
+      flake = false;
+    };
   };
 
   outputs = inputs @ {

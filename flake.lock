@@ -164,7 +164,8 @@
         "nix-serve-ng": "nix-serve-ng",
         "nixpkgs": "nixpkgs_2",
         "sops-nix": "sops-nix",
-        "treefmt-nix": "treefmt-nix"
+        "treefmt-nix": "treefmt-nix",
+        "tvl-kit": "tvl-kit"
       }
     },
     "sops-nix": {
@@ -222,6 +223,22 @@
       "original": {
         "owner": "numtide",
         "repo": "treefmt-nix",
+        "type": "github"
+      }
+    },
+    "tvl-kit": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1713794651,
+        "narHash": "sha256-0fdH+0BBrK5yiaF2RW2e+mitayOMw0fVmud2ygHER3A=",
+        "owner": "tvlfyi",
+        "repo": "kit",
+        "rev": "c306f41758134ba1ae81c3c091732e6a62d7bbbb",
+        "type": "github"
+      },
+      "original": {
+        "owner": "tvlfyi",
+        "repo": "kit",
         "type": "github"
       }
     },
