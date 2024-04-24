@@ -21,10 +21,10 @@ terraform {
 terraform {
   # Backend for storing terraform state (see ../state-storage)
   backend "azurerm" {
-    resource_group_name  = "ghaf-infra-state"
-    storage_account_name = "ghafinfratfstatestorage"
-    container_name       = "ghaf-infra-tfstate-container"
-    key                  = "ghaf-infra-persistent.tfstate"
+    # resource_group_name and storage_account_name are set by the callee
+    # from command line in terraform init, see terraform-init.sh
+    container_name = "ghaf-infra-tfstate-container"
+    key            = "ghaf-infra-persistent.tfstate"
   }
 }
 
