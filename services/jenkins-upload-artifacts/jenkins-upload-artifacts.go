@@ -206,16 +206,34 @@ func mkdirAll(ctx context.Context, httpClient *http.Client, url url.URL) error {
 	return nil
 }
 
-// Uploads an individual file to the supplied URL.
+// Uploads an individual file to the supplied URL, failing if something already exists there.
 func uploadPart(ctx context.Context, httpClient *http.Client, url string, r io.Reader) error {
-	rq, err := http.NewRequestWithContext(ctx, "PUT", url, bufio.NewReaderSize(r, 9000))
+	// Do a HEAD request to check if the file already exists and bail out if so.
+	rq, err := http.NewRequestWithContext(ctx, "HEAD", url, nil)
 	if err != nil {
-		return fmt.Errorf("unable to construct http request: %w", err)
+		return fmt.Errorf("unable to construct http HEAD request: %w", err)
 	}
 
 	resp, err := httpClient.Do(rq)
 	if err != nil {
-		return fmt.Errorf("unable to do upload request: %w", err)
+		return fmt.Errorf("unable to do HEAD request: %w", err)
+	}
+
+	// The only status code we accept is a 404 - the file should not exist yet.
+	if resp.StatusCode != http.StatusNotFound {
+		// File already exists, bail out.
+		return fmt.Errorf("file already exists, or other error, bailing out")
+	}
+
+	// Construct and do the PUT request to upload the file.
+	rq, err = http.NewRequestWithContext(ctx, "PUT", url, bufio.NewReaderSize(r, 9000))
+	if err != nil {
+		return fmt.Errorf("unable to construct http PUT request: %w", err)
+	}
+
+	resp, err = httpClient.Do(rq)
+	if err != nil {
+		return fmt.Errorf("unable to do PUT request: %w", err)
 	}
 
 	if statusOK := resp.StatusCode >= 200 && resp.StatusCode < 300; !statusOK {
