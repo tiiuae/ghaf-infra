@@ -191,6 +191,25 @@ resource "azurerm_storage_container" "vm_images" {
 
 ################################################################################
 
+# Storage account and storage container used to store Jenkins artifacts
+
+resource "azurerm_storage_account" "jenkins_artifacts" {
+  name                            = "art${local.ws}${local.shortloc}"
+  resource_group_name             = azurerm_resource_group.infra.name
+  location                        = azurerm_resource_group.infra.location
+  account_tier                    = "Standard"
+  account_replication_type        = "LRS"
+  allow_nested_items_to_be_public = false
+}
+
+resource "azurerm_storage_container" "jenkins_artifacts_1" {
+  name                  = "jenkins-artifacts-v1"
+  storage_account_name  = azurerm_storage_account.jenkins_artifacts.name
+  container_access_type = "private"
+}
+
+################################################################################
+
 # Data sources to access 'persistent' data, see ./persistent
 
 data "azurerm_storage_account" "binary_cache" {

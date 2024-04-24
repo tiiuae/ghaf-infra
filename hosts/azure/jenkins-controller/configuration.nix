@@ -197,7 +197,6 @@ in {
   services.jenkins-upload-artifacts = {
     enable = true;
     listenAddress = "[::1]:12345";
-    # TODO: create this in Terraform
     remote = ":azureblob:jenkins-artifacts-v1";
   };
 
