@@ -60,4 +60,8 @@ in {
   systemd.targets.suspend.enable = false;
   systemd.targets.hibernate.enable = false;
   systemd.targets.hybrid-sleep.enable = false;
+
+  # The Jenkins slave service is very barebones
+  # it only installs java and sets up jenkins user
+  services.jenkinsSlave.enable = true;
 }
