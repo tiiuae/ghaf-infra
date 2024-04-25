@@ -297,6 +297,7 @@ in {
 
   services.rclone-http = {
     enable = true;
+    listenAddress = "[::1]:8080";
     protocol = "webdav";
     remote = ":azureblob:binary-cache-v1";
   };

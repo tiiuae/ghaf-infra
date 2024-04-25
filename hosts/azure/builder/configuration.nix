@@ -16,6 +16,7 @@
 
   services.rclone-http = {
     enable = true;
+    listenAddress = "[::1]:8080";
     readOnly = true;
     remote = ":azureblob:binary-cache-v1";
   };
