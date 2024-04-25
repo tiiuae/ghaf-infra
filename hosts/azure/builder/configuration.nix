@@ -18,6 +18,9 @@
     enable = true;
     listenAddress = "[::1]:8080";
     readOnly = true;
+    extraArgs = [
+      "--azureblob-env-auth"
+    ];
     remote = ":azureblob:binary-cache-v1";
   };
 
