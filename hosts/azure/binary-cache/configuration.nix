@@ -30,6 +30,9 @@
     enable = true;
     listenAddress = "%t/rclone-http/socket";
     readOnly = true;
+    extraArgs = [
+      "--azureblob-env-auth"
+    ];
     remote = ":azureblob:binary-cache-v1";
   };
 

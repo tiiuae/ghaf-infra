@@ -298,6 +298,10 @@ in {
     enable = true;
     listenAddress = "[::1]:8080";
     protocol = "webdav";
+    extraArgs = [
+      "--azureblob-env-auth"
+      "--disable-dir-list"
+    ];
     remote = ":azureblob:binary-cache-v1";
   };
 
