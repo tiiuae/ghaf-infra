@@ -67,6 +67,13 @@ in {
       description = "The address to listen on. Accepts formats from https://www.freedesktop.org/software/systemd/man/latest/systemd.socket.html#ListenStream=.";
     };
 
+    extraArgs = mkOption {
+      type = types.listOf types.str;
+      description = ''
+        Additional command-line arguments to pass to rclone.
+      '';
+    };
+
     readOnly = mkOption {
       type = types.bool;
       default = false;
@@ -97,13 +104,14 @@ in {
         DynamicUser = true;
         RuntimeDirectory = "rclone-http";
         EnvironmentFile = "/var/lib/rclone-http/env";
-
-        ExecStart =
-          "${rclone}/bin/rclone "
-          + "serve ${cfg.protocol} "
-          + "--azureblob-env-auth "
-          + "${optionalString cfg.readOnly "--read-only "}"
-          + "${cfg.remote}";
+        ExecStart = concatStringsSep " " ([
+            "${rclone}/bin/rclone"
+            "serve"
+            cfg.protocol
+          ]
+          ++ optional cfg.readOnly "--read-only"
+          ++ cfg.extraArgs
+          ++ [cfg.remote]);
       };
     };
     systemd.sockets.rclone-http = {
