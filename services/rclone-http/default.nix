@@ -74,12 +74,6 @@ in {
       '';
     };
 
-    readOnly = mkOption {
-      type = types.bool;
-      default = false;
-      description = "Only allow read-only access";
-    };
-
     protocol = mkOption {
       type = types.enum ["http" "webdav"];
       default = "http";
@@ -109,7 +103,6 @@ in {
             "serve"
             cfg.protocol
           ]
-          ++ optional cfg.readOnly "--read-only"
           ++ cfg.extraArgs
           ++ [cfg.remote]);
       };
