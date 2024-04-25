@@ -28,13 +28,14 @@
 
   services.rclone-http = {
     enable = true;
+    listenAddress = "%t/rclone-http/socket";
     readOnly = true;
     remote = ":azureblob:binary-cache-v1";
-    listenAddress = "unix://%t/rclone-http/socket";
   };
 
-  # On successful startup, grant caddy write permissions to the socket.
-  systemd.services.rclone-http.serviceConfig.ExecStartPost = "${pkgs.acl.bin}/bin/setfacl -m u:caddy:rw %t/rclone-http/socket";
+  # Grant (only) caddy write permissions to the socket.
+  systemd.sockets.rclone-http.socketConfig.SocketMode = "0600";
+  systemd.sockets.rclone-http.socketConfig.SocketUser = "caddy";
 
   # Expose the rclone-http unix socket over a HTTPS, limiting to certain
   # keys only, disallowing listing too.
