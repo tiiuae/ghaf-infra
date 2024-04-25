@@ -29,7 +29,6 @@
   services.rclone-http = {
     enable = true;
     listenAddress = "%t/rclone-http/socket";
-    readOnly = true;
     extraArgs = [
       "--azureblob-env-auth"
     ];
