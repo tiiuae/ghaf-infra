@@ -1,0 +1,192 @@
+From 283c3e00a7feb5bb302280e77504ca6a3452ef88 Mon Sep 17 00:00:00 2001
+From: Florian Klink <flokli@flokli.de>
+Date: Wed, 24 Apr 2024 15:37:07 +0300
+Subject: [PATCH 1/3] http: support listening on passed FDs
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Instead of the listening addresses specified above, rclone will listen to all
+FDs passed by the service manager, if any (and ignore any arguments passed by
+`--{{ .Prefix }}addr`.
+
+This allows rclone to be a socket-activated service. It can be configured as described in
+https://www.freedesktop.org/software/systemd/man/latest/systemd.socket.html
+
+It's possible to test this interactively through `systemd-socket-activate`,
+firing of a request in a second terminal:
+
+```
+❯ systemd-socket-activate -l 8088 -l 8089 --fdname=foo:bar -- ./rclone serve webdav :local:test/
+Listening on [::]:8088 as 3.
+Listening on [::]:8089 as 4.
+Communication attempt on fd 3.
+Execing ./rclone (./rclone serve webdav :local:test/)
+2024/04/24 18:14:42 NOTICE: Local file system at /home/flokli/dev/flokli/rclone/test: WebDav Server started on [sd-listen:bar-0/ sd-listen:foo-0/]
+```
+---
+ lib/http/server.go | 115 ++++++++++++++++++++++++++++++---------------
+ 1 file changed, 78 insertions(+), 37 deletions(-)
+
+diff --git a/lib/http/server.go b/lib/http/server.go
+index 68de85e50..608b5adef 100644
+--- a/lib/http/server.go
++++ b/lib/http/server.go
+@@ -18,6 +18,7 @@ import (
+ 	"sync"
+ 	"time"
+ 
++	sdActivation "github.com/coreos/go-systemd/v22/activation"
+ 	"github.com/go-chi/chi/v5"
+ 	"github.com/rclone/rclone/fs/config/flags"
+ 	"github.com/rclone/rclone/lib/atexit"
+@@ -74,6 +75,15 @@ certificate authority certificate.
+ --{{ .Prefix }}min-tls-version is minimum TLS version that is acceptable. Valid
+   values are "tls1.0", "tls1.1", "tls1.2" and "tls1.3" (default
+   "tls1.0").
++
++### Socket activation
++
++Instead of the listening addresses specified above, rclone will listen to all
++FDs passed by the service manager, if any (and ignore any arguments passed by ` +
++		"--{{ .Prefix }}addr`" + `).
++
++This allows rclone to be a socket-activated service. It can be configured as described in
++https://www.freedesktop.org/software/systemd/man/latest/systemd.socket.html
+ `
+ 	tmpl, err := template.New("server help").Parse(help)
+ 	if err != nil {
+@@ -194,6 +204,32 @@ func WithTemplate(cfg TemplateConfig) Option {
+ 	}
+ }
+ 
++// For a given listener, and optional tlsConfig, construct a instance.
++// The url string ends up in the `url` field of the `instance`.
++// This unconditionally wraps the listener with the provided TLS config if one
++// is specified, so all decision logic on whether to use TLS needs to live at
++// the callsite.
++func newInstance(ctx context.Context, s *Server, listener net.Listener, tlsCfg *tls.Config, url string) *instance {
++	if tlsCfg != nil {
++		listener = tls.NewListener(listener, tlsCfg)
++	}
++
++	return &instance{
++		url:      url,
++		listener: listener,
++		httpServer: &http.Server{
++			Handler:           s.mux,
++			ReadTimeout:       s.cfg.ServerReadTimeout,
++			WriteTimeout:      s.cfg.ServerWriteTimeout,
++			MaxHeaderBytes:    s.cfg.MaxHeaderBytes,
++			ReadHeaderTimeout: 10 * time.Second, // time to send the headers
++			IdleTimeout:       60 * time.Second, // time to keep idle connections open
++			TLSConfig:         tlsCfg,
++			BaseContext:       NewBaseContext(ctx, url),
++		},
++	}
++}
++
+ // NewServer instantiates a new http server using provided listeners and options
+ // This function is provided if the default http server does not meet a services requirements and should not generally be used
+ // A http server can listen using multiple listeners. For example, a listener for port 80, and a listener for port 443.
+@@ -242,55 +278,60 @@ func NewServer(ctx context.Context, options ...Option) (*Server, error) {
+ 
+ 	s.initAuth()
+ 
++	// (Only) listen on FDs provided by the service manager, if any.
++	sdListeners, err := sdActivation.ListenersWithNames()
++	if err != nil {
++		return nil, fmt.Errorf("unable to acquire listeners: %w", err)
++	}
++
++	if len(sdListeners) != 0 {
++		for listenerName, listeners := range sdListeners {
++			for i, listener := range listeners {
++				url := fmt.Sprintf("sd-listen:%s-%d/%s", listenerName, i, s.cfg.BaseURL)
++				if s.tlsConfig != nil {
++					url = fmt.Sprintf("sd-listen+tls:%s-%d/%s", listenerName, i, s.cfg.BaseURL)
++				}
++
++				instance := newInstance(ctx, s, listener, s.tlsConfig, url)
++
++				s.instances = append(s.instances, *instance)
++			}
++		}
++
++		return s, nil
++	}
++
++	// Process all listeners specified in the CLI Args.
+ 	for _, addr := range s.cfg.ListenAddr {
+-		var url string
+-		var network = "tcp"
+-		var tlsCfg *tls.Config
++		var instance *instance
+ 
+ 		if strings.HasPrefix(addr, "unix://") || filepath.IsAbs(addr) {
+-			network = "unix"
+ 			addr = strings.TrimPrefix(addr, "unix://")
+-			url = addr
+ 
++			listener, err := net.Listen("unix", addr)
++			if err != nil {
++				return nil, err
++			}
++			instance = newInstance(ctx, s, listener, s.tlsConfig, addr)
+ 		} else if strings.HasPrefix(addr, "tls://") || (len(s.cfg.ListenAddr) == 1 && s.tlsConfig != nil) {
+-			tlsCfg = s.tlsConfig
+ 			addr = strings.TrimPrefix(addr, "tls://")
+-		}
+-
+-		var listener net.Listener
+-		if tlsCfg == nil {
+-			listener, err = net.Listen(network, addr)
++			listener, err := net.Listen("tcp", addr)
++			if err != nil {
++				return nil, err
++			}
++			instance = newInstance(ctx, s, listener, s.tlsConfig, fmt.Sprintf("https://%s%s/", listener.Addr().String(), s.cfg.BaseURL))
+ 		} else {
+-			listener, err = tls.Listen(network, addr, tlsCfg)
+-		}
+-		if err != nil {
+-			return nil, err
+-		}
+-
+-		if network == "tcp" {
+-			var secure string
+-			if tlsCfg != nil {
+-				secure = "s"
++			// HTTP case
++			addr = strings.TrimPrefix(addr, "http://")
++			listener, err := net.Listen("tcp", addr)
++			if err != nil {
++				return nil, err
+ 			}
+-			url = fmt.Sprintf("http%s://%s%s/", secure, listener.Addr().String(), s.cfg.BaseURL)
+-		}
++			instance = newInstance(ctx, s, listener, nil, fmt.Sprintf("http://%s%s/", listener.Addr().String(), s.cfg.BaseURL))
+ 
+-		ii := instance{
+-			url:      url,
+-			listener: listener,
+-			httpServer: &http.Server{
+-				Handler:           s.mux,
+-				ReadTimeout:       s.cfg.ServerReadTimeout,
+-				WriteTimeout:      s.cfg.ServerWriteTimeout,
+-				MaxHeaderBytes:    s.cfg.MaxHeaderBytes,
+-				ReadHeaderTimeout: 10 * time.Second, // time to send the headers
+-				IdleTimeout:       60 * time.Second, // time to keep idle connections open
+-				TLSConfig:         tlsCfg,
+-				BaseContext:       NewBaseContext(ctx, url),
+-			},
+ 		}
+ 
+-		s.instances = append(s.instances, ii)
++		s.instances = append(s.instances, *instance)
+ 	}
+ 
+ 	return s, nil
+-- 
+2.44.0
+
