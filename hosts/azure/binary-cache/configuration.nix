@@ -28,7 +28,7 @@
 
   services.rclone-http = {
     enable = true;
-    listenAddress = "%t/rclone-http/socket";
+    listenAddress = "%t/rclone-http.sock";
     extraArgs = [
       "--azureblob-env-auth"
     ];
@@ -36,6 +36,8 @@
   };
 
   # Grant (only) caddy write permissions to the socket.
+  # Note how we explicitly do NOT put the socket file in the rclone-http runtime
+  # directory.
   systemd.sockets.rclone-http.socketConfig.SocketMode = "0600";
   systemd.sockets.rclone-http.socketConfig.SocketUser = "caddy";
 
@@ -52,16 +54,16 @@
       # Proxy a subset of requests to rclone.
       {$SITE_ADDRESS} {
         handle /nix-cache-info {
-          reverse_proxy unix///run/rclone-http/socket
+          reverse_proxy unix///run/rclone-http.sock
         }
         handle /*.narinfo {
-          reverse_proxy unix///run/rclone-http/socket
+          reverse_proxy unix///run/rclone-http.sock
         }
         handle /nar/*.nar {
-          reverse_proxy unix///run/rclone-http/socket
+          reverse_proxy unix///run/rclone-http.sock
         }
         handle /nar/*.nar.* {
-          reverse_proxy unix///run/rclone-http/socket
+          reverse_proxy unix///run/rclone-http.sock
         }
       }
     '';
