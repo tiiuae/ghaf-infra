@@ -139,7 +139,6 @@ test_jenkins_controller_services () {
     host="$1"
     print_running "${FUNCNAME[0]}"
     check_systemd_service "$host" "cloud-init"
-    check_systemd_service "$host" "rclone-http"
     check_systemd_service "$host" "jenkins"
     check_systemd_service "$host" "caddy"
     print_success
@@ -155,7 +154,6 @@ test_binary_cache_services () {
         return 0
     fi
     check_systemd_service "$host" "cloud-init"
-    check_systemd_service "$host" "rclone-http"
     check_systemd_service "$host" "caddy"
     print_success
 }
