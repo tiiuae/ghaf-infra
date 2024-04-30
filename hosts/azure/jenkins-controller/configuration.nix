@@ -113,6 +113,7 @@ in {
       nix
       git
       zstd
+      jq
     ];
     extraJavaOptions = [
       # Useful when the 'sh' step fails:
