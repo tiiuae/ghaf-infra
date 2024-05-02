@@ -36,6 +36,10 @@
       url = "github:nix-community/flake-compat";
       flake = false;
     };
+    robot-framework = {
+      url = "github:tiiuae/ci-test-automation";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs @ {
