@@ -121,7 +121,8 @@ resource "azurerm_network_security_group" "jenkins_controller_vm" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_ranges    = [22, 443]
-    source_address_prefix      = "*"
+    # TODO:
+    source_address_prefixes    = ["46.23.164.59"]
     destination_address_prefix = "*"
   }
 }

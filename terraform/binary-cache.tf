@@ -89,7 +89,13 @@ resource "azurerm_network_security_group" "binary_cache_vm" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_ranges    = [22, 443]
-    source_address_prefix      = "*"
+    source_address_prefixes    = [
+      azurerm_subnet.jenkins.address_prefixes[0],
+      azurerm_subnet.builders.address_prefixes[0],
+      module.arm_builder_vm[0].virtual_machine_ip_address,
+      # TODO:
+      "46.23.164.59"
+    ]
     destination_address_prefix = "*"
   }
 }
