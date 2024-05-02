@@ -81,8 +81,10 @@
   systemd.services.caddy.after = ["cloud-init.service"];
   systemd.services.caddy.requires = ["cloud-init.service"];
 
-  # Expose the HTTPS port. No need for HTTP, as caddy can use TLS-ALPN-01.
-  networking.firewall.allowedTCPPorts = [443];
+  # Expose the HTTP[S] port. We still need HTTP for the HTTP-01 challenge.
+  # While TLS-ALPN-01 could be used, disabling HTTP-01 seems only possible from
+  # the JSON config, which won't work alongside Caddyfile.
+  networking.firewall.allowedTCPPorts = [80 443];
 
   system.stateVersion = "23.05";
 }
