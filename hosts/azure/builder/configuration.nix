@@ -13,6 +13,7 @@
   ];
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
 
   services.rclone-http = {
     enable = true;
