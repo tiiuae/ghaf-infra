@@ -238,8 +238,8 @@ get_narinfo () {
 }
 
 run_tests () {
-    controller="ghaf-jenkins-controller-$WORKSPACE.$LOCATION.cloudapp.azure.com"
-    bincache="ghaf-binary-cache-$WORKSPACE.$LOCATION.cloudapp.azure.com"
+    controller="ghaf-jenkins-controller-mod-$WORKSPACE.$LOCATION.cloudapp.azure.com"
+    bincache="ghaf-binary-cache-mod-$WORKSPACE.$LOCATION.cloudapp.azure.com"
 
     test_dns_lookup "$controller"
     test_dns_lookup "$bincache"

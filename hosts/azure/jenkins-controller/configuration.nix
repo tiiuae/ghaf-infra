@@ -113,6 +113,7 @@ in {
       nix
       git
       zstd
+      openssh
     ];
     extraJavaOptions = [
       # Useful when the 'sh' step fails:
@@ -179,7 +180,7 @@ in {
       jenkins-auth = "-auth admin:\"$(cat /var/lib/jenkins/secrets/initialAdminPassword)\"";
     in ''
       # Install plugins
-      jenkins-cli ${jenkins-auth} install-plugin "workflow-aggregator" "github" "timestamper" "pipeline-stage-view" "blueocean" "pipeline-graph-view" -deploy
+      jenkins-cli ${jenkins-auth} install-plugin "workflow-aggregator" "github" "timestamper" "pipeline-stage-view" "pipeline-graph-view" "ssh-agent" -deploy
 
       # Jenkins groovy config
       jenkins-cli ${jenkins-auth} groovy = < ${jenkins-groovy}
