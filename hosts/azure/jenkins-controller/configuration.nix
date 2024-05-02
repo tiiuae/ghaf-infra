@@ -114,6 +114,7 @@ in {
       git
       zstd
       jq
+      csvkit
     ];
     extraJavaOptions = [
       # Useful when the 'sh' step fails:
