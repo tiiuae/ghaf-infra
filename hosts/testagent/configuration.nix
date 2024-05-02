@@ -32,15 +32,23 @@ in {
     ]);
 
   # Bootloader.
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
+  boot.loader = {
+    systemd-boot.enable = true;
+    efi.canTouchEfiVariables = true;
+  };
 
-  networking.hostName = "testagent";
-  networking.useNetworkd = true;
+  networking = {
+    hostName = "testagent";
+    useNetworkd = true;
+  };
 
   # Enable Acroname USB Smart switch support.
   services.udev.packages = [brainstem];
-  environment.systemPackages = [brainstem];
+
+  environment.systemPackages = [
+    inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
+    brainstem
+  ];
 
   # Disable suspend and hibernate - systemd settings
   services.logind.extraConfig = ''
@@ -56,10 +64,12 @@ in {
 
   # Disable the GNOME3/GDM auto-suspend feature that cannot be disabled in GUI!
   # If no user is logged in, the machine will power down after 20 minutes.
-  systemd.targets.sleep.enable = false;
-  systemd.targets.suspend.enable = false;
-  systemd.targets.hibernate.enable = false;
-  systemd.targets.hybrid-sleep.enable = false;
+  systemd.targets = {
+    sleep.enable = false;
+    suspend.enable = false;
+    hibernate.enable = false;
+    hybrid-sleep.enable = false;
+  };
 
   # The Jenkins slave service is very barebones
   # it only installs java and sets up jenkins user
