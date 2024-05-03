@@ -61,7 +61,7 @@
         forceSSL = true;
         default = true;
         locations."/" = {
-          proxyPass = "http:127.0.0.1:3015";
+          proxyPass = "http://127.0.0.1:3015";
         };
       };
     };
