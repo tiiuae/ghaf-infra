@@ -87,9 +87,9 @@ TARGETS = OrderedDict(
             hostname="172.18.20.105",
             nixosconfig="ficolobuild4",
         ),
-        "prbuilder": TargetHost(
+        "himalia": TargetHost(
             hostname="172.18.20.106",
-            nixosconfig="prbuilder",
+            nixosconfig="himalia",
         ),
         "testagent": TargetHost(
             hostname="172.18.16.60",

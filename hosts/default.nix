@@ -43,7 +43,7 @@ in {
     nixos-ficolobuild3 = ./ficolobuild/build3/configuration.nix;
     nixos-ficolobuild4 = ./ficolobuild/build4/configuration.nix;
     nixos-monitoring = ./monitoring/configuration.nix;
-    nixos-prbuilder = ./prbuilder/configuration.nix;
+    nixos-himalia = ./himalia/configuration.nix;
     nixos-testagent = ./testagent/configuration.nix;
   };
 
@@ -66,7 +66,7 @@ in {
       "ficolobuild3"
       "ficolobuild4"
       "monitoring"
-      "prbuilder"
+      "himalia"
       "testagent"
     ]);
 }

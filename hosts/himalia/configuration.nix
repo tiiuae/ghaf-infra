@@ -46,7 +46,7 @@
   virtualisation.docker.enable = true;
 
   networking = {
-    hostName = "prbuilder";
+    hostName = "himalia";
   };
 
   security.acme = {
