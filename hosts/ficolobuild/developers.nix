@@ -42,6 +42,13 @@
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDUlaLlxVlm1KZtoG3R/nHl/KJzmKaIyckDVE2rDJYH+"
       ];
     }
+    {
+      desc = "Shamma Alblooshi";
+      name = "shamma";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGj1y9T8iuWmTfGxfrSpe8YpvrRchASYQY+ueeQcG8nx shamma.alblooshi@tii.ae"
+      ];
+    }
   ];
 in {
   users = {
