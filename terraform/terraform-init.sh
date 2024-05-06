@@ -221,7 +221,7 @@ main () {
 
     # Assigns $WORKSPACE variable
     # shellcheck source=/dev/null
-    source "$MYDIR/playground/terraform-playground.sh" &>"$OUT"
+    source "$MYDIR/terraform-playground.sh" &>"$OUT"
     generate_azure_private_workspace_name
 
     azure_location_to_shortloc

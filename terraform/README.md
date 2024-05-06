@@ -54,8 +54,6 @@ terraform
 │   ├── binary-cache-storage
 │   ├── builder-ssh-key
 │   └── workspace-specific
-├── playground
-│   └── terraform-playground.sh
 ├── state-storage
 │   └── tfstate-storage.tf
 ├── modules
@@ -69,7 +67,6 @@ terraform
 - The `terraform` directory contains the root terraform deployment files with the VM configurations `binary-cache.tf`, `builder.tf`, and `jenkins-controller.tf` matching the components described in [README-azure.md](./README-azure.md) in its [components section](./README-azure.md#components).
 - The `terraform/azarm` directory contains the terraform configuration for Azure `aarch64` builder which is used from ghaf github-actions [build.yml workflow](https://github.com/tiiuae/ghaf/blob/e81ccfb41d75eda0488b6b4325aeccb8385ce960/.github/workflows/build.yml#L151) to build `aarch64` targets for authorized PRs pre-merge. `azarm` is disconnected from the root terraform module: it's a separate configuration with its own state.
 - The `terraform/persistent` directory contains the terraform configuration for parts of the infrastructure that are considered persistent - resources defined under `terraform/persistent` will not be removed even if the ghaf-infra instance is otherwise removed. An example of such persistent ghaf-infra resource is the binary cache storage as well as the binary cache signing key. There may be many 'persistent' infrastructure instances - currently `dev` and `prod` deployments have their own instances of the persistent resources. Section [Multiple Environments with Terraform Workspaces](./README.md#multiple-environments-with-terraform-workspaces) discusses this topic with more details.
-- The `terraform/playground` directory contains tooling to facilitate the usage of terraform workspaces in setting-up distinct copies of the ghaf-infra infrastructure, i.e. 'playground' `dev` environments. It also includes an [example test infrastructure](./playground/test-infra.tf) that allows deploying example infrastructure including just one nix VM, highlighting the use of `terraform/modules` to build and upload the nix image on Azure.
 - The `terraform/state-storage` directory contains the terraform configuration for the ghaf-infra remote backend state storage using Azure storage blob. See section [Initializing Azure State and Persistent Data](./README.md#initializing-azure-state-and-persistent-data) for more details.
 - The `terraform/modules` directory contains terraform modules used from the ghaf-infra VM configurations to build, upload, and spin up Azure nix images.
 
@@ -101,11 +98,11 @@ The main reasons for using terraform workspaces include:
     - Binary cache signing key: [`binary-cache-sigkey.ft`](./persistent/binary-cache-sigkey/binary-cache-sigkey.tf)
     - Builder ssh key: [`builder-ssh-key.tf`](./persistent/builder-ssh-key/builder-ssh-key.tf)
 
-To help facilitate the usage of terraform workspaces in setting-up distinct copies of ghaf-infra, one can [use terraform workspaces from the command line](https://developer.hashicorp.com/terraform/cli/workspaces#managing-cli-workspaces) or consider using the helper script provided at [`playground/terraform-playground.sh`](./playground/terraform-playground.sh). Below, for the sake of example, we use the [`playground/terraform-playground.sh`](./playground/terraform-playground.sh) to setup a private deployment instance of ghaf-infra:
+To help facilitate the usage of terraform workspaces in setting-up distinct copies of ghaf-infra, one can [use terraform workspaces from the command line](https://developer.hashicorp.com/terraform/cli/workspaces#managing-cli-workspaces) or consider using the helper script provided at [`terraform-playground.sh`](./terraform-playground.sh). Below, for the sake of example, we use the [`terraform-playground.sh`](./terraform-playground.sh) to setup a private deployment instance of ghaf-infra:
 
 ```bash
 # Activate private development environment
-$ ./playground/terraform-playground.sh activate
+$ ./terraform-playground.sh activate
 # ...
 [+] Done, use terraform [validate|plan|apply] to work with your dev infra
 ```
@@ -134,7 +131,8 @@ $ terraform fmt -recursive
 # Validate the terraform changes:
 $ terraform validate
 
-# Make sure you deploy to the correct ghaf-infra instance:
+# Make sure you deploy to the correct ghaf-infra instance.
+# Use terraform workspace select <workspace_name> to switch workspaces
 $ terraform workspace list
   default
   dev
@@ -151,13 +149,17 @@ $ terraform apply
 Once `terraform apply` completes, the private development infrastructure is deployed.
 You can now play around in your isolated copy of the infrastructure, testing and updating the changes, making sure the changes work as expected before merging the changes.
 
-## Destroying Playground Environment
+## Destroying Test Environment
 Once the configuration changes have been tested, the private development environment can be destroyed:
 ```bash
-# Destroy the private terraform worskapce
-$ ./playground/terraform-playground.sh destroy
+# Destroy the private terraform worskapce using helper script
+$ ./terraform-playground.sh destroy
+
+# Alternatively, you can use terraform command directly
+$ terraform workspace select <workspace_name>
+$ terraform apply -destroy
 ```
-The above command removes all the resources that were created for the private development environment.
+The above command(s) remove all the resources that were created for the given environment.
 
 ## Changing Azure Deploy Location
 By default, ghaf-infra is deployed to Azure location `northeurope` (North Europe).
@@ -166,28 +168,22 @@ However, ghaf-infra resources can be deployed to other Azure locations too, with
 - For a full list of available Azure location names, run `az account list-locations -o table` in ghaf-infra devshell.
 - Not all Azure VM sizes or other resources are available in all Azure locations. You can search the availability of specific resources through the Azure region product page e.g.: https://azure.microsoft.com/en-us/explore/global-infrastructure/products-by-region/?regions=europe-north&products=virtual-machines. Alternatively, you can list the VM sizes per location with `az vm list-sizes` command from the ghaf-infra devshell, for instance: `az vm list-sizes --location 'northeurope' -o table`.
 - Your Azure subscription quota limits impact the ability to deploy ghaf-infra, as such, you might need to increase the vCPU quotas for your subscription via the Azure web portal. See more information at https://learn.microsoft.com/en-us/azure/quotas/quotas-overview. You can check your quota usage from the Azure web portal or using `az vm list-usage`, for instance: `az vm list-usage --location "northeurope" -o table`.
-- Currently, the terraform state is always deployed to the default Azure location, even if your ghaf-infra instance other resources (i.e. [persistent data](./persistent/main.tf), [root module resources](main.tf)) are deployed to a different location.
 
-Following shows an example of deploying ghaf-infra to Azure location UAE North:
+Following shows an example of deploying ghaf-infra to Azure location SWE Central:
 
 ```bash
-# Initialize terraform state and persistent data, using UAE North as an example location:
-$ ./terraform-init.sh -l uaenorth
+# Initialize terraform state and persistent data, using SWE Central as an example location:
+$ ./terraform-init.sh -l swedencentral
 
-# Switch to (and optionally create) a workspace 'devuaen'
-$ terraform workspace new devuaen || terraform workspace select devuaen
+# Switch to (and optionally create) a workspace 'devswec'
+$ terraform workspace new devswec || terraform workspace select devswec
 
 # Optionally, run Terraform plan:
 # (Variable 'envtype' overrides the default environment type)
-$ terraform plan -var="location=uaenorth" -var="envtype=dev"
+$ terraform plan -var="envtype=dev"
 
-# Deploy with Terraform apply, specifying the location with a variable:
-$ terraform apply -var="location=uaenorth" -var="envtype=dev" -auto-approve
-```
-When destroying a ghaf-infra instance deployed to a non-default location, you need to specify the location with a variable:
-```bash
-# Destroy:
-$ terraform apply -destroy -var="location=uaenorth" -auto-approve
+# Deploy with Terraform apply:
+$ terraform apply -var="envtype=dev" -auto-approve
 ```
 
 ## Common Terraform Errors
