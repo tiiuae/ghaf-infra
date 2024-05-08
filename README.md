@@ -6,6 +6,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 # Ghaf Infra
 This repository contains NixOS configurations for the [Ghaf](https://github.com/tiiuae/ghaf) CI/CD infrastructure.
 
+
 ## Highlights
 This repository defines flakes-based NixOS configurations for the following targets:
 - **[ghafhydra](./hosts/ghafhydra/configuration.nix)** - *[Hydra](https://nixos.wiki/wiki/Hydra) with pre-configured jobset for Ghaf*:
