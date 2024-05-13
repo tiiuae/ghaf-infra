@@ -11,8 +11,9 @@
 
   imports =
     [
-      ../builder.nix
+      ../ficolo.nix
       ../developers.nix
+      ../yubikey.nix
       inputs.sops-nix.nixosModules.sops
     ]
     ++ (with self.nixosModules; [
@@ -25,26 +26,19 @@
 
   networking.hostName = "build3";
 
-  # Yubikey signer
-  users.users = {
-    yubimaster = {
-      description = "Yubikey Signer";
-      isNormalUser = true;
-      extraGroups = ["docker"];
-      openssh.authorizedKeys.keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMDfEUoARtE5ZMYofegtm3lECzaQeAktLQ2SqlHcV9jL signer"
-      ];
+  users.users.yubimaster.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMDfEUoARtE5ZMYofegtm3lECzaQeAktLQ2SqlHcV9jL signer"
+  ];
+
+  programs.ssh = {
+    extraConfig = ''
+      Host awsarm
+        HostName awsarm.vedenemo.dev
+        Port 20220
+    '';
+    knownHosts = {
+      "[awsarm.vedenemo.dev]:20220".publicKey = "ssh-ed25519  AAAAC3NzaC1lZDI1NTE5AAAAIL3f7tAAO3Fc+8BqemsBQc/Yl/NmRfyhzr5SFOSKqrv0";
     };
-  };
-
-  programs.ssh.extraConfig = ''
-    Host awsarm
-      HostName awsarm.vedenemo.dev
-      Port 20220
-  '';
-
-  services.openssh.knownHosts = {
-    "[awsarm.vedenemo.dev]:20220".publicKey = "ssh-ed25519  AAAAC3NzaC1lZDI1NTE5AAAAIL3f7tAAO3Fc+8BqemsBQc/Yl/NmRfyhzr5SFOSKqrv0";
   };
 
   nix = {

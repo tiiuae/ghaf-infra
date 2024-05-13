@@ -6,33 +6,35 @@
   lib,
   ...
 }: {
-  sops.defaultSopsFile = ./secrets.yaml;
-
   imports =
     [
-      ./disk-config.nix
+      ./ficolo-disk-config.nix
       inputs.disko.nixosModules.disko
-      inputs.sops-nix.nixosModules.sops
     ]
     ++ (with self.nixosModules; [
       common
+      ficolo-common
       service-openssh
       service-node-exporter
+      user-cazfi
+      user-hrosten
       user-jrautiola
+      user-mkaapu
+      user-tervis
+      user-karim
+      user-mika
     ]);
 
-  nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
-  hardware.enableRedistributableFirmware = true;
+  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 
-  networking = {
-    hostName = "hetzarm";
-    useDHCP = true;
+  hardware = {
+    enableRedistributableFirmware = true;
+    cpu.intel.updateMicrocode = true;
   };
 
   boot = {
-    initrd.availableKernelModules = ["nvme" "usbhid"];
-    # use predictable network interface names (eth0)
-    kernelParams = ["net.ifnames=0"];
+    initrd.availableKernelModules = ["ahci" "xhci_pci" "megaraid_sas" "nvme" "usbhid" "sd_mod"];
+    kernelModules = ["kvm-intel"];
     loader = {
       systemd-boot.enable = true;
       efi.canTouchEfiVariables = true;
