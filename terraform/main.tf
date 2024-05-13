@@ -177,6 +177,47 @@ resource "azurerm_subnet" "builders" {
 
 ################################################################################
 
+# Virtual network peering
+resource "azurerm_resource_group" "source-rg" {
+  name     = "RG-TII-DevOps-PROD"
+  location = "UAE North"
+}
+
+resource "azurerm_resource_group" "destination-rg" {
+  name     = "ghaf-infra-devuaen"
+  location = "UAE North"
+}
+
+resource "azurerm_virtual_network" "source-vnet" {
+  name                = "vnet-gateway-ssrcdevops-prod-uaenorth"
+  resource_group_name = azurerm_resource_group.source-rg.name
+  address_space       = ["172.17.0.0/25"]
+  location            = azurerm_resource_group.source-rg.location
+}
+
+resource "azurerm_virtual_network" "destination-vnet" {
+  name                = "ghaf-infra-vnet"
+  resource_group_name = azurerm_resource_group.destination-rg.name
+  address_space       = ["10.0.0.0/16"]
+  location            = azurerm_resource_group.destination-rg.location
+}
+
+resource "azurerm_virtual_network_peering" "source-vnet" {
+  name                      = "source-to-destination"
+  resource_group_name       = azurerm_resource_group.source-rg.name
+  virtual_network_name      = azurerm_virtual_network.source-vnet.name
+  remote_virtual_network_id = azurerm_virtual_network.destination-vnet.id
+}
+
+resource "azurerm_virtual_network_peering" "destination-vnet" {
+  name                      = "destination-to-source"
+  resource_group_name       = azurerm_resource_group.destination-rg.name
+  virtual_network_name      = azurerm_virtual_network.destination-vnet.name
+  remote_virtual_network_id = azurerm_virtual_network.source-vnet.id
+}
+
+################################################################################
+
 # Storage account and storage container used to store VM images
 
 resource "azurerm_storage_account" "vm_images" {
