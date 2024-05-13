@@ -90,7 +90,7 @@ argparse () {
 }
 
 exit_unless_command_exists () {
-    if ! command -v "$1" &>"$OUT"; then
+    if ! command -v "$1" &>/dev/null; then
         print_err "command '$1' is not installed (Hint: are you inside a nix-shell?)"
         exit 1
     fi
@@ -263,9 +263,6 @@ main () {
     argparse "$@"
     if [ "$DEBUG" = "true" ]; then
         set -x
-        OUT=/dev/stderr
-    else
-        OUT=/dev/null
     fi
     exit_unless_command_exists nix
     exit_unless_command_exists ssh
