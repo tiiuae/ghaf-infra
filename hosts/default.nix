@@ -45,6 +45,7 @@ in {
     nixos-monitoring = ./monitoring/configuration.nix;
     nixos-himalia = ./himalia/configuration.nix;
     nixos-testagent = ./testagent/configuration.nix;
+    nixos-hetzarm = ./hetzarm/configuration.nix;
   };
 
   # Expose as flake.lib.mkNixOS.
@@ -68,5 +69,6 @@ in {
       "monitoring"
       "himalia"
       "testagent"
+      "hetzarm"
     ]);
 }

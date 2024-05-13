@@ -28,7 +28,7 @@
 # https://docs.pyinvoke.org/en/stable/getting-started.html
 
 
-""" Misc dev and deployment helper tasks """
+"""Misc dev and deployment helper tasks"""
 
 import json
 import logging
@@ -94,6 +94,10 @@ TARGETS = OrderedDict(
         "testagent": TargetHost(
             hostname="172.18.16.60",
             nixosconfig="testagent",
+        ),
+        "hetzarm": TargetHost(
+            hostname="65.21.20.242",
+            nixosconfig="hetzarm",
         ),
     }
 )
