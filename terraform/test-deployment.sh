@@ -61,7 +61,7 @@ print_info () {
 }
 
 print_running () {
-    printf "%-50s" "  $1 ... " >&2
+    printf "%-60s" "  $1 ... " >&2
 }
 
 argparse () {
@@ -120,7 +120,8 @@ exec_ssh_cmd () {
 
 test_dns_lookup () {
     host="$1"
-    print_running "${FUNCNAME[0]}"
+    info="$2"
+    print_running "${FUNCNAME[0]} ($info)"
     if ! host "$host" >/dev/null; then
         print_err "DNS lookup for '$host' failed"
         exit 1
@@ -172,9 +173,10 @@ test_binary_cache_url () {
 test_build_end_to_end () {
     controller="$1"
     bincache="$2"
-    print_running "${FUNCNAME[0]}"
+    arch="$3"
+    print_running "${FUNCNAME[0]} ($arch)"
     # Trigger a build on jenkins-controller, returning the build output hash
-    hash=$(trigger_build "$controller")
+    hash=$(trigger_build "$controller" "$arch")
     if [ -z "$hash" ]; then exit 1; fi
     # Restart rclone-http to make sure the uploaded build result is available
     # in the exposed binary cache API
@@ -216,7 +218,8 @@ check_systemd_service () {
 
 trigger_build () {
     controller="$1"
-    cmd="nix-build --expr '(import <nixpkgs> {}).writeText \"example\" (builtins.toString builtins.currentTime)'"
+    arch="$2"
+    cmd="nix-build --system $arch --expr '(import <nixpkgs> {}).writeText \"example\" (builtins.toString builtins.currentTime)'"
     hash=$(exec_ssh_cmd "$cmd" "$controller" "echo_out" | sed -n -E 's|.*/nix/store/([0-9a-z]{32})-example$|\1|p' | head -n1)
     if [ -z "$hash" ]; then
         print_err "failed reading the build output hash"
@@ -241,13 +244,14 @@ run_tests () {
     controller="ghaf-jenkins-controller-$WORKSPACE.$LOCATION.cloudapp.azure.com"
     bincache="ghaf-binary-cache-$WORKSPACE.$LOCATION.cloudapp.azure.com"
 
-    test_dns_lookup "$controller"
-    test_dns_lookup "$bincache"
+    test_dns_lookup "$controller" "controller"
+    test_dns_lookup "$bincache" "bincache"
     test_jenkins_controller_ssh_connection "$controller"
     test_jenkins_controller_services "$controller"
     test_binary_cache_services "$bincache"
     test_binary_cache_url "$bincache"
-    test_build_end_to_end "$controller" "$bincache"
+    test_build_end_to_end "$controller" "$bincache" "x86_64-linux"
+    test_build_end_to_end "$controller" "$bincache" "aarch64-linux"
 }
 
 ################################################################################
