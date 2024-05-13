@@ -40,12 +40,12 @@ in {
     nixos-az-builder = ./azure/builder/configuration.nix;
     nixos-az-jenkins-controller = ./azure/jenkins-controller/configuration.nix;
     nixos-binarycache = ./binarycache/configuration.nix;
-    nixos-ficolobuild3 = ./ficolobuild/build3/configuration.nix;
-    nixos-ficolobuild4 = ./ficolobuild/build4/configuration.nix;
+    nixos-build3 = ./builders/build3/configuration.nix;
+    nixos-build4 = ./builders/build4/configuration.nix;
+    nixos-hetzarm = ./builders/hetzarm/configuration.nix;
     nixos-monitoring = ./monitoring/configuration.nix;
     nixos-himalia = ./himalia/configuration.nix;
     nixos-testagent = ./testagent/configuration.nix;
-    nixos-hetzarm = ./hetzarm/configuration.nix;
   };
 
   # Expose as flake.lib.mkNixOS.
@@ -64,11 +64,11 @@ in {
       "az-builder"
       "az-jenkins-controller"
       "binarycache"
-      "ficolobuild3"
-      "ficolobuild4"
+      "build3"
+      "build4"
+      "hetzarm"
       "monitoring"
       "himalia"
       "testagent"
-      "hetzarm"
     ]);
 }

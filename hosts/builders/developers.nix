@@ -74,5 +74,6 @@ in {
       developers
     );
   };
+
   nix.settings.trusted-users = ["@${groupName}"];
 }
