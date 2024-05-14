@@ -6,10 +6,38 @@
   # add new developers here
   developers = [
     {
+      desc = "Alexander Nikolaev";
+      name = "avnik";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFi/TNnF6Qvh9UhrHYocJE2CaL4TVZSg6Z+mX8F8LS/v avn@bulldozer"
+      ];
+    }
+    {
+      desc = "Mariia Azbeleva";
+      name = "azbeleva";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMXq8i5FHMw7vRpAZeXnYux5e6xFgObJgq4+bnY/6s7f mariia@mariia-ThinkPad-T14-Gen-3"
+      ];
+    }
+    {
+      desc = "Bazulin Nikita";
+      name = "bazulin";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL/8+QSIlYHTMS6SOTd59WudS76HtZmbnSTSO04icPw1 nikita.bazulin@unikie.com"
+      ];
+    }
+    {
       desc = "Barna Bakos";
       name = "barna";
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHrmxamlb4JNX+lrN88rfEEskCM0A5MhGSKaA4CZDM8y barna.bakos@unikie.com"
+      ];
+    }
+    {
+      desc = "Berk Arslan";
+      name = "berk";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMfEKOTpIeD35HPBxfRxTVqetHIw3bZFVqEQGKyhC0Qp  berk@berk"
       ];
     }
     {
@@ -22,10 +50,143 @@
       ];
     }
     {
+      desc = "Dmitry Erin";
+      name = "dmitry_erin";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDfEp+nXkX4ZRxZBYrXBYcNTu1mHMCfNp5+YwSZwFEJa dmitry.erin@unikie.com"
+      ];
+    }
+    {
+      desc = "Emrah Billur";
+      name = "emrah";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGV2WY76z7Ke6tQ19Rc0HnrC7SVS3WkgLHTDj8SVWk24 root@emrah-ThinkPad-P14s-Gen-3"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFGzGy5vw2+bdwcGpQ7gwyiNvZ1HlolSHTP3tEUpzpoC emrah.billur@unikie.com"
+      ];
+    }
+    {
+      desc = "Enes Özturk";
+      name = "enes-ssh";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINviASH9mqnT59i0Nb6lC5z/e2enwq0k7d4NJK5R0NV5 enes@nixos"
+      ];
+    }
+    {
+      desc = "Grigoriy Romanov";
+      name = "grihey";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICvDAHpJxkV5GQ88c7+6z6FKS67JXIKKe7kZna8dXoD/ grihey@nixos"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBmHTg/KsY6YqKh4+zBpheOUVd8jV7M6OWEiDrOTyOAV grihey@grigoriy"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAd8OjPdHxO0FGJIHf0erVRFlee+RU+E+Zp4m37gUk8m grigoriy.romanov@unikie.com"
+      ];
+    }
+    {
+      desc = "Hai To";
+      name = "haito";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILjkuCarVGSwSY/DqTpCwIHo/mjEz1DSMK/YHrkAHGWG hai.to@unikie.com"
+      ];
+    }
+    {
+      desc = "Humaid Alqasimi";
+      name = "humaid";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/iv9RWMN6D9zmEU85XkaU8fAWJreWkv3znan87uqTW"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDUlaLlxVlm1KZtoG3R/nHl/KJzmKaIyckDVE2rDJYH+"
+      ];
+    }
+    {
+      desc = "Ivan Nikolaenko";
+      name = "ivann";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEa7sgJ6XQ58B5bHAc8dahWhCRVOFZ2z5pOCk4g+RLfw ivan.nikolaenko@unikie.com"
+      ];
+    }
+    {
+      desc = "Jarek Kurowski";
+      name = "jarek";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIwGPH/oOrD1g15uiPV4gBKGk7f8ZBSyMEaptKOVs3NG jaroslawkurowski@TII-JaroslawKurowski"
+      ];
+    }
+    {
+      desc = "Jari Hodju";
+      name = "jhodju";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB1iEdtYVHnkKhd6bCHOTgiYEGEVBTI7xsWJ++ro/PQ8 jhodju@jho-work"
+      ];
+    }
+    {
+      desc = "Joonas Loppi";
+      name = "joonas";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFjarWokQFXqh4FEMHoyWVjqYwRXoGIKJLHNulNv2bn1"
+      ];
+    }
+    {
+      desc = "Juan Pablo Ruiz";
+      name = "jpruiz84";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMp19yupwg0Wo/Shx3MwmA/qAOIBP1YHGvXFmOUAlZs+ jpruiz84@gmail.com"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMaS0lR3HNrQvTEZImDryILct+xXAs5InR0xxkfRQe4k jpruiz84@gmail.com"
+      ];
+    }
+    {
+      desc = "Johanna Rautanen";
+      name = "jrautanen";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKTGKW0fxHUshYTYWRLAPIQe49Cpfg1WMDK+xXYT5FDm root@johanna-ThinkPad-T14-Gen-1"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDlNGpvoYLy2D4rmwOh+EcRJbPlYcn6bXj3xhMbCzntk root@johanna-ThinkPad-T14-Gen-1"
+      ];
+    }
+    {
+      desc = "Jon Sahlberg";
+      name = "jrs";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII3ynZp8neOFpl3YxCRVkKeLpSoS6907rGv5j2SSKl+M jrs@jrs-Tank"
+      ];
+    }
+    {
+      desc = "Julius Koskela";
+      name = "juliuskoskela";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP2RfxjbhBbdbfXto9dczC4LjE9uixYAReJ/e+dT/cAE julius.koskela@unikie.com"
+      ];
+    }
+    {
+      desc = "Kalle Marjamäki";
+      name = "kamarjam";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEMOxdzcp2TBYhQRXQTivr7WfrneWyA05R9pNrQvDVMp kalle.marjamaki@unikie.com"
+      ];
+    }
+    {
+      desc = "Kim Sandström";
+      name = "kisandst";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILnTMRhhsaZKKL1fwyXE6kRJkiTJwJxI4WoTAkUM99nV kisandst@hugin"
+      ];
+    }
+    {
+      desc = "Lari Tikkanen";
+      name = "lartza";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIM3SR45e9eVkUAjdvPgTJh5SG4mvd2QhzmxvM+RJ1X7 root@lartza-ThinkPad"
+      ];
+    }
+    {
       desc = "Samuli Leivo";
       name = "leivos";
       keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPE/CgI8MXyHiiUyt7BXWjQG1pb25b4N3als/dKKPZyD samuli@samuli-ThinkPad-T14-Gen-3"
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHRGczoQ78cjHdjEgKTyZeLKu/flWlvf+HepdUezZCDr root@nixos"
+      ];
+    }
+    {
+      desc = "Mika Tammi";
+      name = "mikatammi";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIfsdOINT+oNeUKA+RIVqqykYHS0Wt+rD/toK7GhXCOh mika@nixos-t14"
       ];
     }
     {
@@ -36,10 +197,40 @@
       ];
     }
     {
-      desc = "Humaid Alqasimi";
-      name = "humaid";
+      desc = "Matti Paasto";
+      name = "mtpaasto";
       keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDUlaLlxVlm1KZtoG3R/nHl/KJzmKaIyckDVE2rDJYH+"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDvu5b+k0eKoNE8QiocGaWqKq+E7apIHIie1Va5TM6yE mtpaasto"
+      ];
+    }
+    {
+      desc = "Risto Kuusela";
+      name = "riskuuse";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILGRyyNYALykJJSkFz+L61Zgxa0yueW5sTz/hPJHV9mi risto.kuusela@unikie.com"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ0cGGHFp549YNeUvH/J/n13nlC7WflkwRVxdJNf9YLP risto@risto-k"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ1hVv5ryUbKkBaIrMvkjX8qq+7NLK1XJGB01FAnxRzs risto.kuusela@unikie.com"
+      ];
+    }
+    {
+      desc = "Ola Rinta-Koski";
+      name = "rockola";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOarfl/tww9HCteqvhB6UzbUJU1eC1n+YQUHY+M7l7V4 ola@sorvi"
+      ];
+    }
+    {
+      desc = "Sakari Nousiainen";
+      name = "sakarin";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG4f1SPr1KZZXzEyUh7ui8AjDzCA6ESSlvs5xQ/Zne8a skr@LAPTOP-GOL8EQAD"
+      ];
+    }
+    {
+      desc = "Santtu Lakkala";
+      name = "santtu";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKlojd3W3lNq/M+j0uOehhGikuOyM3yy81pGdIoxiKOz root@nixos"
       ];
     }
     {
@@ -47,6 +238,35 @@
       name = "shamma";
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGj1y9T8iuWmTfGxfrSpe8YpvrRchASYQY+ueeQcG8nx shamma.alblooshi@tii.ae"
+      ];
+    }
+    {
+      desc = "Tanel Dettenborn";
+      name = "tanel";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEA7p7hHPvPT6uTU44Nb/p9/DT9mOi8mpqNllnpfawDE desk"
+      ];
+    }
+    {
+      desc = "Vadim Likholetov";
+      name = "vadikas";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJKQ+6iZKKw0eMJbuMTIyoZ9940ecNlac6dqCpy3eiCq vadikas@c57bl6"
+      ];
+    }
+    {
+      desc = "Ville Ilvonen";
+      name = "vilvo";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILJF1pszEzwSka1zqdq1HgusWp6lLQdvOgeOrfc1xnH7 ville.ilvonen@unikie.com"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGSqc6N0kDeUnhqstc6TCxWhQxA6NiRE+XNGafwBrMCX ville.ilvonen@unikie.com"
+      ];
+    }
+    {
+      desc = "Yuriy Nesterov";
+      name = "yuriy";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPOiqwFk/BR8SKxrDAqadlnEQt5oLBaMyoZL3IQv0Nfj yuriy.nesterov@unikie.com"
       ];
     }
   ];
