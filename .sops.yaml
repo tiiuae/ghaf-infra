@@ -40,12 +40,12 @@ creation_rules:
       - *flokli
       - *vjuntunen
       - *testagent
-  - path_regex: hosts/ficolobuild/build3/secrets.yaml$
+  - path_regex: hosts/builders/build3/secrets.yaml$
     key_groups:
     - age:
       - *jrautiola
       - *build3
-  - path_regex: hosts/hetzarm/secrets.yaml$
+  - path_regex: hosts/builders/hetzarm/secrets.yaml$
     key_groups:
     - age:
       - *jrautiola
