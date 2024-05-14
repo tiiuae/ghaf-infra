@@ -94,7 +94,7 @@ resource "azurerm_network_security_group" "binary_cache_vm" {
       azurerm_subnet.builders.address_prefixes[0],
       module.arm_builder_vm[0].virtual_machine_ip_address,
       # TODO:
-      "46.23.164.59"
+      "151.253.154.18"
     ]
     destination_address_prefix = "*"
   }

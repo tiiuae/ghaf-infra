@@ -122,7 +122,7 @@ resource "azurerm_network_security_group" "jenkins_controller_vm" {
     source_port_range          = "*"
     destination_port_ranges    = [22, 443]
     # TODO:
-    source_address_prefixes    = ["46.23.164.59"]
+    source_address_prefixes    = ["151.253.154.18"]
     destination_address_prefix = "*"
   }
 }
