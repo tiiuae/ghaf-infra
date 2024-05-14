@@ -192,7 +192,7 @@ test_build_end_to_end () {
         exit 1
     fi
     # Find the binary cache public key based on the keyname from main.tf
-    pubkey=$(grep -oP "$keyname:[^\"]+" "$MYDIR/main.tf" | head -n1 )
+    pubkey=$(sed -n -E "s|.*\"($keyname:[^\"]+)\".*|\1|p" "$MYDIR/main.tf" | head -n1 )
     if [ -z "$pubkey" ]; then
         print_err "failed reading nix binary cache public key for '$keyname'"
         exit 1
