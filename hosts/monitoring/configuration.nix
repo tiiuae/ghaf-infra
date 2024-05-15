@@ -152,9 +152,8 @@ in {
         proxy_url = "http://127.0.0.1:8888";
         static_configs = [
           {
-            targets = [
-              "awsarm.vedenemo.dev:9100"
-            ];
+            targets = ["awsarm.vedenemo.dev:9100"];
+            labels = {machine_name = "awsarm";};
           }
         ];
       }
