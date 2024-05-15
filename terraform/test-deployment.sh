@@ -45,7 +45,7 @@ usage () {
 ################################################################################
 
 print_err () {
-    printf "${RED}Error:${NONE} $1\n" >&2
+    printf "${RED}Error:${NONE} %b\n" "$1" >&2
 }
 
 print_success () {
@@ -57,11 +57,11 @@ print_skip () {
 }
 
 print_info () {
-    printf "${WHITE}\nMore info:\n${NONE}$1\n" >&2
+    printf "${WHITE}\nMore info:\n${NONE}%b\n" "$1" >&2
 }
 
 print_running () {
-    printf "%-60s" "  $1 ... " >&2
+    printf "%-60b" "  $1 ... " >&2
 }
 
 argparse () {
@@ -212,9 +212,13 @@ test_build_end_to_end () {
 check_systemd_service () {
     host="$1"
     service="$2"
+    # Wait until the service is no longer activating or at most 60 seconds
+    cmd="TIMER=0; while (( TIMER < 60 )); do ((TIMER++)); sudo systemctl status $service | grep 'Active: activating' && sleep 1 || break; done"
+    exec_ssh_cmd "$cmd" "$host"
+    # Query service status
     cmd="sudo systemctl status $service"
     exec_ssh_cmd "$cmd" "$host"
- }
+}
 
 trigger_build () {
     controller="$1"
