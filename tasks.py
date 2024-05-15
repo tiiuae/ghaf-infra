@@ -95,10 +95,6 @@ TARGETS = OrderedDict(
             hostname="172.18.16.60",
             nixosconfig="testagent",
         ),
-        "hetzarm": TargetHost(
-            hostname="65.21.20.242",
-            nixosconfig="hetzarm",
-        ),
     }
 )
 
