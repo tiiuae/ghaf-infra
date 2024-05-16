@@ -15,8 +15,11 @@
 
   networking.hostName = "build4";
 
-  # Trust Themisto Hydra user
-  nix.settings.trusted-users = ["root" "themisto"];
+  nix.settings = {
+    # add ability to build 32 bit
+    extra-platforms = ["i686-linux"];
+    trusted-users = ["root" "themisto"];
+  };
 
   users.users.yubimaster.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA2BcpFzSXOuK9AzN+J1HBVnuVV8D3wgdEwPuILNy2aM signer"

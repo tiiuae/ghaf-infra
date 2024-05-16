@@ -45,7 +45,8 @@
     settings = {
       # avoid copying stuff over ssh
       builders-use-substitutes = true;
-      # trust Themisto Hydra user
+      # add ability to build 32 bit
+      extra-platforms = ["i686-linux"];
       trusted-users = ["root" "themisto" "@wheel" "build3"];
     };
 
