@@ -88,7 +88,7 @@ resource "azurerm_network_security_group" "binary_cache_vm" {
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_ranges    = [22, 443]
+    destination_port_ranges    = [22, 80, 443]
     source_address_prefixes    = [
       azurerm_subnet.jenkins.address_prefixes[0],
       azurerm_subnet.builders.address_prefixes[0],

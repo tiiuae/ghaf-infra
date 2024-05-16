@@ -319,7 +319,14 @@ in {
       https://{$SITE_ADDRESS} {
         reverse_proxy localhost:8081
       }
-    '';
+      https://ghaf-ci.ssrcdevops.tii.ae {
+        # For this domain, use the custom certificate and key
+        tls /var/lib/caddy/ssrcdevops-custom/cert.pem /var/lib/caddy/ssrcdevops-custom/key.pem
+
+        # Otherwise the proxy configuration is the same
+        reverse_proxy localhost:8081
+      }
+     '';
   };
 
   systemd.services.caddy.serviceConfig.EnvironmentFile = "/var/lib/caddy/caddy.env";
@@ -335,7 +342,7 @@ in {
   systemd.services.caddy.requires = ["cloud-init.service"];
 
   # Expose the HTTPS port. No need for HTTP, as caddy can use TLS-ALPN-01.
-  networking.firewall.allowedTCPPorts = [443];
+  networking.firewall.allowedTCPPorts = [443 80];
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 

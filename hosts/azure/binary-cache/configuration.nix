@@ -66,6 +66,24 @@
           reverse_proxy unix///run/rclone-http.sock
         }
       }
+      https://ghaf-cache.ssrcdevops.tii.ae {
+        # For this domain, use the custom certificate and key
+        tls /var/lib/caddy/ssrcdevops-custom/cert.pem /var/lib/caddy/ssrcdevops-custom/key.pem
+
+        # Otherwise the proxy configuration is the same
+        handle /nix-cache-info {
+          reverse_proxy unix///run/rclone-http.sock
+        }
+        handle /*.narinfo {
+          reverse_proxy unix///run/rclone-http.sock
+        }
+        handle /nar/*.nar {
+          reverse_proxy unix///run/rclone-http.sock
+        }
+        handle /nar/*.nar.* {
+          reverse_proxy unix///run/rclone-http.sock
+        }
+      }
     '';
   };
 
@@ -82,7 +100,7 @@
   systemd.services.caddy.requires = ["cloud-init.service"];
 
   # Expose the HTTPS port. No need for HTTP, as caddy can use TLS-ALPN-01.
-  networking.firewall.allowedTCPPorts = [443];
+  networking.firewall.allowedTCPPorts = [443 80];
 
   system.stateVersion = "23.05";
 }
