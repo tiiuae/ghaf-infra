@@ -144,6 +144,10 @@ in {
             targets = ["172.18.20.109:9100"];
             labels = {machine_name = "binarycache";};
           }
+          {
+            targets = ["65.21.20.242:9100"];
+            labels = {machine_name = "hetzarm";};
+          }
         ];
       }
       {
