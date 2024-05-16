@@ -237,7 +237,7 @@
       desc = "Shamma Alblooshi";
       name = "shamma";
       keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGj1y9T8iuWmTfGxfrSpe8YpvrRchASYQY+ueeQcG8nx shamma.alblooshi@tii.ae"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM3w7NzqMuF+OAiIcYWyP9+J3kwvYMKQ+QeY9J8QjAXm shamma-alblooshi@tii.ae"
       ];
     }
     {
