@@ -71,6 +71,9 @@ configure_rclone() {
 After=network.target
 Requires=network.target
 
+[Install]
+WantedBy=multi-user.target
+
 [Service]
 DynamicUser=true
 EnvironmentFile=/var/lib/rclone-http/env
