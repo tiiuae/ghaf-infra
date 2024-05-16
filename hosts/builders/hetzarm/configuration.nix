@@ -26,6 +26,7 @@
       user-tervis
       user-karim
       user-mika
+      user-themisto
     ]);
 
   nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
@@ -46,5 +47,5 @@
     };
   };
 
-  nix.settings.trusted-users = ["root" "@wheel"];
+  nix.settings.trusted-users = ["root" "themisto" "@wheel"];
 }
