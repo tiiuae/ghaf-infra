@@ -95,26 +95,6 @@ sops.secrets.metrics-password.owner = "prometheus";
 }
 ```
 
-### Using ssh proxy
-
-When webserver is not desired, or ports 80 and 443 are not available, metrics can be scraped through ssh.
-This is not natively supported by prometheus, but a proxy server like [sshified](https://github.com/hoffie/sshified) can be used.
-
-```sh
-./sshified --proxy.listen-addr 127.0.0.1:8888 \
-  --ssh.user sshified \
-  --ssh.key-file ~/.ssh/id_ed25519 \
-  --ssh.known-hosts-file ~/.ssh/known_hosts \
-  --ssh.port 22 -v
-```
-
-This has been set up in monitoring server as a systemd service.
-
-Remote server has to be set up to allow ssh access for user `sshified` with the given ssh key.
-
-Prometheus can then be set up to scrape the remote server with `127.0.0.1:8888` as the proxy.
-
-The ssh proxy will redirect the request to remote server's `127.0.0.1:9100`.
 
 ## Reading metrics
 

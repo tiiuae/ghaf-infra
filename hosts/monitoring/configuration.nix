@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 {
-  pkgs,
   self,
   inputs,
   lib,
@@ -11,10 +10,8 @@
 }: let
   # "public" but really only available with ficolo vpn
   public-ip = "172.18.20.108";
-  sshified = pkgs.callPackage ../../pkgs/sshified/default.nix {};
 in {
   sops.defaultSopsFile = ./secrets.yaml;
-  sops.secrets.sshified_private_key.owner = "sshified";
 
   imports =
     [
@@ -41,36 +38,6 @@ in {
     firewall = {
       allowedTCPPorts = [config.services.prometheus.port config.services.grafana.settings.server.http_port];
       allowedUDPPorts = [config.services.prometheus.port config.services.grafana.settings.server.http_port];
-    };
-  };
-
-  environment.systemPackages = [
-    sshified
-  ];
-
-  users.users."sshified" = {
-    isNormalUser = true;
-  };
-
-  services.openssh.knownHosts = {
-    "[awsarm.vedenemo.dev]:20220".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL3f7tAAO3Fc+8BqemsBQc/Yl/NmRfyhzr5SFOSKqrv0";
-  };
-
-  systemd.services."sshified" = {
-    wantedBy = ["multi-user.target"];
-    after = ["network.target"];
-    description = "Run the sshified http-to-ssh proxy";
-    serviceConfig = {
-      User = "sshified";
-      ExecStart = ''
-        ${sshified}/bin/sshified \
-        --proxy.listen-addr 127.0.0.1:8888 \
-        --ssh.user sshified \
-        --ssh.key-file ${config.sops.secrets.sshified_private_key.path} \
-        --ssh.known-hosts-file /etc/ssh/ssh_known_hosts \
-        --ssh.port 20220 \
-        -v
-      '';
     };
   };
 
@@ -147,17 +114,6 @@ in {
           {
             targets = ["65.21.20.242:9100"];
             labels = {machine_name = "hetzarm";};
-          }
-        ];
-      }
-      {
-        job_name = "awsarm-ssh-node-exporter";
-        scheme = "http";
-        proxy_url = "http://127.0.0.1:8888";
-        static_configs = [
-          {
-            targets = ["awsarm.vedenemo.dev:9100"];
-            labels = {machine_name = "awsarm";};
           }
         ];
       }
