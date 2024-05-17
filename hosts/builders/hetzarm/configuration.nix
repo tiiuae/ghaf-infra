@@ -28,6 +28,15 @@
       user-mika
     ]);
 
+  # Set authorized keys for sshified user
+  users.users.sshified = {
+    isNormalUser = true;
+    group = "sshified";
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEKd30t0EFmMyULGlecaUX6puIAF4IjynZUo+X9k8h69 monitoring"
+    ];
+  };
+  users.groups.sshified = {};
   nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
   hardware.enableRedistributableFirmware = true;
 

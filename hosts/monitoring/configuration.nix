@@ -54,6 +54,7 @@ in {
 
   services.openssh.knownHosts = {
     "[awsarm.vedenemo.dev]:20220".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL3f7tAAO3Fc+8BqemsBQc/Yl/NmRfyhzr5SFOSKqrv0";
+    "[hetzarm.vedenemo.dev]:22".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILx4zU4gIkTY/1oKEOkf9gTJChdx/jR3lDgZ7p/c7LEK";
   };
 
   systemd.services."sshified" = {
@@ -69,6 +70,24 @@ in {
         --ssh.key-file ${config.sops.secrets.sshified_private_key.path} \
         --ssh.known-hosts-file /etc/ssh/ssh_known_hosts \
         --ssh.port 20220 \
+        -v
+      '';
+    };
+  };
+
+  systemd.services."sshifiedhetzarm" = {
+    wantedBy = ["multi-user.target"];
+    after = ["network.target"];
+    description = "Run the sshified http-to-ssh proxy";
+    serviceConfig = {
+      User = "sshified";
+      ExecStart = ''
+        ${sshified}/bin/sshified \
+        --proxy.listen-addr 127.0.0.1:8889 \
+        --ssh.user sshified \
+        --ssh.key-file ${config.sops.secrets.sshified_private_key.path} \
+        --ssh.known-hosts-file /etc/ssh/ssh_known_hosts \
+        --ssh.port 22 \
         -v
       '';
     };
@@ -157,9 +176,20 @@ in {
           }
         ];
       }
+
+      {
+        job_name = "hetzarm-ssh-node-exporter";
+        scheme = "http";
+        proxy_url = "http://127.0.0.1:8889";
+        static_configs = [
+          {
+            targets = ["hetzarm.vedenemo.dev:9100"];
+            labels = {machine_name = "hetzarm";};
+          }
+        ];
+      }
     ];
   };
-
   services.nginx = {
     virtualHosts = {
       "_" = {
