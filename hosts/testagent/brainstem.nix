@@ -4,7 +4,7 @@
   stdenv,
   lib,
   autoPatchelfHook,
-  fetchzip,
+  fetchFromGitHub,
   curl,
   systemd,
   zlib,
@@ -12,7 +12,7 @@
   withUpdater ? true,
   ...
 }: let
-  version = "2.10.5";
+  version = "2.9.25";
   # Upstream has a udev.sh script asking for mode and group, but with uaccess we
   # don't need any of that and can make it entirely static.
   # For any rule adding the uaccess tag to be effective, the name of the file it
@@ -27,16 +27,18 @@
     KERNEL=="hidraw*", ATTRS{idVendor}=="1fc9", ATTRS{idProduct}=="0130", TAG+="uaccess"
   '';
 
-  src = fetchzip {
-    url = "https://acroname.com/sites/default/files/software/brainstem_sdk/${version}/brainstem_sdk_${version}_Ubuntu_LTS_22.04_x86_64.tgz";
-    hash = "sha256-S6u9goxTMCI12sffP/WKUF7bv0pLeNmNog7Hle+vpR4=";
-    # There's no "brainstem" parent directory in the archive.
-    stripRoot = false;
+  # 2.9.25 seems to be gone from the official servers.
+  src = fetchFromGitHub {
+    owner = "tiiuae";
+    repo = "ci-test-automation";
+    rev = "7b44c09b2663666d83dc4764a67114ea6708e26b";
+    hash = "sha256-1Xq+J4IEsdGI+nOvyrxES5L0SZw+yA9nwVBN1lOGU20=";
   };
 in
   stdenv.mkDerivation {
     pname = "brainstem";
     inherit version src;
+    sourceRoot = "source/BrainStem_dev_kit";
 
     nativeBuildInputs = [autoPatchelfHook];
     buildInputs =
@@ -53,29 +55,20 @@ in
         zlib
       ];
 
-    # Unpack the CLI tools, documentation, library and C headers.
-    # There's also a python .whl, containing more libraries, which might be used
-    # to support more architectures, too, but let's only do that if we need it.
+    # Unpack the CLI tools.
     installPhase = ''
       mkdir -p $out/bin
-      install -m744 cli/AcronameHubCLI $out/bin
-      install -m744 cli/Updater $out/bin/AcronameHubUpdater
+      install -m744 bin/AcronameHubCLI $out/bin
+      install -m744 bin/Updater $out/bin/AcronameHubUpdater
 
       mkdir -p $out/lib/udev/rules.d
       cp ${udevRule} $out/lib/udev/rules.d/60-brainstem.rules
 
       mkdir -p $doc
-      cp docs/* $doc/
       cp {license,version}.txt $doc/
-
-      mkdir -p $lib/lib
-      cp api/lib/libBrainStem2.* $lib/lib
-
-      mkdir -p $dev/include
-      cp -R api/lib/BrainStem2 $dev/include/
     '';
 
-    outputs = ["out" "lib" "dev" "doc"];
+    outputs = ["out" "doc"];
 
     meta = with lib; {
       description = "BrainStem Software Development Kit";
