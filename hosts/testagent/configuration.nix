@@ -74,4 +74,17 @@ in {
   # The Jenkins slave service is very barebones
   # it only installs java and sets up jenkins user
   services.jenkinsSlave.enable = true;
+
+  # configuration file for test hardware devices
+  environment.etc."jenkins/test_config.json".text = builtins.toJSON {
+    OrinAGX1 = {
+      serial_port = "/dev/ttyACM0";
+      device_ip_address = "172.18.16.54";
+      socket_ip_address = "172.18.16.74";
+      plug_type = "TAPOP100v2";
+      location = "testagent";
+      usbhub_serial = "0x2954223B";
+      threads = 8;
+    };
+  };
 }
