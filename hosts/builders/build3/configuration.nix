@@ -43,11 +43,9 @@
 
   nix = {
     settings = {
-      # avoid copying stuff over ssh
-      builders-use-substitutes = true;
       # add ability to build 32 bit
       extra-platforms = ["i686-linux"];
-      trusted-users = ["root" "themisto" "@wheel" "build3"];
+      trusted-users = ["@wheel" "build3"];
     };
 
     distributedBuilds = true;

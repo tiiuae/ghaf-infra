@@ -18,7 +18,6 @@
   nix.settings = {
     # add ability to build 32 bit
     extra-platforms = ["i686-linux"];
-    trusted-users = ["root" "themisto"];
   };
 
   users.users.yubimaster.openssh.authorizedKeys.keys = [

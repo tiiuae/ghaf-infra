@@ -10,4 +10,6 @@
       ];
     };
   };
+
+  nix.settings.trusted-users = ["themisto"];
 }
