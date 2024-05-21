@@ -106,11 +106,11 @@ locals {
     dev = {
       vm_size_binarycache     = "Standard_D2_v3"
       osdisk_size_binarycache = "250"
-      vm_size_builder_x86     = "Standard_D4_v3"
-      vm_size_builder_aarch64 = "Standard_D4ps_v5"
+      vm_size_builder_x86     = "Standard_D16_v3"
+      vm_size_builder_aarch64 = "Standard_D8ps_v5"
       osdisk_size_builder     = "250"
       vm_size_controller      = "Standard_E4_v5"
-      osdisk_size_controller  = "500"
+      osdisk_size_controller  = "1000"
       num_builders_x86        = 1
       num_builders_aarch64    = 1
       # 'priv' and 'dev' environments use the same binary cache signing key
