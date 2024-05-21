@@ -29,6 +29,7 @@ in {
       user-vjuntunen
       user-flokli
       user-jrautiola
+      user-mariia
     ]);
 
   # Bootloader.
@@ -48,6 +49,7 @@ in {
   environment.systemPackages = [
     inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
     brainstem
+    pkgs.minicom
   ];
 
   # Disable suspend and hibernate - systemd settings
@@ -74,6 +76,36 @@ in {
   # The Jenkins slave service is very barebones
   # it only installs java and sets up jenkins user
   services.jenkinsSlave.enable = true;
+
+  # Gives jenkins user sudo rights without password and serial connection rights
+  users.users.jenkins.extraGroups = ["wheel" "dialout" "tty"];
+
+  # Open connection to Jenkins controller as a systemd service
+  systemd.services.jenkins-connection = {
+    after = ["network.target"];
+    wantedBy = ["multi-user.target"];
+    path = [
+      pkgs.jdk
+      pkgs.git
+      pkgs.bashInteractive
+      pkgs.coreutils
+      pkgs.util-linux
+      pkgs.nix
+      pkgs.zstd
+      pkgs.jq
+      pkgs.csvkit
+      pkgs.sudo
+      brainstem
+      inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
+    ];
+    serviceConfig = {
+      Type = "simple";
+      User = "vjuntunen";
+      WorkingDirectory = "/home/vjuntunen/Jenkins-agent/";
+      ExecStart = ''${pkgs.jdk}/bin/java -jar agent.jar -jnlpUrl https://ghaf-jenkins-controller-villepekkajuntun.northeurope.cloudapp.azure.com/computer/testagent/jenkins-agent.jnlp -secret @secret-file -workDir "/home/vjuntunen/Jenkins-agent"'';
+      Restart = "on-failure";
+    };
+  };
 
   # configuration file for test hardware devices
   environment.etc."jenkins/test_config.json".text = builtins.toJSON {

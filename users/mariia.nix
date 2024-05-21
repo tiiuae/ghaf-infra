@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   users.users = {
-    vjuntunen = {
-      description = "Ville-Pekka Juntunen";
+    mariia = {
+      description = "Mariia Azbeleva";
       isNormalUser = true;
       openssh.authorizedKeys.keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBJvhDUiX05DpsnQ1T8Fmoj2qVrInF8NeDSm8WiDeIxR"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMXq8i5FHMw7vRpAZeXnYux5e6xFgObJgq4+bnY/6s7f"
       ];
       extraGroups = ["networkmanager" "wheel" "dialout" "tty"];
     };
