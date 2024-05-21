@@ -56,5 +56,5 @@
     };
   };
 
-  nix.settings.trusted-users = ["root" "themisto" "@wheel"];
+  nix.settings.trusted-users = ["themisto" "@wheel"];
 }
