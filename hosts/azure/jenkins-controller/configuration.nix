@@ -151,6 +151,25 @@ in {
         }
         {
           job = {
+            name = "ghaf-pre-merge-pipeline";
+            project-type = "pipeline";
+            pipeline-scm = {
+              scm = [
+                {
+                  git = {
+                    url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
+                    clean = true;
+                    branches = ["*/main"];
+                  };
+                }
+              ];
+              script-path = "ghaf-pre-merge-pipeline.groovy";
+              lightweight-checkout = true;
+            };
+          };
+        }
+        {
+          job = {
             name = "ghaf-nightly-pipeline";
             project-type = "pipeline";
             pipeline-scm = {
@@ -200,7 +219,9 @@ in {
       jenkins-auth = "-auth admin:\"$(cat /var/lib/jenkins/secrets/initialAdminPassword)\"";
     in ''
       # Install plugins
-      jenkins-cli ${jenkins-auth} install-plugin "workflow-aggregator" "github" "timestamper" "pipeline-stage-view" "blueocean" "pipeline-graph-view" -deploy
+      jenkins-cli ${jenkins-auth} install-plugin \
+        "workflow-aggregator" "github" "timestamper" "pipeline-stage-view" "blueocean" \
+        "pipeline-graph-view" "github-pullrequest" -deploy
 
       # Jenkins groovy config
       jenkins-cli ${jenkins-auth} groovy = < ${jenkins-groovy}
