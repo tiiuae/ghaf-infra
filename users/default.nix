@@ -18,5 +18,6 @@
     user-avnik = import ./avnik.nix;
     user-flokli = import ./flokli.nix;
     user-vjuntunen = import ./vjuntunen.nix;
+    user-mariia = import ./mariia.nix;
   };
 }
