@@ -12,6 +12,7 @@
   imports =
     [
       ../ficolo.nix
+      ../cross-compilation.nix
       ../developers.nix
       ../yubikey.nix
       inputs.sops-nix.nixosModules.sops
@@ -43,8 +44,6 @@
 
   nix = {
     settings = {
-      # add ability to build 32 bit
-      extra-platforms = ["i686-linux"];
       trusted-users = ["@wheel" "build3"];
     };
 

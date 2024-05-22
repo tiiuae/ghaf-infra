@@ -4,6 +4,7 @@
   imports =
     [
       ../ficolo.nix
+      ../cross-compilation.nix
       ../yubikey.nix
     ]
     ++ (with self.nixosModules; [
@@ -14,11 +15,6 @@
   # build4 specific configuration
 
   networking.hostName = "build4";
-
-  nix.settings = {
-    # add ability to build 32 bit
-    extra-platforms = ["i686-linux"];
-  };
 
   users.users.yubimaster.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA2BcpFzSXOuK9AzN+J1HBVnuVV8D3wgdEwPuILNy2aM signer"
