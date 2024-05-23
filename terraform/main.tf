@@ -120,13 +120,13 @@ locals {
     prod = {
       vm_size_binarycache     = "Standard_D2_v3"
       osdisk_size_binarycache = "250"
-      vm_size_builder_x86     = "Standard_D8_v3"
-      vm_size_builder_aarch64 = "Standard_D8ps_v5"
+      vm_size_builder_x86     = "Standard_D16_v3"
+      vm_size_builder_aarch64 = "Standard_D16ps_v5"
       osdisk_size_builder     = "500"
       vm_size_controller      = "Standard_E4_v5"
       osdisk_size_controller  = "1000"
-      num_builders_x86        = 2
-      num_builders_aarch64    = 2
+      num_builders_x86        = 1
+      num_builders_aarch64    = 1
       binary_cache_public_key = "ghaf-infra-prod:DIrhJsqehIxjuUQ93Fqx6gmo4cDgn5srW5dedvMbqD0="
       binary_cache_url        = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
     }
