@@ -182,7 +182,7 @@ in {
                   };
                 }
               ];
-              script-path = "ghaf-nightly-build.groovy";
+              script-path = "ghaf-nightly-parallel.groovy";
               lightweight-checkout = true;
             };
           };
