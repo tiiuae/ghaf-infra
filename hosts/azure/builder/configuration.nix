@@ -23,6 +23,8 @@
     remote = ":azureblob:binary-cache-v1";
   };
 
+  boot.binfmt.emulatedSystems = ["aarch64-linux"];
+
   nix.settings.substituters = [
     # Configure Nix to use the bucket (through rclone-http) as a substitutor.
     # The public key is passed in externally.
