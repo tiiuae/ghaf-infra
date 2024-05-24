@@ -36,6 +36,9 @@ buildGoModule rec {
   patches = [
     # https://github.com/rclone/rclone/pull/7801
     ./http-socket-activation.patch
+
+    # https://github.com/rclone/rclone/pull/7865
+    ./webdav-introduce-unix_socket_path.patch
   ];
 
   vendorHash = "sha256-zGBwgIuabLDqWbutvPHDbPRo5Dd9kNfmgToZXy7KVgI=";
