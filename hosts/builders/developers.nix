@@ -151,6 +151,7 @@
       name = "juliuskoskela";
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP2RfxjbhBbdbfXto9dczC4LjE9uixYAReJ/e+dT/cAE julius.koskela@unikie.com"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJnY0KqTAiC3VwK5tG9SpYaPaK28K24w2dkkI4zoVOQM root@nova"
       ];
     }
     {
