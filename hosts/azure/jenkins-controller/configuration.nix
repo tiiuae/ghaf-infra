@@ -20,27 +20,7 @@
     exec nix --extra-experimental-features nix-command copy --to 'http://localhost:8080?secret-key=/etc/secrets/nix-signing-key&compression=zstd' $OUT_PATHS
   '';
 
-  # TODO: sort out jenkins authentication e.g.:
-  # https://plugins.jenkins.io/github-oauth/
-  # Below config requires admin to trigger builds or manage jenkins
-  # allowing read access for anonymous users:
-  jenkins-groovy = pkgs.writeText "groovy" ''
-    #!groovy
-
-    import jenkins.model.*
-    import jenkins.install.*
-    import hudson.security.*
-
-    def instance = Jenkins.getInstance()
-    // Disable Setup Wizard
-    instance.setInstallState(InstallState.INITIAL_SETUP_COMPLETED)
-
-    // Allow anonymous read access
-    def strategy = new FullControlOnceLoggedInAuthorizationStrategy()
-    strategy.setAllowAnonymousRead(true)
-    instance.setAuthorizationStrategy(strategy)
-    instance.save()
-  '';
+  jenkins-casc = ./jenkins-casc.yaml;
 
   get-secret =
     pkgs.writers.writePython3 "get-secret" {
@@ -119,6 +99,8 @@ in {
     extraJavaOptions = [
       # Useful when the 'sh' step fails:
       "-Dorg.jenkinsci.plugins.durabletask.BourneShellScript.LAUNCH_DIAGNOSTICS=true"
+      # Point to configuration-as-code config
+      "-Dcasc.jenkins.config=${jenkins-casc}"
     ];
     # Configure jenkins job(s):
     # https://jenkins-job-builder.readthedocs.io/en/latest/project_pipeline.html
@@ -217,13 +199,29 @@ in {
     };
     script = let
       jenkins-auth = "-auth admin:\"$(cat /var/lib/jenkins/secrets/initialAdminPassword)\"";
+
+      # disable initial setup, which needs to happen *after* all jenkins-cli setup.
+      # otherwise we won't have initialAdminPassword.
+      # Disabling the setup wizard cannot happen from configuration-as-code either.
+      jenkins-groovy = pkgs.writeText "groovy" ''
+        #!groovy
+
+        import jenkins.model.*
+        import hudson.util.*;
+        import jenkins.install.*;
+
+        def instance = Jenkins.getInstance()
+
+        instance.setInstallState(InstallState.INITIAL_SETUP_COMPLETED)
+        instance.save()
+      '';
     in ''
       # Install plugins
       jenkins-cli ${jenkins-auth} install-plugin \
         "workflow-aggregator" "github" "timestamper" "pipeline-stage-view" "blueocean" \
-        "pipeline-graph-view" "github-pullrequest" -deploy
+        "pipeline-graph-view" "github-pullrequest" "configuration-as-code"
 
-      # Jenkins groovy config
+      # Disable initial install
       jenkins-cli ${jenkins-auth} groovy = < ${jenkins-groovy}
 
       # Restart jenkins
