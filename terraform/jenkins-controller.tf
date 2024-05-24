@@ -52,6 +52,10 @@ module "jenkins_controller_vm" {
         content = "AZURE_STORAGE_ACCOUNT_NAME=${data.azurerm_storage_account.binary_cache.name}",
         "path"  = "/var/lib/rclone-http/env"
       },
+      {
+        content = "AZURE_STORAGE_ACCOUNT_NAME=${azurerm_storage_account.jenkins_artifacts.name}",
+        "path"  = "/var/lib/rclone-jenkins-artifacts/env"
+      },
       # Render /etc/nix/machines with terraform. In the future, we might want to
       # autodiscover this, or better, have agents register with the controller,
       # rather than having to recreate the VM whenever the list of builders is
@@ -154,6 +158,14 @@ resource "azurerm_role_assignment" "jenkins_controller_access_storage" {
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = module.jenkins_controller_vm.virtual_machine_identity_principal_id
 }
+
+# Allow the VM to *write* to (and read from) the jenkins artifacts bucket
+resource "azurerm_role_assignment" "jenkins_controller_access_artifacts" {
+  scope                = azurerm_storage_container.jenkins_artifacts_1.resource_manager_id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = module.jenkins_controller_vm.virtual_machine_identity_principal_id
+}
+
 
 # Grant the VM read-only access to the Azure Key Vault Secret containing the
 # binary cache signing key.
