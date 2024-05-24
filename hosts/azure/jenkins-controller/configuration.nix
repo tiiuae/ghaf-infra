@@ -51,6 +51,7 @@
       s = client.get_secret(secret_name)
       print(s.value)
     '';
+  rclone = pkgs.callPackage ../../../pkgs/rclone {};
 in {
   imports = [
     ../../azure-common.nix
@@ -308,6 +309,62 @@ in {
     '';
   };
 
+  # Provide a webdav endpoint for Jenkins to upload artifacts to.
+  systemd.services.rclone-jenkins-artifacts = {
+    after = ["network.target"];
+    serviceConfig = {
+      Type = "notify";
+      Restart = "always";
+      RestartSec = 2;
+      DynamicUser = true;
+      RuntimeDirectory = "rclone-http";
+      EnvironmentFile = "/var/lib/rclone-jenkins-artifacts/env";
+      ExecStart = lib.concatStringsSep " " [
+        "${rclone}/bin/rclone"
+        "serve"
+        "webdav"
+        "--azureblob-env-auth"
+        "--disable-dir-list"
+        ":azureblob:jenkins-artifacts-v1"
+      ];
+    };
+  };
+  # Restrict connections to the jenkins user only.
+  systemd.sockets.rclone-jenkins-artifacts = {
+    wantedBy = ["sockets.target"];
+    socketConfig = {
+      ListenStream = "/run/rclone-jenkins-artifacts.sock";
+      SocketUser = "jenkins";
+      SocketMode = "0600";
+    };
+  };
+
+  # Provide a (read-only) HTTP endpoint (with listing) to browse artifacts.
+  # These are exposed through caddy.
+  systemd.services.rclone-jenkins-artifacts-browse = {
+    after = ["network.target"];
+    serviceConfig = {
+      Type = "notify";
+      Restart = "always";
+      RestartSec = 2;
+      DynamicUser = true;
+      RuntimeDirectory = "rclone-http";
+      EnvironmentFile = "/var/lib/rclone-jenkins-artifacts/env";
+      ExecStart = lib.concatStringsSep " " [
+        "${rclone}/bin/rclone"
+        "serve"
+        "http"
+        "--read-only"
+        "--azureblob-env-auth"
+        ":azureblob:jenkins-artifacts-v1"
+      ];
+    };
+  };
+  systemd.sockets.rclone-jenkins-artifacts-browse = {
+    wantedBy = ["sockets.target"];
+    socketConfig.ListenStream = "/run/rclone-jenkins-artifacts-browse.sock";
+  };
+
   # Enable early out-of-memory killing.
   # Make nix builds more likely to be killed over more important services.
   services.earlyoom = {
@@ -354,9 +411,16 @@ in {
         admin off
       }
 
-      # Proxy all requests to jenkins.
       https://{$SITE_ADDRESS} {
-        reverse_proxy localhost:8081
+        # Route /artifacts requests to rclone-jenkins-artifacts-browse,
+        # stripping `/artifacts` from the path.
+        handle_path /artifacts/* {
+          reverse_proxy unix//run/rclone-jenkins-artifacts-browse.sock
+        }
+        # Proxy all other requests to jenkins as-is.
+        handle {
+          reverse_proxy localhost:8081
+        }
       }
     '';
   };
