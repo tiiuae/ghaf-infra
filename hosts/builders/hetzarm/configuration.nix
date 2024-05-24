@@ -29,15 +29,6 @@
       user-themisto
     ]);
 
-  # Set authorized keys for sshified user
-  users.users.sshified = {
-    isNormalUser = true;
-    group = "sshified";
-    openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEKd30t0EFmMyULGlecaUX6puIAF4IjynZUo+X9k8h69 monitoring"
-    ];
-  };
-  users.groups.sshified = {};
   nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
   hardware.enableRedistributableFirmware = true;
 
@@ -56,5 +47,23 @@
     };
   };
 
-  nix.settings.trusted-users = ["themisto" "@wheel"];
+  users.users = {
+    # sshified user for monitoring server to log in as
+    sshified = {
+      isNormalUser = true;
+      openssh.authorizedKeys.keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEKd30t0EFmMyULGlecaUX6puIAF4IjynZUo+X9k8h69 monitoring"
+      ];
+    };
+
+    # build3 can use this as remote builder
+    build3 = {
+      isNormalUser = true;
+      openssh.authorizedKeys.keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPf56a3ISY64w0Y0BmoLu+RyTIWQrXG6ugla6if9RteT build3"
+      ];
+    };
+  };
+
+  nix.settings.trusted-users = ["@wheel" "build3"];
 }

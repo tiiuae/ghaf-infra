@@ -7,7 +7,7 @@
   ...
 }: {
   sops.defaultSopsFile = ./secrets.yaml;
-  sops.secrets.awsarm_ssh_key.owner = "root";
+  sops.secrets.ssh_private_key.owner = "root";
 
   imports =
     [
@@ -31,35 +31,26 @@
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMDfEUoARtE5ZMYofegtm3lECzaQeAktLQ2SqlHcV9jL signer"
   ];
 
-  programs.ssh = {
-    extraConfig = ''
-      Host awsarm
-        HostName awsarm.vedenemo.dev
-        Port 20220
-    '';
-    knownHosts = {
-      "[awsarm.vedenemo.dev]:20220".publicKey = "ssh-ed25519  AAAAC3NzaC1lZDI1NTE5AAAAIL3f7tAAO3Fc+8BqemsBQc/Yl/NmRfyhzr5SFOSKqrv0";
-    };
-  };
+  nix.settings.trusted-users = ["@wheel"];
 
+  # use hetzarm as aarch64 remote builder
   nix = {
-    settings = {
-      trusted-users = ["@wheel" "build3"];
-    };
-
     distributedBuilds = true;
-
     buildMachines = [
       {
-        hostName = "awsarm";
+        hostName = "hetzarm.vedenemo.dev";
         system = "aarch64-linux";
-        maxJobs = 8;
+        maxJobs = 80;
         speedFactor = 1;
         supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
         mandatoryFeatures = [];
         sshUser = "build3";
-        sshKey = config.sops.secrets.awsarm_ssh_key.path;
+        sshKey = config.sops.secrets.ssh_private_key.path;
       }
     ];
+  };
+
+  programs.ssh.knownHosts = {
+    "hetzarm.vedenemo.dev".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILx4zU4gIkTY/1oKEOkf9gTJChdx/jR3lDgZ7p/c7LEK";
   };
 }
