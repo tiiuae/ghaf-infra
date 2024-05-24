@@ -88,15 +88,19 @@ in {
     listenAddress = "localhost";
     port = 8081;
     withCLI = true;
-    packages = with pkgs; [
-      bashInteractive # 'sh' step in jenkins pipeline requires this
-      coreutils
-      nix
-      git
-      zstd
-      jq
-      csvkit
-    ];
+    packages = with pkgs;
+      [
+        bashInteractive # 'sh' step in jenkins pipeline requires this
+        coreutils
+        nix
+        git
+        zstd
+        jq
+        csvkit
+      ]
+      ++ [
+        rclone # used to copy artifacts
+      ];
     extraJavaOptions = [
       # Useful when the 'sh' step fails:
       "-Dorg.jenkinsci.plugins.durabletask.BourneShellScript.LAUNCH_DIAGNOSTICS=true"
