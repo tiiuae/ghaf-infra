@@ -14,6 +14,9 @@ jenkins:
   disableRememberMe: false
   labelAtoms:
   - name: "built-in"
+  markupFormatter:
+    rawHtml:
+      disableSyntaxHighlighting: false
   mode: NORMAL
   myViewsTabBar: "standard"
   nodeMonitors:
