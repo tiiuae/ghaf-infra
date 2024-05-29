@@ -37,6 +37,9 @@ locals {
 resource "azurerm_resource_group" "rg" {
   name     = "ghaf-infra-state-${local.ws}"
   location = var.location
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Storage container
@@ -54,4 +57,7 @@ resource "azurerm_storage_container" "tfstate" {
   name                  = "ghaf-infra-tfstate-container"
   storage_account_name  = azurerm_storage_account.tfstate.name
   container_access_type = "private"
+  lifecycle {
+    prevent_destroy = true
+  }
 }

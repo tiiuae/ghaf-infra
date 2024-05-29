@@ -53,6 +53,11 @@ locals {
 resource "azurerm_resource_group" "persistent" {
   name     = "ghaf-infra-persistent-${local.ws}"
   location = var.location
+  lifecycle {
+    # Fails any plan that requires this resource to be destroyed.
+    # This only protects from Terraform accidental client-side destruction.
+    prevent_destroy = true
+  }
 }
 
 # Current signed-in user
