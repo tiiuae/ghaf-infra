@@ -56,10 +56,6 @@ in {
       # The default at 10 is rarely enough.
       log-lines = lib.mkDefault 25;
     };
-    # Garbage collection
-    gc.automatic = true;
-    gc.options = pkgs.lib.mkDefault "--delete-older-than 7d";
-
     daemonCPUSchedPolicy = lib.mkDefault "batch";
     daemonIOSchedClass = lib.mkDefault "idle";
     daemonIOSchedPriority = lib.mkDefault 7;
