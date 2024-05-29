@@ -184,13 +184,6 @@
       ];
     }
     {
-      desc = "Mika Tammi";
-      name = "mikatammi";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIfsdOINT+oNeUKA+RIVqqykYHS0Wt+rD/toK7GhXCOh mika@nixos-t14"
-      ];
-    }
-    {
       desc = "Milla Valio";
       name = "milval";
       keys = [
