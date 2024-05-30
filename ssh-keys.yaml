@@ -24,3 +24,5 @@ cazfi:
 vjuntunen:
  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBJvhDUiX05DpsnQ1T8Fmoj2qVrInF8NeDSm8WiDeIxR vjuntunen@ubuntu-laptop
  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINEaLCXGOAwSlCqd+X5kQcEtntnVNUZe+lFcugyiNkzF vjuntunen@jenkins-controller
+ktu:
+ - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBeMFr++WulL/hQKejDnE1ePRQscLp7LvLAy/DyLW4AU
