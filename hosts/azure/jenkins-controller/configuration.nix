@@ -327,6 +327,8 @@ in {
         "${rclone}/bin/rclone"
         "serve"
         "webdav"
+        "--dir-cache-time"
+        "5s"
         "--azureblob-env-auth"
         "--disable-dir-list"
         ":azureblob:jenkins-artifacts-v1"
@@ -359,6 +361,8 @@ in {
         "serve"
         "http"
         "--read-only"
+        "--dir-cache-time"
+        "5s"
         "--azureblob-env-auth"
         ":azureblob:jenkins-artifacts-v1"
       ];
