@@ -95,28 +95,34 @@ in {
       pkgs.jq
       pkgs.csvkit
       pkgs.sudo
+      pkgs.openssh
+      pkgs.iputils
+      pkgs.netcat
+      pkgs.python3
       brainstem
       inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
     ];
     serviceConfig = {
       Type = "simple";
-      User = "vjuntunen";
-      WorkingDirectory = "/home/vjuntunen/Jenkins-agent/";
-      ExecStart = ''${pkgs.jdk}/bin/java -jar agent.jar -jnlpUrl https://ghaf-jenkins-controller-villepekkajuntun.northeurope.cloudapp.azure.com/computer/testagent/jenkins-agent.jnlp -secret @secret-file -workDir "/home/vjuntunen/Jenkins-agent"'';
+      User = "jenkins";
+      WorkingDirectory = "/var/lib/jenkins";
+      ExecStart = ''${pkgs.jdk}/bin/java -jar agent.jar -jnlpUrl https://ghaf-jenkins-controller-villepekkajuntun.northeurope.cloudapp.azure.com/computer/testagent/jenkins-agent.jnlp -secret @secret-file -workDir "/var/lib/jenkins"'';
       Restart = "on-failure";
     };
   };
 
   # configuration file for test hardware devices
   environment.etc."jenkins/test_config.json".text = builtins.toJSON {
-    OrinAGX1 = {
-      serial_port = "/dev/ttyACM0";
-      device_ip_address = "172.18.16.54";
-      socket_ip_address = "172.18.16.74";
-      plug_type = "TAPOP100v2";
-      location = "testagent";
-      usbhub_serial = "0x2954223B";
-      threads = 8;
+    addresses = {
+      OrinAGX1 = {
+        serial_port = "/dev/ttyACM0";
+        device_ip_address = "172.18.16.54";
+        socket_ip_address = "172.18.16.74";
+        plug_type = "TAPOP100v2";
+        location = "testagent";
+        usbhub_serial = "0x2954223B";
+        threads = 8;
+      };
     };
   };
 }
