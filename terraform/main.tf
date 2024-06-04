@@ -53,6 +53,12 @@ variable "envfile" {
   }
 }
 
+variable "convince" {
+  type        = bool
+  description = "Protect against accidental dev or prod environment deployment"
+  default     = false
+}
+
 # Use azure_region module to get the short name of the Azure region,
 # see: https://registry.terraform.io/modules/claranet/regions/azurerm/latest
 module "azure_region" {
@@ -140,6 +146,12 @@ locals {
   # If workspace name is "dev" or "prod" use the workspace name as
   # envtype, otherwise, use the value from var.envtype.
   conf = local.ws == "dev" || local.ws == "prod" ? local.ws : var.envtype
+
+  # Protect against accidental dev or prod environment deployment by requiring
+  # variable -var="convince=true".
+  assert_accidental_deployment = regex(
+    ("${local.conf}" != "priv" && !(var.convince)) ?
+  "((Force invalid regex pattern\n\nERROR: Deployment to 'prod' or 'dev' requires variable 'convince'" : "", "")
 
   # Selects the persistent data (see ./persistent) used in the ghaf-infra
   # instance; currently either "dev" or "prod" based on the environment type:
