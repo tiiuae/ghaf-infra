@@ -59,5 +59,6 @@ in {
     git
     vim
     htop
+    tree
   ];
 }
