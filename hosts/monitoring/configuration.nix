@@ -39,24 +39,24 @@ in {
   networking = {
     hostName = "monitoring";
     firewall = {
-      allowedTCPPorts = [config.services.prometheus.port config.services.grafana.settings.server.http_port];
-      allowedUDPPorts = [config.services.prometheus.port config.services.grafana.settings.server.http_port];
+      allowedTCPPorts = [
+        config.services.prometheus.port
+        config.services.grafana.settings.server.http_port
+      ];
+      allowedUDPPorts = [
+        config.services.prometheus.port
+        config.services.grafana.settings.server.http_port
+      ];
     };
   };
 
-  environment.systemPackages = [
-    sshified
-  ];
-
-  users.users."sshified" = {
-    isNormalUser = true;
-  };
+  users.users."sshified".isNormalUser = true;
 
   services.openssh.knownHosts = {
-    "[awsarm.vedenemo.dev]:20220".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL3f7tAAO3Fc+8BqemsBQc/Yl/NmRfyhzr5SFOSKqrv0";
-    "[hetzarm.vedenemo.dev]:22".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILx4zU4gIkTY/1oKEOkf9gTJChdx/jR3lDgZ7p/c7LEK";
+    "65.21.20.242".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILx4zU4gIkTY/1oKEOkf9gTJChdx/jR3lDgZ7p/c7LEK";
   };
 
+  # runs a tiny webserver on port 8888 that tunnels requests through ssh connection
   systemd.services."sshified" = {
     wantedBy = ["multi-user.target"];
     after = ["network.target"];
@@ -66,24 +66,6 @@ in {
       ExecStart = ''
         ${sshified}/bin/sshified \
         --proxy.listen-addr 127.0.0.1:8888 \
-        --ssh.user sshified \
-        --ssh.key-file ${config.sops.secrets.sshified_private_key.path} \
-        --ssh.known-hosts-file /etc/ssh/ssh_known_hosts \
-        --ssh.port 20220 \
-        -v
-      '';
-    };
-  };
-
-  systemd.services."sshifiedhetzarm" = {
-    wantedBy = ["multi-user.target"];
-    after = ["network.target"];
-    description = "Run the sshified http-to-ssh proxy";
-    serviceConfig = {
-      User = "sshified";
-      ExecStart = ''
-        ${sshified}/bin/sshified \
-        --proxy.listen-addr 127.0.0.1:8889 \
         --ssh.user sshified \
         --ssh.key-file ${config.sops.secrets.sshified_private_key.path} \
         --ssh.known-hosts-file /etc/ssh/ssh_known_hosts \
@@ -133,7 +115,7 @@ in {
 
     scrapeConfigs = [
       {
-        job_name = "ficolo-internal-node-exporter";
+        job_name = "ficolo-internal-monitoring";
         static_configs = [
           {
             targets = ["172.18.20.102:9100"];
@@ -166,30 +148,19 @@ in {
         ];
       }
       {
-        job_name = "awsarm-ssh-node-exporter";
-        scheme = "http";
+        job_name = "ssh-monitoring";
+        # proxy the requests through our ssh tunnel
         proxy_url = "http://127.0.0.1:8888";
         static_configs = [
           {
-            targets = ["awsarm.vedenemo.dev:9100"];
-            labels = {machine_name = "awsarm";};
-          }
-        ];
-      }
-
-      {
-        job_name = "hetzarm-ssh-node-exporter";
-        scheme = "http";
-        proxy_url = "http://127.0.0.1:8889";
-        static_configs = [
-          {
-            targets = ["hetzarm.vedenemo.dev:9100"];
+            targets = ["65.21.20.242:9100"];
             labels = {machine_name = "hetzarm";};
           }
         ];
       }
     ];
   };
+
   services.nginx = {
     virtualHosts = {
       "_" = {
