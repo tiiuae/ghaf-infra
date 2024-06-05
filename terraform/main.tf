@@ -103,11 +103,16 @@ locals {
       osdisk_size_builder     = "150"
       vm_size_controller      = "Standard_E4_v5"
       osdisk_size_controller  = "150"
-      num_builders_x86        = 1
-      num_builders_aarch64    = 1
+      num_builders_x86        = 0
+      num_builders_aarch64    = 0
       # 'priv' and 'dev' environments use the same binary cache signing key
       binary_cache_public_key = "ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I="
       binary_cache_url        = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
+      ext_builder_machines = [
+        "ssh://remote-build@builder.vedenemo.dev x86_64-linux /etc/secrets/remote-build-ssh-key 64 3 kvm,nixos-test,benchmark,big-parallel - -",
+        "ssh://remote-build@hetzarm.vedenemo.dev aarch64-linux /etc/secrets/remote-build-ssh-key 80 3 kvm,nixos-test,benchmark,big-parallel - -"
+      ]
+      ext_builder_keyscan = ["builder.vedenemo.dev", "hetzarm.vedenemo.dev"]
     }
     dev = {
       vm_size_binarycache     = "Standard_D2_v3"
@@ -117,11 +122,16 @@ locals {
       osdisk_size_builder     = "250"
       vm_size_controller      = "Standard_E4_v5"
       osdisk_size_controller  = "1000"
-      num_builders_x86        = 1
-      num_builders_aarch64    = 1
+      num_builders_x86        = 0
+      num_builders_aarch64    = 0
       # 'priv' and 'dev' environments use the same binary cache signing key
       binary_cache_public_key = "ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I="
       binary_cache_url        = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
+      ext_builder_machines = [
+        "ssh://remote-build@builder.vedenemo.dev x86_64-linux /etc/secrets/remote-build-ssh-key 64 3 kvm,nixos-test,benchmark,big-parallel - -",
+        "ssh://remote-build@hetzarm.vedenemo.dev aarch64-linux /etc/secrets/remote-build-ssh-key 80 3 kvm,nixos-test,benchmark,big-parallel - -"
+      ]
+      ext_builder_keyscan = ["builder.vedenemo.dev", "hetzarm.vedenemo.dev"]
     }
     prod = {
       vm_size_binarycache     = "Standard_D2_v3"
@@ -135,6 +145,8 @@ locals {
       num_builders_aarch64    = 1
       binary_cache_public_key = "ghaf-infra-prod:DIrhJsqehIxjuUQ93Fqx6gmo4cDgn5srW5dedvMbqD0="
       binary_cache_url        = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
+      ext_builder_machines    = []
+      ext_builder_keyscan     = []
     }
   }
 

@@ -64,10 +64,7 @@ module "jenkins_controller_vm" {
         content = join("\n", concat(
           [for ip in toset(module.builder_vm[*].virtual_machine_ip_address) : "ssh://remote-build@${ip} x86_64-linux /etc/secrets/remote-build-ssh-key 10 1 kvm,nixos-test,benchmark,big-parallel - -"],
           [for ip in toset(module.arm_builder_vm[*].virtual_machine_ip_address) : "ssh://remote-build@${ip} aarch64-linux /etc/secrets/remote-build-ssh-key 8 1 kvm,nixos-test,benchmark,big-parallel - -"],
-          (var.envtype == "dev" || var.envtype == "priv") ? [
-            "ssh://remote-build@builder.vedenemo.dev x86_64-linux /etc/secrets/remote-build-ssh-key 64 3 kvm,nixos-test,benchmark,big-parallel - -",
-            "ssh://remote-build@hetzarm.vedenemo.dev aarch64-linux /etc/secrets/remote-build-ssh-key 80 3 kvm,nixos-test,benchmark,big-parallel - -"
-          ] : []
+          local.opts[local.conf].ext_builder_machines,
         )),
         "path" = "/etc/nix/machines"
       },
@@ -76,7 +73,7 @@ module "jenkins_controller_vm" {
         content = join("\n", toset(concat(
           module.builder_vm[*].virtual_machine_ip_address,
           module.arm_builder_vm[*].virtual_machine_ip_address,
-          (var.envtype == "dev" || var.envtype == "priv") ? ["builder.vedenemo.dev", "hetzarm.vedenemo.dev"] : []
+          local.opts[local.conf].ext_builder_keyscan,
         ))),
         "path" = "/var/lib/builder-keyscan/scanlist"
       },
