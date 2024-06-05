@@ -263,6 +263,13 @@
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPOiqwFk/BR8SKxrDAqadlnEQt5oLBaMyoZL3IQv0Nfj yuriy.nesterov@unikie.com"
       ];
     }
+    {
+      desc = "Temporary user for Azure dev remote builds on hetzarm and ficolo";
+      name = "remote-build";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM2rhqSdifRmTwyrc3rvXWyDMznrIAAkVwhEsufLYiTp"
+      ];
+    }
   ];
 in {
   users = {
