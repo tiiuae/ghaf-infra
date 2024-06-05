@@ -113,6 +113,8 @@ in {
     webExternalUrl = "http://${public-ip}:${toString config.services.prometheus.port}";
     checkConfig = true;
 
+    globalConfig.scrape_interval = "15s";
+
     scrapeConfigs = [
       {
         job_name = "ficolo-internal-monitoring";
