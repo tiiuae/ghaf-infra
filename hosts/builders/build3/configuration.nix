@@ -40,7 +40,7 @@
       {
         hostName = "hetzarm.vedenemo.dev";
         system = "aarch64-linux";
-        maxJobs = 80;
+        maxJobs = 40;
         speedFactor = 1;
         supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
         mandatoryFeatures = [];

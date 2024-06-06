@@ -109,8 +109,8 @@ locals {
       binary_cache_public_key = "ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I="
       binary_cache_url        = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
       ext_builder_machines = [
-        "ssh://remote-build@builder.vedenemo.dev x86_64-linux /etc/secrets/remote-build-ssh-key 64 3 kvm,nixos-test,benchmark,big-parallel - -",
-        "ssh://remote-build@hetzarm.vedenemo.dev aarch64-linux /etc/secrets/remote-build-ssh-key 80 3 kvm,nixos-test,benchmark,big-parallel - -"
+        "ssh://remote-build@builder.vedenemo.dev x86_64-linux /etc/secrets/remote-build-ssh-key 32 3 kvm,nixos-test,benchmark,big-parallel - -",
+        "ssh://remote-build@hetzarm.vedenemo.dev aarch64-linux /etc/secrets/remote-build-ssh-key 40 3 kvm,nixos-test,benchmark,big-parallel - -"
       ]
       ext_builder_keyscan = ["builder.vedenemo.dev", "hetzarm.vedenemo.dev"]
     }
@@ -128,8 +128,8 @@ locals {
       binary_cache_public_key = "ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I="
       binary_cache_url        = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
       ext_builder_machines = [
-        "ssh://remote-build@builder.vedenemo.dev x86_64-linux /etc/secrets/remote-build-ssh-key 64 3 kvm,nixos-test,benchmark,big-parallel - -",
-        "ssh://remote-build@hetzarm.vedenemo.dev aarch64-linux /etc/secrets/remote-build-ssh-key 80 3 kvm,nixos-test,benchmark,big-parallel - -"
+        "ssh://remote-build@builder.vedenemo.dev x86_64-linux /etc/secrets/remote-build-ssh-key 32 3 kvm,nixos-test,benchmark,big-parallel - -",
+        "ssh://remote-build@hetzarm.vedenemo.dev aarch64-linux /etc/secrets/remote-build-ssh-key 40 3 kvm,nixos-test,benchmark,big-parallel - -"
       ]
       ext_builder_keyscan = ["builder.vedenemo.dev", "hetzarm.vedenemo.dev"]
     }
