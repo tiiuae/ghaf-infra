@@ -63,7 +63,15 @@
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPf56a3ISY64w0Y0BmoLu+RyTIWQrXG6ugla6if9RteT build3"
       ];
     };
+
+    # github actions runners can use this user to remote build
+    github = {
+      isNormalUser = true;
+      openssh.authorizedKeys.keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH/KOBOKqZwugt7Yi6ZFhr6ZF2j9kzyqnl+v7eRlxPoq"
+      ];
+    };
   };
 
-  nix.settings.trusted-users = ["@wheel" "build3"];
+  nix.settings.trusted-users = ["@wheel" "build3" "github"];
 }
