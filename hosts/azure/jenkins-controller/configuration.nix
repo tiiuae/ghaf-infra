@@ -115,23 +115,19 @@ in {
       nixJobs = [
         {
           job = {
-            name = "ghaf-pipeline";
+            name = "ghaf-main-pipeline";
             project-type = "pipeline";
             pipeline-scm = {
               scm = [
                 {
                   git = {
-                    # TODO: eventually the Jenkins pipeline script should probably
-                    # be part of Ghaf repo at: https://github.com/tiiuae/ghaf,
-                    # but we are not ready for that yet. For now, we read the
-                    # Jenkinsfile from the following repo:
                     url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
                     clean = true;
                     branches = ["*/main"];
                   };
                 }
               ];
-              script-path = "ghaf-build-pipeline.groovy";
+              script-path = "ghaf-main-pipeline.groovy";
               lightweight-checkout = true;
             };
           };
@@ -169,7 +165,7 @@ in {
                   };
                 }
               ];
-              script-path = "ghaf-nightly-parallel.groovy";
+              script-path = "ghaf-nightly-pipeline.groovy";
               lightweight-checkout = true;
             };
           };
