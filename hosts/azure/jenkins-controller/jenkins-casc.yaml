@@ -24,7 +24,7 @@ jenkins:
       freeSpaceThreshold: "1GB"
   - tmpSpace:
       freeSpaceThreshold: "1GB"
-  numExecutors: 2
+  numExecutors: 1
   primaryView:
     all:
       name: "all"
