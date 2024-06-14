@@ -1,23 +1,62 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 
-name: Test ghaf-infra
+name: Run pre-push checks
 
 on:
   push:
     branches:
       - main
-  pull_request:
+  pull_request_target:
     branches:
       - main
 
 jobs:
-  tests:
+  # Checks if the author of pull request is in our predefined list of authorized users
+  check-identity:
+    runs-on: ubuntu-latest
+    outputs:
+      authorized_user: ${{ steps.check-authorized-user.outputs.authorized_user}}
+    environment: 'internal'
+    steps:
+      - name: Check identity
+        id: check-authorized-user
+        shell: bash
+        run: |
+          # AUTHORIZED_USERS is a newline separated list of usernames
+          if echo "${{ vars.AUTHORIZED_USERS }}" | grep -F -x -q "${{ github.actor }}"; then
+            echo "authorized_user=True" >> "$GITHUB_OUTPUT"
+          else
+            echo "authorized_user=False" >> "$GITHUB_OUTPUT"
+          fi
+  
+  # Authorization passes without approval if
+  # - the event is not a pull request (eg. push to main)
+  # - pull request comes from another branch in the same repo
+  # - author is in our predefined list of authorized users
+  # If none of these conditions are met, the workflow requires 
+  # manual approval from a maintainer with write permissions to continue
+  authorize:
+    needs: [check-identity]
+    environment: ${{ 
+      ( github.event_name != 'pull_request_target' ||
+        github.event.pull_request.head.repo.full_name == github.repository || 
+        needs.check-identity.outputs.authorized_user == 'True' )
+      && 'internal' || 'external' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - run: true
 
-      - uses: cachix/install-nix-action@v22
+  tests:
+    # Don't run unless authorization was successful
+    needs: [authorize]
+    if: ${{ always() && needs.authorize.result == 'success' }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v27
         with:
           extra_nix_config: |
             trusted-public-keys = cache.vedenemo.dev:8NhplARANhClUSWJyLVk4WMyy1Wb4rhmWW2u8AejH9E= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
