@@ -45,7 +45,36 @@ jobs:
       && 'internal' || 'external' }}
     runs-on: ubuntu-latest
     steps:
-      - run: true
+      - run: echo "Auth OK"
+
+  # Send a warning and fail this job if the workflow file was changed.
+  # Rest of the workflow continues as normal but the job failure will grab author's attention.
+  no-workflow-changes:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request_target' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          fetch-depth: 0
+
+      - name: Check if workflow is modified
+        id: workflow-changed
+        uses: tj-actions/changed-files@v40
+        with:
+          files: .github/workflows/test-ghaf-infra.yml
+
+      - name: Send warning
+        run: |
+          if [ "${{ steps.workflow-changed.outputs.any_changed }}" == "true" ]; then
+            echo "::error::"\
+                 "This change edits workflow file '.github/workflows/test-ghaf-infra.yml'."\
+                 "Raising this error to notify that the workflow change will only take impact after merge."\
+                 "Therefore, you need to manually test the change (perhaps in a forked repo) "\
+                 "before merging to make sure the change does not break anything."
+
+            exit 1
+          fi
 
   tests:
     # Don't run unless authorization was successful
@@ -55,6 +84,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+            ref: ${{ github.event.pull_request.head.sha || github.ref }}
+            fetch-depth: 0
 
       - uses: cachix/install-nix-action@v27
         with:
