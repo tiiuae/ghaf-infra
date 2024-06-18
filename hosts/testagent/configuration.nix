@@ -100,6 +100,7 @@ in {
       pkgs.iputils
       pkgs.netcat
       pkgs.python3
+      pkgs.wget
       brainstem
       inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
     ];
