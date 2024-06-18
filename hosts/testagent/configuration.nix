@@ -12,6 +12,17 @@
 }: let
   # Vendored in until our nixpkgs pin includes https://github.com/NixOS/nixpkgs/pull/302833.
   brainstem = pkgs.callPackage ./brainstem.nix {};
+  jenkins-connection-script = pkgs.writeScript "jenkins-connect.sh" ''
+    #!/usr/bin/env bash
+    set -eu
+    if [ ! -f agent.jar ]; then echo "Error: /var/lib/jenkins/agent.jar not found"; exit 1; fi;
+    if [ ! -f secret-file ]; then echo "Error: /var/lib/jenkins/secret-file not found"; exit 1; fi;
+    ${pkgs.jdk}/bin/java \
+      -jar agent.jar \
+      -jnlpUrl https://ghaf-jenkins-controller-villepekkajuntun.northeurope.cloudapp.azure.com/computer/testagent/jenkins-agent.jnlp \
+      -secret @secret-file \
+      -workDir "/var/lib/jenkins"
+  '';
 in {
   imports =
     [
@@ -108,9 +119,13 @@ in {
       Type = "simple";
       User = "jenkins";
       WorkingDirectory = "/var/lib/jenkins";
-      ExecStart = ''${pkgs.jdk}/bin/java -jar agent.jar -jnlpUrl https://ghaf-jenkins-controller-villepekkajuntun.northeurope.cloudapp.azure.com/computer/testagent/jenkins-agent.jnlp -secret @secret-file -workDir "/var/lib/jenkins"'';
+      ExecStart = "${jenkins-connection-script}";
       Restart = "on-failure";
+      RestartSec = 5;
     };
+    # Give up if it fails more than 5 times in 60 second interval
+    startLimitBurst = 5;
+    startLimitIntervalSec = 60;
   };
 
   # configuration file for test hardware devices
