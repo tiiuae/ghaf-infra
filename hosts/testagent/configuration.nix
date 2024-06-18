@@ -30,6 +30,7 @@ in {
       user-flokli
       user-jrautiola
       user-mariia
+      user-hrosten
     ]);
 
   # Bootloader.
