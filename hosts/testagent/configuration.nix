@@ -19,7 +19,7 @@
     if [ ! -f secret-file ]; then echo "Error: /var/lib/jenkins/secret-file not found"; exit 1; fi;
     ${pkgs.jdk}/bin/java \
       -jar agent.jar \
-      -jnlpUrl https://ghaf-jenkins-controller-villepekkajuntun.northeurope.cloudapp.azure.com/computer/testagent/jenkins-agent.jnlp \
+      -jnlpUrl https://ghaf-jenkins-controller-dev.northeurope.cloudapp.azure.com/computer/testagent/jenkins-agent.jnlp \
       -secret @secret-file \
       -workDir "/var/lib/jenkins"
   '';
