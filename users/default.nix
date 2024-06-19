@@ -19,5 +19,8 @@
     user-flokli = import ./flokli.nix;
     user-vjuntunen = import ./vjuntunen.nix;
     user-mariia = import ./mariia.nix;
+    user-vilvo = import ./vilvo.nix;
+    user-vunnyso = import ./vunnyso.nix;
+    user-bmg = import ./bmg.nix;
   };
 }
