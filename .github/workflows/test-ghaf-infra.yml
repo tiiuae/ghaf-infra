@@ -24,12 +24,14 @@ jobs:
         shell: bash
         run: |
           # AUTHORIZED_USERS is a newline separated list of usernames
-          if echo "${{ vars.AUTHORIZED_USERS }}" | grep -F -x -q "${{ github.actor }}"; then
+          if echo "${{ vars.AUTHORIZED_USERS }}" | tr -s '[:space:]' '\n' | grep -Fxq "${{ github.actor }}"; then
+            echo "User is authorized"
             echo "authorized_user=True" >> "$GITHUB_OUTPUT"
           else
+            echo "User not authorized"
             echo "authorized_user=False" >> "$GITHUB_OUTPUT"
           fi
-  
+
   # Authorization passes without approval if
   # - the event is not a pull request (eg. push to main)
   # - pull request comes from another branch in the same repo
