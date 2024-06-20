@@ -139,7 +139,7 @@ resource "azurerm_managed_disk" "jenkins_controller_jenkins_state" {
   location             = azurerm_resource_group.infra.location
   storage_account_type = "Standard_LRS"
   create_option        = "Empty"
-  disk_size_gb         = 1000
+  disk_size_gb         = 64
 }
 
 # Grant the VM read-only access to the Azure Key Vault Secret containing the
