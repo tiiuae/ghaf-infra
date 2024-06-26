@@ -136,8 +136,8 @@ locals {
     prod = {
       vm_size_binarycache     = "Standard_D2_v3"
       osdisk_size_binarycache = "250"
-      vm_size_builder_x86     = "Standard_D16_v3"
-      vm_size_builder_aarch64 = "Standard_D16ps_v5"
+      vm_size_builder_x86     = "Standard_D64_v3"
+      vm_size_builder_aarch64 = "Standard_D64ps_v5"
       osdisk_size_builder     = "500"
       vm_size_controller      = "Standard_E4_v5"
       osdisk_size_controller  = "1000"
