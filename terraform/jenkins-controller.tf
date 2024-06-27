@@ -80,6 +80,13 @@ module "jenkins_controller_vm" {
       {
         content = "SITE_ADDRESS=ghaf-jenkins-controller-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com",
         "path"  = "/var/lib/caddy/caddy.env"
+      },
+      # JENKINS_URL is read from this file by JCasC plugin
+      # Configuration: hosts/azure/jenkins-controller/jenkins-casc.yaml
+      # Value: jenkins: unclassified: location: url
+      {
+        content = "https://ghaf-jenkins-controller-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com",
+        "path"  = "/var/lib/jenkins-casc/url"
       }
     ]
   })])
