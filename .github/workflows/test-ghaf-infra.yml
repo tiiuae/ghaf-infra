@@ -100,6 +100,11 @@ jobs:
             builders-use-substitutes = true
             builders = @/etc/nix/machines
 
+      - uses: cachix/cachix-action@v15
+        with:
+          name: ghaf-dev
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
       - name: Configure remote builders
         run: |
           sudo sh -c "umask 377; echo '${{ secrets.BUILDER_SSH_KEY }}' >/etc/nix/id_builder_key"
