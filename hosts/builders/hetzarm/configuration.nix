@@ -12,6 +12,7 @@
     [
       ./disk-config.nix
       ../developers.nix
+      ../builders-common.nix
       inputs.disko.nixosModules.disko
       inputs.sops-nix.nixosModules.sops
     ]

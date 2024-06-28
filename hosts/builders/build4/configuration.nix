@@ -6,6 +6,7 @@
       ../ficolo.nix
       ../cross-compilation.nix
       ../yubikey.nix
+      ../builders-common.nix
     ]
     ++ (with self.nixosModules; [
       user-themisto
