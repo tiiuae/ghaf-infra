@@ -3,6 +3,7 @@ SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 
+
 # Ghaf Infra
 This repository contains NixOS configurations for the [Ghaf](https://github.com/tiiuae/ghaf) CI/CD infrastructure.
 
