@@ -26,3 +26,5 @@ vjuntunen:
  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINEaLCXGOAwSlCqd+X5kQcEtntnVNUZe+lFcugyiNkzF vjuntunen@jenkins-controller
 ktu:
  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBeMFr++WulL/hQKejDnE1ePRQscLp7LvLAy/DyLW4AU
+ alextserepov:
+ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJvQdncdNCFMw7f0Xln40H/u0fJp82tVrQMEHtSdvP6m aleksandr.tserepov-savolainen@unikie.com
