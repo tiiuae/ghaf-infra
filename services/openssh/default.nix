@@ -13,7 +13,6 @@
       KbdInteractiveAuthentication = false;
       PasswordAuthentication = false;
       ClientAliveInterval = lib.mkDefault 60;
-      LoginGraceTime = 0;
     };
 
     # Only allow ed25519 keys
