@@ -5,6 +5,7 @@
   inputs,
   modulesPath,
   lib,
+  config,
   ...
 }: {
   sops.defaultSopsFile = ./secrets.yaml;
@@ -15,10 +16,12 @@
       (modulesPath + "/profiles/qemu-guest.nix")
       inputs.sops-nix.nixosModules.sops
       inputs.disko.nixosModules.disko
+      ./loki.nix
     ]
     ++ (with self.nixosModules; [
       common
       service-openssh
+      service-nginx
       user-jrautiola
       user-cazfi
       user-hrosten
@@ -36,6 +39,16 @@
   networking = {
     hostName = "ghaf-log";
     useDHCP = true;
+    firewall = {
+      allowedTCPPorts = [
+        config.services.grafana.settings.server.http_port
+        config.services.loki.configuration.server.http_listen_port
+      ];
+      allowedUDPPorts = [
+        config.services.grafana.settings.server.http_port
+        config.services.loki.configuration.server.http_listen_port
+      ];
+    };
   };
 
   boot = {
@@ -49,4 +62,50 @@
 
   # this server has been reinstalled with 24.05
   system.stateVersion = lib.mkForce "24.05";
+
+  # Grafana
+  services.grafana = {
+    enable = true;
+
+    settings = {
+      server = {
+        http_port = 3000;
+        http_addr = "127.0.0.1";
+      };
+
+      # disable telemetry
+      analytics = {
+        reporting_enabled = false;
+        feedback_links_enabled = false;
+      };
+    };
+
+    provision.datasources.settings.datasources = [
+      {
+        name = "loki";
+        type = "loki";
+        isDefault = true;
+        url = "http://${config.services.grafana.settings.server.http_addr}:${toString config.services.loki.configuration.server.http_listen_port}";
+      }
+    ];
+  };
+
+  security.acme = {
+    acceptTerms = true;
+    defaults.email = "trash@unikie.com";
+  };
+
+  services.nginx = {
+    virtualHosts = {
+      "ghaflogs.vedenemo.dev" = {
+        enableACME = true;
+        forceSSL = true;
+        default = true;
+        locations."/" = {
+          proxyPass = "http://${config.services.grafana.settings.server.http_addr}:${toString config.services.grafana.settings.server.http_port}";
+          proxyWebsockets = true;
+        };
+      };
+    };
+  };
 }
