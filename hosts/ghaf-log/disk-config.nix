@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   disko.devices.disk = {
-    sda = {
-      device = "/dev/sda";
+    os = {
+      device = "/dev/disk/by-path/pci-0000:06:00.0-scsi-0:0:0:0";
       type = "disk";
       content = {
         type = "gpt";
