@@ -192,6 +192,25 @@ in {
             };
           };
         }
+        {
+          job = {
+            name = "fmo-os-main-pipeline";
+            project-type = "pipeline";
+            pipeline-scm = {
+              scm = [
+                {
+                  git = {
+                    url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
+                    clean = true;
+                    branches = ["*/main"];
+                  };
+                }
+              ];
+              script-path = "fmo-os-main-pipeline.groovy";
+              lightweight-checkout = true;
+            };
+          };
+        }
       ];
     };
   };
