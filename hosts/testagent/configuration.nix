@@ -131,13 +131,49 @@ in {
   # configuration file for test hardware devices
   environment.etc."jenkins/test_config.json".text = builtins.toJSON {
     addresses = {
+      NUC1 = {
+        serial_port = "NONE";
+        device_ip_address = "172.18.16.50";
+        socket_ip_address = "172.18.16.30";
+        plug_type = "TAPOP100";
+        location = "testagent";
+        usbhub_serial = "F0A0D6CF";
+        threads = 8;
+      };
       OrinAGX1 = {
         serial_port = "/dev/ttyACM0";
-        device_ip_address = "172.18.16.54";
-        socket_ip_address = "172.18.16.74";
+        device_ip_address = "172.18.16.36";
+        socket_ip_address = "172.18.16.31";
+        plug_type = "TAPOP100";
+        location = "testagent";
+        usbhub_serial = "92D8AEB7";
+        threads = 8;
+      };
+      LenovoX1-1 = {
+        serial_port = "NONE";
+        device_ip_address = "172.18.16.66";
+        socket_ip_address = "NONE";
+        plug_type = "NONE";
+        location = "testagent";
+        usbhub_serial = "641B6D74";
+        threads = 20;
+      };
+      Polarfire1 = {
+        serial_port = "/dev/ttyUSB3";
+        device_ip_address = "";
+        socket_ip_address = "172.18.16.45";
         plug_type = "TAPOP100v2";
         location = "testagent";
-        usbhub_serial = "0x2954223B";
+        usb_sd_mux_port = "/dev/sg1";
+        threads = 4;
+      };
+      OrinNX1 = {
+        serial_port = "/dev/ttyORINNX1";
+        device_ip_address = "172.18.16.44";
+        socket_ip_address = "172.18.16.43";
+        plug_type = "TAPOP100v2";
+        location = "testagent";
+        usbhub_serial = "5220564F";
         threads = 8;
       };
     };
