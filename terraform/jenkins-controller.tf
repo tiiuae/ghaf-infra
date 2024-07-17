@@ -32,7 +32,7 @@ module "jenkins_controller_vm" {
 
   virtual_machine_custom_data = join("\n", ["#cloud-config", yamlencode({
     users = [
-      for user in toset(["hrosten"]) : {
+      for user in toset(["hrosten", "fayad", "akhil"]) : {
         name                = user
         sudo                = "ALL=(ALL) NOPASSWD:ALL"
         ssh_authorized_keys = local.ssh_keys[user]
