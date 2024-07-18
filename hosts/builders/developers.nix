@@ -72,6 +72,20 @@
       ];
     }
     {
+      desc = "Eugeny Popko";
+      name = "eugeny";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP3EUPo+XgxgbgnG8ocGiKwI+FME5HgLYXdCwxETDC92 eugeny.popko@tii.ae"
+      ];
+    }
+    {
+      desc = "Fouzia Hussain";
+      name = "fouzia";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICaNgsqHtgLhIRb7HlLHKhO1upnULaENOC4Kgp5wPuBE fouzia.hussain@tii.ae"
+      ];
+    }
+    {
       desc = "Grigoriy Romanov";
       name = "grihey";
       keys = [
@@ -184,6 +198,13 @@
       ];
     }
     {
+      desc = "Malavika Balakrishnan";
+      name = "malavika";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFupULSDNZFi+5AtdkAMmVgFj3EaBGks+QSAIcbb9UgS malavika.balakrishnan@tii.ae"
+      ];
+    }
+    {
       desc = "Milla Valio";
       name = "milval";
       keys = [
@@ -195,6 +216,20 @@
       name = "mtpaasto";
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDvu5b+k0eKoNE8QiocGaWqKq+E7apIHIie1Va5TM6yE mtpaasto"
+      ];
+    }
+    {
+      desc = "Rajkumar Ramasamy";
+      name = "rajkumar";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAmYFfUPwKkBybdsmjDi4irJMO//2A+sRPZSLOkDvDQN rajkumar.ramasamy@tii.ae"
+      ];
+    }
+    {
+      desc = "Renzo Bruzzone";
+      name = "renzo";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ/e7vfzx0Sma0BtchhpQAlmAuIUiC11eWi7hOQiItZR renzo.bruzzone@tii.ae"
       ];
     }
     {
@@ -211,6 +246,13 @@
       name = "rockola";
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOarfl/tww9HCteqvhB6UzbUJU1eC1n+YQUHY+M7l7V4 ola@sorvi"
+      ];
+    }
+    {
+      desc = "Omais Pandith";
+      name = "omais";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKU0fEolhcsUoUpTNn/sPoN1FYrwPbAyapahTneBkRfG omais.shafi@tii.ae"
       ];
     }
     {
@@ -232,6 +274,13 @@
       name = "shamma";
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM3w7NzqMuF+OAiIcYWyP9+J3kwvYMKQ+QeY9J8QjAXm shamma-alblooshi@tii.ae"
+      ];
+    }
+    {
+      desc = "Srikar Nayanara";
+      name = "Srikar";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE5wkbghZvvAps3jejIx4eKTzKx2cC/GjDMOoVvH3V2r root@nixos"
       ];
     }
     {
