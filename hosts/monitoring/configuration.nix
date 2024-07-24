@@ -162,6 +162,10 @@ in {
             targets = ["65.21.20.242:9100"];
             labels = {machine_name = "hetzarm";};
           }
+          {
+            targets = ["95.217.177.197:9100"];
+            labels = {machine_name = "ghaf-log";};
+          }
         ];
       }
     ];

@@ -22,6 +22,7 @@
       common
       service-openssh
       service-nginx
+      service-node-exporter
       user-jrautiola
       user-cazfi
       user-hrosten
@@ -49,6 +50,14 @@
         config.services.loki.configuration.server.http_listen_port
       ];
     };
+  };
+
+  # sshified user for monitoring server to log in as
+  users.users.sshified = {
+    isNormalUser = true;
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEKd30t0EFmMyULGlecaUX6puIAF4IjynZUo+X9k8h69 monitoring"
+    ];
   };
 
   boot = {
