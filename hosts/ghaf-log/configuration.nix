@@ -34,22 +34,15 @@
       user-vunnyso
     ]);
 
+  # basic auth credentials generated with htpasswd
+  sops.secrets.loki_basic_auth.owner = "nginx";
+
   nixpkgs.hostPlatform = "x86_64-linux";
   hardware.enableRedistributableFirmware = true;
 
   networking = {
     hostName = "ghaf-log";
     useDHCP = true;
-    firewall = {
-      allowedTCPPorts = [
-        config.services.grafana.settings.server.http_port
-        config.services.loki.configuration.server.http_listen_port
-      ];
-      allowedUDPPorts = [
-        config.services.grafana.settings.server.http_port
-        config.services.loki.configuration.server.http_listen_port
-      ];
-    };
   };
 
   # sshified user for monitoring server to log in as
@@ -94,7 +87,7 @@
         name = "loki";
         type = "loki";
         isDefault = true;
-        url = "http://${config.services.grafana.settings.server.http_addr}:${toString config.services.loki.configuration.server.http_listen_port}";
+        url = "http://${config.services.loki.configuration.server.http_listen_address}:${toString config.services.loki.configuration.server.http_listen_port}";
       }
     ];
   };
@@ -112,6 +105,15 @@
         default = true;
         locations."/" = {
           proxyPass = "http://${config.services.grafana.settings.server.http_addr}:${toString config.services.grafana.settings.server.http_port}";
+          proxyWebsockets = true;
+        };
+      };
+      "loki.ghaflogs.vedenemo.dev" = {
+        enableACME = true;
+        forceSSL = true;
+        basicAuthFile = config.sops.secrets.loki_basic_auth.path;
+        locations."/" = {
+          proxyPass = "http://${config.services.loki.configuration.server.http_listen_address}:${toString config.services.loki.configuration.server.http_listen_port}";
           proxyWebsockets = true;
         };
       };
