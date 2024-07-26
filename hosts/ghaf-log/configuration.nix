@@ -73,12 +73,22 @@
       server = {
         http_port = 3000;
         http_addr = "127.0.0.1";
+        domain = "ghaflogs.vedenemo.dev";
+        enforce_domain = true;
       };
 
       # disable telemetry
       analytics = {
         reporting_enabled = false;
         feedback_links_enabled = false;
+      };
+
+      # https://grafana.com/docs/grafana/latest/setup-grafana/configure-security/configure-security-hardening
+      security = {
+        cookie_secure = true;
+        cookie_samesite = "strict";
+        login_cookie_name = "__Host-grafana_session";
+        strict_transport_security = true;
       };
     };
 
@@ -99,7 +109,7 @@
 
   services.nginx = {
     virtualHosts = {
-      "ghaflogs.vedenemo.dev" = {
+      "${config.services.grafana.settings.server.domain}" = {
         enableACME = true;
         forceSSL = true;
         default = true;
@@ -108,7 +118,8 @@
           proxyWebsockets = true;
         };
       };
-      "loki.ghaflogs.vedenemo.dev" = {
+
+      "loki.${config.services.grafana.settings.server.domain}" = {
         enableACME = true;
         forceSSL = true;
         basicAuthFile = config.sops.secrets.loki_basic_auth.path;
