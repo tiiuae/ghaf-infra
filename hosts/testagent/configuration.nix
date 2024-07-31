@@ -144,7 +144,7 @@ in {
         serial_port = "/dev/ttyACM0";
         device_ip_address = "172.18.16.36";
         socket_ip_address = "172.18.16.31";
-        plug_type = "TAPOP100";
+        plug_type = "TAPOP100v2";
         location = "testagent";
         usbhub_serial = "92D8AEB7";
         threads = 8;
