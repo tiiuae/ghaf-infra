@@ -291,6 +291,14 @@
       ];
     }
     {
+      desc = "Tero Tervala";
+      name = "tervis";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDJau0tg0qHhqFVarjNOJLi+ekSZNNqxal4iRD/pwM5W tervis@tervis-thinkpad"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAHVXc4s7e8j1uFsgHPBzpWvSI/hk5Zf6Btuj79D4hf3 tervis@tervis-servu"
+      ];
+    }
+    {
       desc = "Vadim Likholetov";
       name = "vadikas";
       keys = [

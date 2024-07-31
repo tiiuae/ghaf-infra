@@ -20,7 +20,6 @@
       user-hrosten
       user-jrautiola
       user-mkaapu
-      user-tervis
       user-karim
       user-mika
     ]);

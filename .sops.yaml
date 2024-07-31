@@ -7,7 +7,6 @@ keys:
   - &hrosten age1hc6hszepd5xezxkgd3yx74pn3scxjm5w6px48m4rq9yj7w6rke7q72zhgn
   - &karim age122lvqyrdqz30fkfututykl0yle9u63u2em6e4aut7e5draws83ns3npt3a
   - &jrautiola age1hszrldafdz09hzze4lgq58r0r66p4sjftn6q8z6h0leer77jhf4qd9vu9v
-  - &tervis age1ehmv0gg6xmj8nguakmj6tnhdhphjfnfwzpfshfupcrv67djn49hqzehl6y
   - &vjuntunen age194hljejmy63ph884cnuuume7z33txlkp9an7l3yt2n3sjjere52qkvlfju
 
   # hosts
@@ -27,32 +26,32 @@ creation_rules:
   - path_regex: hosts/binarycache/secrets.yaml$
     key_groups:
     - age:
-      - *jrautiola
       - *binarycache
+      - *jrautiola
   - path_regex: hosts/monitoring/secrets.yaml$
     key_groups:
     - age:
-      - *jrautiola
       - *monitoring
+      - *jrautiola
   - path_regex: hosts/testagent/secrets.yaml$
     key_groups:
     - age:
-      - *tervis
+      - *testagent
+      - *jrautiola
       - *flokli
       - *vjuntunen
-      - *testagent
   - path_regex: hosts/builders/build3/secrets.yaml$
     key_groups:
     - age:
-      - *jrautiola
       - *build3
+      - *jrautiola
   - path_regex: hosts/builders/hetzarm/secrets.yaml$
     key_groups:
     - age:
-      - *jrautiola
       - *hetzarm
+      - *jrautiola
   - path_regex: hosts/ghaf-log/secrets.yaml$
     key_groups:
     - age:
-      - *jrautiola
       - *ghaf-log
+      - *jrautiola
