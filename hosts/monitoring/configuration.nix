@@ -30,7 +30,6 @@ in {
       service-nginx
       service-node-exporter
       user-jrautiola
-      user-tervis
       user-karim
     ]);
 

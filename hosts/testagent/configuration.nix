@@ -36,7 +36,6 @@ in {
     ++ (with self.nixosModules; [
       common
       service-openssh
-      user-tervis
       user-vjuntunen
       user-flokli
       user-jrautiola
