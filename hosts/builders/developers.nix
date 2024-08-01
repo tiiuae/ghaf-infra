@@ -6,6 +6,13 @@
   # add new developers here
   developers = [
     {
+      desc = "Aleksi Sitomaniemi";
+      name = "aleksi";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMse5t/NY8NTs8TUwCWMtlZNU/6HD/p/qDPpmJxXA+uN root@aleksi-ThinkPad-T14-Gen-1"
+      ];
+    }
+    {
       desc = "Alexander Nikolaev";
       name = "avnik";
       keys = [
