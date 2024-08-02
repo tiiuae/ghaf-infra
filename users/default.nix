@@ -11,7 +11,6 @@
     user-mkaapu = import ./mkaapu.nix;
     user-karim = import ./karim.nix;
     user-themisto = import ./themisto.nix;
-    user-tervis = import ./tervis.nix;
     user-barna = import ./barna.nix;
     user-mika = import ./mika.nix;
     user-ktu = import ./ktu.nix;
@@ -19,5 +18,8 @@
     user-flokli = import ./flokli.nix;
     user-vjuntunen = import ./vjuntunen.nix;
     user-mariia = import ./mariia.nix;
+    user-vilvo = import ./vilvo.nix;
+    user-vunnyso = import ./vunnyso.nix;
+    user-bmg = import ./bmg.nix;
   };
 }

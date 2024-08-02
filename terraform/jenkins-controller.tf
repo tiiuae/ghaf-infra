@@ -32,7 +32,7 @@ module "jenkins_controller_vm" {
 
   virtual_machine_custom_data = join("\n", ["#cloud-config", yamlencode({
     users = [
-      for user in toset(["bmg", "flokli", "hrosten", "jrautiola", "mkaapu", "mika", "karim", "tervis", "cazfi", "vjuntunen", "ktu"]) : {
+      for user in toset(["bmg", "flokli", "hrosten", "jrautiola", "mkaapu", "mika", "karim", "cazfi", "vjuntunen", "ktu"]) : {
         name                = user
         sudo                = "ALL=(ALL) NOPASSWD:ALL"
         ssh_authorized_keys = local.ssh_keys[user]
@@ -62,8 +62,8 @@ module "jenkins_controller_vm" {
       # changed.
       {
         content = join("\n", concat(
-          [for ip in toset(module.builder_vm[*].virtual_machine_ip_address) : "ssh://remote-build@${ip} x86_64-linux /etc/secrets/remote-build-ssh-key 10 1 kvm,nixos-test,benchmark,big-parallel - -"],
-          [for ip in toset(module.arm_builder_vm[*].virtual_machine_ip_address) : "ssh://remote-build@${ip} aarch64-linux /etc/secrets/remote-build-ssh-key 8 1 kvm,nixos-test,benchmark,big-parallel - -"],
+          [for ip in toset(module.builder_vm[*].virtual_machine_ip_address) : "ssh://remote-build@${ip} x86_64-linux /etc/secrets/remote-build-ssh-key 16 1 kvm,nixos-test,benchmark,big-parallel - -"],
+          [for ip in toset(module.arm_builder_vm[*].virtual_machine_ip_address) : "ssh://remote-build@${ip} aarch64-linux /etc/secrets/remote-build-ssh-key 16 1 kvm,nixos-test,benchmark,big-parallel - -"],
           local.opts[local.conf].ext_builder_machines,
         )),
         "path" = "/etc/nix/machines"
@@ -80,6 +80,13 @@ module "jenkins_controller_vm" {
       {
         content = "SITE_ADDRESS=ghaf-jenkins-controller-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com",
         "path"  = "/var/lib/caddy/caddy.env"
+      },
+      # JENKINS_URL is read from this file by JCasC plugin
+      # Configuration: hosts/azure/jenkins-controller/jenkins-casc.yaml
+      # Value: jenkins: unclassified: location: url
+      {
+        content = "https://ghaf-jenkins-controller-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com",
+        "path"  = "/var/lib/jenkins-casc/url"
       }
     ]
   })])
@@ -139,7 +146,7 @@ resource "azurerm_managed_disk" "jenkins_controller_jenkins_state" {
   location             = azurerm_resource_group.infra.location
   storage_account_type = "Standard_LRS"
   create_option        = "Empty"
-  disk_size_gb         = 1000
+  disk_size_gb         = 64
 }
 
 # Grant the VM read-only access to the Azure Key Vault Secret containing the

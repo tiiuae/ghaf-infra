@@ -15,6 +15,7 @@
       ../cross-compilation.nix
       ../developers.nix
       ../yubikey.nix
+      ../builders-common.nix
       inputs.sops-nix.nixosModules.sops
     ]
     ++ (with self.nixosModules; [
