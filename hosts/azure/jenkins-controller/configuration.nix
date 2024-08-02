@@ -104,6 +104,9 @@ in {
     extraJavaOptions = [
       # Useful when the 'sh' step fails:
       "-Dorg.jenkinsci.plugins.durabletask.BourneShellScript.LAUNCH_DIAGNOSTICS=true"
+      # If we want to allow robot framework reports, we need to adjust Jenkins CSP:
+      # https://plugins.jenkins.io/robot/#plugin-content-log-file-not-showing-properly
+      "-Dhudson.model.DirectoryBrowserSupport.CSP=\"sandbox allow-scripts; default-src 'none'; img-src 'self' data: ; style-src 'self' 'unsafe-inline' data: ; script-src 'self' 'unsafe-inline' 'unsafe-eval';\""
       # Point to configuration-as-code config
       "-Dcasc.jenkins.config=${jenkins-casc}"
     ];
@@ -170,6 +173,44 @@ in {
             };
           };
         }
+        {
+          job = {
+            name = "ghaf-test-boot";
+            project-type = "pipeline";
+            pipeline-scm = {
+              scm = [
+                {
+                  git = {
+                    url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
+                    clean = true;
+                    branches = ["*/main"];
+                  };
+                }
+              ];
+              script-path = "ghaf-test-boot.groovy";
+              lightweight-checkout = true;
+            };
+          };
+        }
+        {
+          job = {
+            name = "fmo-os-main-pipeline";
+            project-type = "pipeline";
+            pipeline-scm = {
+              scm = [
+                {
+                  git = {
+                    url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
+                    clean = true;
+                    branches = ["*/main"];
+                  };
+                }
+              ];
+              script-path = "fmo-os-main-pipeline.groovy";
+              lightweight-checkout = true;
+            };
+          };
+        }
       ];
     };
   };
@@ -220,7 +261,9 @@ in {
       # Install plugins
       jenkins-cli ${jenkins-auth} install-plugin \
         "workflow-aggregator" "github" "timestamper" "pipeline-stage-view" "blueocean" \
-        "pipeline-graph-view" "github-pullrequest" "antisamy-markup-formatter" "configuration-as-code" "slack"
+        "pipeline-graph-view" "github-pullrequest" "antisamy-markup-formatter" \
+        "configuration-as-code" "slack" "pipeline-utility-steps" "pipeline-build-step" \
+        "robot"
 
       # Disable initial install
       jenkins-cli ${jenkins-auth} groovy = < ${jenkins-groovy}

@@ -12,6 +12,7 @@
     [
       ./disk-config.nix
       ../developers.nix
+      ../builders-common.nix
       inputs.disko.nixosModules.disko
       inputs.sops-nix.nixosModules.sops
     ]
@@ -23,7 +24,6 @@
       user-hrosten
       user-jrautiola
       user-mkaapu
-      user-tervis
       user-karim
       user-mika
       user-themisto

@@ -99,6 +99,10 @@ TARGETS = OrderedDict(
             hostname="65.21.20.242",
             nixosconfig="hetzarm",
         ),
+        "ghaf-log": TargetHost(
+            hostname="95.217.177.197",
+            nixosconfig="ghaf-log",
+        ),
     }
 )
 

@@ -24,7 +24,6 @@
       user-jrautiola
       user-cazfi
       user-karim
-      user-tervis
       user-barna
       user-mika
     ]);

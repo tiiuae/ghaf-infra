@@ -6,6 +6,13 @@
   # add new developers here
   developers = [
     {
+      desc = "Aleksi Sitomaniemi";
+      name = "aleksi";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMse5t/NY8NTs8TUwCWMtlZNU/6HD/p/qDPpmJxXA+uN root@aleksi-ThinkPad-T14-Gen-1"
+      ];
+    }
+    {
       desc = "Alexander Nikolaev";
       name = "avnik";
       keys = [
@@ -69,6 +76,20 @@
       name = "enes-ssh";
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINviASH9mqnT59i0Nb6lC5z/e2enwq0k7d4NJK5R0NV5 enes@nixos"
+      ];
+    }
+    {
+      desc = "Eugeny Popko";
+      name = "eugeny";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP3EUPo+XgxgbgnG8ocGiKwI+FME5HgLYXdCwxETDC92 eugeny.popko@tii.ae"
+      ];
+    }
+    {
+      desc = "Fouzia Hussain";
+      name = "fouzia";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICaNgsqHtgLhIRb7HlLHKhO1upnULaENOC4Kgp5wPuBE fouzia.hussain@tii.ae"
       ];
     }
     {
@@ -184,6 +205,13 @@
       ];
     }
     {
+      desc = "Malavika Balakrishnan";
+      name = "malavika";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFupULSDNZFi+5AtdkAMmVgFj3EaBGks+QSAIcbb9UgS malavika.balakrishnan@tii.ae"
+      ];
+    }
+    {
       desc = "Milla Valio";
       name = "milval";
       keys = [
@@ -195,6 +223,20 @@
       name = "mtpaasto";
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDvu5b+k0eKoNE8QiocGaWqKq+E7apIHIie1Va5TM6yE mtpaasto"
+      ];
+    }
+    {
+      desc = "Rajkumar Ramasamy";
+      name = "rajkumar";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAmYFfUPwKkBybdsmjDi4irJMO//2A+sRPZSLOkDvDQN rajkumar.ramasamy@tii.ae"
+      ];
+    }
+    {
+      desc = "Renzo Bruzzone";
+      name = "renzo";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ/e7vfzx0Sma0BtchhpQAlmAuIUiC11eWi7hOQiItZR renzo.bruzzone@tii.ae"
       ];
     }
     {
@@ -211,6 +253,13 @@
       name = "rockola";
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOarfl/tww9HCteqvhB6UzbUJU1eC1n+YQUHY+M7l7V4 ola@sorvi"
+      ];
+    }
+    {
+      desc = "Omais Pandith";
+      name = "omais";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKU0fEolhcsUoUpTNn/sPoN1FYrwPbAyapahTneBkRfG omais.shafi@tii.ae"
       ];
     }
     {
@@ -235,10 +284,25 @@
       ];
     }
     {
+      desc = "Srikar Nayanara";
+      name = "Srikar";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE5wkbghZvvAps3jejIx4eKTzKx2cC/GjDMOoVvH3V2r root@nixos"
+      ];
+    }
+    {
       desc = "Tanel Dettenborn";
       name = "tanel";
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEA7p7hHPvPT6uTU44Nb/p9/DT9mOi8mpqNllnpfawDE desk"
+      ];
+    }
+    {
+      desc = "Tero Tervala";
+      name = "tervis";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDJau0tg0qHhqFVarjNOJLi+ekSZNNqxal4iRD/pwM5W tervis@tervis-thinkpad"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAHVXc4s7e8j1uFsgHPBzpWvSI/hk5Zf6Btuj79D4hf3 tervis@tervis-servu"
       ];
     }
     {
@@ -268,6 +332,13 @@
       name = "vunnyso";
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIstCgKDX1vVWI8MgdVwsEMhju6DQJubi3V0ziLcU/2h vunny.sodhi@unikie.com"
+      ];
+    }
+    {
+      desc = "Maarit Härkönen";
+      name = "maaharko";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAJ0DcYPvtUwVh/D/fXphnhPpKX9j4JvgES1o0UeP+kY maarit.harkonen@unikie.com"
       ];
     }
     {
