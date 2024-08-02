@@ -328,6 +328,13 @@
       ];
     }
     {
+      desc = "Maarit Härkönen";
+      name = "maaharko";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAJ0DcYPvtUwVh/D/fXphnhPpKX9j4JvgES1o0UeP+kY maarit.harkonen@unikie.com"
+      ];
+    }
+    {
       desc = "Temporary user for Azure dev remote builds on hetzarm and ficolo";
       name = "remote-build";
       keys = [
