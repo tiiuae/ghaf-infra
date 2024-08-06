@@ -19,6 +19,7 @@
         reuse
         sops
         ssh-to-age
+        deploy-rs
         (terraform.withPlugins (p: [
           p.azurerm
           p.external

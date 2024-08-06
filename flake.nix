@@ -40,6 +40,11 @@
       url = "github:tiiuae/ci-test-automation";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Used for deploying remote systems
+    deploy-rs = {
+      url = "github:serokell/deploy-rs";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs @ {
