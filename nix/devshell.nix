@@ -19,6 +19,7 @@
         reuse
         sops
         ssh-to-age
+        deploy-rs
         (terraform.withPlugins (p: [
           # We need to override the azurerm version to fix the issue described
           # in https://ssrc.atlassian.net/browse/SP-4926.
