@@ -10,7 +10,8 @@
   pkgs,
   ...
 }: let
-  # Vendored in until our nixpkgs pin includes https://github.com/NixOS/nixpkgs/pull/302833.
+  # Vendored in, as brainstem isn't suitable for nixpkgs packaging upstream:
+  # https://github.com/NixOS/nixpkgs/pull/313643
   brainstem = pkgs.callPackage ./brainstem.nix {};
   jenkins-connection-script = pkgs.writeScript "jenkins-connect.sh" ''
     #!/usr/bin/env bash
