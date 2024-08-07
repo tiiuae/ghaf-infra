@@ -55,13 +55,14 @@ in {
     useNetworkd = true;
   };
 
-  # Enable Acroname USB Smart switch support.
-  services.udev.packages = [brainstem];
+  # Enable Acroname USB Smart switch, as well as LXA USB-SD-Mux support.
+  services.udev.packages = [brainstem pkgs.usbsdmux];
 
   environment.systemPackages = [
     inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
     brainstem
     pkgs.minicom
+    pkgs.usbsdmux
   ];
 
   # Disable suspend and hibernate - systemd settings
