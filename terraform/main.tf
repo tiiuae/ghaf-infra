@@ -126,7 +126,12 @@ locals {
       num_builders_aarch64    = 0
       # 'priv' and 'dev' environments use the same binary cache signing key
       binary_cache_public_key = "ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I="
-      binary_cache_url        = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
+      # TODO: adding multiple urls as comma-and-whitespace separated
+      # string is more or less a hack. If we plan to have multiple domains
+      # per host permanently, we could make the below variable a list, and
+      # do the templating to a comma-and-whitespace separated list of urls
+      # before we pass it to caddy.
+      binary_cache_url = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com, https://dev-cache.vedenemo.dev"
       ext_builder_machines = [
         "ssh://remote-build@builder.vedenemo.dev x86_64-linux /etc/secrets/remote-build-ssh-key 32 3 kvm,nixos-test,benchmark,big-parallel - -",
         "ssh://remote-build@hetzarm.vedenemo.dev aarch64-linux /etc/secrets/remote-build-ssh-key 40 3 kvm,nixos-test,benchmark,big-parallel - -"
