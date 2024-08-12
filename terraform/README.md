@@ -24,6 +24,7 @@ For architectural description, see [README-azure.md](./README-azure.md) original
 ## Getting Started
 
 This document assumes you have [`nix`](https://nixos.org/download.html) package manager installed on you local host.
+Experimental feature "nix-command" must be enabled.
 
 Clone this repository:
 ```bash
