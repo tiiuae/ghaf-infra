@@ -115,7 +115,7 @@ locals {
       ext_builder_keyscan = ["builder.vedenemo.dev", "hetzarm.vedenemo.dev"]
     }
     dev = {
-      vm_size_binarycache     = "Standard_D2_v3"
+      vm_size_binarycache     = "Standard_D4_v3"
       osdisk_size_binarycache = "250"
       vm_size_builder_x86     = "Standard_D16_v3"
       vm_size_builder_aarch64 = "Standard_D8ps_v5"
@@ -139,7 +139,7 @@ locals {
       ext_builder_keyscan = ["builder.vedenemo.dev", "hetzarm.vedenemo.dev"]
     }
     prod = {
-      vm_size_binarycache     = "Standard_D2_v3"
+      vm_size_binarycache     = "Standard_D4_v3"
       osdisk_size_binarycache = "250"
       vm_size_builder_x86     = "Standard_D64_v3"
       vm_size_builder_aarch64 = "Standard_D64ps_v5"
