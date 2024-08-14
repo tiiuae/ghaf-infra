@@ -7,6 +7,9 @@ resource "azurerm_storage_blob" "default" {
   storage_container_name = var.storage_container_name
   type                   = "Page" # necessary to be able to create an image out of it
   source                 = "${data.external.nix_build.result.outPath}/disk.vhd"
+  timeouts {
+    create = "1h"
+  }
 }
 
 data "external" "nix_build" {
