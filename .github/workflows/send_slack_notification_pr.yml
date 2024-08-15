@@ -1,0 +1,28 @@
+name: Send Slack Notification for New Pull Request (Main Branch)
+
+on:
+  pull_request:
+    branches: [ main ]  # Only triggers on the 'main' branch
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Install dependencies
+        run: npm install slack-api
+      - name: Send Slack notification
+        run: |
+          const Slack = require('slack-api');
+          const token = process.env.SLACK_BOT_TOKEN;
+          const channel = 'devenv-fi';  
+          const pullRequest = context.payload.pull_request;
+
+          const message = `New Pull Request: ${pullRequest.title} by ${pullRequest.user.login}\n${pullRequest.html_url}`;
+
+          Slack.chat.postMessage({ token, channel, text: message });
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
