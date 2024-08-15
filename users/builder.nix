@@ -13,6 +13,6 @@
       ];
     };
   };
-  users.groups.nix = {};
-  nix.settings.trusted-users = ["nix"];
+  users.groups.nix = { };
+  nix.settings.trusted-users = [ "nix" ];
 }

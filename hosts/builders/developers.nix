@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
-{lib, ...}: let
+{ lib, ... }:
+let
   groupName = "developers";
 
   # add new developers here
@@ -140,9 +141,7 @@
     {
       desc = "Joonas Loppi";
       name = "joonas";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFjarWokQFXqh4FEMHoyWVjqYwRXoGIKJLHNulNv2bn1"
-      ];
+      keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFjarWokQFXqh4FEMHoyWVjqYwRXoGIKJLHNulNv2bn1" ];
     }
     {
       desc = "Juan Pablo Ruiz";
@@ -293,9 +292,7 @@
     {
       desc = "Tanel Dettenborn";
       name = "tanel";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEA7p7hHPvPT6uTU44Nb/p9/DT9mOi8mpqNllnpfawDE desk"
-      ];
+      keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEA7p7hHPvPT6uTU44Nb/p9/DT9mOi8mpqNllnpfawDE desk" ];
     }
     {
       desc = "Tero Tervala";
@@ -344,21 +341,18 @@
     {
       desc = "Temporary user for Azure dev remote builds on hetzarm and ficolo";
       name = "remote-build";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM2rhqSdifRmTwyrc3rvXWyDMznrIAAkVwhEsufLYiTp"
-      ];
+      keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM2rhqSdifRmTwyrc3rvXWyDMznrIAAkVwhEsufLYiTp" ];
     }
     {
       desc = "Github actions runners can use this user to remote build";
       name = "github";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH/KOBOKqZwugt7Yi6ZFhr6ZF2j9kzyqnl+v7eRlxPoq"
-      ];
+      keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH/KOBOKqZwugt7Yi6ZFhr6ZF2j9kzyqnl+v7eRlxPoq" ];
     }
   ];
-in {
+in
+{
   users = {
-    groups."${groupName}" = {};
+    groups."${groupName}" = { };
 
     users = builtins.listToAttrs (
       map (
@@ -367,19 +361,18 @@ in {
           name,
           keys,
         }:
-          lib.nameValuePair name {
-            inherit name;
+        lib.nameValuePair name {
+          inherit name;
 
-            description = desc;
-            openssh.authorizedKeys.keys = keys;
+          description = desc;
+          openssh.authorizedKeys.keys = keys;
 
-            isNormalUser = true;
-            extraGroups = [groupName];
-          }
-      )
-      developers
+          isNormalUser = true;
+          extraGroups = [ groupName ];
+        }
+      ) developers
     );
   };
 
-  nix.settings.trusted-users = ["@${groupName}"];
+  nix.settings.trusted-users = [ "@${groupName}" ];
 }

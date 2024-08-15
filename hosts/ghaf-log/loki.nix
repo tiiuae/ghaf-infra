@@ -1,11 +1,11 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
-_: let
+_:
+let
   loki_data_dir = "/var/lib/loki";
-in {
-  systemd.tmpfiles.rules = [
-    "d /var/lib/loki 0777 loki loki - -"
-  ];
+in
+{
+  systemd.tmpfiles.rules = [ "d /var/lib/loki 0777 loki loki - -" ];
 
   services.loki = {
     enable = true;

@@ -47,31 +47,28 @@
     };
   };
 
-  outputs = inputs @ {
-    flake-parts,
-    nixpkgs,
-    ...
-  }:
+  outputs =
+    inputs@{ flake-parts, nixpkgs, ... }:
     flake-parts.lib.mkFlake
-    {
-      inherit inputs;
-      specialArgs = {
-        inherit (nixpkgs) lib;
-      };
-    }
-    {
-      systems = [
-        "x86_64-linux"
-        "aarch64-linux"
-        "x86_64-darwin"
-        "aarch64-darwin"
-      ];
+      {
+        inherit inputs;
+        specialArgs = {
+          inherit (nixpkgs) lib;
+        };
+      }
+      {
+        systems = [
+          "x86_64-linux"
+          "aarch64-linux"
+          "x86_64-darwin"
+          "aarch64-darwin"
+        ];
 
-      imports = [
-        ./hosts
-        ./nix
-        ./services
-        ./users
-      ];
-    };
+        imports = [
+          ./hosts
+          ./nix
+          ./services
+          ./users
+        ];
+      };
 }

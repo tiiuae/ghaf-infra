@@ -6,10 +6,12 @@
   config,
   ...
 }:
-with lib; let
+with lib;
+let
   cfg = config.services.rclone-http;
-  rclone = pkgs.callPackage ../../pkgs/rclone {};
-in {
+  rclone = pkgs.callPackage ../../pkgs/rclone { };
+in
+{
   options.services.rclone-http = {
     enable = mkEnableOption "rclone-http service";
 
@@ -26,7 +28,10 @@ in {
     };
 
     protocol = mkOption {
-      type = types.enum ["http" "webdav"];
+      type = types.enum [
+        "http"
+        "webdav"
+      ];
       default = "http";
       description = "The protocol to serve the remote over";
     };
@@ -41,7 +46,7 @@ in {
     # Run a read-only HTTP webserver proxying to an rclone remote at the configured address
     # This relies on IAM to grant access to the storage container.
     systemd.services.rclone-http = {
-      after = ["network.target"];
+      after = [ "network.target" ];
       serviceConfig = {
         Type = "notify";
         Restart = "always";
@@ -49,17 +54,19 @@ in {
         DynamicUser = true;
         RuntimeDirectory = "rclone-http";
         EnvironmentFile = "/var/lib/rclone-http/env";
-        ExecStart = concatStringsSep " " ([
+        ExecStart = concatStringsSep " " (
+          [
             "${rclone}/bin/rclone"
             "serve"
             cfg.protocol
           ]
           ++ cfg.extraArgs
-          ++ [cfg.remote]);
+          ++ [ cfg.remote ]
+        );
       };
     };
     systemd.sockets.rclone-http = {
-      wantedBy = ["sockets.target"];
+      wantedBy = [ "sockets.target" ];
       socketConfig.ListenStream = cfg.listenAddress;
     };
   };

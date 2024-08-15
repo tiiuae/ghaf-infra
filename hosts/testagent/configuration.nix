@@ -9,10 +9,11 @@
   inputs,
   pkgs,
   ...
-}: let
+}:
+let
   # Vendored in, as brainstem isn't suitable for nixpkgs packaging upstream:
   # https://github.com/NixOS/nixpkgs/pull/313643
-  brainstem = pkgs.callPackage ./brainstem.nix {};
+  brainstem = pkgs.callPackage ./brainstem.nix { };
   jenkins-connection-script = pkgs.writeScript "jenkins-connect.sh" ''
     #!/usr/bin/env bash
     set -eu
@@ -24,7 +25,8 @@
       -secret @secret-file \
       -workDir "/var/lib/jenkins"
   '';
-in {
+in
+{
   imports =
     [
       # Include the results of the hardware scan.
@@ -56,7 +58,10 @@ in {
   };
 
   # Enable Acroname USB Smart switch, as well as LXA USB-SD-Mux support.
-  services.udev.packages = [brainstem pkgs.usbsdmux];
+  services.udev.packages = [
+    brainstem
+    pkgs.usbsdmux
+  ];
 
   environment.systemPackages = [
     inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
@@ -91,12 +96,16 @@ in {
   services.jenkinsSlave.enable = true;
 
   # Gives jenkins user sudo rights without password and serial connection rights
-  users.users.jenkins.extraGroups = ["wheel" "dialout" "tty"];
+  users.users.jenkins.extraGroups = [
+    "wheel"
+    "dialout"
+    "tty"
+  ];
 
   # Open connection to Jenkins controller as a systemd service
   systemd.services.jenkins-connection = {
-    after = ["network.target"];
-    wantedBy = ["multi-user.target"];
+    after = [ "network.target" ];
+    wantedBy = [ "multi-user.target" ];
     path = [
       pkgs.jdk
       pkgs.git

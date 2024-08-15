@@ -24,11 +24,8 @@
 # which means these changes would not work without also changing the ghaf-infra
 # nixpkgs reference.
 #
+{ pkgs, utils, ... }:
 {
-  pkgs,
-  utils,
-  ...
-}: {
   # Disable explicit resource disk handling in waagent.
   # We want to take control over it in initrd already.
   virtualisation.azure.agent.mountResourceDisk = false;
@@ -49,10 +46,10 @@
     # unit).
     services.wipe-resource-disk = {
       description = "Wipe resource disk before makefs";
-      requires = ["${utils.escapeSystemdPath "dev/disk/azure/resource-part1"}.device"];
-      after = ["${utils.escapeSystemdPath "dev/disk/azure/resource-part1"}.device"];
-      wantedBy = ["${utils.escapeSystemdPath "sysroot/mnt/resource"}.mount"];
-      before = ["${utils.escapeSystemdPath "sysroot/mnt/resource"}.mount"];
+      requires = [ "${utils.escapeSystemdPath "dev/disk/azure/resource-part1"}.device" ];
+      after = [ "${utils.escapeSystemdPath "dev/disk/azure/resource-part1"}.device" ];
+      wantedBy = [ "${utils.escapeSystemdPath "sysroot/mnt/resource"}.mount" ];
+      before = [ "${utils.escapeSystemdPath "sysroot/mnt/resource"}.mount" ];
 
       script = ''
         if [[ $(wipefs --output=TYPE -p /dev/disk/azure/resource-part1) == "ntfs" ]]; then
@@ -72,8 +69,8 @@
     services.setup-resource-disk = {
       description = "Setup resource disk after it's mounted";
       unitConfig.RequiresMountsFor = "/sysroot/mnt/resource";
-      wantedBy = ["${utils.escapeSystemdPath "sysroot/nix/store"}.mount"];
-      before = ["${utils.escapeSystemdPath "sysroot/nix/store"}.mount"];
+      wantedBy = [ "${utils.escapeSystemdPath "sysroot/nix/store"}.mount" ];
+      before = [ "${utils.escapeSystemdPath "sysroot/nix/store"}.mount" ];
 
       script = ''
         mkdir -p /sysroot/mnt/resource/.rw-store/{work,store}
@@ -96,14 +93,17 @@
         what = "overlay";
         type = "overlay";
         options = "lowerdir=/sysroot/nix/store,upperdir=/sysroot/mnt/resource/.rw-store/store,workdir=/sysroot/mnt/resource/.rw-store/work";
-        wantedBy = ["initrd-fs.target"];
-        before = ["initrd-fs.target"];
-        requires = ["setup-resource-disk.service"];
-        after = ["setup-resource-disk.service"];
-        unitConfig.RequiresMountsFor = ["/sysroot" "/sysroot/mnt/resource"];
+        wantedBy = [ "initrd-fs.target" ];
+        before = [ "initrd-fs.target" ];
+        requires = [ "setup-resource-disk.service" ];
+        after = [ "setup-resource-disk.service" ];
+        unitConfig.RequiresMountsFor = [
+          "/sysroot"
+          "/sysroot/mnt/resource"
+        ];
       }
     ];
   };
   # load the overlay kernel module
-  boot.initrd.kernelModules = ["overlay"];
+  boot.initrd.kernelModules = [ "overlay" ];
 }

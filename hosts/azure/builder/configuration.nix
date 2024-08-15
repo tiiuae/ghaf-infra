@@ -1,10 +1,7 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
+{ self, lib, ... }:
 {
-  self,
-  lib,
-  ...
-}: {
   imports = [
     ../../azure-common.nix
     self.nixosModules.service-openssh
@@ -17,13 +14,11 @@
   services.rclone-http = {
     enable = true;
     listenAddress = "[::1]:8080";
-    extraArgs = [
-      "--azureblob-env-auth"
-    ];
+    extraArgs = [ "--azureblob-env-auth" ];
     remote = ":azureblob:binary-cache-v1";
   };
 
-  boot.binfmt.emulatedSystems = ["aarch64-linux"];
+  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
 
   nix.settings.substituters = [
     # Configure Nix to use the bucket (through rclone-http) as a substitutor.
