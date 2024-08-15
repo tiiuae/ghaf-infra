@@ -115,7 +115,7 @@ init_state_storage () {
     echo -e "storage_account_rg_name=$STATE_RG\nstorage_account_name=$STATE_ACCOUNT" >"$MYDIR/.env"
     # See: ./state-storage
     pushd "$MYDIR/state-storage" >"$OUT"
-    terraform init >"$OUT"
+    terraform init -upgrade >"$OUT"
     terraform workspace select "$SHORTLOC" &>"$OUT" || terraform workspace new "$SHORTLOC" >"$OUT"
     if ! terraform apply -var="location=$LOCATION" -auto-approve &>"$OUT"; then
         echo "[+] State storage is already initialized"
@@ -144,7 +144,7 @@ init_persistent () {
     # Init persistent, setting the backend resource group and storage account
     # names from command-line:
     # https://developer.hashicorp.com/terraform/language/settings/backends/azurerm#backend-azure-ad-user-via-azure-cli
-    terraform init -backend-config="resource_group_name=$STATE_RG" -backend-config="storage_account_name=$STATE_ACCOUNT" >"$OUT"
+    terraform init -upgrade -backend-config="resource_group_name=$STATE_RG" -backend-config="storage_account_name=$STATE_ACCOUNT" >"$OUT"
     terraform workspace select "$SHORTLOC" &>"$OUT" || terraform workspace new "$SHORTLOC" >"$OUT"
     import_bincache_sigkey "prod"
     import_bincache_sigkey "dev"
@@ -155,7 +155,7 @@ init_persistent () {
     echo "[+] Initializing workspace-specific persistent"
     # See: ./persistent/workspace-specific
     pushd "$MYDIR/persistent/workspace-specific" >"$OUT"
-    terraform init -backend-config="resource_group_name=$STATE_RG" -backend-config="storage_account_name=$STATE_ACCOUNT" >"$OUT"
+    terraform init -upgrade -backend-config="resource_group_name=$STATE_RG" -backend-config="storage_account_name=$STATE_ACCOUNT" >"$OUT"
     echo "[+] Applying possible changes in ./persistent/workspace-specific"
     for ws in "dev${SHORTLOC}" "prod${SHORTLOC}" "$WORKSPACE"; do
         terraform workspace select "$ws" &>"$OUT" || terraform workspace new "$ws" >"$OUT"
@@ -197,7 +197,7 @@ init_persistent () {
 init_terraform () {
     echo "[+] Running terraform init"
     pushd "$MYDIR" >"$OUT"
-    terraform init -backend-config="resource_group_name=$STATE_RG" -backend-config="storage_account_name=$STATE_ACCOUNT" >"$OUT"
+    terraform init -upgrade -backend-config="resource_group_name=$STATE_RG" -backend-config="storage_account_name=$STATE_ACCOUNT" >"$OUT"
     # By default, switch to the private workspace
     activate_workspace
     popd >"$OUT"

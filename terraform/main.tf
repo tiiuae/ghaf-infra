@@ -9,6 +9,12 @@ terraform {
   required_providers {
     azurerm = {
       source = "hashicorp/azurerm"
+      # Make sure this matches the version in ../nix/devshell.nix.
+      # This will not pin the version (it's pinned in devshell.nix),
+      # but makes terraform emit an error message in case the azurerm
+      # version cached in local .terraform directory for one reason
+      # or another does not match what is stated below.
+      version = "=3.85.0"
     }
     secret = {
       source = "numtide/secret"
