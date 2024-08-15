@@ -1,11 +1,12 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
-{config, ...}: {
+{ config, ... }:
+{
   services = {
     harmonia = {
       enable = true;
       signKeyPath = config.sops.secrets.cache-sig-key.path;
     };
   };
-  networking.firewall.allowedTCPPorts = [5000];
+  networking.firewall.allowedTCPPorts = [ 5000 ];
 }

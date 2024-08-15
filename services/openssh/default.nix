@@ -1,10 +1,7 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
+{ pkgs, lib, ... }:
 {
-  pkgs,
-  lib,
-  ...
-}: {
   services.openssh = {
     enable = true;
 
@@ -29,12 +26,10 @@
   };
 
   # Open port for ssh connections
-  networking.firewall.allowedTCPPorts = [22];
+  networking.firewall.allowedTCPPorts = [ 22 ];
 
   # Ban brute force SSH
   services.fail2ban.enable = true;
 
-  environment.systemPackages = [
-    pkgs.kitty.terminfo
-  ];
+  environment.systemPackages = [ pkgs.kitty.terminfo ];
 }

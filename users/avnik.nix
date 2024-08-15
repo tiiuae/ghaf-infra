@@ -8,7 +8,10 @@
       openssh.authorizedKeys.keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFi/TNnF6Qvh9UhrHYocJE2CaL4TVZSg6Z+mX8F8LS/v avn@bulldozer"
       ];
-      extraGroups = ["wheel" "networkmanager"];
+      extraGroups = [
+        "wheel"
+        "networkmanager"
+      ];
     };
   };
 }

@@ -8,11 +8,13 @@
   lib,
   config,
   ...
-}: let
+}:
+let
   # "public" but really only available with ficolo vpn
   public-ip = "172.18.20.108";
-  sshified = pkgs.callPackage ../../pkgs/sshified/default.nix {};
-in {
+  sshified = pkgs.callPackage ../../pkgs/sshified/default.nix { };
+in
+{
   sops.defaultSopsFile = ./secrets.yaml;
   sops.secrets.sshified_private_key.owner = "sshified";
 
@@ -58,8 +60,8 @@ in {
 
   # runs a tiny webserver on port 8888 that tunnels requests through ssh connection
   systemd.services."sshified" = {
-    wantedBy = ["multi-user.target"];
-    after = ["network.target"];
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network.target" ];
     description = "Run the sshified http-to-ssh proxy";
     serviceConfig = {
       User = "sshified";
@@ -73,9 +75,7 @@ in {
         -v
       '';
     };
-    restartTriggers = [
-      config.environment.etc."ssh/ssh_known_hosts".source
-    ];
+    restartTriggers = [ config.environment.etc."ssh/ssh_known_hosts".source ];
   };
 
   services.grafana = {
@@ -123,36 +123,52 @@ in {
         job_name = "ficolo-internal-monitoring";
         static_configs = [
           {
-            targets = ["172.18.20.102:9100"];
-            labels = {machine_name = "build1";};
+            targets = [ "172.18.20.102:9100" ];
+            labels = {
+              machine_name = "build1";
+            };
           }
           {
-            targets = ["172.18.20.103:9100"];
-            labels = {machine_name = "build2";};
+            targets = [ "172.18.20.103:9100" ];
+            labels = {
+              machine_name = "build2";
+            };
           }
           {
-            targets = ["172.18.20.104:9100"];
-            labels = {machine_name = "build3";};
+            targets = [ "172.18.20.104:9100" ];
+            labels = {
+              machine_name = "build3";
+            };
           }
           {
-            targets = ["172.18.20.105:9100"];
-            labels = {machine_name = "build4";};
+            targets = [ "172.18.20.105:9100" ];
+            labels = {
+              machine_name = "build4";
+            };
           }
           {
-            targets = ["172.18.20.106:9100"];
-            labels = {machine_name = "himalia";};
+            targets = [ "172.18.20.106:9100" ];
+            labels = {
+              machine_name = "himalia";
+            };
           }
           {
-            targets = ["172.18.20.107:9100"];
-            labels = {machine_name = "gerrit";};
+            targets = [ "172.18.20.107:9100" ];
+            labels = {
+              machine_name = "gerrit";
+            };
           }
           {
-            targets = ["172.18.20.108:9100"];
-            labels = {machine_name = "monitoring";};
+            targets = [ "172.18.20.108:9100" ];
+            labels = {
+              machine_name = "monitoring";
+            };
           }
           {
-            targets = ["172.18.20.109:9100"];
-            labels = {machine_name = "binarycache";};
+            targets = [ "172.18.20.109:9100" ];
+            labels = {
+              machine_name = "binarycache";
+            };
           }
         ];
       }
@@ -162,12 +178,16 @@ in {
         proxy_url = "http://127.0.0.1:8888";
         static_configs = [
           {
-            targets = ["65.21.20.242:9100"];
-            labels = {machine_name = "hetzarm";};
+            targets = [ "65.21.20.242:9100" ];
+            labels = {
+              machine_name = "hetzarm";
+            };
           }
           {
-            targets = ["95.217.177.197:9100"];
-            labels = {machine_name = "ghaf-log";};
+            targets = [ "95.217.177.197:9100" ];
+            labels = {
+              machine_name = "ghaf-log";
+            };
           }
         ];
       }

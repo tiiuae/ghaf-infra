@@ -6,24 +6,29 @@
   inputs,
   lib,
   ...
-}: let
+}:
+let
   # make self and inputs available in nixos modules
-  specialArgs = {inherit self inputs;};
+  specialArgs = {
+    inherit self inputs;
+  };
 
   # Calls nixosSystem with a toplevel config
   # (needs to be a "nixos-"-prefixed module in `self.nixosModules`),
   # and optional extra configuration.
-  mkNixOS = {
-    systemName,
-    extraConfig ? null,
-  }:
+  mkNixOS =
+    {
+      systemName,
+      extraConfig ? null,
+    }:
     lib.nixosSystem {
       inherit specialArgs;
-      modules =
-        [self.nixosModules."nixos-${systemName}"]
-        ++ lib.optional (extraConfig != null) extraConfig;
+      modules = [
+        self.nixosModules."nixos-${systemName}"
+      ] ++ lib.optional (extraConfig != null) extraConfig;
     };
-in {
+in
+{
   flake.nixosModules = {
     # shared modules
     qemu-common = import ./qemu-common.nix;
@@ -56,21 +61,24 @@ in {
 
   # for each systemName, call mkNixOS on it, and set flake.nixosConfigurations
   # to an attrset from systemName to the result of that mkNixOS call.
-  flake.nixosConfigurations = builtins.listToAttrs (builtins.map
-    (name: {
-      inherit name;
-      value = mkNixOS {systemName = name;};
-    }) [
-      "az-binary-cache"
-      "az-builder"
-      "az-jenkins-controller"
-      "binarycache"
-      "build3"
-      "build4"
-      "hetzarm"
-      "monitoring"
-      "himalia"
-      "testagent"
-      "ghaf-log"
-    ]);
+  flake.nixosConfigurations = builtins.listToAttrs (
+    builtins.map
+      (name: {
+        inherit name;
+        value = mkNixOS { systemName = name; };
+      })
+      [
+        "az-binary-cache"
+        "az-builder"
+        "az-jenkins-controller"
+        "binarycache"
+        "build3"
+        "build4"
+        "hetzarm"
+        "monitoring"
+        "himalia"
+        "testagent"
+        "ghaf-log"
+      ]
+  );
 }

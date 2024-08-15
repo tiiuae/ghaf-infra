@@ -15,8 +15,9 @@
   extraNixPublicKey ? "",
   # Additional nix substituters
   extraNixSubstituter ? "",
-}: let
-  flake = import ../. {inherit system;};
+}:
+let
+  flake = import ../. { inherit system; };
   inherit (flake.inputs.nixpkgs) lib;
 
   out = flake.lib.mkNixOS {
@@ -27,4 +28,4 @@
     };
   };
 in
-  out.config.system.build.azureImage
+out.config.system.build.azureImage

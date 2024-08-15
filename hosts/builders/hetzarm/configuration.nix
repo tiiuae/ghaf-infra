@@ -5,7 +5,8 @@
   inputs,
   lib,
   ...
-}: {
+}:
+{
   sops.defaultSopsFile = ./secrets.yaml;
 
   imports =
@@ -38,9 +39,12 @@
   };
 
   boot = {
-    initrd.availableKernelModules = ["nvme" "usbhid"];
+    initrd.availableKernelModules = [
+      "nvme"
+      "usbhid"
+    ];
     # use predictable network interface names (eth0)
-    kernelParams = ["net.ifnames=0"];
+    kernelParams = [ "net.ifnames=0" ];
     loader = {
       systemd-boot.enable = true;
       efi.canTouchEfiVariables = true;
@@ -65,5 +69,8 @@
     };
   };
 
-  nix.settings.trusted-users = ["@wheel" "build3"];
+  nix.settings.trusted-users = [
+    "@wheel"
+    "build3"
+  ];
 }

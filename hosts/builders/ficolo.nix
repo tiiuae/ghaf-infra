@@ -5,7 +5,8 @@
   inputs,
   lib,
   ...
-}: {
+}:
+{
   imports =
     [
       ./ficolo-disk-config.nix
@@ -32,8 +33,15 @@
   };
 
   boot = {
-    initrd.availableKernelModules = ["ahci" "xhci_pci" "megaraid_sas" "nvme" "usbhid" "sd_mod"];
-    kernelModules = ["kvm-intel"];
+    initrd.availableKernelModules = [
+      "ahci"
+      "xhci_pci"
+      "megaraid_sas"
+      "nvme"
+      "usbhid"
+      "sd_mod"
+    ];
+    kernelModules = [ "kvm-intel" ];
     loader = {
       systemd-boot.enable = true;
       efi.canTouchEfiVariables = true;

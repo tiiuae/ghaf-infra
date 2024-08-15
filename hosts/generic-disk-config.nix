@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
-{lib, ...}: {
+{ lib, ... }:
+{
   disko.devices = {
     disk.disk1 = {
       device = lib.mkDefault "/dev/sda";
@@ -44,9 +45,7 @@
               type = "filesystem";
               format = "ext4";
               mountpoint = "/";
-              mountOptions = [
-                "defaults"
-              ];
+              mountOptions = [ "defaults" ];
             };
           };
         };

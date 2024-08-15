@@ -3,5 +3,8 @@
 #
 {
   # Use ci-server as primary DNS and pfsense as secondary
-  networking.nameservers = ["172.18.20.100" "172.18.20.1"];
+  networking.nameservers = [
+    "172.18.20.100"
+    "172.18.20.1"
+  ];
 }

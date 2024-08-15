@@ -7,7 +7,8 @@
   lib,
   config,
   ...
-}: {
+}:
+{
   sops.defaultSopsFile = ./secrets.yaml;
   sops.secrets.cache-sig-key.owner = "root";
 
@@ -35,8 +36,8 @@
 
   nix.settings = {
     # we don't want the cache to be a substitutor for itself
-    substituters = lib.mkForce ["https://cache.nixos.org/"];
-    trusted-users = ["hydra"];
+    substituters = lib.mkForce [ "https://cache.nixos.org/" ];
+    trusted-users = [ "hydra" ];
   };
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";

@@ -7,7 +7,8 @@
   lib,
   config,
   ...
-}: {
+}:
+{
   sops.defaultSopsFile = ./secrets.yaml;
 
   imports =
@@ -55,7 +56,7 @@
 
   boot = {
     # use predictable network interface names (eth0)
-    kernelParams = ["net.ifnames=0"];
+    kernelParams = [ "net.ifnames=0" ];
     loader.grub = {
       efiSupport = true;
       efiInstallAsRemovable = true;

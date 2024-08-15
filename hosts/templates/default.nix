@@ -5,7 +5,8 @@
   inputs,
   lib,
   ...
-}: {
+}:
+{
   flake.nixosConfigurations = {
     # NixOS bootstrap config for Azure x86_64 hosts
     # Tested on Azure Gen2 images, with "Standard" security type:
@@ -27,8 +28,19 @@
           #   "${nixpkgs}/nixos/modules/virtualisation/azure-agent.nix"
           # ];
           # virtualisation.azure.agent.enable = true;
-          boot.kernelParams = ["console=ttyS0" "earlyprintk=ttyS0" "rootdelay=300" "panic=1" "boot.panic_on_fail"];
-          boot.initrd.kernelModules = ["hv_vmbus" "hv_netvsc" "hv_utils" "hv_storvsc"];
+          boot.kernelParams = [
+            "console=ttyS0"
+            "earlyprintk=ttyS0"
+            "rootdelay=300"
+            "panic=1"
+            "boot.panic_on_fail"
+          ];
+          boot.initrd.kernelModules = [
+            "hv_vmbus"
+            "hv_netvsc"
+            "hv_utils"
+            "hv_storvsc"
+          ];
           boot.loader.systemd-boot.enable = true;
           boot.loader.efi.canTouchEfiVariables = true;
           boot.loader.timeout = 0;
@@ -47,7 +59,7 @@
             };
           };
           networking.useDHCP = false;
-          networking.nameservers = ["8.8.8.8"];
+          networking.nameservers = [ "8.8.8.8" ];
           networking.defaultGateway = "10.3.0.1";
           networking.interfaces.eth0.ipv4.addresses = [
             {
@@ -72,7 +84,7 @@
           # TODO: make sure the below configuration options match yours:
           disko.devices.disk.disk1.device = "/dev/sda";
           networking.useDHCP = false;
-          networking.nameservers = ["192.168.1.1"];
+          networking.nameservers = [ "192.168.1.1" ];
           networking.defaultGateway = "192.168.1.1";
           networking.interfaces.eth0.ipv4.addresses = [
             {

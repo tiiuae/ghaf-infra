@@ -11,5 +11,5 @@
     };
   };
 
-  nix.settings.trusted-users = ["themisto"];
+  nix.settings.trusted-users = [ "themisto" ];
 }

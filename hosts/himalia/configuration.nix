@@ -7,7 +7,8 @@
   lib,
   pkgs,
   ...
-}: {
+}:
+{
   imports =
     [
       ./disk-config.nix
@@ -33,13 +34,14 @@
     git
     emacs
     screen
-    (python310.withPackages (ps:
-      with ps; [
+    (python310.withPackages (
+      ps: with ps; [
         requests
         schedule
         pygithub
         aiohttp
-      ]))
+      ]
+    ))
   ];
   # docker daemon running
   virtualisation.docker.enable = true;

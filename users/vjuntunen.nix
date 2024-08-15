@@ -8,7 +8,12 @@
       openssh.authorizedKeys.keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBJvhDUiX05DpsnQ1T8Fmoj2qVrInF8NeDSm8WiDeIxR"
       ];
-      extraGroups = ["networkmanager" "wheel" "dialout" "tty"];
+      extraGroups = [
+        "networkmanager"
+        "wheel"
+        "dialout"
+        "tty"
+      ];
     };
   };
 }

@@ -11,7 +11,8 @@
   writeText,
   withUpdater ? true,
   ...
-}: let
+}:
+let
   version = "2.9.25";
   # Upstream has a udev.sh script asking for mode and group, but with uaccess we
   # don't need any of that and can make it entirely static.
@@ -35,51 +36,54 @@
     hash = "sha256-1Xq+J4IEsdGI+nOvyrxES5L0SZw+yA9nwVBN1lOGU20=";
   };
 in
-  stdenv.mkDerivation {
-    pname = "brainstem";
-    inherit version src;
-    sourceRoot = "source/BrainStem_dev_kit";
+stdenv.mkDerivation {
+  pname = "brainstem";
+  inherit version src;
+  sourceRoot = "source/BrainStem_dev_kit";
 
-    nativeBuildInputs = [autoPatchelfHook];
-    buildInputs =
-      [
-        # libudev
-        (lib.getLib systemd)
-        # libstdc++.so libgcc_s.so
-        stdenv.cc.cc.lib
-      ]
-      ++ lib.optionals withUpdater [
-        # libcurl.so.4
-        curl
-        # libz.so.1
-        zlib
-      ];
+  nativeBuildInputs = [ autoPatchelfHook ];
+  buildInputs =
+    [
+      # libudev
+      (lib.getLib systemd)
+      # libstdc++.so libgcc_s.so
+      stdenv.cc.cc.lib
+    ]
+    ++ lib.optionals withUpdater [
+      # libcurl.so.4
+      curl
+      # libz.so.1
+      zlib
+    ];
 
-    # Unpack the CLI tools.
-    installPhase = ''
-      mkdir -p $out/bin
-      install -m744 bin/AcronameHubCLI $out/bin
-      install -m744 bin/Updater $out/bin/AcronameHubUpdater
+  # Unpack the CLI tools.
+  installPhase = ''
+    mkdir -p $out/bin
+    install -m744 bin/AcronameHubCLI $out/bin
+    install -m744 bin/Updater $out/bin/AcronameHubUpdater
 
-      mkdir -p $out/lib/udev/rules.d
-      cp ${udevRule} $out/lib/udev/rules.d/60-brainstem.rules
+    mkdir -p $out/lib/udev/rules.d
+    cp ${udevRule} $out/lib/udev/rules.d/60-brainstem.rules
 
-      mkdir -p $doc
-      cp {license,version}.txt $doc/
+    mkdir -p $doc
+    cp {license,version}.txt $doc/
+  '';
+
+  outputs = [
+    "out"
+    "doc"
+  ];
+
+  meta = with lib; {
+    description = "BrainStem Software Development Kit";
+    longDescription = ''
+      The BrainStem SDK provides a library to access and control Acroname smart
+      USB switches, as well as a CLI interface, and a firmware updater.
     '';
-
-    outputs = ["out" "doc"];
-
-    meta = with lib; {
-      description = "BrainStem Software Development Kit";
-      longDescription = ''
-        The BrainStem SDK provides a library to access and control Acroname smart
-        USB switches, as well as a CLI interface, and a firmware updater.
-      '';
-      homepage = "https://acroname.com/software/brainstem-development-kit";
-      platforms = ["x86_64-linux"];
-      license = licenses.unfree;
-      maintainers = with maintainers; [flokli];
-      mainProgram = "AcronameHubCLI";
-    };
-  }
+    homepage = "https://acroname.com/software/brainstem-development-kit";
+    platforms = [ "x86_64-linux" ];
+    license = licenses.unfree;
+    maintainers = with maintainers; [ flokli ];
+    mainProgram = "AcronameHubCLI";
+  };
+}

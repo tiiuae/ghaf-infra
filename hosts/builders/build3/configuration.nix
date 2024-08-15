@@ -5,7 +5,8 @@
   inputs,
   config,
   ...
-}: {
+}:
+{
   sops.defaultSopsFile = ./secrets.yaml;
   sops.secrets.ssh_private_key.owner = "root";
 
@@ -32,7 +33,7 @@
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMDfEUoARtE5ZMYofegtm3lECzaQeAktLQ2SqlHcV9jL signer"
   ];
 
-  nix.settings.trusted-users = ["@wheel"];
+  nix.settings.trusted-users = [ "@wheel" ];
 
   # use hetzarm as aarch64 remote builder
   nix = {
@@ -43,8 +44,13 @@
         system = "aarch64-linux";
         maxJobs = 40;
         speedFactor = 1;
-        supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
-        mandatoryFeatures = [];
+        supportedFeatures = [
+          "nixos-test"
+          "benchmark"
+          "big-parallel"
+          "kvm"
+        ];
+        mandatoryFeatures = [ ];
         sshUser = "build3";
         sshKey = config.sops.secrets.ssh_private_key.path;
       }

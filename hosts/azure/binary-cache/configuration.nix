@@ -5,7 +5,8 @@
   pkgs,
   lib,
   ...
-}: {
+}:
+{
   imports = [
     ../../azure-common.nix
     self.nixosModules.service-openssh
@@ -29,9 +30,7 @@
   services.rclone-http = {
     enable = true;
     listenAddress = "%t/rclone-http.sock";
-    extraArgs = [
-      "--azureblob-env-auth"
-    ];
+    extraArgs = [ "--azureblob-env-auth" ];
     remote = ":azureblob:binary-cache-v1";
   };
 
@@ -73,18 +72,19 @@
 
   # Configure Nix to use the bucket (through rclone-http) as a substitutor.
   # The public key is passed in externally.
-  nix.settings.substituters = [
-    "http://localhost:8080"
-  ];
+  nix.settings.substituters = [ "http://localhost:8080" ];
 
   # Wait for cloud-init mounting before we start caddy.
-  systemd.services.caddy.after = ["cloud-init.service"];
-  systemd.services.caddy.requires = ["cloud-init.service"];
+  systemd.services.caddy.after = [ "cloud-init.service" ];
+  systemd.services.caddy.requires = [ "cloud-init.service" ];
 
   # Expose the HTTP[S] port. We still need HTTP for the HTTP-01 challenge.
   # While TLS-ALPN-01 could be used, disabling HTTP-01 seems only possible from
   # the JSON config, which won't work alongside Caddyfile.
-  networking.firewall.allowedTCPPorts = [80 443];
+  networking.firewall.allowedTCPPorts = [
+    80
+    443
+  ];
 
   system.stateVersion = "23.05";
 }

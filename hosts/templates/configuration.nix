@@ -5,7 +5,8 @@
   lib,
   pkgs,
   ...
-}: {
+}:
+{
   imports = [
     self.nixosModules.generic-disk-config
     self.nixosModules.service-openssh

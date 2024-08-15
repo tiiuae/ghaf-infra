@@ -5,7 +5,8 @@
   self,
   lib,
   ...
-}: let
+}:
+let
   # whenever a build is done, upload it to the blob storage via http (going
   # through the rclone proxy).
   # The secret-key= URL parameter configures the store, and which signing key it
@@ -23,36 +24,42 @@
   jenkins-casc = ./jenkins-casc.yaml;
 
   get-secret =
-    pkgs.writers.writePython3 "get-secret" {
-      libraries = with pkgs.python3.pkgs; [azure-keyvault-secrets azure-identity];
-    } ''
-      """
-      This script retrieves a secret specified in $SECRET_NAME
-      from an Azure Key Vault in $KEY_VAULT_NAME
-      and prints it to stdout.
+    pkgs.writers.writePython3 "get-secret"
+      {
+        libraries = with pkgs.python3.pkgs; [
+          azure-keyvault-secrets
+          azure-identity
+        ];
+      }
+      ''
+        """
+        This script retrieves a secret specified in $SECRET_NAME
+        from an Azure Key Vault in $KEY_VAULT_NAME
+        and prints it to stdout.
 
-      It uses the default Azure credential client.
-      """
+        It uses the default Azure credential client.
+        """
 
-      from azure.keyvault.secrets import SecretClient
-      from azure.identity import DefaultAzureCredential
+        from azure.keyvault.secrets import SecretClient
+        from azure.identity import DefaultAzureCredential
 
-      import os
+        import os
 
-      key_vault_name = os.environ["KEY_VAULT_NAME"]
-      secret_name = os.environ["SECRET_NAME"]
+        key_vault_name = os.environ["KEY_VAULT_NAME"]
+        secret_name = os.environ["SECRET_NAME"]
 
-      credential = DefaultAzureCredential()
-      client = SecretClient(
-          vault_url=f"https://{key_vault_name}.vault.azure.net",
-          credential=credential
-      )
+        credential = DefaultAzureCredential()
+        client = SecretClient(
+            vault_url=f"https://{key_vault_name}.vault.azure.net",
+            credential=credential
+        )
 
-      s = client.get_secret(secret_name)
-      print(s.value)
-    '';
-  rclone = pkgs.callPackage ../../../pkgs/rclone {};
-in {
+        s = client.get_secret(secret_name)
+        print(s.value)
+      '';
+  rclone = pkgs.callPackage ../../../pkgs/rclone { };
+in
+{
   imports = [
     ../../azure-common.nix
     self.nixosModules.service-openssh
@@ -88,7 +95,8 @@ in {
     listenAddress = "localhost";
     port = 8081;
     withCLI = true;
-    packages = with pkgs;
+    packages =
+      with pkgs;
       [
         bashInteractive # 'sh' step in jenkins pipeline requires this
         coreutils
@@ -126,7 +134,7 @@ in {
                   git = {
                     url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
                     clean = true;
-                    branches = ["*/main"];
+                    branches = [ "*/main" ];
                   };
                 }
               ];
@@ -145,7 +153,7 @@ in {
                   git = {
                     url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
                     clean = true;
-                    branches = ["*/main"];
+                    branches = [ "*/main" ];
                   };
                 }
               ];
@@ -164,7 +172,7 @@ in {
                   git = {
                     url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
                     clean = true;
-                    branches = ["*/main"];
+                    branches = [ "*/main" ];
                   };
                 }
               ];
@@ -183,7 +191,7 @@ in {
                   git = {
                     url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
                     clean = true;
-                    branches = ["*/main"];
+                    branches = [ "*/main" ];
                   };
                 }
               ];
@@ -202,7 +210,7 @@ in {
                   git = {
                     url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
                     clean = true;
-                    branches = ["*/main"];
+                    branches = [ "*/main" ];
                   };
                 }
               ];
@@ -214,7 +222,9 @@ in {
       ];
     };
   };
-  systemd.services.jenkins.serviceConfig = {Restart = "on-failure";};
+  systemd.services.jenkins.serviceConfig = {
+    Restart = "on-failure";
+  };
   systemd.services.jenkins-job-builder.serviceConfig = {
     Restart = "on-failure";
     RestartSec = 5;
@@ -227,10 +237,10 @@ in {
 
   # Install jenkins plugins, apply initial jenkins config
   systemd.services.jenkins-config = {
-    after = ["jenkins-job-builder.service"];
-    wantedBy = ["multi-user.target"];
+    after = [ "jenkins-job-builder.service" ];
+    wantedBy = [ "multi-user.target" ];
     # Make `jenkins-cli` available
-    path = with pkgs; [jenkins];
+    path = with pkgs; [ jenkins ];
     # Implicit URL parameter for `jenkins-cli`
     environment = {
       JENKINS_URL = "http://localhost:8081";
@@ -239,47 +249,49 @@ in {
       Restart = "on-failure";
       RestartSec = 5;
     };
-    script = let
-      jenkins-auth = "-auth admin:\"$(cat /var/lib/jenkins/secrets/initialAdminPassword)\"";
+    script =
+      let
+        jenkins-auth = "-auth admin:\"$(cat /var/lib/jenkins/secrets/initialAdminPassword)\"";
 
-      # disable initial setup, which needs to happen *after* all jenkins-cli setup.
-      # otherwise we won't have initialAdminPassword.
-      # Disabling the setup wizard cannot happen from configuration-as-code either.
-      jenkins-groovy = pkgs.writeText "groovy" ''
-        #!groovy
+        # disable initial setup, which needs to happen *after* all jenkins-cli setup.
+        # otherwise we won't have initialAdminPassword.
+        # Disabling the setup wizard cannot happen from configuration-as-code either.
+        jenkins-groovy = pkgs.writeText "groovy" ''
+          #!groovy
 
-        import jenkins.model.*
-        import hudson.util.*;
-        import jenkins.install.*;
+          import jenkins.model.*
+          import hudson.util.*;
+          import jenkins.install.*;
 
-        def instance = Jenkins.getInstance()
+          def instance = Jenkins.getInstance()
 
-        instance.setInstallState(InstallState.INITIAL_SETUP_COMPLETED)
-        instance.save()
+          instance.setInstallState(InstallState.INITIAL_SETUP_COMPLETED)
+          instance.save()
+        '';
+      in
+      ''
+        # Install plugins
+        jenkins-cli ${jenkins-auth} install-plugin \
+          "workflow-aggregator" "github" "timestamper" "pipeline-stage-view" "blueocean" \
+          "pipeline-graph-view" "github-pullrequest" "antisamy-markup-formatter" \
+          "configuration-as-code" "slack" "pipeline-utility-steps" "pipeline-build-step" \
+          "robot"
+
+        # Disable initial install
+        jenkins-cli ${jenkins-auth} groovy = < ${jenkins-groovy}
+
+        # Restart jenkins
+        jenkins-cli ${jenkins-auth} safe-restart
       '';
-    in ''
-      # Install plugins
-      jenkins-cli ${jenkins-auth} install-plugin \
-        "workflow-aggregator" "github" "timestamper" "pipeline-stage-view" "blueocean" \
-        "pipeline-graph-view" "github-pullrequest" "antisamy-markup-formatter" \
-        "configuration-as-code" "slack" "pipeline-utility-steps" "pipeline-build-step" \
-        "robot"
-
-      # Disable initial install
-      jenkins-cli ${jenkins-auth} groovy = < ${jenkins-groovy}
-
-      # Restart jenkins
-      jenkins-cli ${jenkins-auth} safe-restart
-    '';
   };
 
   # Define a fetch-remote-build-ssh-key unit populating
   # /etc/secrets/remote-build-ssh-key from Azure Key Vault.
   # Make it before and requiredBy nix-daemon.service.
   systemd.services.fetch-build-ssh-key = {
-    after = ["network.target"];
-    before = ["nix-daemon.service"];
-    requires = ["network.target"];
+    after = [ "network.target" ];
+    before = [ "nix-daemon.service" ];
+    requires = [ "network.target" ];
     wantedBy = [
       # nix-daemon is socket-activated, and having it here should be sufficient
       # to fetch the keys whenever a jenkins job connects to the daemon first.
@@ -303,9 +315,9 @@ in {
   # populate-known-hosts populates /root/.ssh/known_hosts with all hosts in the
   # builder subnet.
   systemd.services.populate-known-hosts = {
-    after = ["network.target"];
-    before = ["nix-daemon.service"];
-    requires = ["network.target"];
+    after = [ "network.target" ];
+    before = [ "nix-daemon.service" ];
+    requires = [ "network.target" ];
     wantedBy = [
       # nix-daemon is socket-activated, and having it here should be sufficient
       # to fetch the keys whenever a jenkins job connects to the daemon first.
@@ -329,9 +341,9 @@ in {
   # /etc/secrets/nix-signing-key from Azure Key Vault.
   # Make it before and requiredBy nix-daemon.service.
   systemd.services.fetch-binary-cache-signing-key = {
-    after = ["network.target"];
-    before = ["nix-daemon.service"];
-    requires = ["network.target"];
+    after = [ "network.target" ];
+    before = [ "nix-daemon.service" ];
+    requires = [ "network.target" ];
     wantedBy = [
       # nix-daemon is socket-activated, and having it here should be sufficient
       # to fetch the keys whenever a jenkins job connects to the daemon first.
@@ -354,7 +366,7 @@ in {
 
   # Provide a webdav endpoint for Jenkins to upload artifacts to.
   systemd.services.rclone-jenkins-artifacts = {
-    after = ["network.target"];
+    after = [ "network.target" ];
     serviceConfig = {
       Type = "notify";
       Restart = "always";
@@ -376,7 +388,7 @@ in {
   };
   # Restrict connections to the jenkins user only.
   systemd.sockets.rclone-jenkins-artifacts = {
-    wantedBy = ["sockets.target"];
+    wantedBy = [ "sockets.target" ];
     socketConfig = {
       ListenStream = "/run/rclone-jenkins-artifacts.sock";
       SocketUser = "jenkins";
@@ -387,7 +399,7 @@ in {
   # Provide a (read-only) HTTP endpoint (with listing) to browse artifacts.
   # These are exposed through caddy.
   systemd.services.rclone-jenkins-artifacts-browse = {
-    after = ["network.target"];
+    after = [ "network.target" ];
     serviceConfig = {
       Type = "notify";
       Restart = "always";
@@ -408,7 +420,7 @@ in {
     };
   };
   systemd.sockets.rclone-jenkins-artifacts-browse = {
-    wantedBy = ["sockets.target"];
+    wantedBy = [ "sockets.target" ];
     socketConfig.ListenStream = "/run/rclone-jenkins-artifacts-browse.sock";
   };
 
@@ -476,18 +488,19 @@ in {
 
   # Configure Nix to use the bucket (through rclone-http) as a substitutor.
   # The public key is passed in externally.
-  nix.settings.substituters = [
-    "http://localhost:8080"
-  ];
+  nix.settings.substituters = [ "http://localhost:8080" ];
 
   # Wait for cloud-init mounting before we start caddy.
-  systemd.services.caddy.after = ["cloud-init.service"];
-  systemd.services.caddy.requires = ["cloud-init.service"];
+  systemd.services.caddy.after = [ "cloud-init.service" ];
+  systemd.services.caddy.requires = [ "cloud-init.service" ];
 
   # Expose the HTTP[S] port. We still need HTTP for the HTTP-01 challenge.
   # While TLS-ALPN-01 could be used, disabling HTTP-01 seems only possible from
   # the JSON config, which won't work alongside Caddyfile.
-  networking.firewall.allowedTCPPorts = [80 443];
+  networking.firewall.allowedTCPPorts = [
+    80
+    443
+  ];
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 

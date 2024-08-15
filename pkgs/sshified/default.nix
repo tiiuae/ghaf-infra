@@ -1,9 +1,6 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
-{
-  buildGoModule,
-  fetchFromGitHub,
-}:
+{ buildGoModule, fetchFromGitHub }:
 buildGoModule rec {
   pname = "sshified";
   version = "v1.1.19";
@@ -23,5 +20,5 @@ buildGoModule rec {
     "-X main.Version=${version}"
   ];
 
-  subPackages = ["."];
+  subPackages = [ "." ];
 }
