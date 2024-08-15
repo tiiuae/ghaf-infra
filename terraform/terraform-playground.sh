@@ -112,7 +112,7 @@ main () {
     generate_azure_private_workspace_name
 
     # It is safe to run terraform init multiple times
-    terraform init &> /dev/null
+    terraform init
 
     # Run the given command
     if [ "$1" == "activate" ]; then
