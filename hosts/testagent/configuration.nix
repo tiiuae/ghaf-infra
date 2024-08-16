@@ -58,6 +58,11 @@ in {
   # Enable Acroname USB Smart switch, as well as LXA USB-SD-Mux support.
   services.udev.packages = [brainstem pkgs.usbsdmux];
 
+  # udev rules for test devices serial connections
+  services.udev.extraRules = ''
+    SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTD1BQQS", SYMLINK+="ttyORINNX1", MODE="0666", GROUP="dialout"
+  '';
+
   environment.systemPackages = [
     inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
     brainstem
@@ -113,6 +118,7 @@ in {
       pkgs.netcat
       pkgs.python3
       pkgs.wget
+      pkgs.usbsdmux
       brainstem
       inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
     ];
@@ -136,7 +142,7 @@ in {
         serial_port = "NONE";
         device_ip_address = "172.18.16.50";
         socket_ip_address = "172.18.16.30";
-        plug_type = "TAPOP100";
+        plug_type = "TAPOP100v2";
         location = "testagent";
         usbhub_serial = "F0A0D6CF";
         threads = 8;
@@ -150,7 +156,7 @@ in {
         usbhub_serial = "92D8AEB7";
         threads = 8;
       };
-      LenovoX1-1 = {
+      LenovoX1-2 = {
         serial_port = "NONE";
         device_ip_address = "172.18.16.66";
         socket_ip_address = "NONE";
