@@ -4,6 +4,7 @@
   pkgs,
   self,
   lib,
+  inputs,
   ...
 }:
 let
@@ -108,7 +109,10 @@ in
       ]
       ++ [
         rclone # used to copy artifacts
+        inputs.sbomnix.packages.${pkgs.system}.sbomnix # sbomnix, provenance, vulnxscan
+        inputs.ci-yubi.packages.${pkgs.system}.sigver # signing scripts
       ];
+
     extraJavaOptions = [
       # Useful when the 'sh' step fails:
       "-Dorg.jenkinsci.plugins.durabletask.BourneShellScript.LAUNCH_DIAGNOSTICS=true"
