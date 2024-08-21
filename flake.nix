@@ -36,13 +36,22 @@
       url = "github:nix-community/flake-compat";
       flake = false;
     };
+    # Used for deploying remote systems
+    deploy-rs = {
+      url = "github:serokell/deploy-rs";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    # pipeline dependencies
     robot-framework = {
       url = "github:tiiuae/ci-test-automation";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # Used for deploying remote systems
-    deploy-rs = {
-      url = "github:serokell/deploy-rs";
+    sbomnix = {
+      url = "github:tiiuae/sbomnix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    ci-yubi = {
+      url = "github:tiiuae/ci-yubi";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
