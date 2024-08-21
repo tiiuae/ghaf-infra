@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: 2024 TII (SSRC) and the Ghaf contributors
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "azure-nix-cache-proxy"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = { version = "0.7.5", features = ["http2"] }
+clap = { version = "4.5.16", features = ["derive", "env", "cargo"] }
+object_store = { version = "0.11.0", features = ["azure"] }
+tokio = { version = "1.39.3", features = ["macros", "rt-multi-thread"] }
+tokio-listener = { version = "0.4.3", features = ["axum07", "clap", "multi-listener", "sd_listen"] }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+nix-compat = { git = "https://code.tvl.fyi/depot.git:workspace=views/tvix.git" }

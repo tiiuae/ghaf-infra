@@ -6,6 +6,19 @@
   lib,
   ...
 }:
+let
+  azure-nix-cache-proxy = pkgs.rustPlatform.buildRustPackage {
+    name = "azure-nix-cache-proxy";
+    version = "0.0.0";
+    src = pkgs.nix-gitignore.gitignoreSource [ ] ./azure-nix-cache-proxy;
+    cargoLock = {
+      lockFile = ./azure-nix-cache-proxy/Cargo.lock;
+      outputHashes = {
+        "nix-compat-0.1.0" = "sha256-lkriRf9b7WKl15wPQNrWBhEk+oyDVY0VdCBjP4A6sNI=";
+      };
+    };
+  };
+in
 {
   imports = [
     ../../azure-common.nix
@@ -27,20 +40,24 @@
     ];
   };
 
-  services.rclone-http = {
-    enable = true;
-    listenAddress = "%t/rclone-http.sock";
-    extraArgs = [ "--azureblob-env-auth" ];
-    remote = ":azureblob:binary-cache-v1";
+  systemd.services.azure-nix-cache-proxy = {
+    serviceConfig = {
+      ExecStart = "${azure-nix-cache-proxy}/bin/azure-nix-cache-proxy -l sd-listen binary-cache-v1";
+      EnvironmentFile = "/var/lib/azure-nix-cache-proxy/env";
+    };
   };
 
-  # Grant (only) caddy write permissions to the socket.
-  # Note how we explicitly do NOT put the socket file in the rclone-http runtime
-  # directory.
-  systemd.sockets.rclone-http.socketConfig.SocketMode = "0600";
-  systemd.sockets.rclone-http.socketConfig.SocketUser = "caddy";
+  systemd.sockets.azure-nix-cache-proxy = {
+    wantedBy = [ "sockets.target" ];
+    socketConfig = {
+      ListenStream = "/run/azure-nix-cache-proxy.sock";
+      # Grant (only) caddy write permissions to the socket.
+      SocketMode = "0600";
+      SocketUser = "caddy";
+    };
+  };
 
-  # Expose the rclone-http unix socket over a HTTPS, limiting to certain
+  # Expose the azure-nix-cache-proxy unix socket over a HTTPS, limiting to certain
   # keys only, disallowing listing too.
   services.caddy = {
     enable = true;
@@ -50,19 +67,19 @@
         admin off
       }
 
-      # Proxy a subset of requests to rclone.
+      # Proxy a subset of requests to azure-nix-cache-proxy.
       {$SITE_ADDRESS} {
         handle /nix-cache-info {
-          reverse_proxy unix///run/rclone-http.sock
+          reverse_proxy unix///run/azure-nix-cache-proxy.sock
         }
         handle /*.narinfo {
-          reverse_proxy unix///run/rclone-http.sock
+          reverse_proxy unix///run/azure-nix-cache-proxy.sock
         }
         handle /nar/*.nar {
-          reverse_proxy unix///run/rclone-http.sock
+          reverse_proxy unix///run/azure-nix-cache-proxy.sock
         }
         handle /nar/*.nar.* {
-          reverse_proxy unix///run/rclone-http.sock
+          reverse_proxy unix///run/azure-nix-cache-proxy.sock
         }
       }
     '';

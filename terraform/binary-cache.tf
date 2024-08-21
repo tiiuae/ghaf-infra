@@ -40,7 +40,7 @@ module "binary_cache_vm" {
     write_files = [
       {
         content = "AZURE_STORAGE_ACCOUNT_NAME=${data.azurerm_storage_account.binary_cache.name}",
-        "path"  = "/var/lib/rclone-http/env"
+        "path"  = "/var/lib/azure-nix-cache-proxy/env"
       },
       {
         content = "SITE_ADDRESS=${local.opts[local.conf].binary_cache_url}"
