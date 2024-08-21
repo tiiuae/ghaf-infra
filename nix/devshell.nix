@@ -10,6 +10,7 @@
           git
           jq
           nix
+          nixfmt-rfc-style
           nixos-rebuild
           python3.pkgs.black
           python3.pkgs.colorlog
