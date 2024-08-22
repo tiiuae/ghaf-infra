@@ -4,14 +4,17 @@
 use std::sync::Arc;
 
 use axum::{
-    body::Body,
+    body::Bytes,
     http::StatusCode,
     response::Response,
     routing::{get, head},
     Router,
 };
+use axum_extra::{headers::Range, TypedHeader};
+use axum_range::{AsyncSeekStart, KnownSize, Ranged};
 use nix_compat::nixbase32;
 use object_store::ObjectStore;
+use tokio::io::AsyncRead;
 use tracing::{debug, warn};
 
 pub mod util;
@@ -50,37 +53,29 @@ async fn root() -> String {
     )
 }
 
-async fn response_from_store(
-    store: impl ObjectStore,
-    p: &object_store::path::Path,
-) -> Result<Response, StatusCode> {
-    match store.get(p).await {
-        Err(object_store::Error::NotFound { path, source }) => {
-            debug!(err=%source, %path, "path not found");
-            Err(StatusCode::NOT_FOUND)
-        }
-        Err(e) => {
-            warn!(err=%e, "error from object store");
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-        Ok(resp) => Ok(Response::builder()
-            .status(StatusCode::OK)
-            .header("content-length", resp.meta.size)
-            .body(Body::from_stream(resp.into_stream()))
-            .unwrap()),
-    }
-}
-
 async fn narinfo_get(
     axum::extract::Path(narinfo_str): axum::extract::Path<String>,
     axum::extract::State(AppState { store }): axum::extract::State<AppState>,
-) -> Result<Response, StatusCode> {
+) -> Result<Bytes, StatusCode> {
     let digest =
         nix_compat::nix_http::parse_narinfo_str(&narinfo_str).ok_or(StatusCode::NOT_FOUND)?;
     let p = &object_store::path::Path::parse(format!("{}.narinfo", nixbase32::encode(&digest)))
         .expect("valid path");
 
-    response_from_store(store as Arc<dyn ObjectStore>, p).await
+    let resp = store.get(&p).await.map_err(|e| {
+        if let object_store::Error::NotFound { path, source } = e {
+            debug!(err=%source, %path, "path not found");
+            StatusCode::NOT_FOUND
+        } else {
+            warn!(err=%e, "error from object store");
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+    })?;
+
+    resp.bytes().await.map_err(|e| {
+        warn!(err=%e, "error collecting to bytes");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })
 }
 
 async fn narinfo_head(
@@ -109,9 +104,11 @@ async fn narinfo_head(
 }
 
 async fn nar_get(
+    ranges: Option<TypedHeader<Range>>,
     axum::extract::Path(nar_str): axum::extract::Path<String>,
     axum::extract::State(AppState { store }): axum::extract::State<AppState>,
-) -> Result<Response, StatusCode> {
+) -> Result<axum_range::Ranged<axum_range::KnownSize<impl AsyncRead + AsyncSeekStart>>, StatusCode>
+{
     let (digest, compression_suffix) =
         nix_compat::nix_http::parse_nar_str(&nar_str).ok_or(StatusCode::NOT_FOUND)?;
 
@@ -122,13 +119,41 @@ async fn nar_get(
     ))
     .expect("valid path");
 
-    response_from_store(store as Arc<dyn ObjectStore>, &p).await
+    // stat the object
+    let meta = store.head(&p).await.map_err(|e| {
+        if let object_store::Error::NotFound { path, source } = e {
+            debug!(err=%source, %path, "path not found");
+            StatusCode::NOT_FOUND
+        } else {
+            warn!(err=%e, "error from object store");
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+    })?;
+
+    let r = object_store::buffered::BufReader::with_capacity(store, &meta, 1024 * 1024);
+    Ok(Ranged::new(
+        ranges.map(|TypedHeader(ranges)| ranges),
+        KnownSize::sized(r, meta.size as u64),
+    ))
 }
 
 async fn nix_cache_info(
     axum::extract::State(AppState { store }): axum::extract::State<AppState>,
-) -> Result<Response, StatusCode> {
+) -> Result<Bytes, StatusCode> {
     let p = object_store::path::Path::parse("nix-cache-info").expect("valid path");
 
-    response_from_store(store as Arc<dyn ObjectStore>, &p).await
+    let resp = store.get(&p).await.map_err(|e| {
+        if let object_store::Error::NotFound { path, source } = e {
+            debug!(err=%source, %path, "path not found");
+            StatusCode::NOT_FOUND
+        } else {
+            warn!(err=%e, "error from object store");
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+    })?;
+
+    resp.bytes().await.map_err(|e| {
+        warn!(err=%e, "error collecting to bytes");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })
 }
