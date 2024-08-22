@@ -187,7 +187,7 @@ in
         }
         {
           job = {
-            name = "ghaf-test-boot";
+            name = "ghaf-hw-test";
             project-type = "pipeline";
             pipeline-scm = {
               scm = [
@@ -199,7 +199,7 @@ in
                   };
                 }
               ];
-              script-path = "ghaf-test-boot.groovy";
+              script-path = "ghaf-hw-test.groovy";
               lightweight-checkout = true;
             };
           };
