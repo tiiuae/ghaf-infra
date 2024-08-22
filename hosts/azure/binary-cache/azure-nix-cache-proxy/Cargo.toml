@@ -15,3 +15,5 @@ tokio-listener = { version = "0.4.3", features = ["axum07", "clap", "multi-liste
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 nix-compat = { git = "https://code.tvl.fyi/depot.git:workspace=views/tvix.git" }
+axum-range = "0.4.0"
+axum-extra = "0.9.3"
