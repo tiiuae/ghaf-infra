@@ -4,20 +4,22 @@
 use std::sync::Arc;
 
 use axum::{
-    body::Bytes,
     http::StatusCode,
     response::Response,
     routing::{get, head},
     Router,
 };
 use axum_extra::{headers::Range, TypedHeader};
-use axum_range::{AsyncSeekStart, KnownSize, Ranged};
+use axum_range::{KnownSize, Ranged};
 use nix_compat::nixbase32;
 use object_store::ObjectStore;
-use tokio::io::AsyncRead;
 use tracing::{debug, warn};
 
 pub mod util;
+
+const MIME_TYPE_NAR: &str = "application/x-nix-nar";
+const MIME_TYPE_NARINFO: &str = "text/x-nix-narinfo";
+const MIME_TYPE_CACHE_INFO: &str = "text/x-nix-cache-info";
 
 #[derive(Clone)]
 pub struct AppState {
@@ -56,13 +58,13 @@ async fn root() -> String {
 async fn narinfo_get(
     axum::extract::Path(narinfo_str): axum::extract::Path<String>,
     axum::extract::State(AppState { store }): axum::extract::State<AppState>,
-) -> Result<Bytes, StatusCode> {
+) -> Result<Response, StatusCode> {
     let digest =
         nix_compat::nix_http::parse_narinfo_str(&narinfo_str).ok_or(StatusCode::NOT_FOUND)?;
     let p = &object_store::path::Path::parse(format!("{}.narinfo", nixbase32::encode(&digest)))
         .expect("valid path");
 
-    let resp = store.get(&p).await.map_err(|e| {
+    let resp = store.get(p).await.map_err(|e| {
         if let object_store::Error::NotFound { path, source } = e {
             debug!(err=%source, %path, "path not found");
             StatusCode::NOT_FOUND
@@ -72,10 +74,15 @@ async fn narinfo_get(
         }
     })?;
 
-    resp.bytes().await.map_err(|e| {
+    let body = resp.bytes().await.map_err(|e| {
         warn!(err=%e, "error collecting to bytes");
         StatusCode::INTERNAL_SERVER_ERROR
-    })
+    })?;
+
+    Ok(Response::builder()
+        .header("Content-Type", MIME_TYPE_NARINFO)
+        .body(body.into())
+        .unwrap())
 }
 
 async fn narinfo_head(
@@ -90,6 +97,7 @@ async fn narinfo_head(
     match store.head(&path).await {
         Ok(_) => Ok(Response::builder()
             .status(StatusCode::NO_CONTENT)
+            .header("Content-Type", MIME_TYPE_NARINFO)
             .body("".into())
             .unwrap()),
         Err(object_store::Error::NotFound { path, source }) => {
@@ -107,8 +115,7 @@ async fn nar_get(
     ranges: Option<TypedHeader<Range>>,
     axum::extract::Path(nar_str): axum::extract::Path<String>,
     axum::extract::State(AppState { store }): axum::extract::State<AppState>,
-) -> Result<axum_range::Ranged<axum_range::KnownSize<impl AsyncRead + AsyncSeekStart>>, StatusCode>
-{
+) -> Result<impl axum::response::IntoResponse, StatusCode> {
     let (digest, compression_suffix) =
         nix_compat::nix_http::parse_nar_str(&nar_str).ok_or(StatusCode::NOT_FOUND)?;
 
@@ -131,15 +138,18 @@ async fn nar_get(
     })?;
 
     let r = object_store::buffered::BufReader::with_capacity(store, &meta, 1024 * 1024);
-    Ok(Ranged::new(
-        ranges.map(|TypedHeader(ranges)| ranges),
-        KnownSize::sized(r, meta.size as u64),
+    Ok((
+        [("Content-Type", MIME_TYPE_NAR)],
+        (Ranged::new(
+            ranges.map(|TypedHeader(ranges)| ranges),
+            KnownSize::sized(r, meta.size as u64),
+        )),
     ))
 }
 
 async fn nix_cache_info(
     axum::extract::State(AppState { store }): axum::extract::State<AppState>,
-) -> Result<Bytes, StatusCode> {
+) -> Result<Response, StatusCode> {
     let p = object_store::path::Path::parse("nix-cache-info").expect("valid path");
 
     let resp = store.get(&p).await.map_err(|e| {
@@ -152,8 +162,13 @@ async fn nix_cache_info(
         }
     })?;
 
-    resp.bytes().await.map_err(|e| {
+    let body = resp.bytes().await.map_err(|e| {
         warn!(err=%e, "error collecting to bytes");
         StatusCode::INTERNAL_SERVER_ERROR
-    })
+    })?;
+
+    Ok(Response::builder()
+        .header("Content-Type", MIME_TYPE_CACHE_INFO)
+        .body(body.into())
+        .unwrap())
 }
