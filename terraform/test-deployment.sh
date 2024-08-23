@@ -178,9 +178,6 @@ test_build_end_to_end () {
     # Trigger a build on jenkins-controller, returning the build output hash
     hash=$(trigger_build "$controller" "$arch")
     if [ -z "$hash" ]; then exit 1; fi
-    # Restart rclone-http to make sure the uploaded build result is available
-    # in the exposed binary cache API
-    exec_ssh_cmd "sudo systemctl restart rclone-http" "$bincache"
     # Request narinfo given the build hash we just generated
     narinfo=$(get_narinfo "$bincache" "$hash")
     if [ -z "$narinfo" ]; then exit 1; fi
