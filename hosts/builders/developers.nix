@@ -21,6 +21,13 @@ let
       ];
     }
     {
+      desc = "Alexey Mineev";
+      name = "ledeus";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDItqJFjtUppxV4ajaTDlCG70JRTYtvVtcfYXiSSEbh4 ledeus@alexeym-laptop"
+      ];
+    }
+    {
       desc = "Mariia Azbeleva";
       name = "azbeleva";
       keys = [
