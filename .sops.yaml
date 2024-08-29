@@ -13,6 +13,7 @@ keys:
   - &binarycache age1s47a3y44j695gemcl0kqgjlxxvaa50de9s69jy2l6vc8xtmk5pcskhpknl
   - &monitoring age17s9sc2cgt9t30cyl65zya8p4zmwnndrx2r896e7gzgl08sjn0qmq3t6shs
   - &testagent age12nrv5a9rk9vqvx2tqvghn4kt9ps6gdszmmynhjegl2ewefkh03fsexuy9y
+  - &testagent-dev age1qjhxuh80tg2vq32kmwu2ne4vqvd8q2up7css30x0yefkrhq9jd0sxju3fa
   - &build3 age1q7c2wlrpj0dvthdg7v9j4jmee0kzda8ggtp4nq8jay9u4catee3sn9pa0w
   - &hetzarm age1ppunea05ue028qezt9rvhp59dgcskkleetyjpqtxzea7vtp4ppfqh7ltuy
   - &ghaf-log age15kk5q4u68pfsy5auzah6klsdk6p50jnkr986u7vpzfrnj30pz4ssq7wnud
@@ -39,6 +40,12 @@ creation_rules:
       - *testagent
       - *jrautiola
       - *flokli
+      - *vjuntunen
+  - path_regex: hosts/testagent-dev/secrets.yaml$
+    key_groups:
+    - age:
+      - *testagent-dev
+      - *jrautiola
       - *vjuntunen
   - path_regex: hosts/builders/build3/secrets.yaml$
     key_groups:
