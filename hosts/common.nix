@@ -22,9 +22,11 @@ in
     nixPath = lib.mapAttrsToList (key: value: "${key}=${value.to.path}") config.nix.registry;
 
     settings = {
-      # root is trusted by default, but only when other users aren't specified.
-      # this line is here to merge the arrays when additional users are added
-      trusted-users = [ "root" ];
+      # We can trust root and any users with sudo rights
+      trusted-users = [
+        "root"
+        "@wheel"
+      ];
       # Enable flakes and new 'nix' command
       experimental-features = "nix-command flakes";
       # Subsituters
