@@ -95,6 +95,10 @@ TARGETS = OrderedDict(
             hostname="172.18.16.60",
             nixosconfig="testagent",
         ),
+        "testagent-dev": TargetHost(
+            hostname="172.18.16.33",
+            nixosconfig="testagent-dev",
+        ),
         "hetzarm": TargetHost(
             hostname="65.21.20.242",
             nixosconfig="hetzarm",
@@ -401,7 +405,7 @@ def install(c: Any, alias) -> None:
     nixosconfig = _get_target(alias).nixosconfig
     with TemporaryDirectory() as tmpdir:
         decrypt_host_key(nixosconfig, tmpdir)
-        gitrev = "0a929da703b18b9191cbbd92c3092b38514d450b"
+        gitrev = "2991be5b522c88244b8833dd662cac406e3d5d28"
         command = f"nix run github:numtide/nixos-anywhere?rev={gitrev} --"
         command += f" {h.host} --extra-files {tmpdir} --flake .#{nixosconfig}"
         command += " --option accept-flake-config true"

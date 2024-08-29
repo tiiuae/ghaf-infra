@@ -19,6 +19,7 @@ let
     monitoring = mkDeployment "x86_64-linux" "monitoring" "172.18.20.108";
     binarycache = mkDeployment "x86_64-linux" "binarycache" "172.18.20.109";
     testagent = mkDeployment "x86_64-linux" "testagent" "172.18.16.60";
+    testagent-dev = mkDeployment "x86_64-linux" "testagent-dev" "172.18.16.33";
     ghaf-log = mkDeployment "x86_64-linux" "ghaf-log" "95.217.177.197";
   };
 

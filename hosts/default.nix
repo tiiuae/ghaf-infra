@@ -51,6 +51,7 @@ in
     nixos-monitoring = ./monitoring/configuration.nix;
     nixos-himalia = ./himalia/configuration.nix;
     nixos-testagent = ./testagent/configuration.nix;
+    nixos-testagent-dev = ./testagent-dev/configuration.nix;
     nixos-ghaf-log = ./ghaf-log/configuration.nix;
   };
 
@@ -78,6 +79,7 @@ in
         "monitoring"
         "himalia"
         "testagent"
+        "testagent-dev"
         "ghaf-log"
       ]
   );
