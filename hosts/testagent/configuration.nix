@@ -13,7 +13,8 @@
 let
   # Vendored in, as brainstem isn't suitable for nixpkgs packaging upstream:
   # https://github.com/NixOS/nixpkgs/pull/313643
-  brainstem = pkgs.callPackage ./brainstem.nix { };
+  brainstem = pkgs.callPackage ../../pkgs/brainstem { };
+
   jenkins-connection-script = pkgs.writeScript "jenkins-connect.sh" ''
     #!/usr/bin/env bash
     set -eu
@@ -46,56 +47,39 @@ in
       user-hrosten
     ]);
 
-  # Bootloader.
-  boot.loader = {
-    systemd-boot.enable = true;
-    efi.canTouchEfiVariables = true;
-  };
-
   networking = {
     hostName = "testagent";
     useNetworkd = true;
   };
 
-  # Enable Acroname USB Smart switch, as well as LXA USB-SD-Mux support.
-  services.udev.packages = [
-    brainstem
-    pkgs.usbsdmux
-  ];
-
-  # udev rules for test devices serial connections
-  services.udev.extraRules = ''
-    SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTD1BQQS", SYMLINK+="ttyORINNX1", MODE="0666", GROUP="dialout"
-    SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea71", ATTRS{serial}=="0642246B630C149011EC987B167DB04", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="ttyRISCV1", MODE="0666", GROUP="dialout"
-  '';
-
-  environment.systemPackages = [
-    inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
-    brainstem
-    pkgs.minicom
-    pkgs.usbsdmux
-  ];
-
-  # Disable suspend and hibernate - systemd settings
-  services.logind.extraConfig = ''
-    HandleSuspendKey=ignore
-    HandleLidSwitch=ignore
-    HandleLidSwitchDocked=ignore
-    HandleHibernateKey=ignore
-  '';
-
-  # Ensure the system does not automatically suspend or hibernate
-  # This is an additional measure to above, can be adjusted as needed
-  services.upower.enable = false;
-
-  # Disable the GNOME3/GDM auto-suspend feature that cannot be disabled in GUI!
-  # If no user is logged in, the machine will power down after 20 minutes.
-  systemd.targets = {
-    sleep.enable = false;
-    suspend.enable = false;
-    hibernate.enable = false;
-    hybrid-sleep.enable = false;
+  boot.loader = {
+    systemd-boot.enable = true;
+    efi.canTouchEfiVariables = true;
   };
+
+  services.udev = {
+    # Enable Acroname USB Smart switch, as well as LXA USB-SD-Mux support.
+    packages = [
+      brainstem
+      pkgs.usbsdmux
+    ];
+
+    # udev rules for test devices serial connections
+    extraRules = ''
+      SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTD1BQQS", SYMLINK+="ttyORINNX1", MODE="0666", GROUP="dialout"
+      SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea71", ATTRS{serial}=="0642246B630C149011EC987B167DB04", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="ttyRISCV1", MODE="0666", GROUP="dialout"
+    '';
+  };
+
+  environment.systemPackages =
+    [
+      inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
+      brainstem
+    ]
+    ++ (with pkgs; [
+      minicom
+      usbsdmux
+    ]);
 
   # The Jenkins slave service is very barebones
   # it only installs java and sets up jenkins user
@@ -108,30 +92,39 @@ in
     "tty"
   ];
 
-  # Open connection to Jenkins controller as a systemd service
+  # Open connection to Jenkins controller
   systemd.services.jenkins-connection = {
     after = [ "network.target" ];
     wantedBy = [ "multi-user.target" ];
-    path = [
-      pkgs.jdk
-      pkgs.git
-      pkgs.bashInteractive
-      pkgs.coreutils
-      pkgs.util-linux
-      pkgs.nix
-      pkgs.zstd
-      pkgs.jq
-      pkgs.csvkit
-      pkgs.sudo
-      pkgs.openssh
-      pkgs.iputils
-      pkgs.netcat
-      pkgs.python3
-      pkgs.wget
-      pkgs.usbsdmux
-      brainstem
-      inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
-    ];
+
+    # Give up if it fails more than 5 times in 60 second interval
+    startLimitBurst = 5;
+    startLimitIntervalSec = 60;
+
+    path =
+      [
+        brainstem
+        inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
+      ]
+      ++ (with pkgs; [
+        jdk
+        git
+        bashInteractive
+        coreutils
+        util-linux
+        nix
+        zstd
+        jq
+        csvkit
+        sudo
+        openssh
+        iputils
+        netcat
+        python3
+        wget
+        usbsdmux
+      ]);
+
     serviceConfig = {
       Type = "simple";
       User = "jenkins";
@@ -140,12 +133,9 @@ in
       Restart = "on-failure";
       RestartSec = 5;
     };
-    # Give up if it fails more than 5 times in 60 second interval
-    startLimitBurst = 5;
-    startLimitIntervalSec = 60;
   };
 
-  # configuration file for test hardware devices
+  # Details of the hardware devices connected to this host
   environment.etc."jenkins/test_config.json".text = builtins.toJSON {
     addresses = {
       NUC1 = {
