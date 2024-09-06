@@ -223,6 +223,25 @@ in
             };
           };
         }
+        {
+          job = {
+            name = "ghaf-release-pipeline";
+            project-type = "pipeline";
+            pipeline-scm = {
+              scm = [
+                {
+                  git = {
+                    url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
+                    clean = true;
+                    branches = [ "*/main" ];
+                  };
+                }
+              ];
+              script-path = "ghaf-release-pipeline.groovy";
+              lightweight-checkout = true;
+            };
+          };
+        }
       ];
     };
   };
