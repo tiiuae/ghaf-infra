@@ -98,7 +98,7 @@ get_recursively () {
         --level=inf \
         --timestamping \
         --execute robots=off \
-        --reject 'index.html*' \
+        --reject 'index.html?*' \
         --user-agent=Mozilla/5.0 \
         --accept '*' \
         --random-wait \
