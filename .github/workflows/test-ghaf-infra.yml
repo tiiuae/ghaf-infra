@@ -55,14 +55,14 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request_target' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           fetch-depth: 0
 
       - name: Check if workflow is modified
         id: workflow-changed
-        uses: tj-actions/changed-files@v40
+        uses: tj-actions/changed-files@v45.0.1
         with:
           files: .github/workflows/test-ghaf-infra.yml
 
@@ -85,7 +85,7 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.7
         with:
             ref: ${{ github.event.pull_request.head.sha || github.ref }}
             fetch-depth: 0
