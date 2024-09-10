@@ -16,7 +16,7 @@
       common
       ficolo-common
       service-openssh
-      service-node-exporter
+      service-monitoring
       user-cazfi
       user-hrosten
       user-jrautiola
@@ -30,6 +30,11 @@
   hardware = {
     enableRedistributableFirmware = true;
     cpu.intel.updateMicrocode = true;
+  };
+
+  services.monitoring = {
+    metrics.enable = true;
+    logs.enable = true;
   };
 
   boot = {

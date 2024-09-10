@@ -23,7 +23,7 @@
       common
       service-openssh
       service-nginx
-      service-node-exporter
+      service-monitoring
       user-jrautiola
       user-cazfi
       user-hrosten
@@ -70,6 +70,8 @@
 
   # this server has been reinstalled with 24.05
   system.stateVersion = lib.mkForce "24.05";
+
+  services.monitoring.metrics.enable = true;
 
   # Grafana
   services.grafana = {

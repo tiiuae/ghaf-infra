@@ -21,7 +21,7 @@
       ficolo-common
       service-openssh
       service-nginx
-      service-node-exporter
+      service-monitoring
       user-jrautiola
       user-cazfi
       user-karim
@@ -53,6 +53,11 @@
   security.acme = {
     acceptTerms = true;
     defaults.email = "trash@unikie.com";
+  };
+
+  services.monitoring = {
+    metrics.enable = true;
+    logs.enable = true;
   };
 
   services.nginx = {

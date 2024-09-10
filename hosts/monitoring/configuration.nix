@@ -30,7 +30,7 @@ in
       ficolo-common
       service-openssh
       service-nginx
-      service-node-exporter
+      service-monitoring
       user-jrautiola
       user-karim
     ]);
@@ -40,14 +40,8 @@ in
   networking = {
     hostName = "monitoring";
     firewall = {
-      allowedTCPPorts = [
-        config.services.prometheus.port
-        config.services.grafana.settings.server.http_port
-      ];
-      allowedUDPPorts = [
-        config.services.prometheus.port
-        config.services.grafana.settings.server.http_port
-      ];
+      allowedTCPPorts = [ config.services.prometheus.port ];
+      allowedUDPPorts = [ config.services.prometheus.port ];
     };
   };
 
@@ -78,6 +72,11 @@ in
     restartTriggers = [ config.environment.etc."ssh/ssh_known_hosts".source ];
   };
 
+  services.monitoring = {
+    metrics.enable = true;
+    logs.enable = true;
+  };
+
   services.grafana = {
     enable = true;
 
@@ -105,7 +104,49 @@ in
         isDefault = true;
         url = "http://${config.services.prometheus.listenAddress}:${toString config.services.prometheus.port}";
       }
+      {
+        name = "loki";
+        type = "loki";
+        url = "http://${config.services.loki.configuration.server.http_listen_address}:${toString config.services.loki.configuration.server.http_listen_port}";
+      }
     ];
+  };
+
+  services.loki = {
+    enable = true;
+
+    configuration = {
+      auth_enabled = false;
+      server = {
+        http_listen_port = 3100;
+        http_listen_address = "127.0.0.1";
+        log_level = "info";
+      };
+
+      common = {
+        path_prefix = config.services.loki.dataDir;
+        storage.filesystem = {
+          chunks_directory = "${config.services.loki.dataDir}/chunks";
+          rules_directory = "${config.services.loki.dataDir}/rules";
+        };
+        replication_factor = 1;
+        ring.kvstore.store = "inmemory";
+        ring.instance_addr = "127.0.0.1";
+      };
+
+      schema_config.configs = [
+        {
+          from = "2020-11-08";
+          store = "tsdb";
+          object_store = "filesystem";
+          schema = "v13";
+          index.prefix = "index_";
+          index.period = "24h";
+        }
+      ];
+
+      query_range.cache_results = true;
+    };
   };
 
   services.prometheus = {
@@ -194,14 +235,16 @@ in
     ];
   };
 
-  services.nginx = {
-    virtualHosts = {
-      "_" = {
-        default = true;
-        locations."/" = {
-          proxyPass = "http://127.0.0.1:${toString config.services.grafana.settings.server.http_port}";
-          proxyWebsockets = true;
-        };
+  services.nginx.virtualHosts."_" = {
+    default = true;
+    locations = {
+      "/" = {
+        proxyPass = "http://127.0.0.1:${toString config.services.grafana.settings.server.http_port}";
+        proxyWebsockets = true;
+      };
+      "/loki" = {
+        proxyPass = "http://127.0.0.1:${toString config.services.loki.configuration.server.http_listen_port}/loki";
+        proxyWebsockets = true;
       };
     };
   };
