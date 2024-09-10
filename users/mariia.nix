@@ -6,7 +6,7 @@
       description = "Mariia Azbeleva";
       isNormalUser = true;
       openssh.authorizedKeys.keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMXq8i5FHMw7vRpAZeXnYux5e6xFgObJgq4+bnY/6s7f"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM3TWpdHLfTiL9mvw4REkUrd/ob5Nto8XqSIrPPhn7gG mariiaazbeleva@nixos"
       ];
       extraGroups = [
         "networkmanager"
