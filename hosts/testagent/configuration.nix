@@ -67,6 +67,7 @@ in
     # udev rules for test devices serial connections
     extraRules = ''
       SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTD1BQQS", SYMLINK+="ttyORINNX1", MODE="0666", GROUP="dialout"
+      SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTC0VRXR", SYMLINK+="ttyNUC1", MODE="0666", GROUP="dialout"
       SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea71", ATTRS{serial}=="0642246B630C149011EC987B167DB04", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="ttyRISCV1", MODE="0666", GROUP="dialout"
     '';
   };
@@ -139,7 +140,7 @@ in
   environment.etc."jenkins/test_config.json".text = builtins.toJSON {
     addresses = {
       NUC1 = {
-        serial_port = "NONE";
+        serial_port = "/dev/ttyNUC1";
         device_ip_address = "172.18.16.50";
         socket_ip_address = "172.18.16.30";
         plug_type = "TAPOP100v2";
