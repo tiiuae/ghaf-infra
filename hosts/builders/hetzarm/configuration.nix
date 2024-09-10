@@ -20,7 +20,7 @@
     ++ (with self.nixosModules; [
       common
       service-openssh
-      service-node-exporter
+      service-monitoring
       user-cazfi
       user-hrosten
       user-jrautiola
@@ -37,6 +37,8 @@
     hostName = "hetzarm";
     useDHCP = true;
   };
+
+  services.monitoring.metrics.enable = true;
 
   boot = {
     initrd.availableKernelModules = [
