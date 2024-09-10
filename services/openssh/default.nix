@@ -29,7 +29,11 @@
   networking.firewall.allowedTCPPorts = [ 22 ];
 
   # Ban brute force SSH
-  services.fail2ban.enable = true;
+  services.fail2ban = {
+    enable = true;
+    bantime-increment.enable = true;
+    jails.sshd.settings.filter = "sshd[mode=aggressive]";
+  };
 
   environment.systemPackages = [ pkgs.kitty.terminfo ];
 }
