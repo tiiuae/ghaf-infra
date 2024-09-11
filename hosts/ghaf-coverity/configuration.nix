@@ -22,6 +22,7 @@
       service-openssh
       user-jrautiola
       user-ktu
+      user-fayad
     ]);
 
   # this server has been installed with 24.05
