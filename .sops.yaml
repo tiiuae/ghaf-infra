@@ -17,6 +17,7 @@ keys:
   - &build3 age1q7c2wlrpj0dvthdg7v9j4jmee0kzda8ggtp4nq8jay9u4catee3sn9pa0w
   - &hetzarm age1ppunea05ue028qezt9rvhp59dgcskkleetyjpqtxzea7vtp4ppfqh7ltuy
   - &ghaf-log age15kk5q4u68pfsy5auzah6klsdk6p50jnkr986u7vpzfrnj30pz4ssq7wnud
+  - &ghaf-coverity age172azvwv5vne79mqfhvdvk9j95gn5v04uk9t3fjdfe5p7dv7kucvqpygxkx
 
 creation_rules:
   - path_regex: terraform/azarm/secrets.yaml$
@@ -61,4 +62,9 @@ creation_rules:
     key_groups:
     - age:
       - *ghaf-log
+      - *jrautiola
+  - path_regex: hosts/ghaf-coverity/secrets.yaml$
+    key_groups:
+    - age:
+      - *ghaf-coverity
       - *jrautiola
