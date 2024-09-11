@@ -21,6 +21,7 @@ let
     testagent = mkDeployment "x86_64-linux" "testagent" "172.18.16.60";
     testagent-dev = mkDeployment "x86_64-linux" "testagent-dev" "172.18.16.33";
     ghaf-log = mkDeployment "x86_64-linux" "ghaf-log" "95.217.177.197";
+    ghaf-coverity = mkDeployment "x86_64-linux" "ghaf-coverity" "37.27.204.82";
   };
 
   aarch64-nodes = {
