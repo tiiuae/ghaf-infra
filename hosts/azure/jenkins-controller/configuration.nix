@@ -106,6 +106,7 @@ in
         zstd
         jq
         csvkit
+        curl
       ]
       ++ [
         rclone # used to copy artifacts
