@@ -121,6 +121,8 @@ in
       "-Dhudson.model.DirectoryBrowserSupport.CSP=\"sandbox allow-scripts; default-src 'none'; img-src 'self' data: ; style-src 'self' 'unsafe-inline' data: ; script-src 'self' 'unsafe-inline' 'unsafe-eval';\""
       # Point to configuration-as-code config
       "-Dcasc.jenkins.config=${jenkins-casc}"
+      # Increase the number of rows shown in Stage View (default is 10)
+      "-Dcom.cloudbees.workflow.rest.external.JobExt.maxRunsPerJob=32"
     ];
     # Configure jenkins job(s):
     # https://jenkins-job-builder.readthedocs.io/en/latest/project_pipeline.html
