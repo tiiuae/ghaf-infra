@@ -107,6 +107,7 @@ in
         jq
         csvkit
         curl
+        nix-eval-jobs
       ]
       ++ [
         rclone # used to copy artifacts
