@@ -274,6 +274,7 @@ in
     serviceConfig = {
       Restart = "on-failure";
       RestartSec = 5;
+      RequiresMountsFor = "/var/lib/jenkins";
     };
     script =
       let
