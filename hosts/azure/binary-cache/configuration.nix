@@ -7,15 +7,25 @@
   ...
 }:
 let
-  azure-nix-cache-proxy = pkgs.rustPlatform.buildRustPackage {
+  azure-nix-cache-proxy = pkgs.rustPlatform.buildRustPackage rec {
     name = "azure-nix-cache-proxy";
     version = "0.0.0";
-    src = pkgs.nix-gitignore.gitignoreSource [ ] ./azure-nix-cache-proxy;
+    src = pkgs.fetchFromGitHub {
+      owner = "tiiuae";
+      repo = "azure-nix-cache-proxy";
+      rev = "7e6b4e8b6e7081cd14aaadc63950f31eae2ae032";
+      hash = "sha256-ZTr0AjYhZScjvUvvf/q6e4c5c4ndhnKHuf7y4UogSoM=";
+    };
     cargoLock = {
-      lockFile = ./azure-nix-cache-proxy/Cargo.lock;
+      lockFile = "${src}/Cargo.lock";
       outputHashes = {
-        "nix-compat-0.1.0" = "sha256-lkriRf9b7WKl15wPQNrWBhEk+oyDVY0VdCBjP4A6sNI=";
+        "nix-compat-0.1.0" = "sha256-zdil1FMtKnnMWuN9yMqJcYTlwXR+QiPoq6wUi1OpJ+w=";
       };
+    };
+    meta = {
+      description = "Expose a Azure Storage Container hosting Nix binary cache contents over HTTP.";
+      homepage = "https://github.com/tiiuae/azure-nix-cache-proxy";
+      license = lib.licenses.gpl3Plus;
     };
   };
 in
