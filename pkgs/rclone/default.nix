@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 { pkgs, ... }:
 pkgs.rclone.overrideAttrs (oldAttrs: {
+  # These will be included in rclone v1.68.0
   patches = (oldAttrs.patches or [ ]) ++ [
     # https://github.com/rclone/rclone/pull/7801
     ./http-socket-activation.patch
