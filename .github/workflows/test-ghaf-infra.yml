@@ -62,7 +62,7 @@ jobs:
 
       - name: Check if workflow is modified
         id: workflow-changed
-        uses: tj-actions/changed-files@v45.0.1
+        uses: tj-actions/changed-files@v45.0.2
         with:
           files: .github/workflows/test-ghaf-infra.yml
 
