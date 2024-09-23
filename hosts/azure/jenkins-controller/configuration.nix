@@ -71,7 +71,7 @@ in
   # Due to an implicit RequiresMountsFor=$state-dir, systemd
   # will block starting the service until this mounted.
   fileSystems."/var/lib/jenkins" = {
-    device = "/dev/disk/by-lun/10";
+    device = "/dev/disk/azure/scsi1/lun10";
     fsType = "ext4";
     options = [
       "x-systemd.makefs"
@@ -83,7 +83,7 @@ in
   # Due to an implicit RequiresMountsFor=$state-dir, systemd
   # will block starting the service until this mounted.
   fileSystems."/var/lib/caddy" = {
-    device = "/dev/disk/by-lun/11";
+    device = "/dev/disk/azure/scsi1/lun11";
     fsType = "ext4";
     options = [
       "x-systemd.makefs"
