@@ -168,15 +168,15 @@ resource "azurerm_key_vault_access_policy" "jenkins_controller_kv_access" {
   object_id    = module.jenkins_controller_vm.virtual_machine_identity_principal_id
 
   key_permissions = [
-    "get",
-    "list",
-    "sign",
-    "verify",
+    "Get",
+    "List",
+    "Sign",
+    "Verify",
   ]
 
   certificate_permissions = [
-    "get",
-    "list",
+    "Get",
+    "List",
   ]
 }
 
