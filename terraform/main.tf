@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
-
+1
 provider "azurerm" {
   # https://github.com/hashicorp/terraform-provider-azurerm/issues/24804
   skip_provider_registration = true
@@ -303,6 +303,12 @@ data "azurerm_key_vault_secret" "binary_cache_signing_key" {
   name         = "binary-cache-signing-key-priv"
   key_vault_id = data.azurerm_key_vault.binary_cache_signing_key.id
   provider     = azurerm
+}
+
+# Reference the existing Key Vault
+data "azurerm_key_vault" "ghaf_devenv_ca" {
+  name                = "ghaf-devenv-ca"
+  resource_group_name = "ghaf-devenev-pki"
 }
 
 # Data sources to access 'workspace-specific persistent' data
