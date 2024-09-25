@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
-1
+
 provider "azurerm" {
   # https://github.com/hashicorp/terraform-provider-azurerm/issues/24804
   skip_provider_registration = true
