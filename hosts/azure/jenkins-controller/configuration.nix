@@ -13,14 +13,25 @@ let
   # The secret-key= URL parameter configures the store, and which signing key it
   # should use while uploading, but neither the key nor its location is sent
   # over HTTP.
-  post-build-hook = pkgs.writeScript "upload" ''
-    set -eu
-    set -f # disable globbing
-    export IFS=' '
+  post-build-hook =
+    pkgs.writeScript "upload" # bash
+      ''
+        set -eu
+        set -f # disable globbing
+        export IFS=' '
 
-    echo "Uploading paths" $OUT_PATHS
-    exec nix --extra-experimental-features nix-command copy --to 'http://localhost:8080?secret-key=/etc/secrets/nix-signing-key&compression=zstd' $OUT_PATHS
-  '';
+        echo "Uploading paths" $OUT_PATHS
+
+        # Retry upload once if it fails. If it fails again then exit with error. 
+        # This should fix the upload race condition.
+        ERR=1
+        for i in {1..2}; do
+          nix --extra-experimental-features nix-command copy --to 'http://localhost:8080?secret-key=/etc/secrets/nix-signing-key&compression=zstd' $OUT_PATHS &&
+            ERR=0 && break ||
+            [ $i == 1 ] && echo "Retrying in 10 seconds..." && sleep 10
+        done
+        exit $ERR
+      '';
 
   jenkins-casc = ./jenkins-casc.yaml;
 
