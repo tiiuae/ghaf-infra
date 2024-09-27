@@ -139,11 +139,18 @@ in
     cpu.intel.updateMicrocode = true;
   };
 
-  # Enable Acroname USB Smart switch, as well as LXA USB-SD-Mux support.
-  services.udev.packages = [
-    brainstem
-    pkgs.usbsdmux
-  ];
+  services.udev = {
+    # Enable Acroname USB Smart switch, as well as LXA USB-SD-Mux support.
+    packages = [
+      brainstem
+      pkgs.usbsdmux
+    ];
+
+    # udev rules for test devices serial connections
+    extraRules = ''
+      SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea71", ATTRS{serial}=="04A629B8AB87AB8111ECB2A38815028", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="ttyRISCV1", MODE="0666", GROUP="dialout"
+    '';
+  };
 
   environment.systemPackages =
     [
@@ -170,6 +177,8 @@ in
   systemd.services = {
     agent-orin-agx = mkAgent "orin-agx";
     agent-orin-nx = mkAgent "orin-nx";
+    agent-riscv = mkAgent "riscv";
+    agent-main = mkAgent "main";
   };
 
   # Details of the hardware devices connected to this host
@@ -196,6 +205,15 @@ in
           plug_type = "TAPOP100v2";
           usbhub_serial = "0xEE92E4FD";
           threads = 8;
+        };
+        Polarfire1 = {
+          inherit location;
+          serial_port = "/dev/ttyRISCV1";
+          device_ip_address = "";
+          socket_ip_address = "172.18.16.82";
+          plug_type = "TAPOP100v2";
+          usb_sd_mux_port = "/dev/sg1";
+          threads = 4;
         };
       };
     };
