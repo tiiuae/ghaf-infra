@@ -503,6 +503,7 @@ in
 
   services.caddy = {
     enable = true;
+    enableReload = false;
     configFile = pkgs.writeText "Caddyfile" ''
       # Disable the admin API, we don't want to reconfigure Caddy at runtime.
       {
