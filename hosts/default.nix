@@ -54,6 +54,7 @@ in
     nixos-testagent-dev = ./testagent-dev/configuration.nix;
     nixos-ghaf-log = ./ghaf-log/configuration.nix;
     nixos-ghaf-coverity = ./ghaf-coverity/configuration.nix;
+    nixos-ghaf-proxy = ./ghaf-proxy/configuration.nix;
   };
 
   # Expose as flake.lib.mkNixOS.
@@ -83,6 +84,7 @@ in
         "testagent-dev"
         "ghaf-log"
         "ghaf-coverity"
+        "ghaf-proxy"
       ]
   );
 }

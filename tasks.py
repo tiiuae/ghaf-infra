@@ -111,6 +111,10 @@ TARGETS = OrderedDict(
             hostname="37.27.204.82",
             nixosconfig="ghaf-coverity",
         ),
+        "ghaf-proxy": TargetHost(
+            hostname="95.216.200.85",
+            nixosconfig="ghaf-proxy",
+        ),
     }
 )
 
