@@ -16,7 +16,7 @@ let
     device:
     let
       # Temporary url for development
-      controllerUrl = "https://ghaf-jenkins-controller-joonasrautiola.northeurope.cloudapp.azure.com";
+      controllerUrl = "https://ghaf-jenkins-controller-villepekkajuntun.northeurope.cloudapp.azure.com";
       workDir = "/var/lib/jenkins/agents/${device}";
 
       jenkins-connection-script =
@@ -100,6 +100,7 @@ in
       user-flokli
       user-jrautiola
       user-mariia
+      user-maarit
       user-hrosten
     ]);
 
@@ -195,6 +196,7 @@ in
           socket_ip_address = "172.18.16.74";
           plug_type = "TAPOP100v2";
           usbhub_serial = "0x2954223B";
+          ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XNNS0W202677W-0:0";
           threads = 8;
         };
         OrinNX1 = {
@@ -204,6 +206,7 @@ in
           socket_ip_address = "172.18.16.95";
           plug_type = "TAPOP100v2";
           usbhub_serial = "0xEE92E4FD";
+          ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XPNS0W606359P-0:0";
           threads = 8;
         };
         Polarfire1 = {
@@ -213,6 +216,7 @@ in
           socket_ip_address = "172.18.16.82";
           plug_type = "TAPOP100v2";
           usb_sd_mux_port = "/dev/sg1";
+          ext_drive_by-id = "usb-LinuxAut_sdmux_HS-SD_MMC_000000001267-0:0";
           threads = 4;
         };
       };
