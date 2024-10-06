@@ -62,7 +62,7 @@ jobs:
 
       - name: Check if workflow is modified
         id: workflow-changed
-        uses: tj-actions/changed-files@v45.0.2
+        uses: tj-actions/changed-files@v45.0.3
         with:
           files: .github/workflows/test-ghaf-infra.yml
 
@@ -90,7 +90,7 @@ jobs:
             ref: ${{ github.event.pull_request.head.sha || github.ref }}
             fetch-depth: 0
 
-      - uses: cachix/install-nix-action@v29
+      - uses: cachix/install-nix-action@v30
         with:
           extra_nix_config: |
             trusted-public-keys = cache.vedenemo.dev:8NhplARANhClUSWJyLVk4WMyy1Wb4rhmWW2u8AejH9E= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
