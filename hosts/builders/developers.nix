@@ -189,6 +189,13 @@ let
       ];
     }
     {
+      desc = "Kajus Naujokaitis";
+      name = "kajusn";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINlIpJ9Q1oW1KiFBa12N5K/ecGVeGSBbcD8M9ZjA0TYe kajus.naujokaitis@unikie.com"
+      ];
+    }
+    {
       desc = "Kim Sandström";
       name = "kisandst";
       keys = [
