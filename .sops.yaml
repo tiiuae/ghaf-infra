@@ -20,11 +20,6 @@ keys:
   - &ghaf-coverity age172azvwv5vne79mqfhvdvk9j95gn5v04uk9t3fjdfe5p7dv7kucvqpygxkx
 
 creation_rules:
-  - path_regex: terraform/azarm/secrets.yaml$
-    key_groups:
-    - age:
-      - *hrosten
-      - *karim
   - path_regex: hosts/binarycache/secrets.yaml$
     key_groups:
     - age:

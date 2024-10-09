@@ -49,7 +49,6 @@ All commands in this document are executed from nix-shell inside the `terraform`
 ## Directory Structure
 ```
 terraform
-├── azarm
 ├── persistent
 │   ├── binary-cache-sigkey
 │   ├── binary-cache-storage
@@ -66,7 +65,6 @@ terraform
 └── main.tf
 ```
 - The `terraform` directory contains the root terraform deployment files with the VM configurations `binary-cache.tf`, `builder.tf`, and `jenkins-controller.tf` matching the components described in [README-azure.md](./README-azure.md) in its [components section](./README-azure.md#components).
-- The `terraform/azarm` directory contains the terraform configuration for Azure `aarch64` builder which is used from ghaf github-actions [build.yml workflow](https://github.com/tiiuae/ghaf/blob/e81ccfb41d75eda0488b6b4325aeccb8385ce960/.github/workflows/build.yml#L151) to build `aarch64` targets for authorized PRs pre-merge. `azarm` is disconnected from the root terraform module: it's a separate configuration with its own state.
 - The `terraform/persistent` directory contains the terraform configuration for parts of the infrastructure that are considered persistent - resources defined under `terraform/persistent` will not be removed even if the ghaf-infra instance is otherwise removed. An example of such persistent ghaf-infra resource is the binary cache storage as well as the binary cache signing key. There may be many 'persistent' infrastructure instances - currently `dev` and `prod` deployments have their own instances of the persistent resources. Section [Multiple Environments with Terraform Workspaces](./README.md#multiple-environments-with-terraform-workspaces) discusses this topic with more details.
 - The `terraform/state-storage` directory contains the terraform configuration for the ghaf-infra remote backend state storage using Azure storage blob. See section [Initializing Azure State and Persistent Data](./README.md#initializing-azure-state-and-persistent-data) for more details.
 - The `terraform/modules` directory contains terraform modules used from the ghaf-infra VM configurations to build, upload, and spin up Azure nix images.
@@ -197,12 +195,12 @@ $ terraform apply
 ...
 azurerm_virtual_machine_extension.deploy_ubuntu_builder: Creating...
 ╷
-│ Error: A resource with the ID "/subscriptions/<SUBID>/resourceGroups/rg-name-here/providers/Microsoft.Compute/virtualMachines/azarm/extensions/azarm-vmext" already exists - to be managed via Terraform this resource needs to be imported into the State. Please see the resource documentation for "azurerm_virtual_machine_extension" for more information.
+│ Error: A resource with the ID "/subscriptions/<SUBID>/resourceGroups/rg-name-here/providers/Microsoft.Compute/virtualMachines/testvm/extensions/testvm-vmext" already exists - to be managed via Terraform this resource needs to be imported into the State. Please see the resource documentation for "azurerm_virtual_machine_extension" for more information.
 ```
 
 Example fix:
 ```bash
-$ terraform import azurerm_virtual_machine_extension.deploy_ubuntu_builder /subscriptions/<SUBID>/resourceGroups/rg-name-here/providers/Microsoft.Compute/virtualMachines/azarm/extensions/azarm-vmext
+$ terraform import azurerm_virtual_machine_extension.deploy_ubuntu_builder /subscriptions/<SUBID>/resourceGroups/rg-name-here/providers/Microsoft.Compute/virtualMachines/testvm/extensions/testvm-vmext
 
 # Ref: https://stackoverflow.com/questions/61418168/terraform-resource-with-the-id-already-exists
 ```
