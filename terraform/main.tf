@@ -46,8 +46,8 @@ variable "envtype" {
   description = "Set the environment type; determines e.g. the Azure VM sizes"
   default     = "priv"
   validation {
-    condition     = contains(["priv", "dev", "prod"], var.envtype)
-    error_message = "Must be either \"priv\", \"dev\", or \"prod\""
+    condition     = contains(["priv", "dev", "prod", "release"], var.envtype)
+    error_message = "Must be either \"priv\", \"dev\", \"prod\", or \"release\""
   }
 }
 
@@ -63,7 +63,7 @@ variable "envfile" {
 
 variable "convince" {
   type        = bool
-  description = "Protect against accidental dev or prod environment deployment"
+  description = "Protect against accidental non-priv environment deployment"
   default     = false
 }
 
@@ -87,14 +87,6 @@ locals {
   # https://github.com/claranet/terraform-azurerm-regions/blob/master/REGIONS.md
   shortloc = module.azure_region.location_short
 
-  assert_region_mismatch_1 = regex(
-    ("${local.shortloc}" != "eun" && local.envs["storage_account_rg_name"] != "ghaf-infra-state-${local.shortloc}") ?
-  "((Force invalid regex pattern)\n\nERROR: region (non-eun) mismatch, re-run terraform-init.sh" : "", "")
-
-  assert_region_mismatch_2 = regex(
-    ("${local.shortloc}" == "eun" && local.envs["storage_account_rg_name"] != "ghaf-infra-state") ?
-  "((Force invalid regex pattern)\n\nERROR: region (eun) mismatch, re-run terraform-init.sh" : "", "")
-
   # Sanitize workspace name
   ws = substr(replace(lower(terraform.workspace), "/[^a-z0-9]/", ""), 0, 16)
 
@@ -104,6 +96,7 @@ locals {
   # E.g. 'Standard_D2_v3' means: 2 vCPU, 8 GiB RAM
   opts = {
     priv = {
+      persistent_data         = "priv"
       vm_size_binarycache     = "Standard_D2_v3"
       osdisk_size_binarycache = "50"
       vm_size_builder_x86     = "Standard_D2_v3"
@@ -123,6 +116,7 @@ locals {
       ext_builder_keyscan = ["builder.vedenemo.dev", "hetzarm.vedenemo.dev"]
     }
     dev = {
+      persistent_data         = "prod"
       vm_size_binarycache     = "Standard_D4_v3"
       osdisk_size_binarycache = "250"
       vm_size_builder_x86     = "Standard_D16_v3"
@@ -147,6 +141,7 @@ locals {
       ext_builder_keyscan = ["builder.vedenemo.dev", "hetzarm.vedenemo.dev"]
     }
     prod = {
+      persistent_data         = "prod"
       vm_size_binarycache     = "Standard_D4_v3"
       osdisk_size_binarycache = "250"
       vm_size_builder_x86     = "Standard_D64_v3"
@@ -168,22 +163,19 @@ locals {
 
   # This determines the configuration options used in the
   # ghaf-infra instance (defines e.g. vm_sizes and number of builders).
-  # If workspace name is "dev" or "prod" use the workspace name as
+  # If workspace name is "dev", "prod", or "release" use the workspace name as
   # envtype, otherwise, use the value from var.envtype.
-  conf = local.ws == "dev" || local.ws == "prod" ? local.ws : var.envtype
+  conf = contains(["dev", "prod", "release"], local.ws) ? local.ws : var.envtype
 
-  # Protect against accidental dev or prod environment deployment by requiring
+  # Protect against accidental non-priv environment deployment by requiring
   # variable -var="convince=true".
   assert_accidental_deployment = regex(
     ("${local.conf}" != "priv" && !(var.convince)) ?
-  "((Force invalid regex pattern\n\nERROR: Deployment to 'prod' or 'dev' requires variable 'convince'" : "", "")
+  "((Force invalid regex pattern\n\nERROR: Deployment to non-priv requires variable 'convince'" : "", "")
 
   # Selects the persistent data (see ./persistent) used in the ghaf-infra
-  # instance; currently either "dev" or "prod" based on the environment type:
-  #   "priv" ==> "dev"
-  #   "dev"  ==> "dev"
-  #   "prod" ==> "prod"
-  persistent_data = local.conf == "priv" ? "dev" : local.conf
+  persistent_id = "id0${local.opts[local.conf].persistent_data}${local.shortloc}"
+  persistent_rg = local.envs["persistent_rg_name"]
 }
 
 ################################################################################
@@ -267,8 +259,8 @@ resource "azurerm_storage_container" "jenkins_artifacts_1" {
 # Data sources to access 'persistent' data, see ./persistent
 
 data "azurerm_storage_account" "binary_cache" {
-  name                = "ghafbincache${local.persistent_data}${local.shortloc}"
-  resource_group_name = "ghaf-infra-persistent-${local.shortloc}"
+  name                = "bches${local.persistent_id}"
+  resource_group_name = local.persistent_rg
 }
 data "azurerm_storage_container" "binary_cache_1" {
   name                 = "binary-cache-v1"
@@ -276,8 +268,8 @@ data "azurerm_storage_container" "binary_cache_1" {
 }
 
 data "azurerm_key_vault" "ssh_remote_build" {
-  name                = "ssh-builder-${local.persistent_data}-${local.shortloc}"
-  resource_group_name = "ghaf-infra-persistent-${local.shortloc}"
+  name                = "sshb-${local.persistent_id}"
+  resource_group_name = local.persistent_rg
   provider            = azurerm
 }
 
@@ -294,8 +286,8 @@ data "azurerm_key_vault_secret" "ssh_remote_build_pub" {
 }
 
 data "azurerm_key_vault" "binary_cache_signing_key" {
-  name                = "bche-sigkey-${local.persistent_data}-${local.shortloc}"
-  resource_group_name = "ghaf-infra-persistent-${local.shortloc}"
+  name                = "bchek-${local.persistent_id}"
+  resource_group_name = local.persistent_rg
   provider            = azurerm
 }
 
@@ -316,12 +308,12 @@ data "azurerm_key_vault" "ghaf_devenv_ca" {
 
 data "azurerm_managed_disk" "binary_cache_caddy_state" {
   name                = "binary-cache-vm-caddy-state-${local.ws}"
-  resource_group_name = "ghaf-infra-persistent-${local.shortloc}"
+  resource_group_name = local.persistent_rg
 }
 
 data "azurerm_managed_disk" "jenkins_controller_caddy_state" {
   name                = "jenkins-controller-vm-caddy-state-${local.ws}"
-  resource_group_name = "ghaf-infra-persistent-${local.shortloc}"
+  resource_group_name = local.persistent_rg
 }
 
 ################################################################################

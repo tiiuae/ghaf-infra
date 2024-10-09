@@ -9,72 +9,96 @@ set -o pipefail # exit if any pipeline command fails
 
 ################################################################################
 
-# This script is a helper to initialize the ghaf terraform infra:
-# - init terraform state storage
-# - init persistent secrets such as binary cache signing key (per environment)
-# - init persistent binary cache storage (per environment)
-# - init workspace-specific persistent such as caddy disks (per environment)
-
-################################################################################
+# This script is a helper to initialize the ghaf terraform infra.
 
 MYDIR=$(dirname "$0")
 MYNAME=$(basename "$0")
+RED='' NONE=''
 
 ################################################################################
 
 usage () {
-    echo "Usage: $MYNAME [-h] [-v] [-l LOCATION]"
     echo ""
-    echo "Initialize terraform state and persistent storage for ghaf-infra on Azure."
-    echo "By default, the Azure LOCATION for the ghaf-infra will be initialized to"
-    echo "North Europe. Use -l option to specify a different LOCATION."
+    echo "Usage: $MYNAME [-h] [-v] [-l LOCATION] -w WORKSPACE"
     echo ""
-    echo "This script will not do anything if the initialization has already been"
-    echo "done. In other words, it's safe to run this script many times. It will"
-    echo "not destroy or re-initialize anything if the initialization has already"
-    echo "taken place."
+    echo "Initialize ghaf-infra workspace with the given name (-w WORKSPACE). This"
+    echo "script will not destroy or re-initialize anything if the initialization"
+    echo "has already been done earlier."
     echo ""
     echo "Options:"
-    echo " -h    Print this help message"
-    echo " -v    Set the script verbosity to DEBUG"
+    echo " -w    Init workspace with the given WORKSPACE name. Name must be 3-16"
+    echo "       lowercase characters or numbers i.e. [a-z0-9]{3,16}. If WORKSPACE"
+    echo "       already exists in the terraform remote state, switches to the"
+    echo "       existing workspace"
     echo " -l    Azure location name on which the infra will be initialized. See the"
     echo "       Azure location names with command 'az account list-locations -o table'."
-    echo "       By default, the LOCATION is set to 'northeurope' i.e. '-l northeurope'"
+    echo "       The default LOCATION is 'northeurope' i.e. '-l northeurope'"
+    echo " -v    Set the script verbosity to DEBUG"
+    echo " -h    Print this help message"
+    echo ""
+    echo "Advanced options:"
+    echo " -s    Init state storage"
+    echo " -p    Init persistent storage"
     echo ""
     echo "Example:"
     echo ""
-    echo "  Following command initializes terraform state and persistent storage"
-    echo "  on Azure location uaenorth (United Arab Emirates North):"
+    echo "  Following command initializes ghaf-infra instance 'myghafinfra'"
+    echo "  on the default Azure location (northeurope):"
     echo ""
-    echo "  $MYNAME -l uaenorth"
+    echo "  $MYNAME -w myghafinfra"
     echo ""
 }
 
 ################################################################################
 
+print_err () {
+    printf "${RED}Error:${NONE} %b\n" "$1" >&2
+}
+
 argparse () {
-    DEBUG="false"; LOCATION="northeurope"; OPTIND=1
-    while getopts "hvl:" copt; do
+    # Colorize output if stdout is to a terminal (and not to pipe or file)
+    if [ -t 1 ]; then RED='\033[1;31m'; NONE='\033[0m'; fi
+    # Parse arguments
+    OUT="/dev/null"; LOCATION="northeurope"; WORKSPACE=""; OPT_s=""; OPT_p="";
+    OPTIND=1
+    while getopts "hw:l:spv" copt; do
         case "${copt}" in
             h)
                 usage; exit 0 ;;
             v)
-                DEBUG="true" ;;
+                set -x; OUT=/dev/stderr ;;
             l)
                 LOCATION="$OPTARG" ;;
+            w)
+                WORKSPACE="$OPTARG"
+                if ! [[ "$WORKSPACE" =~ ^[a-z0-9]{3,16}$ ]]; then
+                    print_err "invalid workspace name: '$WORKSPACE'";
+                    usage; exit 1
+                fi
+                ;;
+            s)
+                OPT_s="true" ;;
+            p)
+                OPT_p="true" ;;
             *)
-                echo "Error: unrecognized option"; usage; exit 1 ;;
+                print_err "unrecognized option"; usage; exit 1 ;;
         esac
     done
     shift $((OPTIND-1))
     if [ -n "$*" ]; then
-        echo "Error: unsupported positional argument(s): '$*'"; exit 1
+        print_err "unsupported positional argument(s): '$*'"; exit 1
+    fi
+    if [[ -z "$WORKSPACE" && -z "$OPT_s" && -z "$OPT_p" ]]; then
+        # Intentionally don't promote '-s' or '-p' usage. They are safe to run
+        # but most users of this script should not need to run (or re-run) them
+        print_err "missing mandatory option '-w'"
+        usage; exit 1
     fi
 }
 
 exit_unless_command_exists () {
     if ! command -v "$1" &>"$OUT"; then
-        echo "Error: command '$1' is not installed (Hint: are you inside a nix-shell?)" >&2
+        print_err "command '$1' is not installed (Hint: are you inside a nix-shell?)"
         exit 1
     fi
 }
@@ -93,113 +117,102 @@ azure_location_to_shortloc () {
         echo "[+] Unsupported location '$LOCATION'"
         exit 1
     fi
-    echo "[+] Using location short name '$SHORTLOC'"
+}
+
+set_env () {
+    # Assign variables STATE_RG, STATE_ACCOUNT and PERSISTENT_RG: these
+    # variables are used to select the remote state storage and persistent
+    # data used in this ghaf-infra instance.
+    STATE_RG="ghaf-infra-0-state-${SHORTLOC}"
+    STATE_ACCOUNT="ghafinfra0state${SHORTLOC}"
+    PERSISTENT_RG="ghaf-infra-0-persistent-${SHORTLOC}"
+    echo "[+] Using state '$STATE_RG'"
+    echo "[+] Using persistent '$PERSISTENT_RG'"
+    echo "storage_account_rg_name=$STATE_RG" >"$MYDIR/.env"
+    echo "storage_account_name=$STATE_ACCOUNT" >>"$MYDIR/.env"
+    echo "persistent_rg_name=$PERSISTENT_RG" >>"$MYDIR/.env"
 }
 
 init_state_storage () {
     echo "[+] Initializing state storage"
-    # Assign variables STATE_RG and STATE_ACCOUNT: these variables are
-    # used to select the remote state storage used in this instance.
-    if [ "$SHORTLOC" = "eun" ]; then
-        # State file for 'eun' is named differently to not have to move
-        # all existing state files to new 'ghaf-infra-state-eun' resource
-        # group from the one currently used (see below).
-        # At some point we might want to rename the 'eun' state also,
-        # but it would require manual actions to import existing environments.
-        STATE_RG="ghaf-infra-state"
-        STATE_ACCOUNT="ghafinfratfstatestorage"
-    else
-        STATE_RG="ghaf-infra-state-$SHORTLOC"
-        STATE_ACCOUNT="ghafinfrastate$SHORTLOC"
-    fi
-    echo -e "storage_account_rg_name=$STATE_RG\nstorage_account_name=$STATE_ACCOUNT" >"$MYDIR/.env"
-    # See: ./state-storage
     pushd "$MYDIR/state-storage" >"$OUT"
     terraform init -upgrade >"$OUT"
-    terraform workspace select "$SHORTLOC" &>"$OUT" || terraform workspace new "$SHORTLOC" >"$OUT"
-    if ! terraform apply -var="location=$LOCATION" -auto-approve &>"$OUT"; then
+    terraform workspace select -or-create "$STATE_RG" >"$OUT"
+    if az resource list -g "$STATE_RG" &>"$OUT"; then
         echo "[+] State storage is already initialized"
+        popd >"$OUT"; return
     fi
+    terraform apply -var="location=$LOCATION" -var="account_name=$STATE_ACCOUNT" -auto-approve >"$OUT"
     popd >"$OUT"
 }
 
 import_bincache_sigkey () {
-    env="$1"
-    echo "[+] Importing binary cache signing key '$env'"
-    # Skip import if signing key is imported already
-    if terraform state list | grep -q secret_resource.binary_cache_signing_key_"$env"; then
+    key_name="$1"
+    echo "[+] Importing binary cache signing key '$key_name'"
+    if terraform state list | grep -q secret_resource.binary_cache_signing_key; then
         echo "[+] Binary cache signing key is already imported"
         return
     fi
-    # Generate and import the key
-    nix-store --generate-binary-cache-key "ghaf-infra-$env" sigkey-secret.tmp "sigkey-public-$env.tmp"
-    terraform import secret_resource.binary_cache_signing_key_"$env" "$(< ./sigkey-secret.tmp)"
+    echo "[+] Generating binary cache signing key '$key_name'"
+    # https://nix.dev/manual/nix/latest/command-ref/nix-store/generate-binary-cache-key
+    nix-store --generate-binary-cache-key "$key_name" sigkey-secret.tmp "sigkey-public-$key_name.tmp"
+    var_rg="-var=persistent_resource_group=$PERSISTENT_RG"
+    terraform import "$var_rg" secret_resource.binary_cache_signing_key "$(< ./sigkey-secret.tmp)"
+    terraform apply "$var_rg" -auto-approve >"$OUT"
     rm -f sigkey-secret.tmp
 }
 
-init_persistent () {
-    echo "[+] Initializing persistent"
-    # See: ./persistent
+run_terraform_init () {
+    # Run terraform init declaring the remote state
+    opt_state_rg="-backend-config=resource_group_name=$STATE_RG"
+    opt_state_acc="-backend-config=storage_account_name=$STATE_ACCOUNT"
+    terraform init -upgrade "$opt_state_rg" "$opt_state_acc" >"$OUT"
+}
+
+init_persistent_storage () {
+    echo "[+] Initializing persistent storage"
     pushd "$MYDIR/persistent" >"$OUT"
-    # Init persistent, setting the backend resource group and storage account
-    # names from command-line:
-    # https://developer.hashicorp.com/terraform/language/settings/backends/azurerm#backend-azure-ad-user-via-azure-cli
-    terraform init -upgrade -backend-config="resource_group_name=$STATE_RG" -backend-config="storage_account_name=$STATE_ACCOUNT" >"$OUT"
-    terraform workspace select "$SHORTLOC" &>"$OUT" || terraform workspace new "$SHORTLOC" >"$OUT"
-    import_bincache_sigkey "prod"
-    import_bincache_sigkey "dev"
-    echo "[+] Applying possible changes in ./persistent"
+    run_terraform_init
+    terraform workspace select -or-create "$PERSISTENT_RG" >"$OUT"
+    if az resource list -g "$PERSISTENT_RG" &>"$OUT"; then
+        echo "[+] Persistent storage is already initialized"
+        popd >"$OUT"; return
+    fi
     terraform apply -var="location=$LOCATION" -auto-approve >"$OUT"
     popd >"$OUT"
+}
 
-    echo "[+] Initializing workspace-specific persistent"
-    # See: ./persistent/workspace-specific
-    pushd "$MYDIR/persistent/workspace-specific" >"$OUT"
-    terraform init -upgrade -backend-config="resource_group_name=$STATE_RG" -backend-config="storage_account_name=$STATE_ACCOUNT" >"$OUT"
-    echo "[+] Applying possible changes in ./persistent/workspace-specific"
-    for ws in "dev${SHORTLOC}" "prod${SHORTLOC}" "$WORKSPACE"; do
-        terraform workspace select "$ws" &>"$OUT" || terraform workspace new "$ws" >"$OUT"
-        var_rg="persistent_resource_group=ghaf-infra-persistent-$SHORTLOC"
-        if ! terraform apply -var="$var_rg" -auto-approve &>"$OUT"; then
-            echo "[+] Workspace-specific persistent ($ws) is already initialized"
-        fi
-        # Stop terraform from tracking the state of 'workspace-specific'
-        # persistent resources. This script initially creates such resources
-        # (above), but tells terraform to not track them (below). This means,
-        # for instance, that removing such resources would need to happen
-        # manually through Azure web UI or az cli client. We assume the
-        # workspace-specific persistent resources really are persistent,
-        # meaning, it would be a rare occasion when they had to be
-        # (manually) removed.
-        #
-        # Why do we not track the state with terraform?
-        # If we let terraform track the state of such resources, we would
-        # end-up in a conflict when someone adds a new workspace-specific
-        # resource due the shared nature of 'prod' and 'dev' workspaces. In
-        # such a conflict condition, someone running this script with the
-        # old version of terraform code (i.e. version that does not include
-        # adding the new resource) would always remove the resource on
-        # `terraform apply`, whereas, someone running this script
-        # with the new workspace-specific resource would always add the new
-        # resource on apply, due to the shared 'dev' and 'prod' workspaces.
-        while read -r line; do
-            if [ -n "$line" ]; then
-                terraform state rm "$line" >"$OUT";
-            fi
-        # TODO: remove the 'binary_cache_caddy_state' filter from the below
-        # grep when all users have migrated to the version of this script
-        # on which the `terraform state rm` is included
-        done < <(terraform state list | grep -vP "(^data\.|binary_cache_caddy_state)")
+init_persistent_resources () {
+    echo "[+] Initializing persistent resources"
+    pushd "$MYDIR/persistent/resources" >"$OUT"
+    run_terraform_init
+    for env in "prod" "priv"; do
+        ws="$env${SHORTLOC}"
+        terraform workspace select -or-create "$ws" >"$OUT"
+        import_bincache_sigkey "$env-cache.vedenemo.dev~1"
     done
     popd >"$OUT"
 }
 
-init_terraform () {
-    echo "[+] Running terraform init"
+init_workspace_persistent () {
+    echo "[+] Initializing workspace-specific persistent"
+    pushd "$MYDIR/persistent/workspace-specific" >"$OUT"
+    run_terraform_init
+    terraform workspace select -or-create "$WORKSPACE" >"$OUT"
+    terraform apply -var="persistent_resource_group=$PERSISTENT_RG" -auto-approve >"$OUT"
+    popd >"$OUT"
+}
+
+init_workspace () {
+    echo "[+] Initializing workspace"
     pushd "$MYDIR" >"$OUT"
-    terraform init -upgrade -backend-config="resource_group_name=$STATE_RG" -backend-config="storage_account_name=$STATE_ACCOUNT" >"$OUT"
-    # By default, switch to the private workspace
-    activate_workspace
+    run_terraform_init
+    terraform workspace select -or-create "$WORKSPACE"
+    echo "[+] Listing workspaces:"
+    terraform workspace list
+    echo "[+] Use 'terraform workspace select <name>' to select a"\
+         "workspace, then 'terraform [validate|plan|apply]' to work with the"\
+         "given ghaf-infra environment"
     popd >"$OUT"
 }
 
@@ -207,32 +220,23 @@ init_terraform () {
 
 main () {
     argparse "$@"
-    if [ "$DEBUG" = "true" ]; then
-        set -x
-        OUT=/dev/stderr
-    else
-        OUT=/dev/null
-    fi
-
     exit_unless_command_exists az
-    exit_unless_command_exists terraform
-    exit_unless_command_exists nix-store
     exit_unless_command_exists grep
-
-    # Assigns $WORKSPACE variable
-    # shellcheck source=/dev/null
-    source "$MYDIR/terraform-playground.sh" &>"$OUT"
-    generate_azure_private_workspace_name
-
+    exit_unless_command_exists nix-store
+    exit_unless_command_exists terraform
     azure_location_to_shortloc
-    init_state_storage
-    init_persistent
-    init_terraform
-    echo "[+] Listing workspaces:"
-    terraform workspace list
-    echo "[+] Done, use 'terraform workspace select <name>' to select a"\
-         "workspace, then 'terraform [validate|plan|apply]' to work with the"\
-         "given ghaf-infra environment"
+    set_env
+    if [ -n "$OPT_s" ]; then
+        init_state_storage
+    fi
+    if [ -n "$OPT_p" ]; then
+        init_persistent_storage
+        init_persistent_resources
+    fi
+    if [ -n "$WORKSPACE" ]; then
+        init_workspace_persistent
+        init_workspace
+    fi
 }
 
 main "$@"

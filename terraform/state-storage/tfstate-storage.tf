@@ -10,6 +10,8 @@ terraform {
 }
 
 provider "azurerm" {
+  # https://github.com/hashicorp/terraform-provider-azurerm/issues/24804
+  skip_provider_registration = true
   features {}
 }
 
@@ -21,21 +23,27 @@ variable "location" {
   description = "Azure region into which the resources will be deployed"
 }
 
+variable "account_name" {
+  type        = string
+  description = "Storage account name must be globally unique, 3-24 lowercase characters"
+  default     = ""
+  validation {
+    condition     = length(var.account_name) > 0
+    error_message = "Invalid value"
+  }
+}
+
 locals {
   # Raise an error if workspace is 'default',
   # this is a workaround to missing asserts in terraform:
   assert_workspace_not_default = regex(
     (terraform.workspace == "default") ?
   "((Force invalid regex pattern)\n\nERROR: workspace 'default' is not allowed" : "", "")
-
-  # Sanitize workspace name:
-  # Workspace name defines the state-storage instance
-  ws = substr(replace(lower(terraform.workspace), "/[^a-z0-9]/", ""), 0, 16)
 }
 
 # Resource group
 resource "azurerm_resource_group" "rg" {
-  name     = "ghaf-infra-state-${local.ws}"
+  name     = terraform.workspace
   location = var.location
   lifecycle {
     prevent_destroy = true
@@ -45,7 +53,7 @@ resource "azurerm_resource_group" "rg" {
 # Storage container
 resource "azurerm_storage_account" "tfstate" {
   # This must be globally unique, max 24 characters
-  name                            = "ghafinfrastate${local.ws}"
+  name                            = var.account_name
   resource_group_name             = azurerm_resource_group.rg.name
   location                        = azurerm_resource_group.rg.location
   account_tier                    = "Standard"
