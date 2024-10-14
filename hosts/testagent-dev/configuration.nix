@@ -149,6 +149,8 @@ in
 
     # udev rules for test devices serial connections
     extraRules = ''
+      SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTD0W9KS", SYMLINK+="ttyORINNX1", MODE="0666", GROUP="dialout"
+      SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTD0WF8Y", SYMLINK+="ttyNUC1", MODE="0666", GROUP="dialout"
       SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea71", ATTRS{serial}=="04A629B8AB87AB8111ECB2A38815028", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="ttyRISCV1", MODE="0666", GROUP="dialout"
     '';
   };
@@ -179,7 +181,8 @@ in
     agent-orin-agx = mkAgent "orin-agx";
     agent-orin-nx = mkAgent "orin-nx";
     agent-riscv = mkAgent "riscv";
-    agent-main = mkAgent "main";
+    agent-nuc = mkAgent "nuc";
+    agent-lenovo-x1 = mkAgent "lenovo-x1";
   };
 
   # Details of the hardware devices connected to this host
@@ -201,7 +204,7 @@ in
         };
         OrinNX1 = {
           inherit location;
-          serial_port = "/dev/ttyUSB0";
+          serial_port = "/dev/ttyORINNX1";
           device_ip_address = "172.18.16.61";
           socket_ip_address = "172.18.16.95";
           plug_type = "TAPOP100v2";
@@ -218,6 +221,27 @@ in
           usb_sd_mux_port = "/dev/sg1";
           ext_drive_by-id = "usb-LinuxAut_sdmux_HS-SD_MMC_000000001267-0:0";
           threads = 4;
+        };
+        NUC1 = {
+          inherit location;
+          serial_port = "/dev/ttyNUC1";
+          device_ip_address = "172.18.16.16";
+          socket_ip_address = "172.18.16.20";
+          plug_type = "TAPOP100v2";
+          usbhub_serial = "0x029CEAF3";
+          ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XNNS0W201129V-0:0";
+          threads = 8;
+        };
+        LenovoX1-1 = {
+          inherit location;
+          serial_port = "NONE";
+          device_ip_address = "172.18.16.17";
+          socket_ip_address = "NONE";
+          plug_type = "NONE";
+          switch_bot = "LenovoX1-dev";
+          usbhub_serial = "0x99EB9D84";
+          ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XPNS0W606188E-0:0";
+          threads = 20;
         };
       };
     };
