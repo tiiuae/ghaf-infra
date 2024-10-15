@@ -7,6 +7,7 @@ jenkins:
   agentProtocols:
   - "JNLP4-connect"
   - "Ping"
+
   authorizationStrategy: "loggedInUsersCanDoAnything"
   crumbIssuer:
     standard:
@@ -14,6 +15,44 @@ jenkins:
   disableRememberMe: false
   labelAtoms:
   - name: "built-in"
+  - name: "lenovo-x1"
+  - name: "nuc"
+  - name: "orin-agx"
+  - name: "orin-nx"
+  - name: "riscv"
+
+  nodes:
+  - permanent:
+      launcher: "inbound"
+      mode: EXCLUSIVE
+      name: "lenovo-x1"
+      remoteFS: "/var/lib/jenkins/agents/lenovo-x1"
+      retentionStrategy: "always"
+  - permanent:
+      launcher: "inbound"
+      mode: EXCLUSIVE
+      name: "nuc"
+      remoteFS: "/var/lib/jenkins/agents/nuc"
+      retentionStrategy: "always"
+  - permanent:
+      launcher: "inbound"
+      mode: EXCLUSIVE
+      name: "orin-agx"
+      remoteFS: "/var/lib/jenkins/agents/orin-agx"
+      retentionStrategy: "always"
+  - permanent:
+      launcher: "inbound"
+      mode: EXCLUSIVE
+      name: "orin-nx"
+      remoteFS: "/var/lib/jenkins/agents/orin-nx"
+      retentionStrategy: "always"
+  - permanent:
+      launcher: "inbound"
+      mode: EXCLUSIVE
+      name: "riscv"
+      remoteFS: "/var/lib/jenkins/agents/riscv"
+      retentionStrategy: "always"
+
   markupFormatter:
     rawHtml:
       disableSyntaxHighlighting: false
