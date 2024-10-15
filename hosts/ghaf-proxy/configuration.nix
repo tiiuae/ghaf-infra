@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   self,
+  pkgs,
   inputs,
   modulesPath,
   lib,
@@ -52,4 +53,9 @@
       efiInstallAsRemovable = true;
     };
   };
+
+  environment.systemPackages = with pkgs; [
+    screen
+    tmux
+  ];
 }
