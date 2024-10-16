@@ -136,6 +136,9 @@ in
       "-Dcasc.jenkins.config=${jenkins-casc}"
       # Increase the number of rows shown in Stage View (default is 10)
       "-Dcom.cloudbees.workflow.rest.external.JobExt.maxRunsPerJob=32"
+      # Allow checkouts done from local repositories in Jenkins
+      # Allows project development without need of constant deployments
+      "-Dhudson.plugins.git.GitSCM.ALLOW_LOCAL_CHECKOUT=true"
     ];
     # Configure jenkins job(s):
     # https://jenkins-job-builder.readthedocs.io/en/latest/project_pipeline.html
