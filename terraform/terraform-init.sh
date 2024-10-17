@@ -186,7 +186,7 @@ init_persistent_resources () {
     echo "[+] Initializing persistent resources"
     pushd "$MYDIR/persistent/resources" >"$OUT"
     run_terraform_init
-    for env in "prod" "priv"; do
+    for env in "release" "prod" "priv"; do
         ws="$env${SHORTLOC}"
         terraform workspace select -or-create "$ws" >"$OUT"
         import_bincache_sigkey "$env-cache.vedenemo.dev~1"

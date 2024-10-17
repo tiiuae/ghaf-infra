@@ -13,11 +13,6 @@ terraform {
       source = "hashicorp/azurerm"
     }
   }
-}
-
-################################################################################
-
-terraform {
   # Backend for storing terraform state (see ../../state-storage)
   backend "azurerm" {
     # resource_group_name and storage_account_name are set by the callee

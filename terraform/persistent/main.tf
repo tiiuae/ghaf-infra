@@ -16,11 +16,6 @@ terraform {
       source = "numtide/secret"
     }
   }
-}
-
-################################################################################
-
-terraform {
   # Backend for storing terraform state (see ../state-storage)
   backend "azurerm" {
     # resource_group_name and storage_account_name are set by the callee
@@ -39,12 +34,21 @@ variable "location" {
   description = "Azure region into which the resources will be deployed"
 }
 
+module "azure_region" {
+  source       = "claranet/regions/azurerm"
+  azure_region = var.location
+}
+
 locals {
   # Raise an error if workspace is 'default',
   # this is a workaround to missing asserts in terraform:
   assert_workspace_not_default = regex(
     (terraform.workspace == "default") ?
   "((Force invalid regex pattern)\n\nERROR: workspace 'default' is not allowed" : "", "")
+
+  # Short name of the Azure region, see:
+  # https://github.com/claranet/terraform-azurerm-regions/blob/master/REGIONS.md
+  shortloc = module.azure_region.location_short
 }
 
 # Resource group
@@ -60,5 +64,17 @@ resource "azurerm_resource_group" "persistent" {
 
 # Current signed-in user
 data "azurerm_client_config" "current" {}
+
+################################################################################
+
+# Shared builder ssh key used to access 'external' builders
+module "builder_ssh_key" {
+  source = "./builder-ssh-key"
+  # Must be globally unique, max 24 characters
+  builder_ssh_keyvault_name = "sshb-id0ext${local.shortloc}"
+  resource_group_name       = azurerm_resource_group.persistent.name
+  location                  = azurerm_resource_group.persistent.location
+  tenant_id                 = data.azurerm_client_config.current.tenant_id
+}
 
 ################################################################################
