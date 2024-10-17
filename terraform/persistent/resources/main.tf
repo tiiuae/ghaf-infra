@@ -16,11 +16,6 @@ terraform {
       source = "numtide/secret"
     }
   }
-}
-
-################################################################################
-
-terraform {
   # Backend for storing terraform state (see ../../state-storage)
   backend "azurerm" {
     # resource_group_name and storage_account_name are set by the callee
@@ -62,7 +57,7 @@ data "azurerm_client_config" "current" {}
 
 # Resources
 
-# secret_resouce must be created on import, e.g.:
+# secret_resource must be created on import, e.g.:
 #
 #   nix-store --generate-binary-cache-key foo secret-key public-key
 #   terraform import secret_resource.binary_cache_signing_key "$(< ./secret-key)"
