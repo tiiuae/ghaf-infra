@@ -41,16 +41,6 @@ terraform {
 # Current signed-in user
 data "azurerm_client_config" "current" {}
 
-variable "envtype" {
-  type        = string
-  description = "Set the environment type; determines e.g. the Azure VM sizes"
-  default     = "priv"
-  validation {
-    condition     = contains(["priv", "dev", "prod", "release"], var.envtype)
-    error_message = "Must be either \"priv\", \"dev\", \"prod\", or \"release\""
-  }
-}
-
 variable "envfile" {
   type        = string
   description = "Error out if .env-file is missing"
@@ -90,6 +80,20 @@ locals {
   # Sanitize workspace name
   ws = substr(replace(lower(terraform.workspace), "/[^a-z0-9]/", ""), 0, 16)
 
+  ext_builder_machines = [
+    "ssh://remote-build@builder.vedenemo.dev x86_64-linux /etc/secrets/remote-build-ssh-key 32 3 kvm,nixos-test,benchmark,big-parallel - -",
+    "ssh://remote-build@hetzarm.vedenemo.dev aarch64-linux /etc/secrets/remote-build-ssh-key 40 3 kvm,nixos-test,benchmark,big-parallel - -"
+  ]
+  ext_builder_keyscan     = ["builder.vedenemo.dev", "hetzarm.vedenemo.dev"]
+  binary_cache_url_common = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
+  # TODO: adding multiple urls as comma-and-whitespace separated
+  # string is more or less a hack. If we plan to have multiple domains
+  # per host permanently, we could make the below variable a list, and
+  # do the templating to a comma-and-whitespace separated list of urls
+  # before we pass it to caddy.
+  binary_cache_url_dev  = "${local.binary_cache_url_common}, https://dev-cache.vedenemo.dev"
+  binary_cache_url_prod = "${local.binary_cache_url_common}, https://prod-cache.vedenemo.dev"
+
   # Environment-specific configuration options.
   # See Azure vm sizes and specs at:
   # https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux
@@ -106,14 +110,10 @@ locals {
       osdisk_size_controller  = "150"
       num_builders_x86        = 0
       num_builders_aarch64    = 0
-      # 'priv' and 'dev' environments use the same binary cache signing key
       binary_cache_public_key = "ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I="
-      binary_cache_url        = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
-      ext_builder_machines = [
-        "ssh://remote-build@builder.vedenemo.dev x86_64-linux /etc/secrets/remote-build-ssh-key 32 3 kvm,nixos-test,benchmark,big-parallel - -",
-        "ssh://remote-build@hetzarm.vedenemo.dev aarch64-linux /etc/secrets/remote-build-ssh-key 40 3 kvm,nixos-test,benchmark,big-parallel - -"
-      ]
-      ext_builder_keyscan = ["builder.vedenemo.dev", "hetzarm.vedenemo.dev"]
+      binary_cache_url        = local.binary_cache_url_common
+      ext_builder_machines    = local.ext_builder_machines
+      ext_builder_keyscan     = local.ext_builder_keyscan
     }
     dev = {
       persistent_data         = "prod"
@@ -126,22 +126,29 @@ locals {
       osdisk_size_controller  = "1000"
       num_builders_x86        = 0
       num_builders_aarch64    = 0
-      # 'priv' and 'dev' environments use the same binary cache signing key
       binary_cache_public_key = "ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I="
-      # TODO: adding multiple urls as comma-and-whitespace separated
-      # string is more or less a hack. If we plan to have multiple domains
-      # per host permanently, we could make the below variable a list, and
-      # do the templating to a comma-and-whitespace separated list of urls
-      # before we pass it to caddy.
-      binary_cache_url = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com, https://dev-cache.vedenemo.dev"
-      ext_builder_machines = [
-        "ssh://remote-build@builder.vedenemo.dev x86_64-linux /etc/secrets/remote-build-ssh-key 32 3 kvm,nixos-test,benchmark,big-parallel - -",
-        "ssh://remote-build@hetzarm.vedenemo.dev aarch64-linux /etc/secrets/remote-build-ssh-key 40 3 kvm,nixos-test,benchmark,big-parallel - -"
-      ]
-      ext_builder_keyscan = ["builder.vedenemo.dev", "hetzarm.vedenemo.dev"]
+      binary_cache_url        = local.binary_cache_url_dev
+      ext_builder_machines    = local.ext_builder_machines
+      ext_builder_keyscan     = local.ext_builder_keyscan
     }
     prod = {
       persistent_data         = "prod"
+      vm_size_binarycache     = "Standard_D4_v3"
+      osdisk_size_binarycache = "250"
+      vm_size_builder_x86     = "Standard_D16_v3"
+      vm_size_builder_aarch64 = "Standard_D8ps_v5"
+      osdisk_size_builder     = "250"
+      vm_size_controller      = "Standard_E4_v5"
+      osdisk_size_controller  = "1000"
+      num_builders_x86        = 0
+      num_builders_aarch64    = 0
+      binary_cache_public_key = "ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I="
+      binary_cache_url        = local.binary_cache_url_prod
+      ext_builder_machines    = local.ext_builder_machines
+      ext_builder_keyscan     = local.ext_builder_keyscan
+    }
+    release = {
+      persistent_data         = "release"
       vm_size_binarycache     = "Standard_D4_v3"
       osdisk_size_binarycache = "250"
       vm_size_builder_x86     = "Standard_D64_v3"
@@ -152,7 +159,7 @@ locals {
       num_builders_x86        = 1
       num_builders_aarch64    = 1
       binary_cache_public_key = "ghaf-infra-prod:DIrhJsqehIxjuUQ93Fqx6gmo4cDgn5srW5dedvMbqD0="
-      binary_cache_url        = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
+      binary_cache_url        = local.binary_cache_url_common
       ext_builder_machines    = []
       ext_builder_keyscan     = []
     }
@@ -161,11 +168,12 @@ locals {
   # Read ssh-keys.yaml into local.ssh_keys
   ssh_keys = yamldecode(file("../ssh-keys.yaml"))
 
-  # This determines the configuration options used in the
-  # ghaf-infra instance (defines e.g. vm_sizes and number of builders).
-  # If workspace name is "dev", "prod", or "release" use the workspace name as
-  # envtype, otherwise, use the value from var.envtype.
-  conf = contains(["dev", "prod", "release"], local.ws) ? local.ws : var.envtype
+  # Determine the configuration options used in the ghaf-infra instance
+  # based on the workspace name
+  is_release = length(regexall("^release.*", local.ws)) > 0
+  is_prod    = length(regexall("(^prod.*)", local.ws)) > 0
+  is_dev     = length(regexall("(^dev.*)", local.ws)) > 0
+  conf       = local.is_release ? "release" : local.is_prod ? "prod" : local.is_dev ? "dev" : "priv"
 
   # Protect against accidental non-priv environment deployment by requiring
   # variable -var="convince=true".
