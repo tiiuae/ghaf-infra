@@ -137,132 +137,49 @@ in
       # Increase the number of rows shown in Stage View (default is 10)
       "-Dcom.cloudbees.workflow.rest.external.JobExt.maxRunsPerJob=32"
     ];
+
     # Configure jenkins job(s):
     # https://jenkins-job-builder.readthedocs.io/en/latest/project_pipeline.html
     # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/services/continuous-integration/jenkins/job-builder.nix
     jobBuilder = {
       enable = true;
-      nixJobs = [
-        {
-          job = {
-            name = "ghaf-main-pipeline";
-            project-type = "pipeline";
-            pipeline-scm = {
-              scm = [
-                {
-                  git = {
-                    url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
-                    clean = true;
-                    branches = [ "*/main" ];
-                  };
-                }
-              ];
-              script-path = "ghaf-main-pipeline.groovy";
-              lightweight-checkout = true;
+      nixJobs =
+        lib.mapAttrsToList
+          (name: script-path: {
+            job = {
+              inherit name;
+              project-type = "pipeline";
+              pipeline-scm = {
+                inherit script-path;
+                lightweight-checkout = true;
+                scm = [
+                  {
+                    git = {
+                      url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
+                      clean = true;
+                      branches = [ "*/main" ];
+                    };
+                  }
+                ];
+              };
             };
+          })
+          {
+            "Ghaf main pipeline" = "ghaf-main-pipeline.groovy";
+            "Ghaf pre-merge pipeline" = "ghaf-pre-merge-pipeline.groovy";
+            "Ghaf nightly pipeline" = "ghaf-nightly-pipeline.groovy";
+            "Ghaf release pipeline" = "ghaf-release-pipeline.groovy";
+            "Ghaf HW test" = "ghaf-hw-test.groovy";
+            "Ghaf parallel HW test" = "ghaf-parallel-hw-test.groovy";
+            "FMO OS main pipeline" = "fmo-os-main-pipeline.groovy";
           };
-        }
-        {
-          job = {
-            name = "ghaf-pre-merge-pipeline";
-            project-type = "pipeline";
-            pipeline-scm = {
-              scm = [
-                {
-                  git = {
-                    url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
-                    clean = true;
-                    branches = [ "*/main" ];
-                  };
-                }
-              ];
-              script-path = "ghaf-pre-merge-pipeline.groovy";
-              lightweight-checkout = true;
-            };
-          };
-        }
-        {
-          job = {
-            name = "ghaf-nightly-pipeline";
-            project-type = "pipeline";
-            pipeline-scm = {
-              scm = [
-                {
-                  git = {
-                    url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
-                    clean = true;
-                    branches = [ "*/main" ];
-                  };
-                }
-              ];
-              script-path = "ghaf-nightly-pipeline.groovy";
-              lightweight-checkout = true;
-            };
-          };
-        }
-        {
-          job = {
-            name = "ghaf-hw-test";
-            project-type = "pipeline";
-            pipeline-scm = {
-              scm = [
-                {
-                  git = {
-                    url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
-                    clean = true;
-                    branches = [ "*/main" ];
-                  };
-                }
-              ];
-              script-path = "ghaf-hw-test.groovy";
-              lightweight-checkout = true;
-            };
-          };
-        }
-        {
-          job = {
-            name = "fmo-os-main-pipeline";
-            project-type = "pipeline";
-            pipeline-scm = {
-              scm = [
-                {
-                  git = {
-                    url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
-                    clean = true;
-                    branches = [ "*/main" ];
-                  };
-                }
-              ];
-              script-path = "fmo-os-main-pipeline.groovy";
-              lightweight-checkout = true;
-            };
-          };
-        }
-        {
-          job = {
-            name = "ghaf-release-pipeline";
-            project-type = "pipeline";
-            pipeline-scm = {
-              scm = [
-                {
-                  git = {
-                    url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
-                    clean = true;
-                    branches = [ "*/main" ];
-                  };
-                }
-              ];
-              script-path = "ghaf-release-pipeline.groovy";
-              lightweight-checkout = true;
-            };
-          };
-        }
-      ];
     };
   };
+
   systemd.services.jenkins.serviceConfig = {
     Restart = "on-failure";
   };
+
   systemd.services.jenkins-job-builder.serviceConfig = {
     Restart = "on-failure";
     RestartSec = 5;
