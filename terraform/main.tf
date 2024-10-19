@@ -240,22 +240,6 @@ resource "azurerm_storage_container" "vm_images" {
   container_access_type = "private"
 }
 
-# Storage account and storage container used to store Jenkins artifacts
-resource "azurerm_storage_account" "jenkins_artifacts" {
-  name                            = "art${local.ws}${local.shortloc}"
-  resource_group_name             = azurerm_resource_group.infra.name
-  location                        = azurerm_resource_group.infra.location
-  account_tier                    = "Standard"
-  account_replication_type        = "LRS"
-  allow_nested_items_to_be_public = false
-}
-
-resource "azurerm_storage_container" "jenkins_artifacts_1" {
-  name                  = "jenkins-artifacts-v1"
-  storage_account_name  = azurerm_storage_account.jenkins_artifacts.name
-  container_access_type = "private"
-}
-
 ################################################################################
 
 # Data sources to access terraform state, see ./state-storage
@@ -322,15 +306,27 @@ data "azurerm_key_vault" "ghaf_devenv_ca" {
 # Data sources to access 'workspace-specific persistent' data
 # see: ./persistent/workspace-specific
 
-# Caddy state disk
+# Caddy state disk: binary cache
 data "azurerm_managed_disk" "binary_cache_caddy_state" {
   name                = "binary-cache-vm-caddy-state-${local.ws}"
   resource_group_name = local.persistent_rg
 }
 
+# Caddy state disk: jenkins controller
 data "azurerm_managed_disk" "jenkins_controller_caddy_state" {
   name                = "jenkins-controller-vm-caddy-state-${local.ws}"
   resource_group_name = local.persistent_rg
+}
+
+# Jenkins artifacts storage
+data "azurerm_storage_account" "jenkins_artifacts" {
+  name                = "artifact${local.ws}"
+  resource_group_name = local.persistent_rg
+}
+
+data "azurerm_storage_container" "jenkins_artifacts_1" {
+  name                 = "jenkins-artifacts-v1"
+  storage_account_name = data.azurerm_storage_account.jenkins_artifacts.name
 }
 
 ################################################################################
