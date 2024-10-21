@@ -145,12 +145,13 @@ in
       enable = true;
       nixJobs =
         lib.mapAttrsToList
-          (name: script-path: {
+          (display-name: script: {
             job = {
-              inherit name;
+              inherit display-name;
+              name = script;
               project-type = "pipeline";
               pipeline-scm = {
-                inherit script-path;
+                script-path = "${script}.groovy";
                 lightweight-checkout = true;
                 scm = [
                   {
@@ -165,13 +166,13 @@ in
             };
           })
           {
-            "Ghaf main pipeline" = "ghaf-main-pipeline.groovy";
-            "Ghaf pre-merge pipeline" = "ghaf-pre-merge-pipeline.groovy";
-            "Ghaf nightly pipeline" = "ghaf-nightly-pipeline.groovy";
-            "Ghaf release pipeline" = "ghaf-release-pipeline.groovy";
-            "Ghaf HW test" = "ghaf-hw-test.groovy";
-            "Ghaf parallel HW test" = "ghaf-parallel-hw-test.groovy";
-            "FMO OS main pipeline" = "fmo-os-main-pipeline.groovy";
+            "Ghaf main pipeline" = "ghaf-main-pipeline";
+            "Ghaf pre-merge pipeline" = "ghaf-pre-merge-pipeline";
+            "Ghaf nightly pipeline" = "ghaf-nightly-pipeline";
+            "Ghaf release pipeline" = "ghaf-release-pipeline";
+            "Ghaf HW test" = "ghaf-hw-test";
+            "Ghaf parallel HW test" = "ghaf-parallel-hw-test";
+            "FMO OS main pipeline" = "fmo-os-main-pipeline";
           };
     };
   };
