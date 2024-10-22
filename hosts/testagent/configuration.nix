@@ -15,17 +15,79 @@ let
   # https://github.com/NixOS/nixpkgs/pull/313643
   brainstem = pkgs.callPackage ../../pkgs/brainstem { };
 
-  jenkins-connection-script = pkgs.writeScript "jenkins-connect.sh" ''
-    #!/usr/bin/env bash
-    set -eu
-    if [ ! -f agent.jar ]; then echo "Error: /var/lib/jenkins/agent.jar not found"; exit 1; fi;
-    if [ ! -f secret-file ]; then echo "Error: /var/lib/jenkins/secret-file not found"; exit 1; fi;
-    ${pkgs.jdk}/bin/java \
-      -jar agent.jar \
-      -jnlpUrl https://ghaf-jenkins-controller-dev.northeurope.cloudapp.azure.com/computer/testagent/jenkins-agent.jnlp \
-      -secret @secret-file \
-      -workDir "/var/lib/jenkins"
-  '';
+  mkAgent =
+    device:
+    let
+      # Temporary url for development
+      controllerUrl = "https://ghaf-jenkins-controller-dev.northeurope.cloudapp.azure.com";
+      workDir = "/var/lib/jenkins/agents/${device}";
+
+      jenkins-connection-script =
+        pkgs.writeScript "jenkins-connect.sh" # sh
+          ''
+            #!/usr/bin/env bash
+            set -eu
+
+            mkdir -p "${workDir}"
+
+            # get agent.jar
+            if [ ! -f agent.jar ]; then
+              wget "${controllerUrl}/jnlpJars/agent.jar"
+            fi
+
+            # TODO: get secret from jenkins api here, right now it's manual process
+            if [ ! -f "secret_${device}" ]; then echo "Error: /var/lib/jenkins/secret_${device} not found"; exit 1; fi;
+
+            ${pkgs.jdk}/bin/java \
+              -jar agent.jar \
+              -url "${controllerUrl}" \
+              -name "${device}" \
+              -secret "@secret_${device}" \
+              -workDir "${workDir}" \
+              -webSocket
+          '';
+    in
+    {
+      after = [ "network.target" ];
+      wantedBy = [ "multi-user.target" ];
+
+      # Give up if it fails more than 5 times in 60 second interval
+      startLimitBurst = 5;
+      startLimitIntervalSec = 60;
+
+      path =
+        [
+          brainstem
+          inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
+        ]
+        ++ (with pkgs; [
+          wget
+          jdk
+          git
+          bashInteractive
+          coreutils
+          util-linux
+          nix
+          zstd
+          jq
+          csvkit
+          sudo
+          openssh
+          iputils
+          netcat
+          python3
+          usbsdmux
+        ]);
+
+      serviceConfig = {
+        Type = "simple";
+        User = "jenkins";
+        WorkingDirectory = "/var/lib/jenkins";
+        ExecStart = "${jenkins-connection-script}";
+        Restart = "on-failure";
+        RestartSec = 5;
+      };
+    };
 in
 {
   imports =
@@ -94,47 +156,13 @@ in
     "tty"
   ];
 
-  # Open connection to Jenkins controller
-  systemd.services.jenkins-connection = {
-    after = [ "network.target" ];
-    wantedBy = [ "multi-user.target" ];
-
-    # Give up if it fails more than 5 times in 60 second interval
-    startLimitBurst = 5;
-    startLimitIntervalSec = 60;
-
-    path =
-      [
-        brainstem
-        inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
-      ]
-      ++ (with pkgs; [
-        jdk
-        git
-        bashInteractive
-        coreutils
-        util-linux
-        nix
-        zstd
-        jq
-        csvkit
-        sudo
-        openssh
-        iputils
-        netcat
-        python3
-        wget
-        usbsdmux
-      ]);
-
-    serviceConfig = {
-      Type = "simple";
-      User = "jenkins";
-      WorkingDirectory = "/var/lib/jenkins";
-      ExecStart = "${jenkins-connection-script}";
-      Restart = "on-failure";
-      RestartSec = 5;
-    };
+  # Agent services per hardware test device
+  systemd.services = {
+    agent-orin-agx = mkAgent "orin-agx";
+    agent-orin-nx = mkAgent "orin-nx";
+    agent-riscv = mkAgent "riscv";
+    agent-nuc = mkAgent "nuc";
+    agent-lenovo-x1 = mkAgent "lenovo-x1";
   };
 
   # Details of the hardware devices connected to this host
@@ -145,8 +173,10 @@ in
         device_ip_address = "172.18.16.50";
         socket_ip_address = "172.18.16.30";
         plug_type = "TAPOP100v2";
+        switch_bot = "NONE";
         location = "testagent";
         usbhub_serial = "F0A0D6CF";
+        ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XPNJ0TB00828W-0:0";
         threads = 8;
       };
       OrinAGX1 = {
@@ -154,26 +184,32 @@ in
         device_ip_address = "172.18.16.36";
         socket_ip_address = "172.18.16.31";
         plug_type = "TAPOP100v2";
+        switch_bot = "NONE";
         location = "testagent";
         usbhub_serial = "92D8AEB7";
+        ext_drive_by-id = "usb-Samsung_PSSD_T7_S6WXNS0W300153T-0:0";
         threads = 8;
       };
-      LenovoX1-2 = {
+      LenovoX1-1 = {
         serial_port = "NONE";
         device_ip_address = "172.18.16.66";
         socket_ip_address = "NONE";
         plug_type = "NONE";
+        switch_bot = "LenovoX1-prod";
         location = "testagent";
         usbhub_serial = "641B6D74";
+        ext_drive_by-id = "usb-Samsung_PSSD_T7_S7MLNS0X532696T-0:0";
         threads = 20;
       };
       Polarfire1 = {
         serial_port = "/dev/ttyRISCV1";
-        device_ip_address = "";
+        device_ip_address = "NONE";
         socket_ip_address = "172.18.16.45";
         plug_type = "TAPOP100v2";
+        switch_bot = "NONE";
         location = "testagent";
         usb_sd_mux_port = "/dev/sg1";
+        ext_drive_by-id = "usb-LinuxAut_sdmux_HS-SD_MMC_000000001184-0:0";
         threads = 4;
       };
       OrinNX1 = {
@@ -181,8 +217,10 @@ in
         device_ip_address = "172.18.16.44";
         socket_ip_address = "172.18.16.43";
         plug_type = "TAPOP100v2";
+        switch_bot = "NONE";
         location = "testagent";
         usbhub_serial = "5220564F";
+        ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XPNS0T918984B-0:0";
         threads = 8;
       };
     };

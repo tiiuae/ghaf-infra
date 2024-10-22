@@ -38,7 +38,7 @@ let
             ${pkgs.jdk}/bin/java \
               -jar agent.jar \
               -url "${controllerUrl}" \
-              -name "testagent_${device}" \
+              -name "${device}" \
               -secret "@secret_${device}" \
               -workDir "${workDir}" \
               -webSocket
@@ -198,6 +198,7 @@ in
           device_ip_address = "172.18.16.54";
           socket_ip_address = "172.18.16.74";
           plug_type = "TAPOP100v2";
+          switch_bot = "NONE";
           usbhub_serial = "0x2954223B";
           ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XNNS0W202677W-0:0";
           threads = 8;
@@ -208,6 +209,7 @@ in
           device_ip_address = "172.18.16.61";
           socket_ip_address = "172.18.16.95";
           plug_type = "TAPOP100v2";
+          switch_bot = "NONE";
           usbhub_serial = "0xEE92E4FD";
           ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XPNS0W606359P-0:0";
           threads = 8;
@@ -215,9 +217,10 @@ in
         Polarfire1 = {
           inherit location;
           serial_port = "/dev/ttyRISCV1";
-          device_ip_address = "";
+          device_ip_address = "NONE";
           socket_ip_address = "172.18.16.82";
           plug_type = "TAPOP100v2";
+          switch_bot = "NONE";
           usb_sd_mux_port = "/dev/sg1";
           ext_drive_by-id = "usb-LinuxAut_sdmux_HS-SD_MMC_000000001267-0:0";
           threads = 4;
@@ -228,6 +231,7 @@ in
           device_ip_address = "172.18.16.16";
           socket_ip_address = "172.18.16.20";
           plug_type = "TAPOP100v2";
+          switch_bot = "NONE";
           usbhub_serial = "0x029CEAF3";
           ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XNNS0W201129V-0:0";
           threads = 8;
