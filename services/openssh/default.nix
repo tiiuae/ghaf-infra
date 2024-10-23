@@ -33,6 +33,9 @@
     enable = true;
     bantime-increment.enable = true;
     jails.sshd.settings.filter = "sshd[mode=aggressive]";
+    ignoreIP = [
+      "109.204.204.138" # Tampere office IP address
+    ];
   };
 
   environment.systemPackages = [ pkgs.kitty.terminfo ];
