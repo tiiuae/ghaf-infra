@@ -305,6 +305,12 @@ data "azurerm_key_vault_secret" "binary_cache_signing_key" {
   provider     = azurerm
 }
 
+# Reference the existing Key Vault
+data "azurerm_key_vault" "ghaf_devenv_ca" {
+  name                = "ghaf-devenv-ca"
+  resource_group_name = "ghaf-devenev-pki"
+}
+
 # Data sources to access 'workspace-specific persistent' data
 # see: ./persistent/workspace-specific
 
