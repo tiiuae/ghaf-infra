@@ -150,6 +150,7 @@ in
               inherit display-name;
               name = script;
               project-type = "pipeline";
+              concurrent = true;
               pipeline-scm = {
                 script-path = "${script}.groovy";
                 lightweight-checkout = true;
