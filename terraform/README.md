@@ -28,20 +28,20 @@ Experimental feature "nix-command" must be enabled.
 
 Clone this repository:
 ```bash
-$ git clone https://github.com/tiiuae/ghaf-infra.git
-$ cd ghaf-infra
+❯ git clone https://github.com/tiiuae/ghaf-infra.git
+❯ cd ghaf-infra
 ```
 
 Bootstrap nix-shell with the required dependencies:
 ```bash
 # Start a nix-shell with required dependencies:
-$ nix-shell
+❯ nix-shell
 
 # Authenticate with az login:
-$ az login
+❯ az login
 
 # Terraform comands are executed under the terraform directory:
-$ cd terraform/
+❯ cd terraform/
 ```
 
 All commands in this document are executed from nix-shell inside the `terraform` directory.
@@ -53,10 +53,12 @@ terraform
 │   ├── binary-cache-sigkey
 │   ├── binary-cache-storage
 │   ├── builder-ssh-key
+│   ├── resources
 │   └── workspace-specific
 ├── state-storage
 │   └── tfstate-storage.tf
 ├── modules
+│   ├── arm-builder-vm
 │   ├── azurerm-linux-vm
 │   └── azurerm-nix-vm-image
 ├── binary-cache.tf
@@ -65,18 +67,15 @@ terraform
 └── main.tf
 ```
 - The `terraform` directory contains the root terraform deployment files with the VM configurations `binary-cache.tf`, `builder.tf`, and `jenkins-controller.tf` matching the components described in [README-azure.md](./README-azure.md) in its [components section](./README-azure.md#components).
-- The `terraform/persistent` directory contains the terraform configuration for parts of the infrastructure that are considered persistent - resources defined under `terraform/persistent` will not be removed even if the ghaf-infra instance is otherwise removed. An example of such persistent ghaf-infra resource is the binary cache storage as well as the binary cache signing key. There may be many 'persistent' infrastructure instances - currently `dev` and `prod` deployments have their own instances of the persistent resources. Section [Multiple Environments with Terraform Workspaces](./README.md#multiple-environments-with-terraform-workspaces) discusses this topic with more details.
+- The `terraform/persistent` directory contains the terraform configuration for parts of the infrastructure that are considered persistent - resources defined under `terraform/persistent` will not be removed even if the ghaf-infra instance is otherwise removed. An example of such persistent ghaf-infra resource is the binary cache storage as well as the binary cache signing key. There may be many 'persistent' infrastructure instances - currently `priv` `dev/prod` and `release` deployments have their own instances of the persistent resources. Section [Multiple Environments with Terraform Workspaces](./README.md#multiple-environments-with-terraform-workspaces) discusses this topic with more details.
 - The `terraform/state-storage` directory contains the terraform configuration for the ghaf-infra remote backend state storage using Azure storage blob. See section [Initializing Azure State and Persistent Data](./README.md#initializing-azure-state-and-persistent-data) for more details.
 - The `terraform/modules` directory contains terraform modules used from the ghaf-infra VM configurations to build, upload, and spin up Azure nix images.
 
-## Initializing Azure State and Persistent Data
-This project stores the terraform state in a remote storage in an azure storage blob as configured in [tfstate-storage.tf](./state-storage/tfstate-storage.tf). The benefits of using such remote storage setup are well outlined in [storing state in azure storage](https://learn.microsoft.com/en-us/azure/developer/terraform/store-state-in-azure-storage) and [terraform backend configuration](https://developer.hashicorp.com/terraform/language/settings/backends/configuration).
-
-To initialize the backend storage, use the `terraform-init-sh`:
-
+## Initializing Ghaf-Infra Environment
 ```bash
 # Inside the terraform directory
-$ ./terraform-init.sh
+# Replace 'workspacename' with the name of the workspace you are going to work with
+❯ ./terraform-init.sh -w workspacename
 [+] Initializing state storage
 [+] Initializing persistent data
 ...
@@ -84,36 +83,28 @@ $ ./terraform-init.sh
 ```
 `terraform-init.sh` will not do anything if the initialization has already been done. In other words, it's safe to run the script many times; it will not destroy or re-initialize anything if the init was already executed.
 
-In addition to the shared terraform state, some of the infrastructure resources are also shared between the ghaf-infra instances. `terraform-init.sh` initializes the persistent configuration defined under `terraform/persistent`. There may be many 'persistent' infrastructure instances: currently `dev` and `prod` deployments have their own instances of the persistent resources. Section [Multiple Environments with Terraform Workspaces](./README.md#multiple-environments-with-terraform-workspaces) discusses this topic with more details.
-
 ## Multiple Environments with Terraform Workspaces
 
 To support infrastructure development in isolated environments, this project uses [terraform workspaces](https://developer.hashicorp.com/terraform/cli/workspaces).
 The main reasons for using terraform workspaces include:
-- Different workspaces allow deploying different instances of ghaf-infra. Each instance has a completely separate state data, making it possible to deploy `dev`, `prod`, or even private development instances of ghaf-infra. This makes it possible to first develop and test infrastructure changes in a private development environment, before proposing changes to shared (e.g. `dev` or `prod`) environments. The configuration codebase is the same between all the environments, with the differentiation options defined in the [`main.tf`](./main.tf#L69).
-- Parts of the ghaf-infra infrastructure are persistent and shared between different environments. As an example, private `dev` environments share the binary cache storage. This arrangement makes it possible to treat, for instance, `dev` and private ghaf-infra instances dispensable: ghaf-infra instances can be temporary and short-lived as it's easy to spin-up new environments without losing any valuable data. The persistent data is configured outside the root ghaf-infra terraform deployment in the `terraform/persistent` directory. There may be many 'persistent' infrastructure instances - currently `dev` and `prod` deployments have their own instances of the persistent resources. This means that `dev` and `prod` instances of ghaf-infra do **not** share any persistent data. As an example, `dev` and `prod` deployments of ghaf-infra have a separate binary cache storage. The binding to persistent resources from ghaf-infra is done in the [`main.tf`](./main.tf#L166) based on the terraform workspace name and resource location. Persistent data initialization is automatically done with `terraform-init.sh` script.
-- Currently, the following resources are defined 'persistent', meaning `dev` and `prod` instances do not share the following resources:
-    - Binary cache storage: [`binary-cache-storage.tf`](./persistent/binary-cache-storage/binary-cache-storage.tf)
-    - Binary cache signing key: [`binary-cache-sigkey.ft`](./persistent/binary-cache-sigkey/binary-cache-sigkey.tf)
-    - Builder ssh key: [`builder-ssh-key.tf`](./persistent/builder-ssh-key/builder-ssh-key.tf)
+- Different workspaces allow deploying different instances of ghaf-infra. Each instance has a completely separate state data, making it possible to deploy `dev`, `prod`, `release` or even private development instances of ghaf-infra. This makes it possible to first develop and test infrastructure changes in a private development environment, before proposing changes to shared (e.g. `dev` or `prod`) environments. The configuration codebase is the same between all the environments, with the differentiation options defined in the [`main.tf`](./main.tf#L105).
+- Parts of the ghaf-infra infrastructure are persistent and shared between different environments. As an example, private environments share the binary cache storage. This arrangement makes it possible to treat, for instance, private ghaf-infra instances dispensable: ghaf-infra instances can be temporary and short-lived as it's easy to spin-up new environments without losing any valuable data. The persistent data is configured outside the root ghaf-infra terraform deployment in the `terraform/persistent` directory. There may be many 'persistent' infrastructure instances - currently `priv`, `dev/prod` and `release` deployments have their own instances of the persistent resources. This means that `priv`, `dev/prod` and `release` instances of ghaf-infra do **not** share any persistent data. As an example, `priv` and `prod` deployments of ghaf-infra have a separate binary cache storage. The binding to persistent resources from ghaf-infra is done in the [`main.tf`](./main.tf) based on the terraform workspace name and resource location. Persistent data initialization is automatically done with `terraform-init.sh` script.
 
-To help facilitate the usage of terraform workspaces in setting-up distinct copies of ghaf-infra, one can [use terraform workspaces from the command line](https://developer.hashicorp.com/terraform/cli/workspaces#managing-cli-workspaces) or consider using the helper script provided at [`terraform-playground.sh`](./terraform-playground.sh). Below, for the sake of example, we use the [`terraform-playground.sh`](./terraform-playground.sh) to setup a private deployment instance of ghaf-infra:
+To help facilitate the usage of terraform workspaces in setting-up distinct copies of ghaf-infra, one can [use terraform workspaces from the command line](https://developer.hashicorp.com/terraform/cli/workspaces#managing-cli-workspaces). Below, for the sake of example, we setup a private deployment instance of ghaf-infra:
 
 ```bash
-# Activate private development environment
-$ ./terraform-playground.sh activate
-# ...
-[+] Done, use terraform [validate|plan|apply] to work with your dev infra
-```
-Which sets-up a terraform workspace for your private development environment:
-```bash
-# List the current terraform worskapce
-$ terraform workspace list
-Terraform workspaces:
+# Activate private development environment 'henri'
+❯ ./terraform-init.sh -w henri
+[+] Using state 'ghaf-infra-0-state-eun'
+[+] Using persistent 'ghaf-infra-0-persistent-eun'
+[+] Initializing workspace-specific persistent
+[+] Initializing workspace
+[+] Listing workspaces:
   default
-  dev
-* henrirosten       # <-- indicates active workspace
+  dev0
+* henri       # <-- indicates active workspace
   prod
+  release
 ```
 
 ## Terraform workflow
@@ -125,65 +116,46 @@ Once your are ready to deploy your terraform or nix configuration changes, the f
 # Inside the terraform directory
 
 # Format the terraform code files:
-$ terraform fmt -recursive
+❯ terraform fmt -recursive
 
 # Validate the terraform changes:
-$ terraform validate
+❯ terraform validate
 
 # Make sure you deploy to the correct ghaf-infra instance.
 # Use terraform workspace select <workspace_name> to switch workspaces
-$ terraform workspace list
+❯ terraform workspace list
   default
-  dev
-* henrirosten      # <== This example deploys to private dev environment
+  dev0
+* henri       # <-- This example deploys to private dev environment
   prod
+  release
 
 # Show what actions terraform would take on apply:
-$ terraform plan
+❯ terraform plan
 
 # Apply your configuration changes:
-$ terraform apply
+❯ terraform apply
 ```
 
 Once `terraform apply` completes, the private development infrastructure is deployed.
 You can now play around in your isolated copy of the infrastructure, testing and updating the changes, making sure the changes work as expected before merging the changes.
 
 ## Destroying Test Environment
-Once the configuration changes have been tested, the private development environment can be destroyed:
+Once you no longer need your playground environment, the private development can be destroyed:
 ```bash
-# Destroy the private terraform worskapce using helper script
-$ ./terraform-playground.sh destroy
+# Inside the terraform directory
 
-# Alternatively, you can use terraform command directly
-$ terraform workspace select <workspace_name>
-$ terraform apply -destroy
+❯ terraform workspace list
+  default
+  dev0
+* henri
+  prod
+  release
+
+❯ terraform workspace select henri
+❯ terraform apply -destroy
 ```
 The above command(s) remove all the resources that were created for the given environment.
-
-## Changing Azure Deploy Location
-By default, ghaf-infra is deployed to Azure location `northeurope` (North Europe).
-However, ghaf-infra resources can be deployed to other Azure locations too, with the following caveats:
-- Ghaf-infra has been tested in a limited set of locations. `terraform-init.sh` exits with an error if you try to initialize ghaf-infra in a non-supported (non-tested) location. When deploying to a new, previously unsupported location, you need to modify the [`terraform-init.sh`](./terraform-init.sh#L89).
-- For a full list of available Azure location names, run `az account list-locations -o table` in ghaf-infra devshell.
-- Not all Azure VM sizes or other resources are available in all Azure locations. You can search the availability of specific resources through the Azure region product page e.g.: https://azure.microsoft.com/en-us/explore/global-infrastructure/products-by-region/?regions=europe-north&products=virtual-machines. Alternatively, you can list the VM sizes per location with `az vm list-sizes` command from the ghaf-infra devshell, for instance: `az vm list-sizes --location 'northeurope' -o table`.
-- Your Azure subscription quota limits impact the ability to deploy ghaf-infra, as such, you might need to increase the vCPU quotas for your subscription via the Azure web portal. See more information at https://learn.microsoft.com/en-us/azure/quotas/quotas-overview. You can check your quota usage from the Azure web portal or using `az vm list-usage`, for instance: `az vm list-usage --location "northeurope" -o table`.
-
-Following shows an example of deploying ghaf-infra to Azure location SWE Central:
-
-```bash
-# Initialize terraform state and persistent data, using SWE Central as an example location:
-$ ./terraform-init.sh -l swedencentral
-
-# Switch to (and optionally create) a workspace 'devswec'
-$ terraform workspace new devswec || terraform workspace select devswec
-
-# Optionally, run Terraform plan:
-# (Variable 'envtype' overrides the default environment type)
-$ terraform plan -var="envtype=dev"
-
-# Deploy with Terraform apply:
-$ terraform apply -var="envtype=dev" -auto-approve
-```
 
 ## Common Terraform Errors
 
@@ -191,7 +163,7 @@ Below are some common Terraform errors with tips on how to resolve each.
 
 #### Error: A resource with the ID <ID> already exists
 ```bash
-$ terraform apply
+❯ terraform apply
 ...
 azurerm_virtual_machine_extension.deploy_ubuntu_builder: Creating...
 ╷
@@ -200,37 +172,33 @@ azurerm_virtual_machine_extension.deploy_ubuntu_builder: Creating...
 
 Example fix:
 ```bash
-$ terraform import azurerm_virtual_machine_extension.deploy_ubuntu_builder /subscriptions/<SUBID>/resourceGroups/rg-name-here/providers/Microsoft.Compute/virtualMachines/testvm/extensions/testvm-vmext
+❯ terraform import azurerm_virtual_machine_extension.deploy_ubuntu_builder /subscriptions/<SUBID>/resourceGroups/rg-name-here/providers/Microsoft.Compute/virtualMachines/testvm/extensions/testvm-vmext
 
 # Ref: https://stackoverflow.com/questions/61418168/terraform-resource-with-the-id-already-exists
 ```
 
-#### Error: creating/updating Image
+#### Error: Backend configuration changed
 ```bash
-$ terraform apply
-...
-│ Error: creating/updating Image (Subscription: "<SUBID>"
-│ Resource Group Name: "ghaf-infra-dev"
-│ Image Name: "<NAME>"): performing CreateOrUpdate: unexpected status 400 with error: InvalidParameter: The source blob https://<INSTANCE>.blob.core.windows.net/ghaf-infra-vm-images/<IMANE>.vhd is not accessible.
+❯ ./terraform-init.sh -w workspacename
+[+] Using state 'ghaf-infra-state-0-eun'
+[+] Using persistent 'ghaf-infra-persistent-0-eun'
+[+] Initializing workspace-specific persistent
+╷
+│ Error: Backend configuration changed
 │
-│   with module.builder_image.azurerm_image.default,
-│   on modules/azurerm-nix-vm-image/main.tf line 22, in resource "azurerm_image" "default":
-│   22: resource "azurerm_image" "default" {
+│ A change in the backend configuration has been detected, which may require migrating existing state.
+│
+│ If you wish to attempt automatic migration of the state, use "terraform init -migrate-state".
+│ If you wish to store the current configuration with no changes to the state, use "terraform init -reconfigure".
 ```
-Try running `terraform apply` again if you get an error similar to one shown above.
-It's unclear why this error occasionally occurs, this issue should be analyzed in detail.
 
-#### Error: Disk
+Above error (or similar) is likely caused by changed terraform backend state.
+Fix the local state reference by removing local state files and re-running `terraform-init.sh`:
+
 ```bash
-$ terraform apply
-...
-│ Error: Disk (Subscription: "<SUBID>"
-│ Resource Group Name: "ghaf-infra-persistent-eun"
-│ Disk Name: "binary-cache-vm-caddy-state-dev") was not found
-│
-│   with data.azurerm_managed_disk.binary_cache_caddy_state,
-│   on main.tf line 207, in data "azurerm_managed_disk" "binary_cache_caddy_state":
-│  207: data "azurerm_managed_disk" "binary_cache_caddy_state" {
+# Make sure you don't have any untracked files you want to keep in your working tree
+# before running the below command
+❯ git clean -ffdx
+# Replace 'workspacename' with the name of the workspace you'll work with
+❯ ./terraform-init.sh -w workspacename
 ```
-Above error (or similar) is likely caused by missing initialization for some `persistent` resources.
-Fix the persistent initialization by running `terraform-init.sh` then run `terraform apply` again.
