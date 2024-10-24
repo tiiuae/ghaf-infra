@@ -22,13 +22,13 @@ let
 
         echo "Uploading paths" $OUT_PATHS
 
-        # Retry upload once if it fails. If it fails again then exit with error. 
+        # Retry upload three times if it fails. If it fails third time then exit with error.
         # This should fix the upload race condition.
         ERR=1
-        for i in {1..2}; do
+        for i in {1..3}; do
           nix --extra-experimental-features nix-command copy --to 'http://localhost:8080?secret-key=/etc/secrets/nix-signing-key&compression=zstd' $OUT_PATHS &&
             ERR=0 && break ||
-            [ $i == 1 ] && echo "Retrying in 10 seconds..." && sleep 10
+            [ $i -le 3 ] && echo "Retrying in 10 seconds; attempt=$i failed..." && sleep 10
         done
         exit $ERR
       '';
