@@ -23,6 +23,7 @@
       user-themisto
       user-ktu
       user-avnik
+      user-github
     ]);
 
   # build3 specific configuration
