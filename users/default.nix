@@ -23,5 +23,6 @@
     user-vunnyso = import ./vunnyso.nix;
     user-bmg = import ./bmg.nix;
     user-fayad = import ./fayad.nix;
+    user-github = import ./github.nix;
   };
 }

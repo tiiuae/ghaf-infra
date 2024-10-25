@@ -357,11 +357,6 @@ let
       name = "remote-build";
       keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM2rhqSdifRmTwyrc3rvXWyDMznrIAAkVwhEsufLYiTp" ];
     }
-    {
-      desc = "Github actions runners can use this user to remote build";
-      name = "github";
-      keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH/KOBOKqZwugt7Yi6ZFhr6ZF2j9kzyqnl+v7eRlxPoq" ];
-    }
   ];
 in
 {
