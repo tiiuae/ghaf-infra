@@ -41,11 +41,11 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Union
+from typing import Any, Optional
 
 from colorlog import ColoredFormatter, default_log_colors
 from deploykit import DeployHost, HostKeyCheck
-from invoke import task
+from invoke.tasks import task
 from tabulate import tabulate
 
 ################################################################################
@@ -63,6 +63,7 @@ class TargetHost:
 
     hostname: str
     nixosconfig: str
+    secretspath: Optional[str] = None
 
 
 # Below dictionary defines the set of ghaf-infra configuration aliases:
@@ -74,14 +75,17 @@ TARGETS = OrderedDict(
         "binarycache-ficolo": TargetHost(
             hostname="172.18.20.109",
             nixosconfig="binarycache",
+            secretspath="hosts/binarycache/secrets.yaml",
         ),
         "monitoring-ficolo": TargetHost(
             hostname="172.18.20.108",
             nixosconfig="monitoring",
+            secretspath="hosts/monitoring/secrets.yaml",
         ),
         "build3-ficolo": TargetHost(
             hostname="172.18.20.104",
             nixosconfig="build3",
+            secretspath="hosts/builder/build3/secrets.yaml",
         ),
         "build4-ficolo": TargetHost(
             hostname="172.18.20.105",
@@ -91,29 +95,40 @@ TARGETS = OrderedDict(
             hostname="172.18.20.106",
             nixosconfig="himalia",
         ),
-        "testagent": TargetHost(
-            hostname="172.18.16.60",
-            nixosconfig="testagent",
-        ),
         "testagent-dev": TargetHost(
             hostname="172.18.16.33",
             nixosconfig="testagent-dev",
+            secretspath="hosts/testagent/dev/secrets.yaml",
+        ),
+        "testagent-prod": TargetHost(
+            hostname="172.18.16.60",
+            nixosconfig="testagent-prod",
+            secretspath="hosts/testagent/prod/secrets.yaml",
+        ),
+        "testagent-release": TargetHost(
+            hostname="172.18.16.32",
+            nixosconfig="testagent-release",
+            secretspath="hosts/testagent/release/secrets.yaml",
         ),
         "hetzarm": TargetHost(
             hostname="65.21.20.242",
             nixosconfig="hetzarm",
+            secretspath="hosts/hetzarm/secrets.yaml",
         ),
         "ghaf-log": TargetHost(
             hostname="95.217.177.197",
             nixosconfig="ghaf-log",
+            secretspath="hosts/ghaf-log/secrets.yaml",
         ),
         "ghaf-coverity": TargetHost(
             hostname="37.27.204.82",
             nixosconfig="ghaf-coverity",
+            secretspath="hosts/ghaf-coverity/secrets.yaml",
         ),
         "ghaf-proxy": TargetHost(
             hostname="95.216.200.85",
             nixosconfig="ghaf-proxy",
+            secretspath="hosts/ghaf-proxy/secrets.yaml",
         ),
     }
 )
@@ -170,7 +185,9 @@ def _init_logging(verbosity: int = 1) -> None:
 set_log_verbosity(1)
 
 
-def exec_cmd(cmd, raise_on_error=True, capture_output=True):
+def exec_cmd(
+    cmd, raise_on_error=True, capture_output=True
+) -> subprocess.CompletedProcess | None:
     """Run shell command cmd"""
     LOG.info("Running: %s", cmd)
     try:
@@ -239,9 +256,9 @@ def print_keys(_c: Any, alias: str) -> None:
     Example usage:
     inv print-keys --target binarycache-ficolo
     """
+    target = _get_target(alias)
     with TemporaryDirectory() as tmpdir:
-        nixosconfig = _get_target(alias).nixosconfig
-        decrypt_host_key(nixosconfig, tmpdir)
+        decrypt_host_key(target, tmpdir)
         key = f"{tmpdir}/etc/ssh/ssh_host_ed25519_key"
         pubkey = subprocess.run(
             ["ssh-keygen", "-y", "-f", f"{key}"],
@@ -295,12 +312,12 @@ def deploy(_c: Any, alias: str) -> None:
     h.run(f"{command} switch {flags} --flake {path}#{nixosconfig}")
 
 
-def decrypt_host_key(nixosconfig: str, tmpdir: str) -> None:
+def decrypt_host_key(target: TargetHost, tmpdir: str) -> None:
     """
     Run sops to extract `nixosconfig` secret 'ssh_host_ed25519_key'
     """
 
-    def opener(path: str, flags: int) -> Union[str, int]:
+    def opener(path: str, flags: int) -> int:
         return os.open(path, flags, 0o400)
 
     t = Path(tmpdir)
@@ -316,14 +333,15 @@ def decrypt_host_key(nixosconfig: str, tmpdir: str) -> None:
                     "--extract",
                     '["ssh_host_ed25519_key"]',
                     "--decrypt",
-                    f"{ROOT}/hosts/{nixosconfig}/secrets.yaml",
+                    f"{ROOT}/{target.secretspath}",
                 ],
                 check=True,
                 stdout=fh,
             )
         except subprocess.CalledProcessError:
             LOG.warning(
-                "Failed reading secret 'ssh_host_ed25519_key' for '%s'", nixosconfig
+                "Failed reading secret 'ssh_host_ed25519_key' for '%s'",
+                target.nixosconfig,
             )
             ask = input("Still continue? [y/N] ")
             if ask != "y":
@@ -360,7 +378,11 @@ def install(c: Any, alias) -> None:
     # Check ssh and remote user
     try:
         remote_user = h.run(cmd="whoami", stdout=subprocess.PIPE).stdout.strip()
-        local_user = exec_cmd("whoami").stdout.strip()
+        cmd = exec_cmd("whoami")
+        # error will be raised before the value is None
+        # this is here to make the type checker happy
+        assert cmd is not None
+        local_user = cmd.stdout.strip()
         if remote_user and local_user and remote_user != local_user:
             LOG.warning(
                 "Remote user '%s' is not your current local user. "
@@ -410,12 +432,12 @@ def install(c: Any, alias) -> None:
         if ask != "y":
             sys.exit(1)
 
-    nixosconfig = _get_target(alias).nixosconfig
+    target = _get_target(alias)
     with TemporaryDirectory() as tmpdir:
-        decrypt_host_key(nixosconfig, tmpdir)
+        decrypt_host_key(target, tmpdir)
         gitrev = "2991be5b522c88244b8833dd662cac406e3d5d28"
         command = f"nix run github:numtide/nixos-anywhere?rev={gitrev} --"
-        command += f" {h.host} --extra-files {tmpdir} --flake .#{nixosconfig}"
+        command += f" {h.host} --extra-files {tmpdir} --flake .#{target.nixosconfig}"
         command += " --option accept-flake-config true"
         LOG.warning(command)
         c.run(command)
@@ -496,6 +518,7 @@ def pre_push(c: Any) -> None:
     """
     cmd = "find . -type f -name *.py ! -path *result* ! -path *eggs*"
     ret = exec_cmd(cmd)
+    assert ret is not None
     pyfiles = ret.stdout.replace("\n", " ")
     cmd = f"black -q {pyfiles}"
     ret = exec_cmd(cmd, raise_on_error=False)
