@@ -30,7 +30,7 @@
     ]);
 
   networking = {
-    hostName = "testagent";
+    hostName = "testagent-prod";
     useNetworkd = true;
   };
 
