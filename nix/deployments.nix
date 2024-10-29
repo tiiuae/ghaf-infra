@@ -18,8 +18,9 @@ let
     himalia = mkDeployment "x86_64-linux" "himalia" "172.18.20.106";
     monitoring = mkDeployment "x86_64-linux" "monitoring" "172.18.20.108";
     binarycache = mkDeployment "x86_64-linux" "binarycache" "172.18.20.109";
-    testagent = mkDeployment "x86_64-linux" "testagent" "172.18.16.60";
+    testagent-prod = mkDeployment "x86_64-linux" "testagent-prod" "172.18.16.60";
     testagent-dev = mkDeployment "x86_64-linux" "testagent-dev" "172.18.16.33";
+    testagent-release = mkDeployment "x86_64-linux" "testagent-release" "172.18.16.32";
     ghaf-log = mkDeployment "x86_64-linux" "ghaf-log" "95.217.177.197";
     ghaf-coverity = mkDeployment "x86_64-linux" "ghaf-coverity" "37.27.204.82";
     ghaf-proxy = mkDeployment "x86_64-linux" "ghaf-proxy" "95.216.200.85";

@@ -1,11 +1,16 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 
-{ pkgs, inputs, ... }:
+{
+  pkgs,
+  inputs,
+  lib,
+  ...
+}:
 let
   # Vendored in, as brainstem isn't suitable for nixpkgs packaging upstream:
   # https://github.com/NixOS/nixpkgs/pull/313643
-  brainstem = pkgs.callPackage ../pkgs/brainstem { };
+  brainstem = pkgs.callPackage ../../pkgs/brainstem { };
 in
 {
   services.udev.packages = [
@@ -33,6 +38,10 @@ in
     "dialout"
     "tty"
   ];
+
+  # This server is only exposed to the internal network
+  # fail2ban only causes issues here
+  services.fail2ban.enable = lib.mkForce false;
 
   systemd.services =
     let
