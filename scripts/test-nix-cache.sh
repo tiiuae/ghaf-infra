@@ -44,8 +44,8 @@ usage () {
     echo ""
     echo "  sudo ./$MYNAME \\"
     echo "    -f github:tiiuae/ghaf#packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64 \\"
-    echo "    -b https://dev-cache.vedenemo.dev \\"
-    echo "    -k 'ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I='"
+    echo "    -b https://prod-cache.vedenemo.dev \\"
+    echo "    -k 'prod-cache.vedenemo.dev~1:JcytRNMJJdYJVQCYwLNsrfVhct5dhCK2D3fa6O1WHOI='"
     echo ""
 }
 

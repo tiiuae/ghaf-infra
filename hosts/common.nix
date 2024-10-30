@@ -32,13 +32,11 @@ in
       # Subsituters
       trusted-public-keys = [
         "ghaf-dev.cachix.org-1:S3M8x3no8LFQPBfHw1jl6nmP8A7cVWKntoMKN3IsEQY="
-        "cache.vedenemo.dev:8NhplARANhClUSWJyLVk4WMyy1Wb4rhmWW2u8AejH9E="
-        "cache.ssrcdevops.tii.ae:oOrzj9iCppf+me5/3sN/BxEkp5SaFkHfKTPPZ97xXQk="
+        "prod-cache.vedenemo.dev~1:JcytRNMJJdYJVQCYwLNsrfVhct5dhCK2D3fa6O1WHOI="
       ];
       substituters = [
         "https://ghaf-dev.cachix.org?priority=20"
-        "https://cache.vedenemo.dev"
-        "https://cache.ssrcdevops.tii.ae"
+        "https://prod-cache.vedenemo.dev"
       ];
       # Avoid copying unecessary stuff over SSH
       builders-use-substitutes = true;
