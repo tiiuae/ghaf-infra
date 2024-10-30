@@ -23,7 +23,8 @@
       user-themisto
       user-ktu
       user-avnik
-      user-github
+      user-github # Remove when all GhA workflows moved to build4
+      user-remote-build # Remove when all jenkins builds moved to build4
     ]);
 
   # build3 specific configuration

@@ -29,6 +29,7 @@
       user-mika
       user-themisto
       user-github
+      user-remote-build
     ]);
 
   nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
