@@ -76,10 +76,10 @@ locals {
   ws = substr(replace(lower(terraform.workspace), "/[^a-z0-9]/", ""), 0, 16)
 
   ext_builder_machines = [
-    "ssh://remote-build@builder.vedenemo.dev x86_64-linux /etc/secrets/remote-build-ssh-key 32 3 kvm,nixos-test,benchmark,big-parallel - -",
+    "ssh://remote-build@build4.vedenemo.dev x86_64-linux /etc/secrets/remote-build-ssh-key 32 3 kvm,nixos-test,benchmark,big-parallel - -",
     "ssh://remote-build@hetzarm.vedenemo.dev aarch64-linux /etc/secrets/remote-build-ssh-key 40 3 kvm,nixos-test,benchmark,big-parallel - -"
   ]
-  ext_builder_keyscan     = ["builder.vedenemo.dev", "hetzarm.vedenemo.dev"]
+  ext_builder_keyscan     = ["build4.vedenemo.dev", "hetzarm.vedenemo.dev"]
   binary_cache_url_common = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
   # TODO: adding multiple urls as comma-and-whitespace separated
   # string is more or less a hack. If we plan to have multiple domains
