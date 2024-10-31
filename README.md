@@ -150,6 +150,12 @@ $ invoke deploy --alias ghafhydra-dev
 ...
 ```
 
+# alternative
+
+## Deploy by using deploy-rs
+
+[follow instructions](./docs/deploy-rs.md)
+
 #### update-sops-files
 The `update-sops-files` task updates all sops yaml and json files according to the rules in [`.sops.yaml`](.sops.yaml). The intended use is to update the secrets after adding new hosts, admins, or secrets:
 
