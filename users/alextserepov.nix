@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   users.users = {
-    avnik = {
+    alextserepov = {
       description = "Aleksandr Tserepov-Savolainen";
       isNormalUser = true;
       openssh.authorizedKeys.keys = [
