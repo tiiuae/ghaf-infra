@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 module "builder_image" {
+  count  = local.num_builders
   source = "./modules/azurerm-nix-vm-image"
 
   nix_attrpath   = ""
@@ -32,7 +33,7 @@ module "builder_vm" {
   virtual_machine_name         = "ghaf-builder-x86-${count.index}-${local.ws}"
   virtual_machine_size         = local.opts[local.conf].vm_size_builder_x86
   virtual_machine_osdisk_size  = local.opts[local.conf].osdisk_size_builder
-  virtual_machine_source_image = module.builder_image.image_id
+  virtual_machine_source_image = module.builder_image[count.index].image_id
 
   virtual_machine_custom_data = join("\n", ["#cloud-config", yamlencode({
     users = [{

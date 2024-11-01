@@ -192,7 +192,7 @@ Example fix:
 │ If you wish to store the current configuration with no changes to the state, use "terraform init -reconfigure".
 ```
 
-Above error (or similar) is likely caused by changed terraform backend state.
+Above error (or similar) is caused by changed terraform backend state.
 Fix the local state reference by removing local state files and re-running `terraform-init.sh`:
 
 ```bash
@@ -201,4 +201,23 @@ Fix the local state reference by removing local state files and re-running `terr
 ❯ git clean -ffdx
 # Replace 'workspacename' with the name of the workspace you'll work with
 ❯ ./terraform-init.sh -w workspacename
+```
+
+#### Error: creating/updating Image
+```bash
+❯ terraform apply -auto-approve
+...
+│ Error: creating/updating Image (Subscription: "<SUBID>"
+│ Resource Group Name: "ghaf-infra-henri"
+│ Image Name: "binary-cache"): performing CreateOrUpdate: unexpected status 400 (400 Bad Request) with error: InvalidParameter: The source blob https://imghenrieun.blob.core.windows.net/ghaf-infra-vm-images/binary-cache.vhd is not accessible.
+│
+│   with module.binary_cache_image.azurerm_image.default,
+│   on modules/azurerm-nix-vm-image/main.tf line 32, in resource "azurerm_image" "default":
+│   32: resource "azurerm_image" "default" {
+```
+
+Above error (or similar) is likely caused by a bug in terraform azurerm provider: it appears it tries to use the uploaded vhd image too soon after upload, while it's still not fully available. It frequently occurs on deploying a clean (previously undeployed) ghaf-infra environment. Fix the issue by running terraform apply again:
+
+```bash
+❯ terraform apply -auto-approve
 ```
