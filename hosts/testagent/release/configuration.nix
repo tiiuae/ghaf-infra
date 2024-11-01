@@ -3,7 +3,7 @@
 {
   self,
   inputs,
-  # config,
+  config,
   ...
 }:
 {
@@ -62,10 +62,74 @@
   };
 
   # udev rules for test devices serial connections
-  # TODO: udev rules
-  services.udev.extraRules = '''';
+  services.udev.extraRules = ''
+    SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTCY4MM2", SYMLINK+="ttyORINNX1"
+    SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTCG3MMH", SYMLINK+="ttyNUC1"
+    SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea71", ATTRS{serial}=="0642246B630F938911EC98DEFBCA83D", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="ttyRISCV1", MODE="0666", GROUP="dialout"
+  '';
 
   # Details of the hardware devices connected to this host
-  # TODO: gather hardware information
-  environment.etc."jenkins/test_config.json".text = "";
+  environment.etc."jenkins/test_config.json".text =
+    let
+      location = config.networking.hostName;
+    in
+    builtins.toJSON {
+      addresses = {
+        NUC1 = {
+          inherit location;
+          serial_port = "/dev/ttyNUC1";
+          device_ip_address = "172.18.16.49";
+          socket_ip_address = "172.18.16.53";
+          plug_type = "TAPOP100v2";
+          switch_bot = "NONE";
+          usbhub_serial = "6B780E17";
+          ext_drive_by-id = "usb-Samsung_PSSD_T7_S5T4NJ0NB10775R-0:0";
+          threads = 8;
+        };
+        OrinAGX1 = {
+          inherit location;
+          serial_port = "/dev/ttyACM0";
+          device_ip_address = "172.18.16.51";
+          socket_ip_address = "172.18.16.37";
+          plug_type = "TAPOP100v2";
+          switch_bot = "NONE";
+          usbhub_serial = "EBBBCDD4";
+          ext_drive_by-id = "usb-Samsung_PSSD_T7_S6WYNS0W402363J-0:0";
+          threads = 8;
+        };
+        LenovoX1-1 = {
+          inherit location;
+          serial_port = "NONE";
+          device_ip_address = "172.18.16.64";
+          socket_ip_address = "NONE";
+          plug_type = "NONE";
+          switch_bot = "LenovoX1-release";
+          usbhub_serial = "5F166079";
+          ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XNNS0W500889K-0:0";
+          threads = 20;
+        };
+        Polarfire1 = {
+          inherit location;
+          serial_port = "/dev/ttyRISCV1";
+          device_ip_address = "NONE";
+          socket_ip_address = "172.18.16.41";
+          plug_type = "TAPOP100v2";
+          switch_bot = "NONE";
+          usb_sd_mux_port = "/dev/sg1";
+          ext_drive_by-id = "usb-LinuxAut_sdmux_HS-SD_MMC_000000001267-0:0";
+          threads = 4;
+        };
+        OrinNX1 = {
+          inherit location;
+          serial_port = "/dev/ttyORINNX1";
+          device_ip_address = "172.18.16.46";
+          socket_ip_address = "172.18.16.40";
+          plug_type = "TAPOP100v2";
+          switch_bot = "NONE";
+          usbhub_serial = "8CC6B0A9";
+          ext_drive_by-id = "usb-Samsung_PSSD_T7_S6WXNS0W300212M-0:0";
+          threads = 8;
+        };
+      };
+    };
 }
