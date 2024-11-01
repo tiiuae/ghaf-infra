@@ -105,7 +105,7 @@
           plug_type = "TAPOP100v2";
           switch_bot = "NONE";
           usb_sd_mux_port = "/dev/sg1";
-          ext_drive_by-id = "usb-LinuxAut_sdmux_HS-SD_MMC_000000001267-0:0";
+          ext_drive_by-id = "usb-LinuxAut_sdmux_HS-SD_MMC_000000001488-0:0";
           threads = 4;
         };
         NUC1 = {
