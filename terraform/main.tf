@@ -79,15 +79,16 @@ locals {
     "ssh://remote-build@build4.vedenemo.dev x86_64-linux /etc/secrets/remote-build-ssh-key 32 3 kvm,nixos-test,benchmark,big-parallel - -",
     "ssh://remote-build@hetzarm.vedenemo.dev aarch64-linux /etc/secrets/remote-build-ssh-key 40 3 kvm,nixos-test,benchmark,big-parallel - -"
   ]
-  ext_builder_keyscan     = ["build4.vedenemo.dev", "hetzarm.vedenemo.dev"]
+  ext_builder_keyscan = ["build4.vedenemo.dev", "hetzarm.vedenemo.dev"]
+
+  # We can not automatically assign alternative names per environment type
+  # since we support having potentially many environments of the same type.
+  # Otherwise we might end-up deploying, say, two 'dev' type instances
+  # that both claim ownership of domain name 'dev-cache.vedenemo.dev'.
+  # Such alternative names need to be manually configured for each instance
+  # (once) in the relevant host's caddy config at /var/lib/caddy/caddy.env,
+  # setting the SITE_ADDRESS accordingly.
   binary_cache_url_common = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
-  # TODO: adding multiple urls as comma-and-whitespace separated
-  # string is more or less a hack. If we plan to have multiple domains
-  # per host permanently, we could make the below variable a list, and
-  # do the templating to a comma-and-whitespace separated list of urls
-  # before we pass it to caddy.
-  binary_cache_url_dev  = "${local.binary_cache_url_common}, https://dev-cache.vedenemo.dev"
-  binary_cache_url_prod = "${local.binary_cache_url_common}, https://prod-cache.vedenemo.dev"
 
   # Environment-specific configuration options.
   # See Azure vm sizes and specs at:
@@ -125,7 +126,7 @@ locals {
       num_builders_aarch64    = 0
       # 'dev' and 'prod' use the same binary cache storage and key
       binary_cache_public_key = "prod-cache.vedenemo.dev~1:JcytRNMJJdYJVQCYwLNsrfVhct5dhCK2D3fa6O1WHOI="
-      binary_cache_url        = local.binary_cache_url_dev
+      binary_cache_url        = local.binary_cache_url_common
       ext_builder_machines    = local.ext_builder_machines
       ext_builder_keyscan     = local.ext_builder_keyscan
     }
@@ -143,7 +144,7 @@ locals {
       num_builders_aarch64    = 0
       # 'dev' and 'prod' use the same binary cache storage and key
       binary_cache_public_key = "prod-cache.vedenemo.dev~1:JcytRNMJJdYJVQCYwLNsrfVhct5dhCK2D3fa6O1WHOI="
-      binary_cache_url        = local.binary_cache_url_prod
+      binary_cache_url        = local.binary_cache_url_common
       ext_builder_machines    = local.ext_builder_machines
       ext_builder_keyscan     = local.ext_builder_keyscan
     }
