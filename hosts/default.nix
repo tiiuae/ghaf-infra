@@ -56,6 +56,7 @@ in
     nixos-ghaf-log = ./ghaf-log/configuration.nix;
     nixos-ghaf-coverity = ./ghaf-coverity/configuration.nix;
     nixos-ghaf-proxy = ./ghaf-proxy/configuration.nix;
+    nixos-ghaf-webserver = ./ghaf-webserver/configuration.nix;
   };
 
   # Expose as flake.lib.mkNixOS.
@@ -87,6 +88,7 @@ in
         "ghaf-log"
         "ghaf-coverity"
         "ghaf-proxy"
+        "ghaf-webserver"
       ]
   );
 }

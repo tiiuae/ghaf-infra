@@ -24,6 +24,7 @@ let
     ghaf-log = mkDeployment "x86_64-linux" "ghaf-log" "95.217.177.197";
     ghaf-coverity = mkDeployment "x86_64-linux" "ghaf-coverity" "37.27.204.82";
     ghaf-proxy = mkDeployment "x86_64-linux" "ghaf-proxy" "95.216.200.85";
+    ghaf-webserver = mkDeployment "x86_64-linux" "ghaf-webserver" "37.27.204.82";
   };
 
   aarch64-nodes = {

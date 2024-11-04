@@ -8,6 +8,7 @@ keys:
   - &karim age122lvqyrdqz30fkfututykl0yle9u63u2em6e4aut7e5draws83ns3npt3a
   - &jrautiola age1hszrldafdz09hzze4lgq58r0r66p4sjftn6q8z6h0leer77jhf4qd9vu9v
   - &vjuntunen age194hljejmy63ph884cnuuume7z33txlkp9an7l3yt2n3sjjere52qkvlfju
+  - &cazfi age10a2kt6f07urjv6ahutda3jgr73wferkcqjhkvukwm07eaaqyrqtsh08syf
 
   # hosts
   - &binarycache age1s47a3y44j695gemcl0kqgjlxxvaa50de9s69jy2l6vc8xtmk5pcskhpknl
@@ -19,6 +20,7 @@ keys:
   - &hetzarm age1ppunea05ue028qezt9rvhp59dgcskkleetyjpqtxzea7vtp4ppfqh7ltuy
   - &ghaf-log age15kk5q4u68pfsy5auzah6klsdk6p50jnkr986u7vpzfrnj30pz4ssq7wnud
   - &ghaf-coverity age172azvwv5vne79mqfhvdvk9j95gn5v04uk9t3fjdfe5p7dv7kucvqpygxkx
+  - &ghaf-webserver age1f643hcr8xvzm6fha93xhn6dw552tfd6zvu7eulxk7vedgt09d9ysljsayq
 
 creation_rules:
   - path_regex: hosts/binarycache/secrets.yaml$
@@ -70,3 +72,9 @@ creation_rules:
     - age:
       - *ghaf-coverity
       - *jrautiola
+
+  - path_regex: hosts/ghaf-webserver/secrets.yaml$
+    key_groups:
+    - age:
+      - *ghaf-webserver
+      - *cazfi
