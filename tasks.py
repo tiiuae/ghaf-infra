@@ -130,6 +130,11 @@ TARGETS = OrderedDict(
             nixosconfig="ghaf-proxy",
             secretspath="hosts/ghaf-proxy/secrets.yaml",
         ),
+        "ghaf-webserver": TargetHost(
+            hostname="37.27.204.82",
+            nixosconfig="ghaf-webserver",
+            secretspath="hosts/ghaf-webserver/secrets.yaml",
+        ),
     }
 )
 
