@@ -72,9 +72,16 @@ creation_rules:
     - age:
       - *ghaf-coverity
       - *jrautiola
-
   - path_regex: hosts/ghaf-webserver/secrets.yaml$
     key_groups:
     - age:
       - *ghaf-webserver
       - *cazfi
+  - path_regex: hosts/testagent/credentials.yaml$
+    key_groups:
+    - age:
+      - *testagent-dev
+      - *testagent-prod
+      - *testagent-release
+      - *jrautiola
+      - *vjuntunen
