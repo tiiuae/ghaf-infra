@@ -13,6 +13,22 @@ let
   brainstem = pkgs.callPackage ../../pkgs/brainstem { };
 in
 {
+  sops.secrets =
+    let
+      credential = {
+        sopsFile = ./credentials.yaml;
+        owner = "jenkins";
+      };
+    in
+    {
+      dut-pass = credential;
+      plug-pass = credential;
+      switch-token = credential;
+      switch-secret = credential;
+      wifi-ssid = credential;
+      wifi-password = credential;
+    };
+
   services.udev.packages = [
     brainstem
     pkgs.usbsdmux
