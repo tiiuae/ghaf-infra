@@ -79,6 +79,7 @@ module "builder_ssh_key" {
   resource_group_name       = data.azurerm_resource_group.persistent.name
   location                  = data.azurerm_resource_group.persistent.location
   tenant_id                 = data.azurerm_client_config.current.tenant_id
+  object_id                 = data.azurerm_client_config.current.object_id
 }
 
 module "binary_cache_sigkey" {
@@ -90,6 +91,7 @@ module "binary_cache_sigkey" {
   resource_group_name    = data.azurerm_resource_group.persistent.name
   location               = data.azurerm_resource_group.persistent.location
   tenant_id              = data.azurerm_client_config.current.tenant_id
+  object_id              = data.azurerm_client_config.current.object_id
 }
 
 module "binary_cache_storage" {
