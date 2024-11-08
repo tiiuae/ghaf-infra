@@ -33,6 +33,9 @@ variable "tenant_id" {
   type = string
 }
 
+variable "object_id" {
+  type = string
+}
 
 ################################################################################
 
@@ -73,8 +76,7 @@ resource "azurerm_key_vault_secret" "binary_cache_signing_key_pub" {
 resource "azurerm_key_vault_access_policy" "binary_cache_signing_key_terraform" {
   key_vault_id = azurerm_key_vault.binary_cache_signing_key.id
   tenant_id    = var.tenant_id
-  # "TerraformAdminsGHAFInfra" group
-  object_id = "f80c2488-2301-4de8-89d6-4954b77f453e"
+  object_id    = var.object_id
 
   secret_permissions = [
     "Get",
