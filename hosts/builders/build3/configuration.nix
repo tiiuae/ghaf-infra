@@ -15,7 +15,6 @@
       ../ficolo.nix
       ../cross-compilation.nix
       ../developers.nix
-      ../yubikey.nix
       ../builders-common.nix
       inputs.sops-nix.nixosModules.sops
     ]
@@ -29,10 +28,6 @@
   # build3 specific configuration
 
   networking.hostName = "build3";
-
-  users.users.yubimaster.openssh.authorizedKeys.keys = [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMDfEUoARtE5ZMYofegtm3lECzaQeAktLQ2SqlHcV9jL signer"
-  ];
 
   nix.settings.trusted-users = [ "@wheel" ];
 
