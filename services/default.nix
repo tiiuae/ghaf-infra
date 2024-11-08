@@ -3,7 +3,6 @@
 {
   flake.nixosModules = {
     service-binary-cache = import ./binary-cache;
-    service-hydra = import ./hydra;
     service-nginx = import ./nginx;
     service-monitoring = import ./monitoring;
     service-openssh = import ./openssh;
