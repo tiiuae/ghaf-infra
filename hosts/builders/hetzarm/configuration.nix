@@ -27,7 +27,6 @@
       user-mkaapu
       user-karim
       user-mika
-      user-themisto
       user-github
       user-remote-build
     ]);
