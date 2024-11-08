@@ -6,7 +6,6 @@
     user-hrosten = import ./hrosten.nix;
     user-tester = import ./tester.nix;
     user-jrautiola = import ./jrautiola.nix;
-    user-hydra = import ./hydra.nix;
     user-cazfi = import ./cazfi.nix;
     user-mkaapu = import ./mkaapu.nix;
     user-karim = import ./karim.nix;
