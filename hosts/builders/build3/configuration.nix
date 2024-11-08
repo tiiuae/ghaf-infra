@@ -20,7 +20,6 @@
       inputs.sops-nix.nixosModules.sops
     ]
     ++ (with self.nixosModules; [
-      user-themisto
       user-ktu
       user-avnik
       user-github # Remove when all GhA workflows moved to build4
