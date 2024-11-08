@@ -4,7 +4,6 @@
   flake.nixosModules = {
     user-builder = import ./builder.nix;
     user-hrosten = import ./hrosten.nix;
-    user-tester = import ./tester.nix;
     user-jrautiola = import ./jrautiola.nix;
     user-cazfi = import ./cazfi.nix;
     user-mkaapu = import ./mkaapu.nix;
