@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   flake.nixosModules = {
-    user-builder = import ./builder.nix;
     user-hrosten = import ./hrosten.nix;
     user-jrautiola = import ./jrautiola.nix;
     user-cazfi = import ./cazfi.nix;
