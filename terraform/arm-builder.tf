@@ -46,7 +46,7 @@ module "arm_builder_vm" {
   virtual_machine_name        = "ghaf-builder-aarch64-${count.index}-${local.ws}"
   virtual_machine_size        = local.opts[local.conf].vm_size_builder_aarch64
   virtual_machine_osdisk_size = local.opts[local.conf].osdisk_size_builder
-  binary_cache_public_key     = local.opts[local.conf].binary_cache_public_key
+  binary_cache_public_key     = local.binary_cache_public_key
 
   virtual_machine_custom_data = join("\n", ["#cloud-config", yamlencode({
     users = [{

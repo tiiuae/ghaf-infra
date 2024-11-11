@@ -8,7 +8,7 @@ module "builder_image" {
   nix_attrpath   = ""
   nix_entrypoint = "${path.module}/custom-nixos.nix"
   nix_argstr = {
-    extraNixPublicKey = local.opts[local.conf].binary_cache_public_key
+    extraNixPublicKey = local.binary_cache_public_key
     systemName        = "az-builder"
   }
 

@@ -158,6 +158,7 @@ import_bincache_sigkey () {
     nix-store --generate-binary-cache-key "$key_name" sigkey-secret.tmp "sigkey-public-$key_name.tmp"
     var_rg="-var=persistent_resource_group=$PERSISTENT_RG"
     terraform import "$var_rg" secret_resource.binary_cache_signing_key "$(< ./sigkey-secret.tmp)"
+    terraform import "$var_rg" secret_resource.binary_cache_signing_key_pub "$(< ./sigkey-public-"$key_name".tmp)"
     terraform apply "$var_rg" -auto-approve >"$OUT"
     rm -f sigkey-secret.tmp
 }
