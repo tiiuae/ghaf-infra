@@ -7,7 +7,7 @@ module "binary_cache_image" {
   nix_attrpath   = ""
   nix_entrypoint = "${path.module}/custom-nixos.nix"
   nix_argstr = {
-    extraNixPublicKey = local.opts[local.conf].binary_cache_public_key
+    extraNixPublicKey = local.binary_cache_public_key
     systemName        = "az-binary-cache"
   }
 
@@ -43,7 +43,7 @@ module "binary_cache_vm" {
         "path"  = "/var/lib/azure-nix-cache-proxy/env"
       },
       {
-        content = "SITE_ADDRESS=${local.opts[local.conf].binary_cache_url}"
+        content = "SITE_ADDRESS=${local.binary_cache_url}"
         "path"  = "/var/lib/caddy/caddy.env"
       },
     ],

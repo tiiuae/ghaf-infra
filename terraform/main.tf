@@ -88,7 +88,8 @@ locals {
   # Such alternative names need to be manually configured for each instance
   # (once) in the relevant host's caddy config at /var/lib/caddy/caddy.env,
   # setting the SITE_ADDRESS accordingly.
-  binary_cache_url_common = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
+  binary_cache_url        = "https://ghaf-binary-cache-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com"
+  binary_cache_public_key = data.azurerm_key_vault_secret.binary_cache_signing_key_pub.value
 
   # Environment-specific configuration options.
   # See Azure vm sizes and specs at:
@@ -107,8 +108,6 @@ locals {
       osdisk_size_controller  = "150"
       num_builders_x86        = 0
       num_builders_aarch64    = 0
-      binary_cache_public_key = "priv-cache.vedenemo.dev~1:FmJGfAkx+2fhqpzHGT/V3M35VcPm2pfkCuiTo8xQD0A="
-      binary_cache_url        = local.binary_cache_url_common
       ext_builder_machines    = local.ext_builder_machines
       ext_builder_keyscan     = local.ext_builder_keyscan
     }
@@ -124,9 +123,6 @@ locals {
       osdisk_size_controller  = "1000"
       num_builders_x86        = 0
       num_builders_aarch64    = 0
-      # 'dev' and 'prod' use the same binary cache storage and key
-      binary_cache_public_key = "prod-cache.vedenemo.dev~1:JcytRNMJJdYJVQCYwLNsrfVhct5dhCK2D3fa6O1WHOI="
-      binary_cache_url        = local.binary_cache_url_common
       ext_builder_machines    = local.ext_builder_machines
       ext_builder_keyscan     = local.ext_builder_keyscan
     }
@@ -142,9 +138,6 @@ locals {
       osdisk_size_controller  = "1000"
       num_builders_x86        = 0
       num_builders_aarch64    = 0
-      # 'dev' and 'prod' use the same binary cache storage and key
-      binary_cache_public_key = "prod-cache.vedenemo.dev~1:JcytRNMJJdYJVQCYwLNsrfVhct5dhCK2D3fa6O1WHOI="
-      binary_cache_url        = local.binary_cache_url_common
       ext_builder_machines    = local.ext_builder_machines
       ext_builder_keyscan     = local.ext_builder_keyscan
     }
@@ -160,8 +153,6 @@ locals {
       osdisk_size_controller  = "1000"
       num_builders_x86        = 1
       num_builders_aarch64    = 1
-      binary_cache_public_key = "release-cache.vedenemo.dev~1:kxSUdZvNF8ax7hpJMu+PexEBQGUkZDqeugu+pwz/ACk="
-      binary_cache_url        = local.binary_cache_url_common
       ext_builder_machines    = []
       ext_builder_keyscan     = []
     }
@@ -294,6 +285,12 @@ data "azurerm_key_vault" "binary_cache_signing_key" {
 
 data "azurerm_key_vault_secret" "binary_cache_signing_key" {
   name         = "binary-cache-signing-key-priv"
+  key_vault_id = data.azurerm_key_vault.binary_cache_signing_key.id
+  provider     = azurerm
+}
+
+data "azurerm_key_vault_secret" "binary_cache_signing_key_pub" {
+  name         = "binary-cache-signing-key-pub"
   key_vault_id = data.azurerm_key_vault.binary_cache_signing_key.id
   provider     = azurerm
 }

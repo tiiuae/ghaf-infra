@@ -69,6 +69,8 @@ resource "secret_resource" "binary_cache_signing_key" {
     prevent_destroy = true
   }
 }
+resource "secret_resource" "binary_cache_signing_key_pub" {
+}
 
 module "builder_ssh_key" {
   source = "../builder-ssh-key"
@@ -83,7 +85,8 @@ module "binary_cache_sigkey" {
   source = "../binary-cache-sigkey"
   # Must be globally unique, max 24 characters
   bincache_keyvault_name = "bchek-id0${local.ws}"
-  secret_resource        = secret_resource.binary_cache_signing_key
+  signing_key            = secret_resource.binary_cache_signing_key
+  signing_key_pub        = secret_resource.binary_cache_signing_key_pub
   resource_group_name    = data.azurerm_resource_group.persistent.name
   location               = data.azurerm_resource_group.persistent.location
   tenant_id              = data.azurerm_client_config.current.tenant_id
