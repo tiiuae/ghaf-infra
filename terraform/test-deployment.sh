@@ -10,14 +10,13 @@ set -u # treat unset variables as an error and exit
 
 ################################################################################
 
-MYDIR=$(dirname "$0")
 MYNAME=$(basename "$0")
 RED='' GREEN='' WHITE='' NONE=''
 
 ################################################################################
 
 usage () {
-    echo "Usage: $MYNAME [-h] [-v] [-l LOCATION] -w WORKSPACE"
+    echo "Usage: $MYNAME [-h] [-v] [-l LOCATION] [-p PUBKEY] -w WORKSPACE"
     echo ""
     echo "Perform basic end-to-end testing for ghaf-infra deployment."
     echo "The target deployment is determined based on WORKSPACE and"
@@ -30,6 +29,7 @@ usage () {
     echo " -h    Print this help message"
     echo " -v    Set the script verbosity to DEBUG"
     echo " -l    Azure location name (default: -l northeurope)"
+    echo " -p    Nix public key (default: determined based on WORKSPACE and LOCATION)"
     echo " -w    Target terraform workspace name"
     echo ""
     echo "Example:"
@@ -65,17 +65,19 @@ print_running () {
 }
 
 argparse () {
-    DEBUG="false"; LOCATION="northeurope"; WORKSPACE=""; OPTIND=1
-    while getopts "hvl:w:" copt; do
+    LOCATION="northeurope"; PUBKEY=""; WORKSPACE=""; OPTIND=1
+    while getopts "hvl:p:w:" copt; do
         case "${copt}" in
             h)
                 usage; exit 0 ;;
             v)
-                DEBUG="true" ;;
+                set -x ;;
             l)
                 LOCATION="$OPTARG" ;;
             w)
                 WORKSPACE="$OPTARG" ;;
+            p)
+                PUBKEY="$OPTARG" ;;
             *)
                 print_err "unrecognized option"; usage; exit 1 ;;
         esac
@@ -86,6 +88,17 @@ argparse () {
     fi
     if [ -z "$WORKSPACE" ]; then
         print_err "missing mandatory option (-w)"; usage; exit 1
+    fi
+    if [ -z "$PUBKEY" ]; then
+        if [ "$LOCATION" != "northeurope" ]; then
+            print_err "nix public key not known, manually specify it with -p PUBKEY"; exit 1
+        fi
+        case "$WORKSPACE" in
+            dev*) PUBKEY="prod-cache.vedenemo.dev~1:JcytRNMJJdYJVQCYwLNsrfVhct5dhCK2D3fa6O1WHOI=" ;;
+            prod*) PUBKEY="prod-cache.vedenemo.dev~1:JcytRNMJJdYJVQCYwLNsrfVhct5dhCK2D3fa6O1WHOI=" ;;
+            release*) PUBKEY="release-cache.vedenemo.dev~1:kxSUdZvNF8ax7hpJMu+PexEBQGUkZDqeugu+pwz/ACk=" ;;
+            *) PUBKEY="priv-cache.vedenemo.dev~1:FmJGfAkx+2fhqpzHGT/V3M35VcPm2pfkCuiTo8xQD0A=" ;;
+        esac
     fi
 }
 
@@ -188,18 +201,12 @@ test_build_end_to_end () {
         print_info "narinfo:\n$narinfo"
         exit 1
     fi
-    # Find the binary cache public key based on the keyname from main.tf
-    pubkey=$(sed -n -E "s|.*\"($keyname:[^\"]+)\".*|\1|p" "$MYDIR/main.tf" | head -n1 )
-    if [ -z "$pubkey" ]; then
-        print_err "failed reading nix binary cache public key for '$keyname'"
-        exit 1
-    fi
-    # Verify the binary is signed with the expected pubkey
+    # Verify the binary is signed with the expected public nix signing key
     store="https://$bincache/"
     storepath="/nix/store/$hash-example"
-    ret=$(nix store verify --store "$store" "$storepath" --trusted-public-keys "$pubkey" 2>&1)
+    ret=$(nix store verify --store "$store" "$storepath" --trusted-public-keys "$PUBKEY" 2>&1)
     if [ $? -ne 0 ]; then
-        print_err "build result '$storepath' is not signed with '$pubkey'"
+        print_err "build result '$storepath' is not signed with '$PUBKEY'"
         print_info "nix store verify returned:\n$ret" >&2
         exit 1
     fi
@@ -266,9 +273,6 @@ main () {
       NONE='\033[0m'
     fi
     argparse "$@"
-    if [ "$DEBUG" = "true" ]; then
-        set -x
-    fi
     exit_unless_command_exists nix
     exit_unless_command_exists ssh
     exit_unless_command_exists host
