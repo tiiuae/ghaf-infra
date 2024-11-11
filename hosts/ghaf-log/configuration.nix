@@ -9,8 +9,6 @@
   ...
 }:
 {
-  sops.defaultSopsFile = ./secrets.yaml;
-
   imports =
     [
       ./disk-config.nix
@@ -35,12 +33,17 @@
       user-vunnyso
     ]);
 
-  sops.secrets = {
-    # basic auth credentials generated with htpasswd
-    loki_basic_auth.owner = "nginx";
-    # github oauth app credentials
-    github_client_id.owner = "grafana";
-    github_client_secret.owner = "grafana";
+  sops = {
+    defaultSopsFile = ./secrets.yaml;
+    secrets = {
+      # basic auth credentials generated with htpasswd
+      loki_basic_auth.owner = "nginx";
+      # github oauth app credentials
+      github_client_id.owner = "grafana";
+      github_client_secret.owner = "grafana";
+      # vedenemo monitoring
+      vedenemo_loki_password.owner = "promtail";
+    };
   };
 
   nixpkgs.hostPlatform = "x86_64-linux";
@@ -49,14 +52,6 @@
   networking = {
     hostName = "ghaf-log";
     useDHCP = true;
-  };
-
-  # sshified user for monitoring server to log in as
-  users.users.sshified = {
-    isNormalUser = true;
-    openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEKd30t0EFmMyULGlecaUX6puIAF4IjynZUo+X9k8h69 monitoring"
-    ];
   };
 
   boot = {
@@ -71,7 +66,17 @@
   # this server has been reinstalled with 24.05
   system.stateVersion = lib.mkForce "24.05";
 
-  services.monitoring.metrics.enable = true;
+  services.monitoring = {
+    metrics = {
+      enable = true;
+      ssh = true;
+    };
+    logs = {
+      enable = true;
+      lokiAddress = "https://monitoring.vedenemo.dev";
+      auth.password_file = config.sops.secrets.vedenemo_loki_password.path;
+    };
+  };
 
   # Grafana
   services.grafana = {

@@ -7,9 +7,6 @@
   ...
 }:
 {
-  sops.defaultSopsFile = ./secrets.yaml;
-  sops.secrets.ssh_private_key.owner = "root";
-
   imports =
     [
       ../ficolo.nix
@@ -25,7 +22,15 @@
       user-remote-build # Remove when all jenkins builds moved to build4
     ]);
 
-  # build3 specific configuration
+  sops = {
+    defaultSopsFile = ./secrets.yaml;
+    secrets.ssh_private_key.owner = "root";
+  };
+
+  services.monitoring = {
+    metrics.enable = true;
+    logs.enable = true;
+  };
 
   networking.hostName = "build3";
 

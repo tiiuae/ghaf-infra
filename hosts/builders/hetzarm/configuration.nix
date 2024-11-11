@@ -4,11 +4,10 @@
   self,
   inputs,
   lib,
+  config,
   ...
 }:
 {
-  sops.defaultSopsFile = ./secrets.yaml;
-
   imports =
     [
       ./disk-config.nix
@@ -31,6 +30,13 @@
       user-remote-build
     ]);
 
+  sops = {
+    defaultSopsFile = ./secrets.yaml;
+    secrets = {
+      loki_password.owner = "promtail";
+    };
+  };
+
   nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
   hardware.enableRedistributableFirmware = true;
 
@@ -39,7 +45,17 @@
     useDHCP = true;
   };
 
-  services.monitoring.metrics.enable = true;
+  services.monitoring = {
+    metrics = {
+      enable = true;
+      ssh = true;
+    };
+    logs = {
+      enable = true;
+      lokiAddress = "https://monitoring.vedenemo.dev";
+      auth.password_file = config.sops.secrets.loki_password.path;
+    };
+  };
 
   boot = {
     initrd.availableKernelModules = [
@@ -54,22 +70,12 @@
     };
   };
 
-  users.users = {
-    # sshified user for monitoring server to log in as
-    sshified = {
-      isNormalUser = true;
-      openssh.authorizedKeys.keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEKd30t0EFmMyULGlecaUX6puIAF4IjynZUo+X9k8h69 monitoring"
-      ];
-    };
-
-    # build3 can use this as remote builder
-    build3 = {
-      isNormalUser = true;
-      openssh.authorizedKeys.keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPf56a3ISY64w0Y0BmoLu+RyTIWQrXG6ugla6if9RteT build3"
-      ];
-    };
+  # build3 can use this as remote builder
+  users.users.build3 = {
+    isNormalUser = true;
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPf56a3ISY64w0Y0BmoLu+RyTIWQrXG6ugla6if9RteT build3"
+    ];
   };
 
   nix.settings.trusted-users = [
