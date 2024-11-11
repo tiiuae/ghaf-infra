@@ -25,7 +25,6 @@
       service-openssh
       service-binary-cache
       service-nginx
-      service-monitoring
       user-jrautiola
       user-cazfi
       user-hydra

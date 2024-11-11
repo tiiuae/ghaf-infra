@@ -8,6 +8,8 @@ in
   options.services.monitoring = {
     metrics = {
       enable = lib.mkEnableOption "Expose metrics";
+      openFirewall = lib.mkEnableOption "Open firewall ports";
+      ssh = lib.mkEnableOption "Allow ssh access from monitoring server";
     };
 
     logs = {
@@ -15,16 +17,26 @@ in
 
       lokiAddress = lib.mkOption {
         type = lib.types.str;
-        default = "http://172.18.20.108";
         description = "The address to send logs to";
+      };
+
+      auth = {
+        username = lib.mkOption {
+          type = lib.types.str;
+          default = "logger";
+        };
+
+        password_file = lib.mkOption {
+          type = lib.types.nullOr lib.types.path;
+          default = null;
+        };
       };
     };
 
   };
 
   config = {
-
-    networking.firewall = lib.mkIf cfg.metrics.enable {
+    networking.firewall = lib.mkIf cfg.metrics.openFirewall {
       allowedTCPPorts = [ config.services.prometheus.exporters.node.port ];
       allowedUDPPorts = [ config.services.prometheus.exporters.node.port ];
     };
@@ -37,13 +49,29 @@ in
       };
     };
 
+    # sshified user for monitoring server to log in as
+    users.users.sshified = lib.mkIf cfg.metrics.ssh {
+      isNormalUser = true;
+      openssh.authorizedKeys.keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEKd30t0EFmMyULGlecaUX6puIAF4IjynZUo+X9k8h69 monitoring"
+      ];
+    };
+
     services.promtail = lib.mkIf cfg.logs.enable {
       enable = true;
       configuration = {
         # We have no need for the HTTP or GRPC server
         server.disable = true;
 
-        clients = [ { url = "${cfg.logs.lokiAddress}/loki/api/v1/push"; } ];
+        clients = [
+          {
+            url = "${cfg.logs.lokiAddress}/loki/api/v1/push";
+
+            basic_auth = lib.mkIf (cfg.logs.auth.password_file != null) {
+              inherit (cfg.logs.auth) username password_file;
+            };
+          }
+        ];
 
         scrape_configs = [
           {

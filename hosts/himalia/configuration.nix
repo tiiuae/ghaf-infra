@@ -20,15 +20,16 @@
       qemu-common
       ficolo-common
       service-openssh
-      service-nginx
-      service-monitoring
       user-jrautiola
       user-cazfi
       user-karim
       user-barna
       user-mika
     ]);
+
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+  networking.hostName = "himalia";
+
   # List packages installed in system profile
   environment.systemPackages = with pkgs; [
     git
@@ -43,33 +44,12 @@
       ]
     ))
   ];
+
   # docker daemon running
   virtualisation.docker.enable = true;
-
-  networking = {
-    hostName = "himalia";
-  };
-
-  security.acme = {
-    acceptTerms = true;
-    defaults.email = "trash@unikie.com";
-  };
 
   services.monitoring = {
     metrics.enable = true;
     logs.enable = true;
-  };
-
-  services.nginx = {
-    virtualHosts = {
-      "himalia.vedenemo.dev" = {
-        enableACME = true;
-        forceSSL = true;
-        default = true;
-        locations."/" = {
-          proxyPass = "http://127.0.0.1:3015";
-        };
-      };
-    };
   };
 }
