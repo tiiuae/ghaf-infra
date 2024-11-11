@@ -6,11 +6,10 @@
   inputs,
   modulesPath,
   lib,
+  config,
   ...
 }:
 {
-  sops.defaultSopsFile = ./secrets.yaml;
-
   imports =
     [
       ./disk-config.nix
@@ -21,6 +20,7 @@
     ++ (with self.nixosModules; [
       common
       service-openssh
+      service-monitoring
       user-jrautiola
       user-fayad
       user-cazfi
@@ -40,6 +40,25 @@
 
   nixpkgs.hostPlatform = "x86_64-linux";
   hardware.enableRedistributableFirmware = true;
+
+  sops = {
+    defaultSopsFile = ./secrets.yaml;
+    secrets = {
+      loki_password.owner = "promtail";
+    };
+  };
+
+  services.monitoring = {
+    metrics = {
+      enable = true;
+      ssh = true;
+    };
+    logs = {
+      enable = true;
+      lokiAddress = "https://monitoring.vedenemo.dev";
+      auth.password_file = config.sops.secrets.loki_password.path;
+    };
+  };
 
   networking = {
     hostName = "ghaf-proxy";
