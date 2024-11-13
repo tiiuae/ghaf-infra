@@ -39,6 +39,11 @@ _: {
           black -q $(find . -type f -name "*.py" ! -path "*result*" ! -path "*eggs*")
           touch $out
         '';
+        terraform-fmt = pkgs.runCommandLocal "terraform-fmt" { nativeBuildInputs = [ pkgs.terraform ]; } ''
+          cd ${../.}
+          terraform fmt -check -recursive
+          touch $out
+        '';
       };
     };
 }
