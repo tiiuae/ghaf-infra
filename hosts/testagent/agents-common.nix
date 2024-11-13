@@ -26,6 +26,7 @@ in
     ++ (with pkgs; [
       minicom
       usbsdmux
+      grafana-loki
     ]);
 
   # The Jenkins slave service is very barebones
@@ -79,7 +80,7 @@ in
           jenkins-connect-script = pkgs.writeShellScript "jenkins-connect.sh" ''
             JENKINS_SECRET="$(
               curl --proto =https -u admin:$ADMIN_PASSWORD \
-              $CONTROLLER/computer/${device}/jenkins-agent.jnlp | 
+              $CONTROLLER/computer/${device}/jenkins-agent.jnlp |
               sed "s/.*<application-desc><argument>\([a-z0-9]*\).*/\1\n/"
             )"
 
@@ -123,6 +124,7 @@ in
               netcat
               python3
               usbsdmux
+              grafana-loki
             ]);
 
           serviceConfig = {
