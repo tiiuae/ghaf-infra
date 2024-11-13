@@ -34,6 +34,11 @@ _: {
               pylint --enable=useless-suppression -rn $(find . -type f -name "*.py" ! -path "*result*" ! -path "*eggs*")
               touch $out
             '';
+        black = pkgs.runCommandLocal "black" { nativeBuildInputs = [ pkgs.python3.pkgs.black ]; } ''
+          cd ${../.}
+          black -q $(find . -type f -name "*.py" ! -path "*result*" ! -path "*eggs*")
+          touch $out
+        '';
       };
     };
 }

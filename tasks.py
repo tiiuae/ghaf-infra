@@ -511,20 +511,12 @@ def reboot(_c: Any, alias: str) -> None:
 @task
 def pre_push(c: Any) -> None:
     """
-    Run 'pre-push' checks: black, reuse lint, nix fmt.
+    Run 'pre-push' checks: reuse lint, nix fmt.
     Also, build all nixosConfiguration targets in this flake.
 
     Example usage:
     inv pre-push
     """
-    cmd = "find . -type f -name *.py ! -path *result* ! -path *eggs*"
-    ret = exec_cmd(cmd)
-    assert ret is not None
-    pyfiles = ret.stdout.replace("\n", " ")
-    cmd = f"black -q {pyfiles}"
-    ret = exec_cmd(cmd, raise_on_error=False)
-    if not ret:
-        sys.exit(1)
     cmd = "reuse lint"
     ret = exec_cmd(cmd, raise_on_error=False)
     if not ret:
