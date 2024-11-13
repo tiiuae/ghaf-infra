@@ -36,13 +36,13 @@ jobs:
   # - the event is not a pull request (eg. push to main)
   # - pull request comes from another branch in the same repo
   # - author is in our predefined list of authorized users
-  # If none of these conditions are met, the workflow requires 
+  # If none of these conditions are met, the workflow requires
   # manual approval from a maintainer with write permissions to continue
   authorize:
     needs: [check-identity]
-    environment: ${{ 
+    environment: ${{
       ( github.event_name != 'pull_request_target' ||
-        github.event.pull_request.head.repo.full_name == github.repository || 
+        github.event.pull_request.head.repo.full_name == github.repository ||
         needs.check-identity.outputs.authorized_user == 'True' )
       && 'internal' || 'external' }}
     runs-on: ubuntu-latest
@@ -78,41 +78,53 @@ jobs:
             exit 1
           fi
 
-  tests:
+  build_matrix:
+    name: "build"
     # Don't run unless authorization was successful
     needs: [authorize]
-    if: ${{ always() && needs.authorize.result == 'success' }}
-
     runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      matrix:
+        include:
+          - arch: x86_64-linux
+          - arch: aarch64-linux
+    if: ${{ always() && needs.authorize.result == 'success' }}
+    concurrency:
+      # Cancel any in-progress workflow runs from the same PR or branch,
+      # allowing matrix jobs to run concurrently:
+      group: ${{ github.workflow }}.${{ github.event.pull_request.number || github.ref }}.${{ matrix.arch }}
+      cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v4.2.2
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
         with:
             ref: ${{ github.event.pull_request.head.sha || github.ref }}
             fetch-depth: 0
 
-      - uses: cachix/install-nix-action@v30
-        with:
-          extra_nix_config: |
-            trusted-public-keys = prod-cache.vedenemo.dev~1:JcytRNMJJdYJVQCYwLNsrfVhct5dhCK2D3fa6O1WHOI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            substituters = https://prod-cache.vedenemo.dev https://cache.nixos.org
-            connect-timeout = 5
-            max-jobs = 4
-            system-features = nixos-test benchmark big-parallel kvm
-            builders-use-substitutes = true
-            builders = @/etc/nix/machines
+      - name: Install nix
+        uses: cachix/install-nix-action@v30
 
       - uses: cachix/cachix-action@v15
         with:
           name: ghaf-dev
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
-      - name: Configure remote builders
+      - name: Prepare build
         run: |
-          sudo sh -c "umask 377; echo '${{ secrets.BUILDER_SSH_KEY }}' >/etc/nix/id_builder_key"
-          sudo sh -c "echo 'hetzarm.vedenemo.dev ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILx4zU4gIkTY/1oKEOkf9gTJChdx/jR3lDgZ7p/c7LEK' >>/etc/ssh/ssh_known_hosts"
-          sudo sh -c "echo 'build4.vedenemo.dev ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHSI8s/wefXiD2h3I3mIRdK+d9yDGMn0qS5fpKDnSGqj' >>/etc/ssh/ssh_known_hosts"
-          sudo sh -c "echo 'ssh://github@hetzarm.vedenemo.dev aarch64-linux /etc/nix/id_builder_key 40 1 nixos-test,benchmark,big-parallel,kvm - -' >/etc/nix/machines"
-          sudo sh -c "echo 'ssh://github@build4.vedenemo.dev x86_64-linux,i686-linux /etc/nix/id_builder_key 32 1 kvm,benchmark,big-parallel,nixos-test - -' >>/etc/nix/machines"
+          sh -c "umask 377; echo '${{ secrets.BUILDER_SSH_KEY }}' >builder_key"
 
-      - name: Run ghaf-infra CI tests
-        run: nix develop --command inv pre-push
+      - name: Build ${{ matrix.arch }}
+        run: |
+          if [ "${{ matrix.arch }}" == "x86_64-linux" ]; then
+            BUILDER='${{ vars.BUILDER_X86 }}'
+            TARGET='x86'
+          elif [ "${{ matrix.arch }}" == "aarch64-linux" ]; then
+            BUILDER='${{ vars.BUILDER_AARCH }}'
+            TARGET='aarch'
+          else
+            echo "::error::Unknown architecture: '${{ matrix.arch }}'"
+            exit 1
+          fi
+          OPTS="--remote $BUILDER --remote-ssh-option IdentityFile builder_key"
+          nix develop --command bash -c "./scripts/nix-fast-build.sh -t $TARGET -o '$OPTS'"
