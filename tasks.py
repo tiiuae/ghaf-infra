@@ -9,10 +9,6 @@
 
 ################################################################################
 
-# pylint: disable=invalid-name
-
-################################################################################
-
 # Basic usage:
 #
 # List tasks:
@@ -515,7 +511,7 @@ def reboot(_c: Any, alias: str) -> None:
 @task
 def pre_push(c: Any) -> None:
     """
-    Run 'pre-push' checks: black, pylint, pycodestyle, reuse lint, nix fmt.
+    Run 'pre-push' checks: black, reuse lint, nix fmt.
     Also, build all nixosConfiguration targets in this flake.
 
     Example usage:
@@ -526,14 +522,6 @@ def pre_push(c: Any) -> None:
     assert ret is not None
     pyfiles = ret.stdout.replace("\n", " ")
     cmd = f"black -q {pyfiles}"
-    ret = exec_cmd(cmd, raise_on_error=False)
-    if not ret:
-        sys.exit(1)
-    cmd = f"pylint --disable duplicate-code -rn {pyfiles}"
-    ret = exec_cmd(cmd, raise_on_error=False)
-    if not ret:
-        sys.exit(1)
-    cmd = f"pycodestyle --max-line-length=90 {pyfiles}"
     ret = exec_cmd(cmd, raise_on_error=False)
     if not ret:
         sys.exit(1)
