@@ -10,6 +10,30 @@ _: {
           reuse lint
           touch $out
         '';
+        pycodestyle =
+          pkgs.runCommandLocal "pycodestyle" { nativeBuildInputs = [ pkgs.python3.pkgs.pycodestyle ]; }
+            ''
+              cd ${../.}
+              pycodestyle --max-line-length 90 $(find . -type f -name "*.py" ! -path "*result*" ! -path "*eggs*")
+              touch $out
+            '';
+        pylint =
+          pkgs.runCommandLocal "pylint"
+            {
+              nativeBuildInputs = with pkgs.python3.pkgs; [
+                pylint
+                colorlog
+                deploykit
+                invoke
+                tabulate
+              ];
+            }
+            ''
+              cd ${../.}
+              export HOME=/tmp
+              pylint --enable=useless-suppression -rn $(find . -type f -name "*.py" ! -path "*result*" ! -path "*eggs*")
+              touch $out
+            '';
       };
     };
 }
