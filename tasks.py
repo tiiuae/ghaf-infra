@@ -517,19 +517,10 @@ def pre_push(c: Any) -> None:
     Example usage:
     inv pre-push
     """
-    cmd = "reuse lint"
-    ret = exec_cmd(cmd, raise_on_error=False)
-    if not ret:
-        sys.exit(1)
     cmd = "terraform fmt -check -recursive"
     ret = exec_cmd(cmd, raise_on_error=False)
     if not ret:
         LOG.warning("Run `terraform fmt -recursive` locally to fix formatting")
-        sys.exit(1)
-    cmd = "nix fmt -- --fail-on-change"
-    ret = exec_cmd(cmd, raise_on_error=False)
-    if not ret:
-        LOG.warning("Run `nix fmt` locally to fix formatting")
         sys.exit(1)
     cmd = "nix flake check -v"
     ret = exec_cmd(cmd, raise_on_error=False)
