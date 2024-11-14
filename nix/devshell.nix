@@ -10,8 +10,13 @@
           git
           jq
           nix
+          nix-fast-build
           nixfmt-rfc-style
           nixos-rebuild
+          # parallel_env requires 'compgen' function, which is available
+          # in bashInteractive, but not bash
+          bashInteractive
+          parallel
           python3.pkgs.black
           python3.pkgs.colorlog
           python3.pkgs.deploykit

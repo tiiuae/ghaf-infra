@@ -229,6 +229,32 @@
         "type": "github"
       }
     },
+    "nix-fast-build": {
+      "inputs": {
+        "flake-parts": [
+          "flake-parts"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "treefmt-nix": [
+          "treefmt-nix"
+        ]
+      },
+      "locked": {
+        "lastModified": 1730278911,
+        "narHash": "sha256-CrbqsC+lEA3w6gLfpqfDMDEKoEta2sl4sbQK6Z/gXak=",
+        "owner": "Mic92",
+        "repo": "nix-fast-build",
+        "rev": "8e7c9d76979381441facb8888f21408312cf177a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Mic92",
+        "repo": "nix-fast-build",
+        "type": "github"
+      }
+    },
     "nix-serve-ng": {
       "inputs": {
         "flake-compat": "flake-compat_3",
@@ -334,6 +360,7 @@
         "flake-compat": "flake-compat_2",
         "flake-parts": "flake-parts",
         "flake-root": "flake-root",
+        "nix-fast-build": "nix-fast-build",
         "nix-serve-ng": "nix-serve-ng",
         "nixpkgs": "nixpkgs_2",
         "robot-framework": "robot-framework",
