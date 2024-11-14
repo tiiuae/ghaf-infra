@@ -54,6 +54,14 @@
       url = "github:tiiuae/ci-yubi";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nix-fast-build = {
+      url = "github:Mic92/nix-fast-build";
+      inputs = {
+        flake-parts.follows = "flake-parts";
+        nixpkgs.follows = "nixpkgs";
+        treefmt-nix.follows = "treefmt-nix";
+      };
+    };
   };
 
   outputs =
