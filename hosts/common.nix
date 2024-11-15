@@ -52,7 +52,7 @@ in
       min-free = asGB 20;
       max-free = asGB 200;
       # check the free disk space every 5 seconds
-      min-free-check-interval = 5;
+      min-free-check-interval = 6;
       # Fallback quickly if substituters are not available.
       connect-timeout = lib.mkDefault 5;
       # The default at 10 is rarely enough.
