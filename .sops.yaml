@@ -20,7 +20,7 @@ keys:
   - &build3 age1q7c2wlrpj0dvthdg7v9j4jmee0kzda8ggtp4nq8jay9u4catee3sn9pa0w
   - &hetzarm age1ppunea05ue028qezt9rvhp59dgcskkleetyjpqtxzea7vtp4ppfqh7ltuy
   - &ghaf-log age15kk5q4u68pfsy5auzah6klsdk6p50jnkr986u7vpzfrnj30pz4ssq7wnud
-  - &ghaf-coverity age172azvwv5vne79mqfhvdvk9j95gn5v04uk9t3fjdfe5p7dv7kucvqpygxkx
+  - &ghaf-coverity age1z825k99myjmfcml86pujcmtj96psvj8c3m08me8kkq03tkpwy9xql4jt9y
   - &ghaf-webserver age1f643hcr8xvzm6fha93xhn6dw552tfd6zvu7eulxk7vedgt09d9ysljsayq
   - &ghaf-proxy age1sv50w7ydcqxxng4nfpvretqhusfkjewtrzpu4006z685xgplha2sa9tv9v
 
@@ -74,6 +74,7 @@ creation_rules:
     - age:
       - *ghaf-coverity
       - *jrautiola
+      - *fayad
   - path_regex: hosts/ghaf-proxy/secrets.yaml$
     key_groups:
     - age:
