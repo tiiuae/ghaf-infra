@@ -5,8 +5,12 @@
   inputs,
   modulesPath,
   lib,
+  pkgs,
   ...
 }:
+let
+  coverity = pkgs.callPackage ../../pkgs/coverity/default.nix { };
+in
 {
   sops.defaultSopsFile = ./secrets.yaml;
 
@@ -30,6 +34,14 @@
 
   nixpkgs.hostPlatform = "x86_64-linux";
   hardware.enableRedistributableFirmware = true;
+  environment.systemPackages = with pkgs; [
+    coverity
+    emacs
+    meson
+    ninja
+    gcc
+    nix-index
+  ];
 
   networking = {
     hostName = "ghaf-coverity";

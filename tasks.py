@@ -117,7 +117,7 @@ TARGETS = OrderedDict(
             secretspath="hosts/ghaf-log/secrets.yaml",
         ),
         "ghaf-coverity": TargetHost(
-            hostname="37.27.204.82",
+            hostname="135.181.103.32",
             nixosconfig="ghaf-coverity",
             secretspath="hosts/ghaf-coverity/secrets.yaml",
         ),

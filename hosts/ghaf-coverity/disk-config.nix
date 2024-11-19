@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   disko.devices.disk.os = {
-    device = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_52101387";
+    device = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_53714277";
     type = "disk";
     content = {
       type = "gpt";
