@@ -98,12 +98,21 @@ nix_fast_build () {
     [ "$DEBUG" = "true" ] && set -x
     echo ""
     echo "[+] $(date +"$tfmt") Start: nix-fast-build '$target'"
+    # Do not use ssh ControlMaster as it might cause issues with
+    # nix-fast-build the way we use it. SSH multiplexing needs to be disabled
+    # both by exporting `NIX_SSHOPTS` and `--remote-ssh-option` since
+    # `--remote-ssh-option` only impacts commands nix-fast-build invokes
+    # on remote over ssh. However, some nix commands nix-fast-build runs
+    # locally (e.g. uploading sources) internally also make use of ssh. Thus,
+    # we need to export the relevant option in `NIX_SSHOPTS` to completely
+    # disable ssh multiplexing:
+    export NIX_SSHOPTS="-o ControlMaster=no"
     # shellcheck disable=SC2086 # intented word splitting of $OPTS
     nix-fast-build \
       --flake "$target" \
       --eval-workers 4 \
-      --option verbose 1 \
       --option accept-flake-config true \
+      --remote-ssh-option ControlMaster no \
       --remote-ssh-option StrictHostKeyChecking no \
       --remote-ssh-option UserKnownHostsFile /dev/null \
       --remote-ssh-option ConnectTimeout 10 \
