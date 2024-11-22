@@ -36,10 +36,11 @@ resource "tls_private_key" "ed25519_remote_build" {
 
 # Create an Azure key vault
 resource "azurerm_key_vault" "ssh_remote_build" {
-  name                = var.builder_ssh_keyvault_name
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  sku_name            = "standard"
+  name                     = var.builder_ssh_keyvault_name
+  location                 = var.location
+  resource_group_name      = var.resource_group_name
+  sku_name                 = "standard"
+  purge_protection_enabled = false
   # The Azure Active Directory tenant ID that should be used for authenticating
   # requests to the key vault
   tenant_id = var.tenant_id
@@ -79,6 +80,8 @@ resource "azurerm_key_vault_access_policy" "ssh_remote_build_terraform" {
   secret_permissions = [
     "Get",
     "List",
-    "Set"
+    "Set",
+    "Delete",
+    "Purge"
   ]
 }

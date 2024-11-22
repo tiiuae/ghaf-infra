@@ -97,7 +97,6 @@ locals {
   # E.g. 'Standard_D2_v3' means: 2 vCPU, 8 GiB RAM
   opts = {
     priv = {
-      builder_sshkey_id       = "ext"
       persistent_id           = "priv"
       vm_size_binarycache     = "Standard_D2_v3"
       osdisk_size_binarycache = "50"
@@ -112,7 +111,6 @@ locals {
       ext_builder_keyscan     = local.ext_builder_keyscan
     }
     dev = {
-      builder_sshkey_id       = "ext"
       persistent_id           = "prod"
       vm_size_binarycache     = "Standard_D4_v3"
       osdisk_size_binarycache = "250"
@@ -127,7 +125,6 @@ locals {
       ext_builder_keyscan     = local.ext_builder_keyscan
     }
     prod = {
-      builder_sshkey_id       = "ext"
       persistent_id           = "prod"
       vm_size_binarycache     = "Standard_D4_v3"
       osdisk_size_binarycache = "250"
@@ -142,7 +139,6 @@ locals {
       ext_builder_keyscan     = local.ext_builder_keyscan
     }
     release = {
-      builder_sshkey_id       = "release"
       persistent_id           = "release"
       vm_size_binarycache     = "Standard_D4_v3"
       osdisk_size_binarycache = "250"
@@ -175,9 +171,13 @@ locals {
   "((Force invalid regex pattern\n\nERROR: Deployment to non-priv requires variable 'convince'" : "", "")
 
   # Selects the persistent data for this ghaf-infra instance (see ./persistent)
-  persistent_rg     = local.envs["persistent_rg_name"]
-  builder_sshkey_id = "id0${local.opts[local.conf].builder_sshkey_id}${local.shortloc}"
-  persistent_id     = "id0${local.opts[local.conf].persistent_id}${local.shortloc}"
+  persistent_rg = local.envs["persistent_rg_name"]
+  persistent_id = "id0${local.opts[local.conf].persistent_id}${local.shortloc}"
+
+  # Selects builder ssh key
+  use_ext_builders  = length(local.opts[local.conf].ext_builder_machines) > 0
+  builder_sshkey_id = local.use_ext_builders ? "sshb-id0ext${local.shortloc}" : "sshb${local.ws}${local.shortloc}"
+  builder_sshkey_rg = local.use_ext_builders ? local.persistent_rg : "ghaf-infra-${local.ws}"
 }
 
 ################################################################################
@@ -232,6 +232,18 @@ resource "azurerm_storage_container" "vm_images" {
   container_access_type = "private"
 }
 
+module "builder_ssh_key" {
+  # Create ssh builder key if external builders are not used
+  count  = (local.use_ext_builders) ? 0 : 1
+  source = "./persistent/builder-ssh-key"
+  # Must be globally unique, max 24 characters
+  builder_ssh_keyvault_name = local.builder_sshkey_id
+  resource_group_name       = azurerm_resource_group.infra.name
+  location                  = azurerm_resource_group.infra.location
+  tenant_id                 = data.azurerm_client_config.current.tenant_id
+  object_id                 = data.azurerm_client_config.current.object_id
+}
+
 ################################################################################
 
 # Data sources to access terraform state, see ./state-storage
@@ -243,14 +255,14 @@ data "azurerm_storage_account" "tfstate" {
 
 ################################################################################
 
-# Data sources to access 'persistent' data
-# see ./persistent and ./persistent/resources
+# Data sources to access builder ssh key
 
 # Builder ssh key
 data "azurerm_key_vault" "ssh_remote_build" {
-  name                = "sshb-${local.builder_sshkey_id}"
-  resource_group_name = local.persistent_rg
+  name                = local.builder_sshkey_id
+  resource_group_name = local.builder_sshkey_rg
   provider            = azurerm
+  depends_on          = [module.builder_ssh_key]
 }
 
 data "azurerm_key_vault_secret" "ssh_remote_build" {
@@ -264,6 +276,11 @@ data "azurerm_key_vault_secret" "ssh_remote_build_pub" {
   key_vault_id = data.azurerm_key_vault.ssh_remote_build.id
   provider     = azurerm
 }
+
+################################################################################
+
+# Data sources to access 'persistent' data
+# see ./persistent and ./persistent/resources
 
 # Binary cache storage
 data "azurerm_storage_account" "binary_cache" {

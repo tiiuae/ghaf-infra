@@ -72,16 +72,6 @@ resource "secret_resource" "binary_cache_signing_key" {
 resource "secret_resource" "binary_cache_signing_key_pub" {
 }
 
-module "builder_ssh_key" {
-  source = "../builder-ssh-key"
-  # Must be globally unique, max 24 characters
-  builder_ssh_keyvault_name = "sshb-id0${local.ws}"
-  resource_group_name       = data.azurerm_resource_group.persistent.name
-  location                  = data.azurerm_resource_group.persistent.location
-  tenant_id                 = data.azurerm_client_config.current.tenant_id
-  object_id                 = data.azurerm_client_config.current.object_id
-}
-
 module "binary_cache_sigkey" {
   source = "../binary-cache-sigkey"
   # Must be globally unique, max 24 characters
