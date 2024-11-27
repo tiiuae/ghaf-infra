@@ -105,7 +105,7 @@
           socket_ip_address = "172.18.16.82";
           plug_type = "TAPOP100v2";
           switch_bot = "NONE";
-          usb_sd_mux_port = "/dev/sg1";
+          usb_sd_mux_port = "/dev/usb-sd-mux/id-000000001488";
           ext_drive_by-id = "usb-LinuxAut_sdmux_HS-SD_MMC_000000001488-0:0";
           threads = 4;
         };
