@@ -21,6 +21,7 @@
       common
       service-openssh
       user-cazfi
+      user-jrautiola
     ]);
 
   # this server has been installed with 24.05
