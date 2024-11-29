@@ -97,6 +97,8 @@ get_recursively () {
         --no-parent \
         --level=inf \
         --timestamping \
+        --no-if-modified-since \
+        --continue \
         --execute robots=off \
         --reject 'index.html?*' \
         --user-agent=Mozilla/5.0 \
