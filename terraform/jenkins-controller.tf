@@ -208,3 +208,126 @@ resource "azurerm_key_vault_access_policy" "binary_cache_signing_key_jenkins_con
     "Get",
   ]
 }
+
+# Create signing keyvault within the workspace resource group.
+resource "azurerm_key_vault" "sigkv" {
+  name                = "ghaf-sig-kv-${local.ws}"
+  location            = azurerm_resource_group.infra.location
+  resource_group_name = azurerm_resource_group.infra.name
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+  sku_name            = "standard"
+
+  # Access policy for the authenticated user
+  # Needed for self-signed certificate creation
+  access_policy {
+    tenant_id = data.azurerm_client_config.current.tenant_id
+    object_id = data.azurerm_client_config.current.object_id
+
+    key_permissions = [
+      "Get",
+      "List",
+      "Sign",
+      "Verify",
+      "Delete",
+      "Purge"
+    ]
+
+    secret_permissions = [
+      "Get",
+      "List",
+      "Delete",
+      "Purge"
+    ]
+    certificate_permissions = [
+      "Get",
+      "List",
+      "Create",
+      "Delete",
+      "Purge"
+    ]
+  }
+
+  # Access policy for Jenkins Controller VM.
+  access_policy {
+    tenant_id = data.azurerm_client_config.current.tenant_id
+    object_id = module.jenkins_controller_vm.virtual_machine_identity_principal_id
+
+    key_permissions = [
+      "Get",
+      "List",
+      "Sign",
+      "Verify"
+    ]
+
+    certificate_permissions = [
+      "Get",
+      "List"
+    ]
+  }
+}
+
+# Create a self-signed certificate for image signing
+resource "azurerm_key_vault_certificate" "imgcert" {
+  name         = "INT-Ghaf-Devenv-Image"
+  key_vault_id = azurerm_key_vault.sigkv.id
+
+  certificate_policy {
+    issuer_parameters {
+      name = "Self"
+    }
+
+    key_properties {
+      exportable = true
+      key_type   = "EC"
+      key_size   = 256
+      curve      = "P-256"
+      reuse_key  = false
+    }
+
+    x509_certificate_properties {
+      subject            = "CN=Ghaf-dev-cert-img"
+      validity_in_months = 12
+      key_usage = [
+        "digitalSignature",
+        "keyAgreement"
+      ]
+    }
+
+    secret_properties {
+      content_type = "application/x-pem-file"
+    }
+  }
+}
+
+# Create a self-signed certificate for provenance signing
+resource "azurerm_key_vault_certificate" "provcert" {
+  name         = "INT-Ghaf-Devenv-Provenance"
+  key_vault_id = azurerm_key_vault.sigkv.id
+
+  certificate_policy {
+    issuer_parameters {
+      name = "Self"
+    }
+
+    key_properties {
+      exportable = true
+      key_type   = "EC"
+      key_size   = 256
+      curve      = "P-256"
+      reuse_key  = false
+    }
+
+    x509_certificate_properties {
+      subject            = "CN=Ghaf-dev-cert-prov"
+      validity_in_months = 12
+      key_usage = [
+        "digitalSignature",
+        "keyAgreement"
+      ]
+    }
+
+    secret_properties {
+      content_type = "application/x-pem-file"
+    }
+  }
+}
