@@ -19,7 +19,7 @@ RED='' NONE=''
 
 usage () {
     echo ""
-    echo "Usage: $MYNAME [-h] [-v] [-l LOCATION] -w WORKSPACE"
+    echo "Usage: $MYNAME [-h] [-v] [-l LOCATION] [-d] -w WORKSPACE"
     echo ""
     echo "Initialize ghaf-infra workspace with the given name (-w WORKSPACE). This"
     echo "script will not destroy or re-initialize anything if the initialization"
@@ -39,6 +39,7 @@ usage () {
     echo "Other options:"
     echo " -s    Init state storage"
     echo " -p    Init persistent storage"
+    echo " -d    Delete the current workspace"
     echo ""
     echo "Example:"
     echo ""
@@ -59,9 +60,10 @@ argparse () {
     # Colorize output if stdout is to a terminal (and not to pipe or file)
     if [ -t 1 ]; then RED='\033[1;31m'; NONE='\033[0m'; fi
     # Parse arguments
-    OUT="/dev/null"; LOCATION="northeurope"; WORKSPACE=""; OPT_s=""; OPT_p="";
+    OUT="/dev/null"; LOCATION="northeurope"; WORKSPACE="";
+    OPT_s=""; OPT_p=""; OPT_d="";
     OPTIND=1
-    while getopts "hw:l:spv" copt; do
+    while getopts "hw:l:spvd" copt; do
         case "${copt}" in
             h)
                 usage; exit 0 ;;
@@ -80,6 +82,8 @@ argparse () {
                 OPT_s="true" ;;
             p)
                 OPT_p="true" ;;
+            d)
+                OPT_d="true" ;;
             *)
                 print_err "unrecognized option"; usage; exit 1 ;;
         esac
@@ -88,9 +92,10 @@ argparse () {
     if [ -n "$*" ]; then
         print_err "unsupported positional argument(s): '$*'"; exit 1
     fi
-    if [[ -z "$WORKSPACE" && -z "$OPT_s" && -z "$OPT_p" ]]; then
-        # Intentionally don't promote '-s' or '-p' usage. They are safe to run
-        # but most users of this script should not need to run (or re-run) them
+    if [[ -z "$WORKSPACE" && -z "$OPT_s" && -z "$OPT_p" && -z "$OPT_d" ]]; then
+        # Intentionally don't promote '-s', '-p', or '-d' usage. They are safe
+        # to run but most users of this script should not need to run
+        # (or re-run) them
         print_err "missing mandatory option '-w'"
         usage; exit 1
     fi
@@ -217,6 +222,27 @@ init_workspace () {
     popd >"$OUT"
 }
 
+delete_workspace () {
+    ws="$(terraform workspace show)"
+    echo "[+] Deleting workspace '$ws'"
+    pushd "$MYDIR" >"$OUT"
+    # This will refuse to destroy 'non-priv' environments: we intentionally
+    # don't provide the '-var=convince=true' variable because the workspace
+    # specific persistent on 'dev' and 'prod' environments should not be
+    # destroyed.
+    terraform apply -destroy
+    terraform workspace select default
+    terraform workspace delete "$ws"
+    popd >"$OUT"
+    echo "[+] Deleting workspace-specific persistent '$ws'"
+    pushd "$MYDIR/persistent/workspace-specific" >"$OUT"
+    terraform workspace select "$ws" >"$OUT"
+    terraform apply -var="persistent_resource_group=$PERSISTENT_RG" -destroy -auto-approve >"$OUT"
+    terraform workspace select default
+    terraform workspace delete "$ws"
+    popd >"$OUT"
+}
+
 ################################################################################
 
 main () {
@@ -233,6 +259,9 @@ main () {
     if [ -n "$OPT_p" ]; then
         init_persistent_storage
         init_persistent_resources
+    fi
+    if [ -n "$OPT_d" ]; then
+        delete_workspace
     fi
     if [ -n "$WORKSPACE" ]; then
         init_workspace_persistent

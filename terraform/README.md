@@ -71,7 +71,7 @@ terraform
 - The `terraform/state-storage` directory contains the terraform configuration for the ghaf-infra remote backend state storage using Azure storage blob. See section [Initializing Azure State and Persistent Data](./README.md#initializing-azure-state-and-persistent-data) for more details.
 - The `terraform/modules` directory contains terraform modules used from the ghaf-infra VM configurations to build, upload, and spin up Azure nix images.
 
-## Initializing Ghaf-Infra Environment
+## Initializing Ghaf-infra Environment
 ```bash
 # Inside the terraform directory
 # Replace 'workspacename' with the name of the workspace you are going to work with
@@ -140,8 +140,8 @@ Once your are ready to deploy your terraform or nix configuration changes, the f
 Once `terraform apply` completes, the private development infrastructure is deployed.
 You can now play around in your isolated copy of the infrastructure, testing and updating the changes, making sure the changes work as expected before merging the changes.
 
-## Destroying Test Environment
-Once you no longer need your playground environment, the private development can be destroyed:
+## Destroying Ghaf-infra Environment
+Once you no longer need your playground environment, the private development environment can be destroyed:
 ```bash
 # Inside the terraform directory
 
