@@ -1,13 +1,17 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 
-variable "signing_key_vault_name" {
-  default = "ghaf-keyvault-${local.ws}"
+locals {
+  signing_keyvault_name = "ghaf-kv-${local.ws}"
 }
 
+#variable "signing_key_vault_name" {
+#  default = "ghaf-keyvault-${local.ws}"
+#}
+
 data "azurerm_key_vault" "target_kv" {
-  name                = var.signing_key_vault_name
-  resource_group_name = var.resource_group_name
+  name                = local.signing_keyvault_name
+  resource_group_name = azurerm_resource_group.infra.name
 }
 
 variable "cert_image_name" {
@@ -19,7 +23,7 @@ variable "cert_provenance_name" {
 }
 
 resource "azurerm_key_vault" "kv" {
-  name                = var.signing_key_vault_name
+  name                = local.signing_keyvault_name
   location            = azurerm_resource_group.infra.location
   resource_group_name = azurerm_resource_group.infra.name
   tenant_id           = data.azurerm_client_config.current.tenant_id
@@ -30,8 +34,8 @@ resource "azurerm_key_vault" "kv" {
 }
 
 resource "azurerm_key_vault_certificate" "cert1" {
-  name         = var.certificate_image_name
-  key_vault_id = azurerm_key_vault.target_kv.id
+  name         = var.cert_image_name
+  key_vault_id = data.azurerm_key_vault.target_kv.id
 
   certificate_policy {
     issuer_parameters {
@@ -64,8 +68,8 @@ resource "azurerm_key_vault_certificate" "cert1" {
 }
 
 resource "azurerm_key_vault_certificate" "cert2" {
-  name         = var.certificate_provenance_name
-  key_vault_id = azurerm_key_vault.target_kv.id
+  name         = var.cert_provenance_name
+  key_vault_id = data.azurerm_key_vault.target_kv.id
 
   certificate_policy {
     issuer_parameters {
