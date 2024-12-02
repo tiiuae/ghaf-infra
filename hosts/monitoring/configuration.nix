@@ -221,12 +221,13 @@ in
               machine_name = "monitoring";
             };
           }
-          {
-            targets = [ "172.18.20.109:9100" ];
-            labels = {
-              machine_name = "binarycache";
-            };
-          }
+          #Alerts for cache.vedenemo.dev should be disabled. It's shut down.
+          # {
+          #   targets = [ "172.18.20.109:9100" ];
+          #   labels = {
+          #     machine_name = "binarycache";
+          #   };
+          # }
         ];
       }
       {
