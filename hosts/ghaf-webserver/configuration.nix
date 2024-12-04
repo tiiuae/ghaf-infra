@@ -5,6 +5,7 @@
   inputs,
   modulesPath,
   lib,
+  pkgs,
   ...
 }:
 {
@@ -20,9 +21,13 @@
     ++ (with self.nixosModules; [
       common
       service-openssh
+      service-nginx
       user-cazfi
       user-jrautiola
     ]);
+
+  # List packages installed in system profile
+  environment.systemPackages = with pkgs; [ emacs ];
 
   # this server has been installed with 24.05
   system.stateVersion = lib.mkForce "24.05";
@@ -42,5 +47,21 @@
       efiSupport = true;
       efiInstallAsRemovable = true;
     };
+  };
+
+  services.nginx = {
+    virtualHosts = {
+      "vedenemo.dev" = {
+        enableACME = true;
+        forceSSL = true;
+        root = "/var/www/vedenemo.dev";
+        default = true;
+      };
+    };
+  };
+
+  security.acme = {
+    acceptTerms = true;
+    defaults.email = "trash@unikie.com";
   };
 }
