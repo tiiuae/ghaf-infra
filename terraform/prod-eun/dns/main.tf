@@ -9,3 +9,8 @@ resource "azurerm_dns_zone" "main" {
   name                = local.dns_suffix
   resource_group_name = var.resource_group_name
 }
+
+
+output "name_servers" {
+  value = azurerm_dns_zone.main.name_servers
+}
