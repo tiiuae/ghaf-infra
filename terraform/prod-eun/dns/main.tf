@@ -10,6 +10,17 @@ resource "azurerm_dns_zone" "main" {
   resource_group_name = var.resource_group_name
 }
 
+resource "azurerm_dns_txt_record" "test" {
+  name                = "test"
+  zone_name           = azurerm_dns_zone.main.name
+  resource_group_name = var.resource_group_name
+  ttl                 = 300
+
+  record {
+    value = "Success"
+  }
+}
+
 
 output "name_servers" {
   value = azurerm_dns_zone.main.name_servers
