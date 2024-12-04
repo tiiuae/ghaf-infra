@@ -164,3 +164,146 @@ tool:
   mavenGlobalConfig:
     globalSettingsProvider: "standard"
     settingsProvider: "standard"
+# https://github.com/jenkinsci/job-dsl-plugin
+# https://jenkinsci.github.io/job-dsl-plugin
+jobs:
+  - script: >
+      pipelineJob('Ghaf main pipeline') {
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/tiiuae/ghaf-jenkins-pipeline.git')
+                }
+                branch('*/main')
+                extensions {
+                  cleanBeforeCheckout()
+                }
+              }
+              scriptPath("ghaf-main-pipeline.groovy")
+            }
+            lightweight()
+          }
+        }
+      }
+  - script: >
+      pipelineJob('Ghaf pre-merge pipeline') {
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/tiiuae/ghaf-jenkins-pipeline.git')
+                }
+                branch('*/main')
+                extensions {
+                  cleanBeforeCheckout()
+                }
+              }
+              scriptPath("ghaf-pre-merge-pipeline.groovy")
+            }
+            lightweight()
+          }
+        }
+      }
+  - script: >
+      pipelineJob('Ghaf nightly pipeline') {
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/tiiuae/ghaf-jenkins-pipeline.git')
+                }
+                branch('*/main')
+                extensions {
+                  cleanBeforeCheckout()
+                }
+              }
+              scriptPath("ghaf-nightly-pipeline.groovy")
+            }
+            lightweight()
+          }
+        }
+      }
+  - script: >
+      pipelineJob('Ghaf release pipeline') {
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/tiiuae/ghaf-jenkins-pipeline.git')
+                }
+                branch('*/main')
+                extensions {
+                  cleanBeforeCheckout()
+                }
+              }
+              scriptPath("ghaf-release-pipeline.groovy")
+            }
+            lightweight()
+          }
+        }
+      }
+  - script: >
+      pipelineJob('Ghaf HW test') {
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/tiiuae/ghaf-jenkins-pipeline.git')
+                }
+                branch('*/main')
+                extensions {
+                  cleanBeforeCheckout()
+                }
+              }
+              scriptPath("ghaf-hw-test.groovy")
+            }
+            lightweight()
+          }
+        }
+      }
+  - script: >
+      pipelineJob('Ghaf parallel HW test') {
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/tiiuae/ghaf-jenkins-pipeline.git')
+                }
+                branch('*/main')
+                extensions {
+                  cleanBeforeCheckout()
+                }
+              }
+              scriptPath("ghaf-parallel-hw-test.groovy")
+            }
+            lightweight()
+          }
+        }
+      }
+  - script: >
+      pipelineJob('FMO OS main_pipeline') {
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/tiiuae/ghaf-jenkins-pipeline.git')
+                }
+                branch('*/main')
+                extensions {
+                  cleanBeforeCheckout()
+                }
+              }
+              scriptPath("fmo-os-main-pipeline.groovy")
+            }
+            lightweight()
+          }
+        }
+      }
