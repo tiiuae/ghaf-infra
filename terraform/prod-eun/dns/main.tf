@@ -6,7 +6,6 @@ locals {
 }
 
 resource "azurerm_dns_zone" "main" {
-  # TODO: manage az. in another state and do the delegation there
-  name = local.dns_suffix
+  name                = local.dns_suffix
   resource_group_name = var.resource_group_name
 }
