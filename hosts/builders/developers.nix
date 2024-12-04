@@ -324,14 +324,6 @@ let
       ];
     }
     {
-      desc = "Ville Ilvonen";
-      name = "vilvo";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILJF1pszEzwSka1zqdq1HgusWp6lLQdvOgeOrfc1xnH7 ville.ilvonen@unikie.com"
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGSqc6N0kDeUnhqstc6TCxWhQxA6NiRE+XNGafwBrMCX ville.ilvonen@unikie.com"
-      ];
-    }
-    {
       desc = "Yuriy Nesterov";
       name = "yuriy";
       keys = [

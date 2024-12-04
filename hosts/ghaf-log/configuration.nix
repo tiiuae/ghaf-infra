@@ -29,7 +29,6 @@
       user-mkaapu
       user-ktu
       user-bmg
-      user-vilvo
       user-vunnyso
     ]);
 

@@ -16,7 +16,6 @@
     user-mariia = import ./mariia.nix;
     user-maarit = import ./maarit.nix;
     user-leivos = import ./leivos.nix;
-    user-vilvo = import ./vilvo.nix;
     user-vunnyso = import ./vunnyso.nix;
     user-bmg = import ./bmg.nix;
     user-fayad = import ./fayad.nix;
