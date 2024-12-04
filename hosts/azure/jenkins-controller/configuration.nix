@@ -230,10 +230,15 @@ in
       ''
         # Install plugins
         jenkins-cli ${jenkins-auth} install-plugin \
-          "workflow-aggregator" "github" "timestamper" "pipeline-stage-view" "blueocean" \
-          "pipeline-graph-view" "github-pullrequest" "antisamy-markup-formatter" \
-          "configuration-as-code" "slack" "pipeline-utility-steps" "pipeline-build-step" \
-          "robot" "copyartifact"
+          "configuration-as-code" "job-dsl" \
+          "workflow-aggregator" "pipeline-utility-steps" "pipeline-build-step" \
+          "github" "github-pullrequest" \
+          "blueocean" "pipeline-stage-view" "pipeline-graph-view" \
+          "timestamper" \
+          "antisamy-markup-formatter" \
+          "slack" \
+          "robot" \
+          "copyartifact"
 
         # Disable initial install
         jenkins-cli ${jenkins-auth} groovy = < ${jenkins-groovy}
