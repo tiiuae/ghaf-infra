@@ -18,8 +18,15 @@ remote_state {
   }
 }
 
+dependency "dns_prod_eun" {
+  config_path = "../prod-eun/dns"
+}
+
 inputs  = {
   location = "northeurope"
+  ns_delegations = {
+    "prod-eun" = dependency.dns_prod_eun.outputs.name_servers
+  }
 }
 
 generate "provider" {
