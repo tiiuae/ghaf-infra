@@ -137,45 +137,6 @@ in
       # Increase the number of rows shown in Stage View (default is 10)
       "-Dcom.cloudbees.workflow.rest.external.JobExt.maxRunsPerJob=32"
     ];
-
-    # Configure jenkins job(s):
-    # https://jenkins-job-builder.readthedocs.io/en/latest/project_pipeline.html
-    # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/services/continuous-integration/jenkins/job-builder.nix
-    jobBuilder = {
-      enable = true;
-      nixJobs =
-        lib.mapAttrsToList
-          (display-name: script: {
-            job = {
-              inherit display-name;
-              name = script;
-              project-type = "pipeline";
-              concurrent = true;
-              pipeline-scm = {
-                script-path = "${script}.groovy";
-                lightweight-checkout = true;
-                scm = [
-                  {
-                    git = {
-                      url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
-                      clean = true;
-                      branches = [ "*/main" ];
-                    };
-                  }
-                ];
-              };
-            };
-          })
-          {
-            "Ghaf main pipeline" = "ghaf-main-pipeline";
-            "Ghaf pre-merge pipeline" = "ghaf-pre-merge-pipeline";
-            "Ghaf nightly pipeline" = "ghaf-nightly-pipeline";
-            "Ghaf release pipeline" = "ghaf-release-pipeline";
-            "Ghaf HW test" = "ghaf-hw-test";
-            "Ghaf parallel HW test" = "ghaf-parallel-hw-test";
-            "FMO OS main pipeline" = "fmo-os-main-pipeline";
-          };
-    };
   };
 
   systemd.services.jenkins.serviceConfig = {
