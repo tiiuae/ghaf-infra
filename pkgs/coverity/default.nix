@@ -9,7 +9,7 @@
   systemd,
   zlib,
   xorg,
-  alsaLib,
+  alsa-lib,
   libxcrypt-legacy,
   ...
 }:
@@ -43,7 +43,7 @@ stdenv.mkDerivation {
     # libXi.so.6
     xorg.libXi
     # libasound2.so.2
-    alsaLib
+    alsa-lib
     # libcrypt.so.1
     libxcrypt-legacy
   ];
