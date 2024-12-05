@@ -99,7 +99,7 @@ in
   ];
 
   # Shell
-  programs.bash.enableCompletion = true;
+  programs.bash.completion.enable = true;
 
   # https://nixos.wiki/wiki/FAQ/When_do_I_update_stateVersion
   system.stateVersion = "23.11";
