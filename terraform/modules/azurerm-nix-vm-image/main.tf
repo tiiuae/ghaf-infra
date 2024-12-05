@@ -38,6 +38,10 @@ resource "azurerm_image" "default" {
     os_state = "Generalized"
     os_type  = "Linux"
   }
+  depends_on = [
+    azurerm_storage_blob.default,
+    data.external.nix_build
+  ]
 }
 
 output "image_id" {
