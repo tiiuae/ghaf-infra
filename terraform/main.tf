@@ -216,9 +216,16 @@ resource "azurerm_subnet" "builders" {
   address_prefixes     = ["10.0.4.0/28"]
 }
 
+# https://github.com/hashicorp/terraform-provider-azurerm/issues/15609
+resource "random_string" "id" {
+  length  = 8
+  upper   = false
+  special = false
+}
+
 # Storage account and storage container used to store VM images
 resource "azurerm_storage_account" "vm_images" {
-  name                            = "img${local.ws}${local.shortloc}"
+  name                            = "img${random_string.id.result}"
   resource_group_name             = azurerm_resource_group.infra.name
   location                        = azurerm_resource_group.infra.location
   account_tier                    = "Standard"
