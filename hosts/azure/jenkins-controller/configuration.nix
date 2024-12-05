@@ -69,7 +69,12 @@ let
         s = client.get_secret(secret_name)
         print(s.value)
       '';
-  rclone = pkgs.callPackage ../../../pkgs/rclone { };
+
+  # nixos 24.05 pkgs is used for rclone and jenkins-job-builder
+  old-pkgs = import inputs.nixpkgs-24-05 { inherit (pkgs) system; };
+
+  # rclone 1.68.2 breaks our pipelines, keep using the old 1.66 version
+  rclone = old-pkgs.callPackage ../../../pkgs/rclone { };
 in
 {
   imports = [
@@ -107,7 +112,7 @@ in
   # Needs to be an overlay so that it propagates to service.jenkins.jobBuilder
   nixpkgs.overlays = [
     (_: _: {
-      inherit ((import inputs.nixpkgs-24-05 { inherit (pkgs) system; })) jenkins-job-builder;
+      inherit (old-pkgs) jenkins-job-builder;
     })
   ];
 
