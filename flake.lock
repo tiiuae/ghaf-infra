@@ -206,6 +206,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-24-05": {
+      "locked": {
+        "lastModified": 1733220138,
+        "narHash": "sha256-Yh5XZ9yVurrcYdNTSWxYgW4+EJ0pcOqgM1043z9JaRc=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "bcb68885668cccec12276bbb379f8f2557aa06ce",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "nixos-24.05",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-lib": {
       "locked": {
         "lastModified": 1733096140,
@@ -249,6 +265,7 @@
         "flake-root": "flake-root",
         "nix-fast-build": "nix-fast-build",
         "nixpkgs": "nixpkgs",
+        "nixpkgs-24-05": "nixpkgs-24-05",
         "robot-framework": "robot-framework",
         "sbomnix": "sbomnix",
         "sops-nix": "sops-nix",
