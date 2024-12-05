@@ -69,7 +69,6 @@ let
         s = client.get_secret(secret_name)
         print(s.value)
       '';
-  rclone = pkgs.callPackage ../../../pkgs/rclone { };
 in
 {
   imports = [
@@ -128,9 +127,9 @@ in
         csvkit
         curl
         nix-eval-jobs
+        rclone # used to copy artifacts
       ]
       ++ [
-        rclone # used to copy artifacts
         inputs.sbomnix.packages.${pkgs.system}.sbomnix # sbomnix, provenance, vulnxscan
         inputs.ci-yubi.packages.${pkgs.system}.sigver # signing scripts
       ];
@@ -342,7 +341,7 @@ in
       RuntimeDirectory = "rclone-http";
       EnvironmentFile = "/var/lib/rclone-jenkins-artifacts/env";
       ExecStart = lib.concatStringsSep " " [
-        "${rclone}/bin/rclone"
+        "${pkgs.rclone}/bin/rclone"
         "serve"
         "webdav"
         "--dir-cache-time"
@@ -375,7 +374,7 @@ in
       RuntimeDirectory = "rclone-http";
       EnvironmentFile = "/var/lib/rclone-jenkins-artifacts/env";
       ExecStart = lib.concatStringsSep " " [
-        "${rclone}/bin/rclone"
+        "${pkgs.rclone}/bin/rclone"
         "serve"
         "http"
         "--read-only"
