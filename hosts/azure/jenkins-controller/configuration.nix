@@ -102,6 +102,15 @@ in
     ];
   };
 
+  # https://github.com/NixOS/nixpkgs/issues/362054
+  # Use jenkins-job-builder from nixos-24.05, as it's broken in 24.11.
+  # Needs to be an overlay so that it propagates to service.jenkins.jobBuilder
+  nixpkgs.overlays = [
+    (_: _: {
+      inherit ((import inputs.nixpkgs-24-05 { inherit (pkgs) system; })) jenkins-job-builder;
+    })
+  ];
+
   services.jenkins = {
     enable = true;
     listenAddress = "localhost";
