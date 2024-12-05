@@ -7,6 +7,9 @@
     # Nixpkgs
     nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
 
+    # jenkins-job-builder is broken on 24.11 currently
+    nixpkgs-24-05.url = "github:nixos/nixpkgs/nixos-24.05";
+
     # Allows us to structure the flake with the NixOS module system
     flake-parts.url = "github:hercules-ci/flake-parts";
     flake-root.url = "github:srid/flake-root";
