@@ -9,7 +9,6 @@
 with lib;
 let
   cfg = config.services.rclone-http;
-  rclone = pkgs.callPackage ../../pkgs/rclone { };
 in
 {
   options.services.rclone-http = {
@@ -56,7 +55,7 @@ in
         EnvironmentFile = "/var/lib/rclone-http/env";
         ExecStart = concatStringsSep " " (
           [
-            "${rclone}/bin/rclone"
+            "${pkgs.rclone}/bin/rclone"
             "serve"
             cfg.protocol
           ]
