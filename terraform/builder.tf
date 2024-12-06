@@ -17,6 +17,7 @@ module "builder_image" {
   location               = azurerm_resource_group.infra.location
   storage_account_name   = azurerm_storage_account.vm_images.name
   storage_container_name = azurerm_storage_container.vm_images.name
+  depends_on             = [azurerm_storage_container.vm_images]
 }
 
 locals {

@@ -38,6 +38,7 @@ resource "azurerm_image" "default" {
     os_state = "Generalized"
     os_type  = "Linux"
   }
+  depends_on = [azurerm_storage_blob.default]
 }
 
 output "image_id" {
