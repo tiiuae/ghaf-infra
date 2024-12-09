@@ -22,6 +22,7 @@ in
     in
     {
       dut-pass = credential;
+      plug-login = credential;
       plug-pass = credential;
       switch-token = credential;
       switch-secret = credential;
