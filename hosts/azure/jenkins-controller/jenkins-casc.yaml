@@ -307,3 +307,13 @@ jobs:
           }
         }
       }
+  - script: >
+      queue('Ghaf main pipeline')
+  - script: >
+      queue('Ghaf pre-merge pipeline')
+  - script: >
+      queue('Ghaf nightly pipeline')
+  - script: >
+      queue('Ghaf release pipeline')
+  - script: >
+      queue('FMO OS main_pipeline')
