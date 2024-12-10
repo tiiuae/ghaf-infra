@@ -28,6 +28,8 @@ in
       switch-secret = credential;
       wifi-ssid = credential;
       wifi-password = credential;
+      pi-login = credential;
+      pi-pass = credential;
     };
 
   services.udev.packages = [
