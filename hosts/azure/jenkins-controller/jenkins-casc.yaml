@@ -168,7 +168,8 @@ tool:
 # https://jenkinsci.github.io/job-dsl-plugin
 jobs:
   - script: >
-      pipelineJob('Ghaf main pipeline') {
+      pipelineJob('ghaf-main-pipeline') {
+        displayName('Ghaf main pipeline')
         definition {
           cpsScm {
             scm {
@@ -181,14 +182,15 @@ jobs:
                   cleanBeforeCheckout()
                 }
               }
-              scriptPath("ghaf-main-pipeline.groovy")
+              scriptPath('ghaf-main-pipeline.groovy')
             }
             lightweight()
           }
         }
       }
   - script: >
-      pipelineJob('Ghaf pre-merge pipeline') {
+      pipelineJob('ghaf-pre-merge-pipeline') {
+        displayName('Ghaf pre-merge pipeline')
         definition {
           cpsScm {
             scm {
@@ -201,14 +203,15 @@ jobs:
                   cleanBeforeCheckout()
                 }
               }
-              scriptPath("ghaf-pre-merge-pipeline.groovy")
+              scriptPath('ghaf-pre-merge-pipeline.groovy')
             }
             lightweight()
           }
         }
       }
   - script: >
-      pipelineJob('Ghaf nightly pipeline') {
+      pipelineJob('ghaf-nightly-pipeline') {
+        displayName('Ghaf nightly pipeline')
         definition {
           cpsScm {
             scm {
@@ -221,14 +224,15 @@ jobs:
                   cleanBeforeCheckout()
                 }
               }
-              scriptPath("ghaf-nightly-pipeline.groovy")
+              scriptPath('ghaf-nightly-pipeline.groovy')
             }
             lightweight()
           }
         }
       }
   - script: >
-      pipelineJob('Ghaf release pipeline') {
+      pipelineJob('ghaf-release-pipeline') {
+        displayName('Ghaf release pipeline')
         definition {
           cpsScm {
             scm {
@@ -241,14 +245,15 @@ jobs:
                   cleanBeforeCheckout()
                 }
               }
-              scriptPath("ghaf-release-pipeline.groovy")
+              scriptPath('ghaf-release-pipeline.groovy')
             }
             lightweight()
           }
         }
       }
   - script: >
-      pipelineJob('Ghaf HW test') {
+      pipelineJob('ghaf-hw-test') {
+        displayName('Ghaf HW test')
         definition {
           cpsScm {
             scm {
@@ -261,14 +266,15 @@ jobs:
                   cleanBeforeCheckout()
                 }
               }
-              scriptPath("ghaf-hw-test.groovy")
+              scriptPath('ghaf-hw-test.groovy')
             }
             lightweight()
           }
         }
       }
   - script: >
-      pipelineJob('Ghaf parallel HW test') {
+      pipelineJob('ghaf-parallel-hw-test') {
+        displayName('Ghaf parallel HW test')
         definition {
           cpsScm {
             scm {
@@ -281,14 +287,15 @@ jobs:
                   cleanBeforeCheckout()
                 }
               }
-              scriptPath("ghaf-parallel-hw-test.groovy")
+              scriptPath('ghaf-parallel-hw-test.groovy')
             }
             lightweight()
           }
         }
       }
   - script: >
-      pipelineJob('FMO OS main_pipeline') {
+      pipelineJob('fmo-os-main-pipeline') {
+        displayName('FMO OS main_pipeline')
         definition {
           cpsScm {
             scm {
@@ -301,19 +308,19 @@ jobs:
                   cleanBeforeCheckout()
                 }
               }
-              scriptPath("fmo-os-main-pipeline.groovy")
+              scriptPath('fmo-os-main-pipeline.groovy')
             }
             lightweight()
           }
         }
       }
   - script: >
-      queue('Ghaf main pipeline')
+      queue('ghaf-main-pipeline')
   - script: >
-      queue('Ghaf pre-merge pipeline')
+      queue('ghaf-pre-merge-pipeline')
   - script: >
-      queue('Ghaf nightly pipeline')
+      queue('ghaf-nightly-pipeline')
   - script: >
-      queue('Ghaf release pipeline')
+      queue('ghaf-release-pipeline')
   - script: >
-      queue('FMO OS main_pipeline')
+      queue('fmo-os-main-pipeline')
