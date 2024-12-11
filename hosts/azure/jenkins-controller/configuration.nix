@@ -137,45 +137,6 @@ in
       # Increase the number of rows shown in Stage View (default is 10)
       "-Dcom.cloudbees.workflow.rest.external.JobExt.maxRunsPerJob=32"
     ];
-
-    # Configure jenkins job(s):
-    # https://jenkins-job-builder.readthedocs.io/en/latest/project_pipeline.html
-    # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/services/continuous-integration/jenkins/job-builder.nix
-    jobBuilder = {
-      enable = true;
-      nixJobs =
-        lib.mapAttrsToList
-          (display-name: script: {
-            job = {
-              inherit display-name;
-              name = script;
-              project-type = "pipeline";
-              concurrent = true;
-              pipeline-scm = {
-                script-path = "${script}.groovy";
-                lightweight-checkout = true;
-                scm = [
-                  {
-                    git = {
-                      url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
-                      clean = true;
-                      branches = [ "*/main" ];
-                    };
-                  }
-                ];
-              };
-            };
-          })
-          {
-            "Ghaf main pipeline" = "ghaf-main-pipeline";
-            "Ghaf pre-merge pipeline" = "ghaf-pre-merge-pipeline";
-            "Ghaf nightly pipeline" = "ghaf-nightly-pipeline";
-            "Ghaf release pipeline" = "ghaf-release-pipeline";
-            "Ghaf HW test" = "ghaf-hw-test";
-            "Ghaf parallel HW test" = "ghaf-parallel-hw-test";
-            "FMO OS main pipeline" = "fmo-os-main-pipeline";
-          };
-    };
   };
 
   systemd.services.jenkins.serviceConfig = {
@@ -230,10 +191,15 @@ in
       ''
         # Install plugins
         jenkins-cli ${jenkins-auth} install-plugin \
-          "workflow-aggregator" "github" "timestamper" "pipeline-stage-view" "blueocean" \
-          "pipeline-graph-view" "github-pullrequest" "antisamy-markup-formatter" \
-          "configuration-as-code" "slack" "pipeline-utility-steps" "pipeline-build-step" \
-          "robot" "copyartifact"
+          "configuration-as-code" "job-dsl" \
+          "workflow-aggregator" "pipeline-utility-steps" "pipeline-build-step" \
+          "github" "github-pullrequest" \
+          "blueocean" "pipeline-stage-view" "pipeline-graph-view" \
+          "timestamper" \
+          "antisamy-markup-formatter" \
+          "slack" \
+          "robot" \
+          "copyartifact"
 
         # Disable initial install
         jenkins-cli ${jenkins-auth} groovy = < ${jenkins-groovy}
