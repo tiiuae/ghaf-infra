@@ -14,6 +14,7 @@
   imports =
     [
       ./disk-config.nix
+      ./gala_uploaders.nix
       (modulesPath + "/profiles/qemu-guest.nix")
       inputs.sops-nix.nixosModules.sops
       inputs.disko.nixosModules.disko
