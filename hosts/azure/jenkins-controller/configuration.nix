@@ -69,7 +69,12 @@ let
         s = client.get_secret(secret_name)
         print(s.value)
       '';
-  rclone = pkgs.callPackage ../../../pkgs/rclone { };
+
+  # nixos 24.05 pkgs is used for rclone and jenkins-job-builder
+  old-pkgs = import inputs.nixpkgs-24-05 { inherit (pkgs) system; };
+
+  # rclone 1.68.2 breaks our pipelines, keep using the old 1.66 version
+  rclone = old-pkgs.callPackage ../../../pkgs/rclone { };
 in
 {
   imports = [
@@ -101,6 +106,15 @@ in
       "x-systemd.growfs"
     ];
   };
+
+  # https://github.com/NixOS/nixpkgs/issues/362054
+  # Use jenkins-job-builder from nixos-24.05, as it's broken in 24.11.
+  # Needs to be an overlay so that it propagates to service.jenkins.jobBuilder
+  nixpkgs.overlays = [
+    (_: _: {
+      inherit (old-pkgs) jenkins-job-builder;
+    })
+  ];
 
   services.jenkins = {
     enable = true;
