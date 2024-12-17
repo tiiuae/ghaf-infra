@@ -101,12 +101,14 @@
         Polarfire1 = {
           inherit location;
           serial_port = "/dev/ttyRISCV1";
+          relay_serial_port = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A10KYI3B-if00-port0";
+          relay_number = 1;
           device_ip_address = "NONE";
           socket_ip_address = "172.18.16.82";
           plug_type = "TAPOP100v2";
           switch_bot = "NONE";
-          usb_sd_mux_port = "/dev/usb-sd-mux/id-000000001488";
-          ext_drive_by-id = "usb-LinuxAut_sdmux_HS-SD_MMC_000000001488-0:0";
+          usb_sd_mux_port = "/dev/usb-sd-mux/id-00048.00137";
+          ext_drive_by-id = "usb-LinuxAut_sdFST_HS-SD_MMC_00048.00137-0:0";
           threads = 4;
         };
         NUC1 = {

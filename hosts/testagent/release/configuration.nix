@@ -118,7 +118,7 @@
           plug_type = "TAPOP100v2";
           switch_bot = "NONE";
           usb_sd_mux_port = "/dev/usb-sd-mux/id-00048.00197";
-          ext_drive_by-id = "usb-LinuxAut_sdmux_HS-SD_MMC_000000001267-0:0";
+          ext_drive_by-id = "usb-LinuxAut_sdFST_HS-SD_MMC_00048.00197-0:0";
           threads = 4;
         };
         OrinNX1 = {
