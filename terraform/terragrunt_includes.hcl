@@ -1,13 +1,12 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 
-# This file assumes all Terragrunt units live two levels deeper than this file,
-# the first level specifying the name of the environment, the second one the
-# name of the unit itself.
+# This file assumes all Terragrunt units live deeper than this file,
+# the first level specifying the name of the environment, with possibly more
+# levels to distinguish individual units.
 
 locals {
   env_name = split("/", path_relative_to_include())[0]
-  unit_name = split("/", path_relative_to_include())[1]
 }
 
 
