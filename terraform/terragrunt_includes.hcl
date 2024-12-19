@@ -1,6 +1,16 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 
+# This file assumes all Terragrunt units live two levels deeper than this file,
+# the first level specifying the name of the environment, the second one the
+# name of the unit itself.
+
+locals {
+  env_name = split("/", path_relative_to_include())[0]
+  unit_name = split("/", path_relative_to_include())[1]
+}
+
+
 remote_state {
   backend = "azurerm"
   generate = {
@@ -8,18 +18,18 @@ remote_state {
     if_exists = "overwrite"
   }
 
-  # TODO: manage state related resources with terragrunt
-  # TODO: decide whether we want this per environment or more global 
+  # TODO: manage resources hosting state itself with terragrunt too
   config = {
+    # We currently use the same blob container for all state.
     resource_group_name = "ghaf-infra-0-state-eun"
     storage_account_name = "ghafinfra0stateeun"
     container_name = "ghaf-infra-tfstate-container"
-    key = "prod-eun/${path_relative_to_include()}.tfstate"
+    key = "${path_relative_to_include()}.tfstate"
   }
 }
 
 inputs  = {
-  environment_name = "ghaf-infra-prod-eun"
+  environment_name = "ghaf-infra-${local.env_name}"
   location = "northeurope"
 }
 
