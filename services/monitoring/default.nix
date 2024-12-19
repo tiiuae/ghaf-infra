@@ -49,6 +49,11 @@ in
       };
     };
 
+    # with ProtectHome=true, the exporter will report incorrect filesystem bytes for /home
+    systemd.services.prometheus-node-exporter.serviceConfig = lib.mkIf cfg.metrics.enable {
+      ProtectHome = lib.mkForce "read-only";
+    };
+
     # sshified user for monitoring server to log in as
     users.users.sshified = lib.mkIf cfg.metrics.ssh {
       isNormalUser = true;
