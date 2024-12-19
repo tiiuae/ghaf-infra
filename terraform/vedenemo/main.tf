@@ -1,6 +1,18 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 
+variable "ns_delegations" {
+  type        = map(list(string))
+  description = <<EOF
+    Map from environment shortcode to NS records pointing to a nameserver
+    serving a $shortcode.az.vedenemo.dev DNS Zone
+  EOF
+}
+
+variable "location" {
+  type = string
+}
+
 resource "azurerm_resource_group" "default" {
   name     = "ghaf-infra-vedenemo"
   location = var.location
@@ -21,12 +33,4 @@ resource "azurerm_dns_ns_record" "ns_delegations" {
   ttl                 = 300
 
   records = each.value
-}
-
-variable "ns_delegations" {
-  type        = map(list(string))
-  description = <<EOF
-    Map from environment shortcode to NS records pointing to a nameserver
-    serving a $shortcode.az.vedenemo.dev DNS Zone
-  EOF
 }
