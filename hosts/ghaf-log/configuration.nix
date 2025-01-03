@@ -26,7 +26,6 @@
       user-cazfi
       user-hrosten
       user-karim
-      user-mkaapu
       user-ktu
       user-bmg
       user-vunnyso

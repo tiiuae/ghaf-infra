@@ -28,7 +28,6 @@
       user-jrautiola
       user-cazfi
       user-hrosten
-      user-mkaapu
       user-avnik
     ]);
 
