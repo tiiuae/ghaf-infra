@@ -27,7 +27,6 @@
       user-ktu
       user-cazfi
       user-karim
-      user-mika
     ]);
 
   sops.defaultSopsFile = ./secrets.yaml;

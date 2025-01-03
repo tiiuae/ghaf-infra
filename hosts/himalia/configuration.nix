@@ -21,7 +21,6 @@
       user-cazfi
       user-karim
       user-barna
-      user-mika
     ]);
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";

@@ -25,12 +25,10 @@
       user-fayad
       user-cazfi
       user-karim
-      user-mika
       user-bmg
       user-flokli
       user-hrosten
       user-ktu
-      user-mkaapu
       user-vjuntunen
       user-alextserepov
     ]);
