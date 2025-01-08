@@ -330,6 +330,13 @@ let
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIstCgKDX1vVWI8MgdVwsEMhju6DQJubi3V0ziLcU/2h vunny.sodhi@unikie.com"
       ];
     }
+    {
+      desc = "Petri Manninen";
+      name = "petrim";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOn3gFtct48DhUanKWJ7R3U3DEL/5WJzzuhIwNVh5nrx petri.manninen@unikie.com"
+      ];
+    }
   ];
 in
 {
