@@ -25,7 +25,6 @@
       user-flokli
       user-jrautiola
       user-mariia
-      user-maarit
       user-leivos
       user-hrosten
     ]);

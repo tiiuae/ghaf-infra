@@ -12,7 +12,6 @@
     user-flokli = import ./flokli.nix;
     user-vjuntunen = import ./vjuntunen.nix;
     user-mariia = import ./mariia.nix;
-    user-maarit = import ./maarit.nix;
     user-leivos = import ./leivos.nix;
     user-vunnyso = import ./vunnyso.nix;
     user-bmg = import ./bmg.nix;
