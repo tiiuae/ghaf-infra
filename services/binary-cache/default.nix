@@ -5,7 +5,7 @@
   services = {
     harmonia = {
       enable = true;
-      signKeyPath = config.sops.secrets.cache-sig-key.path;
+      signKeyPaths = [ config.sops.secrets.cache-sig-key.path ];
     };
   };
   networking.firewall.allowedTCPPorts = [ 5000 ];
