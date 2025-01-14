@@ -337,6 +337,13 @@ let
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOn3gFtct48DhUanKWJ7R3U3DEL/5WJzzuhIwNVh5nrx petri.manninen@unikie.com"
       ];
     }
+    {
+      desc = "Mikko Saarinen";
+      name = "mikkos";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILDvhfh9J9ac5+9QQ9FdSQe9XK5fiJf8z8kcWzQfjsWv root@nixos"
+      ];
+    }
   ];
 in
 {
