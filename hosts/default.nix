@@ -57,6 +57,7 @@ in
     nixos-ghaf-coverity = ./ghaf-coverity/configuration.nix;
     nixos-ghaf-proxy = ./ghaf-proxy/configuration.nix;
     nixos-ghaf-webserver = ./ghaf-webserver/configuration.nix;
+    nixos-testagent-uae-dev = ./testagent/uae-dev/configuration.nix;
   };
 
   # Expose as flake.lib.mkNixOS.
@@ -89,6 +90,7 @@ in
         "ghaf-coverity"
         "ghaf-proxy"
         "ghaf-webserver"
+        "testagent-uae-dev"
       ]
   );
 }

@@ -131,6 +131,11 @@ TARGETS = OrderedDict(
             nixosconfig="ghaf-webserver",
             secretspath="hosts/ghaf-webserver/secrets.yaml",
         ),
+        "testagent-uae-dev": TargetHost(
+            hostname="172.19.16.12",
+            nixosconfig="testagent-uae-dev",
+            secretspath="hosts/testagent/uae-dev/secrets.yaml",
+        ),
     }
 )
 

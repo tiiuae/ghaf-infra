@@ -23,6 +23,7 @@ keys:
   - &ghaf-coverity age1z825k99myjmfcml86pujcmtj96psvj8c3m08me8kkq03tkpwy9xql4jt9y
   - &ghaf-webserver age1f643hcr8xvzm6fha93xhn6dw552tfd6zvu7eulxk7vedgt09d9ysljsayq
   - &ghaf-proxy age1sv50w7ydcqxxng4nfpvretqhusfkjewtrzpu4006z685xgplha2sa9tv9v
+  - &testagent-uae-dev age1sl8yrksst9aq2fhg8t8h7tysgzm6ks00n9hxsvj8x6frsnrskd4szerqez
 
 creation_rules:
   - path_regex: hosts/binarycache/secrets.yaml$
@@ -92,5 +93,14 @@ creation_rules:
       - *testagent-dev
       - *testagent-prod
       - *testagent-release
+      - *testagent-uae-dev
       - *jrautiola
       - *vjuntunen
+      - *fayad
+  - path_regex: hosts/testagent/uae-dev/secrets.yaml$
+    key_groups:
+    - age:
+      - *testagent-uae-dev
+      - *fayad
+      - *vjuntunen
+      - *jrautiola
