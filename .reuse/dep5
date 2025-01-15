@@ -1,8 +1,0 @@
-Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: ghaf
-Upstream-Contact: <https://github.com/tiiuae/ghaf>
-Source: https://github.com/tiiuae/ghaf
-
-Copyright: 2022-2024 Technology Innovation Institute (TII) <https://github.com/tiiuae/ghaf-infra>
-License: Apache-2.0
-Files: *.lock *patch *.png *.svg *.csv *.yaml *.pub */provider.tf */backend.tf
