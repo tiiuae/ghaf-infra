@@ -131,6 +131,11 @@ TARGETS = OrderedDict(
             nixosconfig="ghaf-webserver",
             secretspath="hosts/ghaf-webserver/secrets.yaml",
         ),
+        "testagent-uae-dev": TargetHost(
+            hostname="172.19.16.12",
+            nixosconfig="testagent-uae-dev",
+            secretspath="hosts/testagent/uae-dev/secrets.yaml",
+        ),
     }
 )
 
@@ -436,7 +441,7 @@ def install(c: Any, alias) -> None:
     target = _get_target(alias)
     with TemporaryDirectory() as tmpdir:
         decrypt_host_key(target, tmpdir)
-        gitrev = "2991be5b522c88244b8833dd662cac406e3d5d28"
+        gitrev = "97b45ac774699b1cfd267e98a8bdecb74bace593"
         command = f"nix run github:numtide/nixos-anywhere?rev={gitrev} --"
         command += f" {h.host} --extra-files {tmpdir} --flake .#{target.nixosconfig}"
         command += " --option accept-flake-config true"
