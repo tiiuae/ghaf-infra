@@ -21,6 +21,8 @@ in
       max-free = asGB 200;
       # check the free disk space every 5 seconds
       min-free-check-interval = 5;
+      # Trust users in the wheel group. They can sudo anyways.
+      trusted-users = [ "@wheel" ];
     };
   };
   systemd.services.nix-gc.serviceConfig = {
@@ -49,6 +51,9 @@ in
   # but the way nixpkgs configures cloud-init prevents it from picking up DNS
   # settings from elsewhere.
   # services.resolved.enable = false;
+
+  security.sudo.enable = true;
+  security.sudo.wheelNeedsPassword = false;
 
   # List packages installed in system profile
   environment.systemPackages = with pkgs; [
