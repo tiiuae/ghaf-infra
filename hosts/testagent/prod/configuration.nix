@@ -108,6 +108,10 @@
           ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XPNS0T918984B-0:0";
           threads = 8;
         };
+        measurement_agent = {
+          inherit location;
+          device_ip_address = "172.18.16.10";
+        };
       };
     };
 }
