@@ -75,9 +75,11 @@
     in
     builtins.toJSON {
       addresses = {
+        relay_serial_port = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A10KYI3B-if00-port0";
         OrinAGX1 = {
           inherit location;
           serial_port = "/dev/ttyACM0";
+          relay_number = 4;
           device_ip_address = "172.18.16.54";
           socket_ip_address = "172.18.16.74";
           plug_type = "TAPOP100v2";
@@ -89,6 +91,7 @@
         OrinNX1 = {
           inherit location;
           serial_port = "/dev/ttyORINNX1";
+          relay_number = 3;
           device_ip_address = "172.18.16.61";
           socket_ip_address = "172.18.16.95";
           plug_type = "TAPOP100v2";
@@ -100,8 +103,7 @@
         Polarfire1 = {
           inherit location;
           serial_port = "/dev/ttyRISCV1";
-          relay_serial_port = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A10KYI3B-if00-port0";
-          relay_number = 1;
+          relay_number = 2;
           device_ip_address = "NONE";
           socket_ip_address = "172.18.16.82";
           plug_type = "TAPOP100v2";
@@ -112,6 +114,7 @@
         };
         NUC1 = {
           inherit location;
+          relay_number = 1;
           serial_port = "/dev/ttyNUC1";
           device_ip_address = "172.18.16.16";
           socket_ip_address = "172.18.16.20";
