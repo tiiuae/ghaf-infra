@@ -203,6 +203,10 @@ init_persistent_resources () {
 init_workspace_persistent () {
     echo "[+] Initializing workspace-specific persistent"
     pushd "$MYDIR/persistent/workspace-specific" >"$OUT"
+    if [[ "$WORKSPACE" =~ ^(release|prod|priv)"$SHORTLOC"$ ]]; then
+        print_err "workspace name '$WORKSPACE' is taken by persistent resource group"
+        exit 1
+    fi
     run_terraform_init
     terraform workspace select -or-create "$WORKSPACE" >"$OUT"
     terraform apply -var="persistent_resource_group=$PERSISTENT_RG" -auto-approve >"$OUT"
