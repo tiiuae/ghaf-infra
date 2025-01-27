@@ -7,12 +7,14 @@
     # Nixpkgs
     nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
 
-    # jenkins-job-builder is broken on 24.11 currently
+    # rclone is broken on 24.11 currently
     nixpkgs-24-05.url = "github:nixos/nixpkgs/nixos-24.05";
 
     # Allows us to structure the flake with the NixOS module system
     flake-parts.url = "github:hercules-ci/flake-parts";
+
     flake-root.url = "github:srid/flake-root";
+    flake-utils.url = "github:numtide/flake-utils";
 
     # Secrets with sops-nix
     sops-nix = {
@@ -43,14 +45,20 @@
       url = "github:serokell/deploy-rs";
       inputs = {
         nixpkgs.follows = "nixpkgs";
+        flake-compat.follows = "flake-compat";
+        utils.follows = "flake-utils";
       };
     };
 
     # Utilities used in the jenkins pipelines
     robot-framework = {
       url = "github:tiiuae/ci-test-automation";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
+
     sbomnix = {
       url = "github:tiiuae/sbomnix";
       inputs = {
@@ -61,9 +69,13 @@
         treefmt-nix.follows = "treefmt-nix";
       };
     };
+
     ci-yubi = {
       url = "github:tiiuae/ci-yubi";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
 
     # Installed into devshell
