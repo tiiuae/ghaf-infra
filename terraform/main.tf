@@ -133,10 +133,10 @@ locals {
       osdisk_size_builder     = "250"
       vm_size_controller      = "Standard_E4_v5"
       osdisk_size_controller  = "1000"
-      num_builders_x86        = 0
-      num_builders_aarch64    = 0
-      ext_builder_machines    = local.ext_builder_machines
-      ext_builder_keyscan     = local.ext_builder_keyscan
+      num_builders_x86        = 1
+      num_builders_aarch64    = 1
+      ext_builder_machines    = []
+      ext_builder_keyscan     = []
     }
     release = {
       persistent_id           = "release"
@@ -320,9 +320,9 @@ data "azurerm_key_vault_secret" "binary_cache_signing_key_pub" {
 }
 
 # Reference the existing Key Vault
-data "azurerm_key_vault" "ghaf_devenv_ca" {
-  name                = "ghaf-devenv-ca"
-  resource_group_name = "ghaf-devenev-pki"
+data "azurerm_key_vault" "ghaf_prodenv_ca" {
+  name                = "ghaf-prodenv-ca"
+  resource_group_name = "ghaf-prodenv-pki"
 }
 
 # Data sources to access 'workspace-specific persistent' data

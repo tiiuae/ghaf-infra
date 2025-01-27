@@ -164,7 +164,7 @@ resource "azurerm_key_vault_access_policy" "ssh_remote_build_jenkins_controller"
 
 # Grant the Jenkins Controller VM's system-assigned managed identity access to the Key Vault
 resource "azurerm_key_vault_access_policy" "jenkins_controller_kv_access" {
-  key_vault_id = data.azurerm_key_vault.ghaf_devenv_ca.id
+  key_vault_id = data.azurerm_key_vault.ghaf_prodenv_ca.id
   tenant_id    = data.azurerm_client_config.current.tenant_id
   object_id    = module.jenkins_controller_vm.virtual_machine_identity_principal_id
 
@@ -213,7 +213,7 @@ resource "azurerm_key_vault_access_policy" "binary_cache_signing_key_jenkins_con
 resource "azurerm_key_vault" "sigkv" {
   name                = "ghaf-sig-kv-${local.ws}"
   location            = azurerm_resource_group.infra.location
-  resource_group_name = azurerm_resource_group.infra.name
+  resource_group_name = "ghaf-prodenv-pki"
   tenant_id           = data.azurerm_client_config.current.tenant_id
   sku_name            = "standard"
 
