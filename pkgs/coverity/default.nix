@@ -19,7 +19,7 @@ stdenv.mkDerivation {
 
   src = fetchurl {
     url = "https://archive.ssrcdevops.tii.ae/ghaf/cov-analysis.tar.gz";
-    hash = "sha256-Y6DvakNzl+FVZjPq+X/R0RQ9SMzyztZlA/yD0slPG7M=";
+    hash = "sha256-Jafs8hegK3fWcy9/YGhy4mnRVCdFj0BYKZoipkph7fc=";
   };
 
   nativeBuildInputs = [ autoPatchelfHook ];
