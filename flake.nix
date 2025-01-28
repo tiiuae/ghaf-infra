@@ -87,6 +87,14 @@
         treefmt-nix.follows = "treefmt-nix";
       };
     };
+
+    jenkinsPlugins2nix = {
+      url = "github:Fuuzetsu/jenkinsPlugins2nix";
+      inputs = {
+        flake-compat.follows = "flake-compat";
+        flake-utils.follows = "flake-utils";
+      };
+    };
   };
 
   outputs =

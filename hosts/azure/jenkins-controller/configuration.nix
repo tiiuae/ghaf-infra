@@ -143,6 +143,8 @@ in
       "-Dcom.cloudbees.workflow.rest.external.JobExt.maxRunsPerJob=32"
     ];
 
+    plugins = import ./plugins.nix { inherit (pkgs) stdenv fetchurl; };
+
     # Configure jenkins job(s):
     # https://jenkins-job-builder.readthedocs.io/en/latest/project_pipeline.html
     # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/services/continuous-integration/jenkins/job-builder.nix
@@ -233,13 +235,6 @@ in
         '';
       in
       ''
-        # Install plugins
-        jenkins-cli ${jenkins-auth} install-plugin \
-          "workflow-aggregator" "github" "timestamper" "pipeline-stage-view" "blueocean" \
-          "pipeline-graph-view" "github-pullrequest" "antisamy-markup-formatter" \
-          "configuration-as-code" "slack" "pipeline-utility-steps" "pipeline-build-step" \
-          "robot" "copyartifact"
-
         # Disable initial install
         jenkins-cli ${jenkins-auth} groovy = < ${jenkins-groovy}
 
