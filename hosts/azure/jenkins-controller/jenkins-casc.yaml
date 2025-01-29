@@ -164,3 +164,163 @@ tool:
   mavenGlobalConfig:
     globalSettingsProvider: "standard"
     settingsProvider: "standard"
+# https://github.com/jenkinsci/job-dsl-plugin
+# https://jenkinsci.github.io/job-dsl-plugin
+jobs:
+  - script: >
+      pipelineJob('ghaf-main-pipeline') {
+        displayName('Ghaf main pipeline')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/tiiuae/ghaf-jenkins-pipeline.git')
+                }
+                branch('*/main')
+                extensions {
+                  cleanBeforeCheckout()
+                }
+              }
+              scriptPath('ghaf-main-pipeline.groovy')
+            }
+            lightweight()
+          }
+        }
+      }
+  - script: >
+      pipelineJob('ghaf-pre-merge-pipeline') {
+        displayName('Ghaf pre-merge pipeline')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/tiiuae/ghaf-jenkins-pipeline.git')
+                }
+                branch('*/main')
+                extensions {
+                  cleanBeforeCheckout()
+                }
+              }
+              scriptPath('ghaf-pre-merge-pipeline.groovy')
+            }
+            lightweight()
+          }
+        }
+      }
+  - script: >
+      pipelineJob('ghaf-nightly-pipeline') {
+        displayName('Ghaf nightly pipeline')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/tiiuae/ghaf-jenkins-pipeline.git')
+                }
+                branch('*/main')
+                extensions {
+                  cleanBeforeCheckout()
+                }
+              }
+              scriptPath('ghaf-nightly-pipeline.groovy')
+            }
+            lightweight()
+          }
+        }
+      }
+  - script: >
+      pipelineJob('ghaf-release-pipeline') {
+        displayName('Ghaf release pipeline')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/tiiuae/ghaf-jenkins-pipeline.git')
+                }
+                branch('*/main')
+                extensions {
+                  cleanBeforeCheckout()
+                }
+              }
+              scriptPath('ghaf-release-pipeline.groovy')
+            }
+            lightweight()
+          }
+        }
+      }
+  - script: >
+      pipelineJob('ghaf-hw-test') {
+        displayName('Ghaf HW test')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/tiiuae/ghaf-jenkins-pipeline.git')
+                }
+                branch('*/main')
+                extensions {
+                  cleanBeforeCheckout()
+                }
+              }
+              scriptPath('ghaf-hw-test.groovy')
+            }
+            lightweight()
+          }
+        }
+      }
+  - script: >
+      pipelineJob('ghaf-parallel-hw-test') {
+        displayName('Ghaf parallel HW test')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/tiiuae/ghaf-jenkins-pipeline.git')
+                }
+                branch('*/main')
+                extensions {
+                  cleanBeforeCheckout()
+                }
+              }
+              scriptPath('ghaf-parallel-hw-test.groovy')
+            }
+            lightweight()
+          }
+        }
+      }
+  - script: >
+      pipelineJob('fmo-os-main-pipeline') {
+        displayName('FMO OS main_pipeline')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/tiiuae/ghaf-jenkins-pipeline.git')
+                }
+                branch('*/main')
+                extensions {
+                  cleanBeforeCheckout()
+                }
+              }
+              scriptPath('fmo-os-main-pipeline.groovy')
+            }
+            lightweight()
+          }
+        }
+      }
+  - script: >
+      queue('ghaf-main-pipeline')
+  - script: >
+      queue('ghaf-pre-merge-pipeline')
+  - script: >
+      queue('ghaf-nightly-pipeline')
+  - script: >
+      queue('ghaf-release-pipeline')
+  - script: >
+      queue('fmo-os-main-pipeline')
