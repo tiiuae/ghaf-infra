@@ -68,14 +68,5 @@ data "azurerm_client_config" "current" {}
 ################################################################################
 
 # Shared builder ssh key used to access 'external' builders
-module "builder_ssh_key" {
-  source = "./builder-ssh-key"
-  # Must be globally unique, max 24 characters
-  builder_ssh_keyvault_name = "sshb-id0ext${local.shortloc}"
-  resource_group_name       = azurerm_resource_group.persistent.name
-  location                  = azurerm_resource_group.persistent.location
-  tenant_id                 = data.azurerm_client_config.current.tenant_id
-  object_id                 = data.azurerm_client_config.current.object_id
-}
 
 ################################################################################

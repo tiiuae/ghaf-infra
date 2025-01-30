@@ -128,9 +128,9 @@ set_env () {
     # Assign variables STATE_RG, STATE_ACCOUNT and PERSISTENT_RG: these
     # variables are used to select the remote state storage and persistent
     # data used in this ghaf-infra instance.
-    STATE_RG="ghaf-infra-0-state-${SHORTLOC}"
-    STATE_ACCOUNT="ghafinfra0state${SHORTLOC}"
-    PERSISTENT_RG="ghaf-infra-0-persistent-${SHORTLOC}"
+    STATE_RG="ghaf-infra-devuaenkv-state"
+    STATE_ACCOUNT="ghafinfradevuaenkvstate"
+    PERSISTENT_RG="ghaf-infra-devuaenkv-persistent"
     echo "[+] Using state '$STATE_RG'"
     echo "[+] Using persistent '$PERSISTENT_RG'"
     echo "storage_account_rg_name=$STATE_RG" >"$MYDIR/.env"
@@ -151,30 +151,6 @@ init_state_storage () {
     popd >"$OUT"
 }
 
-import_bincache_sigkey () {
-    key_name="$1"
-    echo "[+] Importing binary cache signing key '$key_name'"
-    if terraform state list | grep -q secret_resource.binary_cache_signing_key; then
-        echo "[+] Binary cache signing key is already imported"
-        return
-    fi
-    echo "[+] Generating binary cache signing key '$key_name'"
-    # https://nix.dev/manual/nix/latest/command-ref/nix-store/generate-binary-cache-key
-    nix-store --generate-binary-cache-key "$key_name" sigkey-secret.tmp "sigkey-public-$key_name.tmp"
-    var_rg="-var=persistent_resource_group=$PERSISTENT_RG"
-    terraform import "$var_rg" secret_resource.binary_cache_signing_key "$(< ./sigkey-secret.tmp)"
-    terraform import "$var_rg" secret_resource.binary_cache_signing_key_pub "$(< ./sigkey-public-"$key_name".tmp)"
-    terraform apply "$var_rg" -auto-approve >"$OUT"
-    rm -f sigkey-secret.tmp
-}
-
-run_terraform_init () {
-    # Run terraform init declaring the remote state
-    opt_state_rg="-backend-config=resource_group_name=$STATE_RG"
-    opt_state_acc="-backend-config=storage_account_name=$STATE_ACCOUNT"
-    terraform init -upgrade "$opt_state_rg" "$opt_state_acc" >"$OUT"
-}
-
 init_persistent_storage () {
     echo "[+] Initializing persistent storage"
     pushd "$MYDIR/persistent" >"$OUT"
@@ -188,15 +164,24 @@ init_persistent_storage () {
     popd >"$OUT"
 }
 
-init_persistent_resources () {
-    echo "[+] Initializing persistent resources"
-    pushd "$MYDIR/persistent/resources" >"$OUT"
+run_terraform_init () {
+    # Run terraform init declaring the remote state
+    opt_state_rg="-backend-config=resource_group_name=$STATE_RG"
+    opt_state_acc="-backend-config=storage_account_name=$STATE_ACCOUNT"
+    terraform init -upgrade "$opt_state_rg" "$opt_state_acc" >"$OUT"
+}
+
+
+init_workspace () {
+    echo "[+] Initializing workspace"
+    pushd "$MYDIR" >"$OUT"
     run_terraform_init
-    for env in "release" "prod" "priv"; do
-        ws="$env${SHORTLOC}"
-        terraform workspace select -or-create "$ws" >"$OUT"
-        import_bincache_sigkey "$env-cache.vedenemo.dev~1"
-    done
+    terraform workspace select -or-create "$WORKSPACE"
+    echo "[+] Listing workspaces:"
+    terraform workspace list
+    echo "[+] Use 'terraform workspace select <name>' to select a"\
+         "workspace, then 'terraform [validate|plan|apply]' to work with the"\
+         "given ghaf-infra environment"
     popd >"$OUT"
 }
 
@@ -210,19 +195,6 @@ init_workspace_persistent () {
     run_terraform_init
     terraform workspace select -or-create "$WORKSPACE" >"$OUT"
     terraform apply -var="persistent_resource_group=$PERSISTENT_RG" -auto-approve >"$OUT"
-    popd >"$OUT"
-}
-
-init_workspace () {
-    echo "[+] Initializing workspace"
-    pushd "$MYDIR" >"$OUT"
-    run_terraform_init
-    terraform workspace select -or-create "$WORKSPACE"
-    echo "[+] Listing workspaces:"
-    terraform workspace list
-    echo "[+] Use 'terraform workspace select <name>' to select a"\
-         "workspace, then 'terraform [validate|plan|apply]' to work with the"\
-         "given ghaf-infra environment"
     popd >"$OUT"
 }
 
@@ -262,13 +234,11 @@ main () {
     fi
     if [ -n "$OPT_p" ]; then
         init_persistent_storage
-        init_persistent_resources
     fi
     if [ -n "$OPT_d" ]; then
         delete_workspace
     fi
     if [ -n "$WORKSPACE" ]; then
-        init_workspace_persistent
         init_workspace
     fi
 }
