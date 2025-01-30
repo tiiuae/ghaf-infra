@@ -128,9 +128,9 @@ set_env () {
     # Assign variables STATE_RG, STATE_ACCOUNT and PERSISTENT_RG: these
     # variables are used to select the remote state storage and persistent
     # data used in this ghaf-infra instance.
-    STATE_RG="ghaf-infra-devuaenkv-state"
-    STATE_ACCOUNT="ghafinfradevuaenkvstate"
-    PERSISTENT_RG="ghaf-infra-devuaenkv-persistent"
+    STATE_RG="ghaf-infra-devuaen-skv-state"
+    STATE_ACCOUNT="ghafinfradevuaenskvstate"
+    PERSISTENT_RG="ghaf-infra-devuaen-skv-persistent"
     echo "[+] Using state '$STATE_RG'"
     echo "[+] Using persistent '$PERSISTENT_RG'"
     echo "storage_account_rg_name=$STATE_RG" >"$MYDIR/.env"

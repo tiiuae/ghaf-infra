@@ -184,7 +184,7 @@ locals {
 
 # Resource group for this ghaf-infra instance
 resource "azurerm_resource_group" "pki" {
-  name     = "ghaf-devuaentest-pki"
+  name     = "ghaf-infra-devuaen-pki"
   location = data.azurerm_storage_account.tfstate.location
 }
 

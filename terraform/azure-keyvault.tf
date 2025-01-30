@@ -23,9 +23,9 @@
 
 # Create signing keyvault for comms team within the workspace resource group.
 resource "azurerm_key_vault" "sigkv1" {
-  name                = "ghaf-sig-kv-dev-comms"
+  name                = "ghaf-sig-kv-comms-dev"
   location            = azurerm_resource_group.pki.location
-  resource_group_name = "ghaf-devuaentest-pki"
+  resource_group_name = "ghaf-infra-devuaen-pki"
   tenant_id           = data.azurerm_client_config.current.tenant_id
   sku_name            = "standard"
 
@@ -64,7 +64,7 @@ resource "azurerm_key_vault" "sigkv1" {
 
 # Create a self-signed certificate for image signing
 resource "azurerm_key_vault_certificate" "imgcert1" {
-  name         = "INT-Ghaf-Devenv-Image"
+  name         = "INT-Ghaf-Devuaen-Image"
   key_vault_id = azurerm_key_vault.sigkv1.id
 
   certificate_policy {
@@ -81,7 +81,7 @@ resource "azurerm_key_vault_certificate" "imgcert1" {
     }
 
     x509_certificate_properties {
-      subject            = "CN=Ghaf-dev-cert-img"
+      subject            = "CN=Ghaf-devuaen-cert-img"
       validity_in_months = 12
       key_usage = [
         "digitalSignature",
@@ -97,7 +97,7 @@ resource "azurerm_key_vault_certificate" "imgcert1" {
 
 # Create a self-signed certificate for provenance signing
 resource "azurerm_key_vault_certificate" "provcert1" {
-  name         = "INT-Ghaf-Devenv-Provenance"
+  name         = "INT-Ghaf-Devuaen-Provenance"
   key_vault_id = azurerm_key_vault.sigkv1.id
 
   certificate_policy {
@@ -114,7 +114,7 @@ resource "azurerm_key_vault_certificate" "provcert1" {
     }
 
     x509_certificate_properties {
-      subject            = "CN=Ghaf-dev-cert-prov"
+      subject            = "CN=Ghaf-devuaen-cert-prov"
       validity_in_months = 12
       key_usage = [
         "digitalSignature",
@@ -130,9 +130,9 @@ resource "azurerm_key_vault_certificate" "provcert1" {
 
 # Create signing keyvault for fog team within the workspace resource group.
 resource "azurerm_key_vault" "sigkv2" {
-  name                = "ghaf-sig-kv-dev-fog"
+  name                = "ghaf-sig-kv-fog-dev"
   location            = azurerm_resource_group.pki.location
-  resource_group_name = "ghaf-devuaentest-pki"
+  resource_group_name = "ghaf-infra-devuaen-pki"
   tenant_id           = data.azurerm_client_config.current.tenant_id
   sku_name            = "standard"
 
@@ -169,7 +169,7 @@ resource "azurerm_key_vault" "sigkv2" {
 
 # Create a self-signed certificate for image signing
 resource "azurerm_key_vault_certificate" "imgcert2" {
-  name         = "INT-Ghaf-Devenv-Image"
+  name         = "INT-Ghaf-Devuaen-Image"
   key_vault_id = azurerm_key_vault.sigkv2.id
 
   certificate_policy {
@@ -186,7 +186,7 @@ resource "azurerm_key_vault_certificate" "imgcert2" {
     }
 
     x509_certificate_properties {
-      subject            = "CN=Ghaf-dev-cert-img"
+      subject            = "CN=Ghaf-devuaen-cert-img"
       validity_in_months = 12
       key_usage = [
         "digitalSignature",
@@ -202,7 +202,7 @@ resource "azurerm_key_vault_certificate" "imgcert2" {
 
 # Create a self-signed certificate for provenance signing
 resource "azurerm_key_vault_certificate" "provcert2" {
-  name         = "INT-Ghaf-Devenv-Provenance"
+  name         = "INT-Ghaf-Devuaen-Provenance"
   key_vault_id = azurerm_key_vault.sigkv2.id
 
   certificate_policy {
@@ -219,7 +219,7 @@ resource "azurerm_key_vault_certificate" "provcert2" {
     }
 
     x509_certificate_properties {
-      subject            = "CN=Ghaf-dev-cert-prov"
+      subject            = "CN=Ghaf-devuaen-cert-prov"
       validity_in_months = 12
       key_usage = [
         "digitalSignature",
