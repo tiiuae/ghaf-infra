@@ -16,4 +16,6 @@ path = [
   "**.yaml",
   "**/provider.tf",
   "**/backend.tf",
+  "**/plugins.nix",
+  "**/plugins.toml",
 ]

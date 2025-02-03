@@ -1,0 +1,16 @@
+commons-compress-api:1.26.1-2 # 1.27 is not compatible with jenkins 2.479.2
+configuration-as-code
+workflow-aggregator
+github
+slack
+timestamper
+blueocean
+pipeline-stage-view
+pipeline-graph-view
+github-pullrequest
+antisamy-markup-formatter
+pipeline-utility-steps
+pipeline-build-step
+copyartifact
+robot
+lockable-resources

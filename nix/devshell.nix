@@ -57,7 +57,10 @@
               p.tls
             ]))
           ])
-          ++ [ inputs'.nix-fast-build.packages.default ];
+          ++ [
+            inputs'.nix-fast-build.packages.default
+            inputs'.jenkinsPlugins2nix.packages.jenkinsPlugins2nix
+          ];
       };
     };
 }
