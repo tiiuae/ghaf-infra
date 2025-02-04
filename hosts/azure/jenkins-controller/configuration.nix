@@ -33,7 +33,7 @@ let
         exit $ERR
       '';
 
-  jenkins-casc = ./jenkins-casc.yaml;
+  jenkins-casc = builtins.fromTOML (builtins.readFile ./jenkins-casc.toml);
 
   get-secret =
     pkgs.writers.writePython3 "get-secret"
@@ -138,7 +138,7 @@ in
       # https://plugins.jenkins.io/robot/#plugin-content-log-file-not-showing-properly
       "-Dhudson.model.DirectoryBrowserSupport.CSP=\"sandbox allow-scripts; default-src 'none'; img-src 'self' data: ; style-src 'self' 'unsafe-inline' data: ; script-src 'self' 'unsafe-inline' 'unsafe-eval';\""
       # Point to configuration-as-code config
-      "-Dcasc.jenkins.config=${jenkins-casc}"
+      "-Dcasc.jenkins.config=${builtins.toFile "jenkins-casc.yaml" (builtins.toJSON jenkins-casc)}"
       # Increase the number of rows shown in Stage View (default is 10)
       "-Dcom.cloudbees.workflow.rest.external.JobExt.maxRunsPerJob=32"
     ];
