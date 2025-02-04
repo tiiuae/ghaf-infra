@@ -14,3 +14,4 @@ pipeline-build-step
 copyartifact
 robot
 lockable-resources
+reverse-proxy-auth-plugin
