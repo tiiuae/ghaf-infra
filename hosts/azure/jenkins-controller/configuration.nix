@@ -35,6 +35,45 @@ let
 
   jenkins-casc = ./jenkins-casc.yaml;
 
+  jenkins-casc-with-jobs = jenkins-casc // {
+
+    # Configure jenkins job(s):
+    # https://jenkins-job-builder.readthedocs.io/en/latest/project_pipeline.html
+    jobs = (
+      lib.mapAttrsToList
+        (displayName: script: {
+          script = ''
+            pipelineJob('${script}') {
+              definition {
+                cpsScm {
+                  scm {
+                    git {
+                      remote {
+                        url('https://github.com/tiiuae/ghaf-jenkins-pipeline.git')
+                      }
+                      branch('*/main')
+                    }
+                  }
+                  scriptPath('${script}.groovy')
+                  lightweight()
+                }
+              }
+              displayName('${displayName}')
+            }'';
+        })
+        {
+          "Ghaf main pipeline" = "ghaf-main-pipeline";
+          "Ghaf pre-merge pipeline" = "ghaf-pre-merge-pipeline";
+          "Ghaf nightly pipeline" = "ghaf-nightly-pipeline";
+          "Ghaf release pipeline" = "ghaf-release-pipeline";
+          "Ghaf performance tests" = "ghaf-perftest-pipeline";
+          "Ghaf HW test" = "ghaf-hw-test";
+          "Ghaf parallel HW test" = "ghaf-parallel-hw-test";
+          "FMO OS main pipeline" = "fmo-os-main-pipeline";
+        }
+    );
+  };
+
   get-secret =
     pkgs.writers.writePython3 "get-secret"
       {
@@ -138,59 +177,16 @@ in
       # https://plugins.jenkins.io/robot/#plugin-content-log-file-not-showing-properly
       "-Dhudson.model.DirectoryBrowserSupport.CSP=\"sandbox allow-scripts; default-src 'none'; img-src 'self' data: ; style-src 'self' 'unsafe-inline' data: ; script-src 'self' 'unsafe-inline' 'unsafe-eval';\""
       # Point to configuration-as-code config
-      "-Dcasc.jenkins.config=${jenkins-casc}"
+      "-Dcasc.jenkins.config=${builtins.toFile "jenkins-casc.yaml" (builtins.toJSON jenkins-casc-with-jobs)}"
       # Increase the number of rows shown in Stage View (default is 10)
       "-Dcom.cloudbees.workflow.rest.external.JobExt.maxRunsPerJob=32"
     ];
 
     plugins = import ./plugins.nix { inherit (pkgs) stdenv fetchurl; };
-
-    # Configure jenkins job(s):
-    # https://jenkins-job-builder.readthedocs.io/en/latest/project_pipeline.html
-    # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/services/continuous-integration/jenkins/job-builder.nix
-    jobBuilder = {
-      enable = true;
-      nixJobs =
-        lib.mapAttrsToList
-          (display-name: script: {
-            job = {
-              inherit display-name;
-              name = script;
-              project-type = "pipeline";
-              concurrent = true;
-              pipeline-scm = {
-                script-path = "${script}.groovy";
-                lightweight-checkout = true;
-                scm = [
-                  {
-                    git = {
-                      url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
-                      clean = true;
-                      branches = [ "*/main" ];
-                    };
-                  }
-                ];
-              };
-            };
-          })
-          {
-            "Ghaf main pipeline" = "ghaf-main-pipeline";
-            "Ghaf pre-merge pipeline" = "ghaf-pre-merge-pipeline";
-            "Ghaf nightly pipeline" = "ghaf-nightly-pipeline";
-            "Ghaf release pipeline" = "ghaf-release-pipeline";
-            "Ghaf performance tests" = "ghaf-perftest-pipeline";
-            "Ghaf HW test" = "ghaf-hw-test";
-          };
-    };
   };
 
   systemd.services.jenkins.serviceConfig = {
     Restart = "on-failure";
-  };
-
-  systemd.services.jenkins-job-builder.serviceConfig = {
-    Restart = "on-failure";
-    RestartSec = 5;
   };
 
   # set StateDirectory=jenkins, so state volume has the right permissions
