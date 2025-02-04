@@ -48,6 +48,18 @@ name = "riscv"
 remoteFS = "/var/lib/jenkins/agents/riscv"
 retentionStrategy = "always"
 
+[jenkins.securityRealm.reverseProxy]
+customLogOutUrl = "/oauth2/sign_out"
+disableLdapEmailResolver = true
+forwardedDisplayName = "X-Forwarded-DisplayName"
+forwardedEmail = "X-Forwarded-Mail"
+forwardedUser = "X-Forwarded-User"
+headerGroups = "X-Forwarded-Groups"
+headerGroupsDelimiter = ","
+inhibitInferRootDN = false
+updateInterval = 15
+userSearch = "uid={0}"
+
 [appearance.pipelineGraphView]
 showGraphOnBuildPage = true
 
