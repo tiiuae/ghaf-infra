@@ -57,6 +57,22 @@ module "jenkins_controller_vm" {
         content = "AZURE_STORAGE_ACCOUNT_NAME=${data.azurerm_storage_account.jenkins_artifacts.name}",
         "path"  = "/var/lib/rclone-jenkins-artifacts/env"
       },
+      {
+        content = join("\n", toset([
+          "OAUTH2_PROXY_COOKIE_SECRET=${random_id.oauth2_proxy_cookie_secret.b64_url}",
+          # This refers to a GitHub Oauth application configured for /each/ deployment.
+          # It needs to have authorization callback URL set to
+          # `https://ghaf-jenkins-controller-$workspace.$region.cloudapp.azure.com/oauth2/callback`.
+          # It also needs to be authorized to view membership / team status in the tiiuae organization
+          # In the future, we should deploy a more global trampoline IdP (like
+          # a global Dex deployment).
+          # We can then use its Terraform provider to register clients.
+          "OAUTH2_PROXY_CLIENT_ID=${secret_resource.oauth2_proxy_client_id.value}",
+          "OAUTH2_PROXY_CLIENT_SECRET=${secret_resource.oauth2_proxy_client_secret.value}",
+          "OAUTH2_PROXY_COOKIE_DOMAINS=ghaf-jenkins-controller-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com",
+        ])),
+        "path"  = "/var/lib/oauth2-proxy.env"
+      },
       # Render /etc/nix/machines with terraform. In the future, we might want to
       # autodiscover this, or better, have agents register with the controller,
       # rather than having to recreate the VM whenever the list of builders is
@@ -207,4 +223,21 @@ resource "azurerm_key_vault_access_policy" "binary_cache_signing_key_jenkins_con
   secret_permissions = [
     "Get",
   ]
+}
+
+resource "random_id" "oauth2_proxy_cookie_secret" {
+  byte_length = 32
+}
+
+# TODO: move to persistent?
+resource "secret_resource" "oauth2_proxy_client_secret" {
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "secret_resource" "oauth2_proxy_client_id" {
+  lifecycle {
+    prevent_destroy = true
+  }
 }

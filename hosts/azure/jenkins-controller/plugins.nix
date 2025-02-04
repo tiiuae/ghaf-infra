@@ -770,6 +770,13 @@
         sha256 = "60eb87df685c714c89a8a7b6315a0332c2edcb19d149dd2099ed0cb25f55ba41";
         };
       };
+    reverse-proxy-auth-plugin = mkJenkinsPlugin {
+      name = "reverse-proxy-auth-plugin";
+      src = fetchurl {
+        url = "https://updates.jenkins-ci.org/download/plugins/reverse-proxy-auth-plugin/238.v82ceca_8417a_6/reverse-proxy-auth-plugin.hpi";
+        sha256 = "5219e4554d411fb53f215ff0f27e3bd4dc2c7d5c76afe810ffa19f8b6a9baaa1";
+        };
+      };
     robot = mkJenkinsPlugin {
       name = "robot";
       src = fetchurl {
