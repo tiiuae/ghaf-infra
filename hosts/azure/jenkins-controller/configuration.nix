@@ -430,13 +430,67 @@ in
         handle_path /artifacts/* {
           reverse_proxy unix//run/rclone-jenkins-artifacts-browse.sock
         }
-        # Proxy all other requests to jenkins as-is.
+
+        # Proxy all other requests to jenkins as-is, but delegate auth to
+        # oauth2-proxy.
+        # Also see https://oauth2-proxy.github.io/oauth2-proxy/configuration/integration#configuring-for-use-with-the-caddy-v2-forward_auth-directive
+
+        handle /oauth2/* {
+          reverse_proxy localhost:4180 {
+            # oauth2-proxy requires the X-Real-IP and X-Forwarded-{Proto,Host,Uri} headers.
+            # The reverse_proxy directive automatically sets X-Forwarded-{For,Proto,Host} headers.
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-Uri {uri}
+          }
+        }
         handle {
+          forward_auth localhost:4180 {
+            uri /oauth2/auth
+
+            # oauth2-proxy requires the X-Real-IP and X-Forwarded-{Proto,Host,Uri} headers.
+            # The forward_auth directive automatically sets the X-Forwarded-{For,Proto,Host,Method,Uri} headers.
+            header_up X-Real-IP {remote_host}
+
+            copy_headers {
+              X-Auth-Request-User>X-Forwarded-User
+              X-Auth-Request-Groups>X-Forwarded-Groups
+              X-Auth-Request-Email>X-Forwarded-Mail
+              # it looks like the plugin ignores the forwardedDisplayName config?
+              X-Auth-Request-Preferred-Username
+              #>X-Forwarded-DisplayName
+            }
+
+            # If oauth2-proxy returns a 401 status, redirect the client to the sign-in page.
+            @error status 401
+            handle_response @error {
+              redir * /oauth2/sign_in?rd={scheme}://{host}{uri}
+            }
+          }
           reverse_proxy localhost:8081
         }
       }
     '';
   };
+
+  services.oauth2-proxy = {
+    enable = true;
+    provider = "github";
+    clientID = null;
+    clientSecret = null;
+    cookie.secret = null;
+    github.org = "tiiuae";
+    setXauthrequest = true;
+    extraConfig = {
+      email-domain = "*"; # We require membership in the tiiuae org
+      auth-logging = true;
+      request-logging = true;
+      standard-logging = true;
+      reverse-proxy = true; # Needed according to https://oauth2-proxy.github.io/oauth2-proxy/configuration/integration#configuring-for-use-with-the-caddy-v2-forward_auth-directive
+    };
+  };
+
+  # We inject cookie secret, client id and client secret through env vars
+  systemd.services.oauth2-proxy.serviceConfig.EnvironmentFile = "/var/lib/oauth2-proxy.env";
 
   systemd.services.caddy.serviceConfig.EnvironmentFile = "/var/lib/caddy/caddy.env";
 
