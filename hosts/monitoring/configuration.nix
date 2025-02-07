@@ -178,6 +178,21 @@ in
 
     globalConfig.scrape_interval = "15s";
 
+    # blackbox exporter can ping abritrary urls for us
+    exporters.blackbox = {
+      enable = true;
+      listenAddress = "127.0.0.1";
+      configFile = pkgs.writeText "probes.yml" (
+        builtins.toJSON {
+          modules.https_success = {
+            prober = "http";
+            tcp.tls = true;
+            http.headers.User-Agent = "blackbox-exporter";
+          };
+        }
+      );
+    };
+
     scrapeConfigs = [
       {
         job_name = "ficolo-internal-monitoring";
@@ -224,13 +239,6 @@ in
               machine_name = "monitoring";
             };
           }
-          #Alerts for cache.vedenemo.dev should be disabled. It's shut down.
-          # {
-          #   targets = [ "172.18.20.109:9100" ];
-          #   labels = {
-          #     machine_name = "binarycache";
-          #   };
-          # }
         ];
       }
       {
@@ -254,6 +262,46 @@ in
             targets = [ "95.216.200.85:9100" ];
             labels = {
               machine_name = "ghaf-proxy";
+            };
+          }
+        ];
+      }
+      {
+        job_name = "blackbox";
+        metrics_path = "/probe";
+        params.module = [ "https_success" ];
+        relabel_configs = [
+          {
+            source_labels = [ "__address__" ];
+            target_label = "__param_target";
+          }
+          {
+            source_labels = [ "__param_target" ];
+            target_label = "instance";
+          }
+          {
+            source_labels = [ "__param_target" ];
+            target_label = "machine_name";
+          }
+          {
+            target_label = "__address__";
+            replacement = "127.0.0.1:9115";
+          }
+        ];
+        static_configs = [
+          {
+            targets = [
+              "ghaf-jenkins-controller-prod.northeurope.cloudapp.azure.com"
+              "prod-cache.vedenemo.dev"
+            ];
+            labels = {
+              env = "prod";
+            };
+          }
+          {
+            targets = [ "ghaf-jenkins-controller-dev.northeurope.cloudapp.azure.com" ];
+            labels = {
+              env = "dev";
             };
           }
         ];
