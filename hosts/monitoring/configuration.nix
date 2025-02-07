@@ -19,6 +19,9 @@ in
   sops.secrets = {
     sshified_private_key.owner = "sshified";
     loki_basic_auth.owner = "nginx";
+    # github oauth app credentials
+    github_client_id.owner = "grafana";
+    github_client_secret.owner = "grafana";
   };
 
   imports =
@@ -111,10 +114,25 @@ in
       # https://grafana.com/docs/grafana/latest/setup-grafana/configure-security/configure-security-hardening
       security = {
         cookie_secure = true;
-        cookie_samesite = "strict";
+        # we cannot use 'strict' here or github oauth cannot set the login cookie
+        cookie_samesite = "lax";
         login_cookie_name = "__Host-grafana_session";
         strict_transport_security = true;
       };
+
+      # github OIDC
+      "auth.github" = {
+        enabled = true;
+        client_id = "$__file{${config.sops.secrets.github_client_id.path}}";
+        client_secret = "$__file{${config.sops.secrets.github_client_secret.path}}";
+        allowed_organizations = [ "tiiuae" ];
+        allow_assign_grafana_admin = true;
+        team_ids = "7362549"; # devenv-fi
+        role_attribute_path = "contains(groups[*], '@tiiuae/devenv-fi') && 'GrafanaAdmin'";
+      };
+
+      # disable username/password auth
+      auth.disable_login_form = true;
     };
 
     provision.datasources.settings.datasources = [
