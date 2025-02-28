@@ -19,8 +19,6 @@
       service-openssh
       user-jrautiola
       user-cazfi
-      user-karim
-      user-barna
     ]);
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
