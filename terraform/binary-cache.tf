@@ -31,7 +31,7 @@ module "binary_cache_vm" {
 
   virtual_machine_custom_data = join("\n", ["#cloud-config", yamlencode({
     users = [
-      for user in toset(["bmg", "flokli", "hrosten", "jrautiola", "vjuntunen", "karim", "cazfi", "fayad", "kanyfantakis", "ctsopokis"]) : {
+      for user in toset(["bmg", "flokli", "hrosten", "jrautiola", "vjuntunen", "cazfi", "fayad", "kanyfantakis", "ctsopokis"]) : {
         name                = user
         sudo                = "ALL=(ALL) NOPASSWD:ALL"
         ssh_authorized_keys = local.ssh_keys[user]

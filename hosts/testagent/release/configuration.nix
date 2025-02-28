@@ -25,7 +25,6 @@
       user-hrosten
       user-ktu
       user-cazfi
-      user-karim
       user-fayad
     ]);
 
