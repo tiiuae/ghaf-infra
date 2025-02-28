@@ -24,7 +24,6 @@
       user-jrautiola
       user-fayad
       user-cazfi
-      user-karim
       user-bmg
       user-flokli
       user-hrosten

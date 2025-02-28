@@ -5,8 +5,6 @@
     user-hrosten = import ./hrosten.nix;
     user-jrautiola = import ./jrautiola.nix;
     user-cazfi = import ./cazfi.nix;
-    user-karim = import ./karim.nix;
-    user-barna = import ./barna.nix;
     user-ktu = import ./ktu.nix;
     user-avnik = import ./avnik.nix;
     user-flokli = import ./flokli.nix;

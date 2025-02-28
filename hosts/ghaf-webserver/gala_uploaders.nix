@@ -13,13 +13,6 @@ let
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx2xDbBcBFRCQ8vtA47UMT4zBasUWxK+1CYOQSrv2BL mikko_koivisto@Mikkos-MacBook-Pro.local"
       ];
     }
-    {
-      desc = "Nikita Bazulin";
-      name = "nikita.bazulin";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL/8+QSIlYHTMS6SOTd59WudS76HtZmbnSTSO04icPw1 nikita.bazulin@unikie.com"
-      ];
-    }
   ];
 in
 {

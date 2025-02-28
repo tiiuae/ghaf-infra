@@ -21,38 +21,10 @@ let
       ];
     }
     {
-      desc = "Alexey Mineev";
-      name = "ledeus";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDItqJFjtUppxV4ajaTDlCG70JRTYtvVtcfYXiSSEbh4 ledeus@alexeym-laptop"
-      ];
-    }
-    {
       desc = "Mariia Azbeleva";
       name = "azbeleva";
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMXq8i5FHMw7vRpAZeXnYux5e6xFgObJgq4+bnY/6s7f mariia@mariia-ThinkPad-T14-Gen-3"
-      ];
-    }
-    {
-      desc = "Bazulin Nikita";
-      name = "bazulin";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL/8+QSIlYHTMS6SOTd59WudS76HtZmbnSTSO04icPw1 nikita.bazulin@unikie.com"
-      ];
-    }
-    {
-      desc = "Barna Bakos";
-      name = "barna";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHrmxamlb4JNX+lrN88rfEEskCM0A5MhGSKaA4CZDM8y barna.bakos@unikie.com"
-      ];
-    }
-    {
-      desc = "Berk Arslan";
-      name = "berk";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMfEKOTpIeD35HPBxfRxTVqetHIw3bZFVqEQGKyhC0Qp  berk@berk"
       ];
     }
     {
@@ -101,15 +73,6 @@ let
       ];
     }
     {
-      desc = "Grigoriy Romanov";
-      name = "grihey";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICvDAHpJxkV5GQ88c7+6z6FKS67JXIKKe7kZna8dXoD/ grihey@nixos"
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBmHTg/KsY6YqKh4+zBpheOUVd8jV7M6OWEiDrOTyOAV grihey@grigoriy"
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAd8OjPdHxO0FGJIHf0erVRFlee+RU+E+Zp4m37gUk8m grigoriy.romanov@unikie.com"
-      ];
-    }
-    {
       desc = "Hai To";
       name = "haito";
       keys = [
@@ -151,14 +114,6 @@ let
       keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFjarWokQFXqh4FEMHoyWVjqYwRXoGIKJLHNulNv2bn1" ];
     }
     {
-      desc = "Juan Pablo Ruiz";
-      name = "jpruiz84";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMp19yupwg0Wo/Shx3MwmA/qAOIBP1YHGvXFmOUAlZs+ jpruiz84@gmail.com"
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMaS0lR3HNrQvTEZImDryILct+xXAs5InR0xxkfRQe4k jpruiz84@gmail.com"
-      ];
-    }
-    {
       desc = "Johanna Rautanen";
       name = "jrautanen";
       keys = [
@@ -167,25 +122,11 @@ let
       ];
     }
     {
-      desc = "Jon Sahlberg";
-      name = "jrs";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII3ynZp8neOFpl3YxCRVkKeLpSoS6907rGv5j2SSKl+M jrs@jrs-Tank"
-      ];
-    }
-    {
       desc = "Julius Koskela";
       name = "juliuskoskela";
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP2RfxjbhBbdbfXto9dczC4LjE9uixYAReJ/e+dT/cAE julius.koskela@unikie.com"
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJnY0KqTAiC3VwK5tG9SpYaPaK28K24w2dkkI4zoVOQM root@nova"
-      ];
-    }
-    {
-      desc = "Kalle Marjamäki";
-      name = "kamarjam";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEMOxdzcp2TBYhQRXQTivr7WfrneWyA05R9pNrQvDVMp kalle.marjamaki@unikie.com"
       ];
     }
     {
@@ -246,15 +187,6 @@ let
       ];
     }
     {
-      desc = "Risto Kuusela";
-      name = "riskuuse";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILGRyyNYALykJJSkFz+L61Zgxa0yueW5sTz/hPJHV9mi risto.kuusela@unikie.com"
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ0cGGHFp549YNeUvH/J/n13nlC7WflkwRVxdJNf9YLP risto@risto-k"
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ1hVv5ryUbKkBaIrMvkjX8qq+7NLK1XJGB01FAnxRzs risto.kuusela@unikie.com"
-      ];
-    }
-    {
       desc = "Ola Rinta-Koski";
       name = "rockola";
       keys = [
@@ -302,14 +234,6 @@ let
       keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEA7p7hHPvPT6uTU44Nb/p9/DT9mOi8mpqNllnpfawDE desk" ];
     }
     {
-      desc = "Tero Tervala";
-      name = "tervis";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDJau0tg0qHhqFVarjNOJLi+ekSZNNqxal4iRD/pwM5W tervis@tervis-thinkpad"
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAHVXc4s7e8j1uFsgHPBzpWvSI/hk5Zf6Btuj79D4hf3 tervis@tervis-servu"
-      ];
-    }
-    {
       desc = "Vadim Likholetov";
       name = "vadikas";
       keys = [
@@ -328,13 +252,6 @@ let
       name = "vunnyso";
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIstCgKDX1vVWI8MgdVwsEMhju6DQJubi3V0ziLcU/2h vunny.sodhi@unikie.com"
-      ];
-    }
-    {
-      desc = "Petri Manninen";
-      name = "petrim";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOn3gFtct48DhUanKWJ7R3U3DEL/5WJzzuhIwNVh5nrx petri.manninen@unikie.com"
       ];
     }
     {
