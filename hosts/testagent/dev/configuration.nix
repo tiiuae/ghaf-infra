@@ -86,7 +86,7 @@
           switch_bot = "NONE";
           usbhub_serial = "0x2954223B";
           ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XNNS0W202677W-0:0";
-          threads = 8;
+          threads = 12;
         };
         OrinNX1 = {
           inherit location;

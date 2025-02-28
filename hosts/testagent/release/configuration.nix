@@ -102,7 +102,7 @@
           switch_bot = "NONE";
           usbhub_serial = "EBBBCDD4";
           ext_drive_by-id = "usb-Samsung_PSSD_T7_S6WYNS0W402363J-0:0";
-          threads = 8;
+          threads = 12;
         };
         LenovoX1-1 = {
           inherit location;
