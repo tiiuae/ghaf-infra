@@ -33,7 +33,46 @@ let
         exit $ERR
       '';
 
-  jenkins-casc = ./jenkins-casc.yaml;
+  jenkins-casc = builtins.fromTOML (builtins.readFile ./jenkins-casc.toml);
+
+  jenkins-casc-with-jobs = jenkins-casc // {
+
+    # Configure jenkins job(s):
+    # https://jenkins-job-builder.readthedocs.io/en/latest/project_pipeline.html
+    jobs = (
+      lib.mapAttrsToList
+        (displayName: script: {
+          script = ''
+            pipelineJob('${script}') {
+              definition {
+                cpsScm {
+                  scm {
+                    git {
+                      remote {
+                        url('https://github.com/tiiuae/ghaf-jenkins-pipeline.git')
+                      }
+                      branch('*/main')
+                    }
+                  }
+                  scriptPath('${script}.groovy')
+                  lightweight()
+                }
+              }
+              displayName('${displayName}')
+            }'';
+        })
+        {
+          "Ghaf main pipeline" = "ghaf-main-pipeline";
+          "Ghaf pre-merge pipeline" = "ghaf-pre-merge-pipeline";
+          "Ghaf nightly pipeline" = "ghaf-nightly-pipeline";
+          "Ghaf release pipeline" = "ghaf-release-pipeline";
+          "Ghaf performance tests" = "ghaf-perftest-pipeline";
+          "Ghaf HW test" = "ghaf-hw-test";
+          "Ghaf parallel HW test" = "ghaf-parallel-hw-test";
+          "FMO OS main pipeline" = "fmo-os-main-pipeline";
+        }
+    );
+  };
 
   get-secret =
     pkgs.writers.writePython3 "get-secret"
@@ -137,112 +176,25 @@ in
       # If we want to allow robot framework reports, we need to adjust Jenkins CSP:
       # https://plugins.jenkins.io/robot/#plugin-content-log-file-not-showing-properly
       "-Dhudson.model.DirectoryBrowserSupport.CSP=\"sandbox allow-scripts; default-src 'none'; img-src 'self' data: ; style-src 'self' 'unsafe-inline' data: ; script-src 'self' 'unsafe-inline' 'unsafe-eval';\""
+      # Disable the intitial setup wizard, and the creation of initialAdminPassword.
+      "-Djenkins.install.runSetupWizard=false"
       # Point to configuration-as-code config
-      "-Dcasc.jenkins.config=${jenkins-casc}"
+      "-Dcasc.jenkins.config=${builtins.toFile "jenkins-casc.yaml" (builtins.toJSON jenkins-casc-with-jobs)}"
       # Increase the number of rows shown in Stage View (default is 10)
       "-Dcom.cloudbees.workflow.rest.external.JobExt.maxRunsPerJob=32"
     ];
 
     plugins = import ./plugins.nix { inherit (pkgs) stdenv fetchurl; };
-
-    # Configure jenkins job(s):
-    # https://jenkins-job-builder.readthedocs.io/en/latest/project_pipeline.html
-    # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/services/continuous-integration/jenkins/job-builder.nix
-    jobBuilder = {
-      enable = true;
-      nixJobs =
-        lib.mapAttrsToList
-          (display-name: script: {
-            job = {
-              inherit display-name;
-              name = script;
-              project-type = "pipeline";
-              concurrent = true;
-              pipeline-scm = {
-                script-path = "${script}.groovy";
-                lightweight-checkout = true;
-                scm = [
-                  {
-                    git = {
-                      url = "https://github.com/tiiuae/ghaf-jenkins-pipeline.git";
-                      clean = true;
-                      branches = [ "*/main" ];
-                    };
-                  }
-                ];
-              };
-            };
-          })
-          {
-            "Ghaf main pipeline" = "ghaf-main-pipeline";
-            "Ghaf pre-merge pipeline" = "ghaf-pre-merge-pipeline";
-            "Ghaf nightly pipeline" = "ghaf-nightly-pipeline";
-            "Ghaf release pipeline" = "ghaf-release-pipeline";
-            "Ghaf performance tests" = "ghaf-perftest-pipeline";
-            "Ghaf HW test" = "ghaf-hw-test";
-            "Ghaf parallel HW test" = "ghaf-parallel-hw-test";
-            "FMO OS main pipeline" = "fmo-os-main-pipeline";
-          };
-    };
   };
 
   systemd.services.jenkins.serviceConfig = {
     Restart = "on-failure";
   };
 
-  systemd.services.jenkins-job-builder.serviceConfig = {
-    Restart = "on-failure";
-    RestartSec = 5;
-  };
-
   # set StateDirectory=jenkins, so state volume has the right permissions
   # and we wait on the mountpoint to appear.
   # https://github.com/NixOS/nixpkgs/pull/272679
   systemd.services.jenkins.serviceConfig.StateDirectory = "jenkins";
-
-  # Install jenkins plugins, apply initial jenkins config
-  systemd.services.jenkins-config = {
-    after = [ "jenkins-job-builder.service" ];
-    wantedBy = [ "multi-user.target" ];
-    # Make `jenkins-cli` available
-    path = with pkgs; [ jenkins ];
-    # Implicit URL parameter for `jenkins-cli`
-    environment = {
-      JENKINS_URL = "http://localhost:8081";
-    };
-    serviceConfig = {
-      Restart = "on-failure";
-      RestartSec = 5;
-      RequiresMountsFor = "/var/lib/jenkins";
-    };
-    script =
-      let
-        jenkins-auth = "-auth admin:\"$(cat /var/lib/jenkins/secrets/initialAdminPassword)\"";
-
-        # disable initial setup, which needs to happen *after* all jenkins-cli setup.
-        # otherwise we won't have initialAdminPassword.
-        # Disabling the setup wizard cannot happen from configuration-as-code either.
-        jenkins-groovy = pkgs.writeText "groovy" ''
-          #!groovy
-
-          import jenkins.model.*
-          import hudson.util.*;
-          import jenkins.install.*;
-
-          def instance = Jenkins.getInstance()
-
-          instance.setInstallState(InstallState.INITIAL_SETUP_COMPLETED)
-          instance.save()
-        '';
-      in
-      ''
-        # Disable initial install
-        jenkins-cli ${jenkins-auth} groovy = < ${jenkins-groovy}
-
-        # Restart jenkins
-        jenkins-cli ${jenkins-auth} safe-restart
-      '';
-  };
 
   # Define a fetch-remote-build-ssh-key unit populating
   # /etc/secrets/remote-build-ssh-key from Azure Key Vault.
@@ -436,13 +388,67 @@ in
         handle_path /artifacts/* {
           reverse_proxy unix//run/rclone-jenkins-artifacts-browse.sock
         }
-        # Proxy all other requests to jenkins as-is.
+
+        # Proxy all other requests to jenkins as-is, but delegate auth to
+        # oauth2-proxy.
+        # Also see https://oauth2-proxy.github.io/oauth2-proxy/configuration/integration#configuring-for-use-with-the-caddy-v2-forward_auth-directive
+
+        handle /oauth2/* {
+          reverse_proxy localhost:4180 {
+            # oauth2-proxy requires the X-Real-IP and X-Forwarded-{Proto,Host,Uri} headers.
+            # The reverse_proxy directive automatically sets X-Forwarded-{For,Proto,Host} headers.
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-Uri {uri}
+          }
+        }
         handle {
+          forward_auth localhost:4180 {
+            uri /oauth2/auth
+
+            # oauth2-proxy requires the X-Real-IP and X-Forwarded-{Proto,Host,Uri} headers.
+            # The forward_auth directive automatically sets the X-Forwarded-{For,Proto,Host,Method,Uri} headers.
+            header_up X-Real-IP {remote_host}
+
+            copy_headers {
+              X-Auth-Request-User>X-Forwarded-User
+              X-Auth-Request-Groups>X-Forwarded-Groups
+              X-Auth-Request-Email>X-Forwarded-Mail
+              # it looks like the plugin ignores the forwardedDisplayName config?
+              X-Auth-Request-Preferred-Username
+              #>X-Forwarded-DisplayName
+            }
+
+            # If oauth2-proxy returns a 401 status, redirect the client to the sign-in page.
+            @error status 401
+            handle_response @error {
+              redir * /oauth2/sign_in?rd={scheme}://{host}{uri}
+            }
+          }
           reverse_proxy localhost:8081
         }
       }
     '';
   };
+
+  services.oauth2-proxy = {
+    enable = true;
+    provider = "github";
+    clientID = null;
+    clientSecret = null;
+    cookie.secret = null;
+    github.org = "tiiuae";
+    setXauthrequest = true;
+    extraConfig = {
+      email-domain = "*"; # We require membership in the tiiuae org
+      auth-logging = true;
+      request-logging = true;
+      standard-logging = true;
+      reverse-proxy = true; # Needed according to https://oauth2-proxy.github.io/oauth2-proxy/configuration/integration#configuring-for-use-with-the-caddy-v2-forward_auth-directive
+    };
+  };
+
+  # We inject cookie secret, client id and client secret through env vars
+  systemd.services.oauth2-proxy.serviceConfig.EnvironmentFile = "/var/lib/oauth2-proxy.env";
 
   systemd.services.caddy.serviceConfig.EnvironmentFile = "/var/lib/caddy/caddy.env";
 
