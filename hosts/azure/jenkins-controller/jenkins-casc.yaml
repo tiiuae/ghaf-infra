@@ -61,3 +61,5 @@ unclassified:
     declaredResources:
     - name: "evaluator"
       description: "Nix evaluator lock"
+    - name: "sbom"
+      description: "SBOM generation lock"
