@@ -37,13 +37,6 @@ let
       ];
     }
     {
-      desc = "Dmitry Erin";
-      name = "dmitry_erin";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDfEp+nXkX4ZRxZBYrXBYcNTu1mHMCfNp5+YwSZwFEJa dmitry.erin@unikie.com"
-      ];
-    }
-    {
       desc = "Emrah Billur";
       name = "emrah";
       keys = [
@@ -134,13 +127,6 @@ let
       name = "kajusn";
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINlIpJ9Q1oW1KiFBa12N5K/ecGVeGSBbcD8M9ZjA0TYe kajus.naujokaitis@unikie.com"
-      ];
-    }
-    {
-      desc = "Lari Tikkanen";
-      name = "lartza";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIM3SR45e9eVkUAjdvPgTJh5SG4mvd2QhzmxvM+RJ1X7 root@lartza-ThinkPad"
       ];
     }
     {
