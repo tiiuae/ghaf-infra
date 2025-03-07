@@ -122,6 +122,15 @@ in
     self.nixosModules.service-rclone-http
   ];
 
+  users.users = {
+    testagent-release = {
+      isNormalUser = true;
+      openssh.authorizedKeys.keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPP2xRl4jtu1ARpyj9W3uEo+GACLywosKhal432CgK+H mytarget"
+      ];
+    };
+  };
+
   # Configure /var/lib/jenkins in /etc/fstab.
   # Due to an implicit RequiresMountsFor=$state-dir, systemd
   # will block starting the service until this mounted.
