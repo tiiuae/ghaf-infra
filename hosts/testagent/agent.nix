@@ -34,119 +34,100 @@ in
 
     systemd.services =
       let
-        # verifies that the environment file is properly configured
-        # and downloads agent.jar from the controller
-        jenkins-setup-script = pkgs.writeShellScript "jenkins-setup.sh" ''
-          if [[ ! -f jenkins.env ]]; then
-            install -m 600 /dev/null jenkins.env
-            echo "CONTROLLER=" > jenkins.env
-            echo "ADMIN_PASSWORD=" >> jenkins.env
-            echo "Please add jenkins controller details to $(pwd)/jenkins.env"
-            exit 1
-          fi
+        mkAgent = device: {
+          # bindsTo instead of requires makes the agents stop when the parent service stops
+          bindsTo = [ "start-agents.service" ];
+          wantedBy = [ "start-agents.service" ];
+          after = [ "start-agents.service" ];
 
-          source jenkins.env
+          path =
+            [
+              brainstem
+              inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
+            ]
+            ++ (with pkgs; [
+              curl
+              wget
+              jdk
+              git
+              bashInteractive
+              coreutils
+              util-linux
+              nix
+              zstd
+              jq
+              csvkit
+              sudo
+              openssh
+              iputils
+              netcat
+              python3
+              usbsdmux
+              grafana-loki
+            ]);
 
-          if [[ -z "$CONTROLLER" ]]; then
-            echo "Variable CONTROLLER not set in $(pwd)/jenkins.env"
-            exit 1
-          fi
-
-          if [[ -z "$ADMIN_PASSWORD" ]]; then
-            echo "Variable ADMIN_PASSWORD not set in $(pwd)/jenkins.env"
-            exit 1
-          fi
-
-          curl -O "$CONTROLLER/jnlpJars/agent.jar"
-        '';
-
-        # Helper function to create agent services for each hardware device
-        mkAgent =
-          device:
-          let
-            # name of the agent e.g. lenovo-x1_release
-            name = "${config.services.testagent.variant}-${device}";
-
-            # opens a websocket connection to the jenkins controller from this agent
-            jenkins-connect-script = pkgs.writeShellScript "jenkins-connect.sh" ''
-              JENKINS_SECRET="$(
-                curl --proto =https -u admin:$ADMIN_PASSWORD \
-                $CONTROLLER/computer/${name}/jenkins-agent.jnlp |
-                sed "s/.*<application-desc><argument>\([a-z0-9]*\).*/\1\n/"
-              )"
-
-              mkdir -p "/var/lib/jenkins/agents/${device}"
-
-              ${pkgs.jdk}/bin/java \
-                -jar agent.jar \
-                -url "$CONTROLLER" \
-                -name "${name}" \
-                -secret "$JENKINS_SECRET" \
-                -workDir "/var/lib/jenkins/agents/${device}" \
-                -webSocket
-            '';
-          in
-          {
-            # agents require the setup service to run without errors before starting
-            requires = [ "setup-agents.service" ];
-            wantedBy = [ "setup-agents.service" ];
-            after = [ "setup-agents.service" ];
-
-            path =
-              [
-                brainstem
-                inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
-              ]
-              ++ (with pkgs; [
-                curl
-                wget
-                jdk
-                git
-                bashInteractive
-                coreutils
-                util-linux
-                nix
-                zstd
-                jq
-                csvkit
-                sudo
-                openssh
-                iputils
-                netcat
-                python3
-                usbsdmux
-                grafana-loki
-              ]);
-
-            serviceConfig = {
-              Type = "simple";
-              User = "jenkins";
-              EnvironmentFile = "/var/lib/jenkins/jenkins.env";
-              WorkingDirectory = "/var/lib/jenkins";
-              ExecStart = "${jenkins-connect-script}";
-            };
-          };
-      in
-      {
-        # the setup service does not start automatically or it would fail activation
-        # of the system since jenkins.env is empty before manually set up
-        setup-agents = {
-          path = with pkgs; [ curl ];
           serviceConfig = {
-            Type = "oneshot";
+            Type = "simple";
             User = "jenkins";
-            RemainAfterExit = "yes";
+            EnvironmentFile = "/var/lib/jenkins/jenkins.env";
             WorkingDirectory = "/var/lib/jenkins";
-            ExecStart = "${jenkins-setup-script}";
+            Restart = "no";
+            SuccessExitStatus = [ 6 ];
+            ExecStart = toString (
+              pkgs.writeShellScript "jenkins-connect.sh" # sh
+                ''
+                  if [[ -z "$CONTROLLER" ]]; then
+                    echo "ERROR: Variable CONTROLLER not configured in $(pwd)/jenkins.env"
+                    exit 6
+                  fi
+
+                  mkdir -p "/var/lib/jenkins/agents/${device}"
+
+                  # connects to controller with ssh and parses the secret from the jnlp file
+                  JENKINS_SECRET="$(
+                    ssh -i ${config.sops.secrets.ssh_host_ed25519_key.path} ${config.networking.hostName}@''${CONTROLLER#*//} \
+                    "curl -H 'X-Forwarded-User: ${config.networking.hostName}' http://localhost:8081/computer/${device}/jenkins-agent.jnlp | sed 's/.*<application-desc><argument>\([a-z0-9]*\).*/\1\n/'"
+                  )"
+
+                  # opens a websocket connection to the jenkins controller from this agent
+                  ${pkgs.jdk}/bin/java \
+                    -jar agent.jar \
+                    -url "$CONTROLLER" \
+                    -name "${device}" \
+                    -secret "$JENKINS_SECRET" \
+                    -workDir "/var/lib/jenkins/agents/${device}" \
+                    -webSocket
+                ''
+            );
           };
         };
-
+      in
+      {
         # one agent per unique hardware device to act as a lock
         agent-orin-agx = mkAgent "orin-agx";
         agent-orin-nx = mkAgent "orin-nx";
         agent-dell-7330 = mkAgent "dell-7330";
         agent-nuc = mkAgent "nuc";
         agent-lenovo-x1 = mkAgent "lenovo-x1";
+
+        start-agents = {
+          path = with pkgs; [ wget ];
+          serviceConfig = {
+            Type = "oneshot";
+            User = "jenkins";
+            RemainAfterExit = "yes";
+            WorkingDirectory = "/var/lib/jenkins";
+            ExecStart = toString (
+              pkgs.writeShellScript "start-agents.sh" # sh
+                ''
+                  if [[ ! -f agent.jar ]]; then
+                    echo "Downloading agent.jar"
+                    wget -O "$CONTROLLER/jnlpJars/agent.jar"
+                  fi
+                ''
+            );
+          };
+        };
       };
   };
 }
