@@ -7,4 +7,13 @@
   services.openssh.settings = {
     MaxStartups = 100;
   };
+  # Increase the maximum number of open files user limit, see ulimit
+  security.pam.loginLimits = [
+    {
+      domain = "*";
+      item = "nofile";
+      type = "-";
+      value = "8192";
+    }
+  ];
 }
