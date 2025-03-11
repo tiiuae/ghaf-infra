@@ -46,6 +46,7 @@ in
       minicom
       usbsdmux
       grafana-loki
+      (python3.withPackages (ps: with ps; [ pyserial ]))
     ]);
 
   # The Jenkins slave service is very barebones
