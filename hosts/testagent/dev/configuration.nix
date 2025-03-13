@@ -135,6 +135,17 @@
           ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XPNS0W606188E-0:0";
           threads = 20;
         };
+        Dell7330 = {
+          inherit location;
+          serial_port = "NONE";
+          device_ip_address = "172.18.16.23";
+          socket_ip_address = "NONE";
+          plug_type = "NONE";
+          switch_bot = "Dell7330-dev";
+          usbhub_serial = "5AC2B4AD";
+          ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XNNS0W500904J-0:0";
+          threads = 8;
+        };
       };
     };
 }
