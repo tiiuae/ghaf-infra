@@ -23,6 +23,7 @@
       user-mariia
       user-leivos
       user-hrosten
+      user-alextserepov
     ]);
 
   sops.defaultSopsFile = ./secrets.yaml;

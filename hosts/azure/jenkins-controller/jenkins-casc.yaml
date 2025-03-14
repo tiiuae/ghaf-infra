@@ -42,8 +42,8 @@ jenkins:
   - permanent:
       launcher: "inbound"
       mode: EXCLUSIVE
-      name: "riscv"
-      remoteFS: "/var/lib/jenkins/agents/riscv"
+      name: "dell-7330"
+      remoteFS: "/var/lib/jenkins/agents/dell-7330"
       retentionStrategy: "always"
 
 appearance:
