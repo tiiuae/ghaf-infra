@@ -173,7 +173,7 @@ in
       # one agent per unique hardware device to act as a lock
       agent-orin-agx = mkAgent "orin-agx";
       agent-orin-nx = mkAgent "orin-nx";
-      agent-riscv = mkAgent "riscv";
+      agent-dell-7330 = mkAgent "dell-7330";
       agent-nuc = mkAgent "nuc";
       agent-lenovo-x1 = mkAgent "lenovo-x1";
     };
