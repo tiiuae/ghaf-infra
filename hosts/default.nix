@@ -57,6 +57,7 @@ in
     nixos-ghaf-coverity = ./ghaf-coverity/configuration.nix;
     nixos-ghaf-proxy = ./ghaf-proxy/configuration.nix;
     nixos-ghaf-webserver = ./ghaf-webserver/configuration.nix;
+    nixos-ghaf-auth = ./ghaf-auth/configuration.nix;
     nixos-testagent-uae-dev = ./testagent/uae-dev/configuration.nix;
   };
 
@@ -90,6 +91,7 @@ in
         "ghaf-coverity"
         "ghaf-proxy"
         "ghaf-webserver"
+        "ghaf-auth"
         "testagent-uae-dev"
       ]
   );
