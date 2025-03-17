@@ -31,6 +31,7 @@ let
     ghaf-coverity = mkDeployment "x86_64-linux" "ghaf-coverity" "135.181.103.32";
     ghaf-proxy = mkDeployment "x86_64-linux" "ghaf-proxy" "95.216.200.85";
     ghaf-webserver = mkDeployment "x86_64-linux" "ghaf-webserver" "37.27.204.82";
+    ghaf-auth = mkDeployment "x86_64-linux" "ghaf-auth" "37.27.190.109";
     testagent-uae-dev = mkDeployment "x86_64-linux" "testagent-uae-dev" "172.19.16.12";
   };
 
