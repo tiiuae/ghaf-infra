@@ -511,6 +511,7 @@ in
             header_up X-Forwarded-Uri {uri}
           }
         }
+
         handle {
           forward_auth localhost:4180 {
             uri /oauth2/auth
@@ -523,9 +524,7 @@ in
               X-Auth-Request-User>X-Forwarded-User
               X-Auth-Request-Groups>X-Forwarded-Groups
               X-Auth-Request-Email>X-Forwarded-Mail
-              # it looks like the plugin ignores the forwardedDisplayName config?
-              X-Auth-Request-Preferred-Username
-              #>X-Forwarded-DisplayName
+              X-Auth-Request-Preferred-Username>X-Forwarded-DisplayName
             }
 
             # If oauth2-proxy returns a 401 status, redirect the client to the sign-in page.
@@ -542,33 +541,45 @@ in
 
   services.oauth2-proxy = {
     enable = true;
-    provider = "github";
+
+    # We inject cookie secret, client id and client secret through terraform in cloud-init
     clientID = null;
     clientSecret = null;
     cookie.secret = null;
-    github.org = "tiiuae";
+
+    provider = "oidc";
+    oidcIssuerUrl = "https://auth.vedenemo.dev";
     setXauthrequest = true;
+    cookie.secure = false;
+
     extraConfig = {
       email-domain = "*"; # We require membership in the tiiuae org
       auth-logging = true;
       request-logging = true;
       standard-logging = true;
       reverse-proxy = true; # Needed according to https://oauth2-proxy.github.io/oauth2-proxy/configuration/integration#configuring-for-use-with-the-caddy-v2-forward_auth-directive
+      provider-display-name = "Vedenemo Auth";
+      custom-sign-in-logo = "-";
     };
   };
 
-  # We inject cookie secret, client id and client secret through env vars
-  systemd.services.oauth2-proxy.serviceConfig.EnvironmentFile = "/var/lib/oauth2-proxy.env";
+  # Wait for cloud-init mounting before we start oauth2-proxy.
+  systemd.services.oauth2-proxy = {
+    after = [ "cloud-init.service" ];
+    requires = [ "cloud-init.service" ];
+    serviceConfig.EnvironmentFile = "/var/lib/oauth2-proxy.env";
+  };
 
-  systemd.services.caddy.serviceConfig.EnvironmentFile = "/var/lib/caddy/caddy.env";
+  # Wait for cloud-init mounting before we start caddy.
+  systemd.services.caddy = {
+    after = [ "cloud-init.service" ];
+    requires = [ "cloud-init.service" ];
+    serviceConfig.EnvironmentFile = "/var/lib/caddy/caddy.env";
+  };
 
   # Configure Nix to use the bucket (through rclone-http) as a substitutor.
   # The public key is passed in externally.
   nix.settings.substituters = [ "http://localhost:8080" ];
-
-  # Wait for cloud-init mounting before we start caddy.
-  systemd.services.caddy.after = [ "cloud-init.service" ];
-  systemd.services.caddy.requires = [ "cloud-init.service" ];
 
   # Expose the HTTP[S] port. We still need HTTP for the HTTP-01 challenge.
   # While TLS-ALPN-01 could be used, disabling HTTP-01 seems only possible from
@@ -579,6 +590,5 @@ in
   ];
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-
-  system.stateVersion = "23.05";
+  system.stateVersion = "24.11";
 }

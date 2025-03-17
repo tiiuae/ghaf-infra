@@ -22,6 +22,7 @@ keys:
   - &ghaf-coverity age1z825k99myjmfcml86pujcmtj96psvj8c3m08me8kkq03tkpwy9xql4jt9y
   - &ghaf-webserver age1f643hcr8xvzm6fha93xhn6dw552tfd6zvu7eulxk7vedgt09d9ysljsayq
   - &ghaf-proxy age1sv50w7ydcqxxng4nfpvretqhusfkjewtrzpu4006z685xgplha2sa9tv9v
+  - &ghaf-auth age1xuynsp2q9cj0h7f3syha7p7n8t034m2u8qldn6zlwx4nee8d5chskr4el7
   - &testagent-uae-dev age1sl8yrksst9aq2fhg8t8h7tysgzm6ks00n9hxsvj8x6frsnrskd4szerqez
 
 creation_rules:
@@ -86,6 +87,11 @@ creation_rules:
     - age:
       - *ghaf-webserver
       - *cazfi
+  - path_regex: hosts/ghaf-auth/secrets.yaml$
+    key_groups:
+    - age:
+      - *ghaf-auth
+      - *jrautiola
   - path_regex: hosts/testagent/credentials.yaml$
     key_groups:
     - age:
