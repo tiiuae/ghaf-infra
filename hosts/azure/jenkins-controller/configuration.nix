@@ -180,8 +180,6 @@ in
             "Ghaf release pipeline" = "ghaf-release-pipeline";
             "Ghaf performance tests" = "ghaf-perftest-pipeline";
             "Ghaf HW test" = "ghaf-hw-test";
-            "Ghaf parallel HW test" = "ghaf-parallel-hw-test";
-            "FMO OS main pipeline" = "fmo-os-main-pipeline";
           };
     };
   };
