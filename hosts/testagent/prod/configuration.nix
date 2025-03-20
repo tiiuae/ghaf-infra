@@ -59,8 +59,8 @@
           serial_port = "/dev/ttyNUC1";
           relay_number = 3;
           device_ip_address = "172.18.16.50";
-          socket_ip_address = "172.18.16.30";
-          plug_type = "TAPOP100v2";
+          socket_ip_address = "NONE";
+          plug_type = "NONE";
           switch_bot = "NONE";
           usbhub_serial = "F0A0D6CF";
           ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XPNJ0TB00828W-0:0";
@@ -71,8 +71,8 @@
           serial_port = "/dev/ttyACM0";
           relay_number = 4;
           device_ip_address = "172.18.16.36";
-          socket_ip_address = "172.18.16.31";
-          plug_type = "TAPOP100v2";
+          socket_ip_address = "NONE";
+          plug_type = "NONE";
           switch_bot = "NONE";
           usbhub_serial = "92D8AEB7";
           ext_drive_by-id = "usb-Samsung_PSSD_T7_S6WXNS0W300153T-0:0";
@@ -89,25 +89,13 @@
           ext_drive_by-id = "usb-Samsung_PSSD_T7_S7MLNS0X532696T-0:0";
           threads = 20;
         };
-        Polarfire1 = {
-          inherit location;
-          serial_port = "/dev/ttyRISCV1";
-          relay_number = 1;
-          device_ip_address = "NONE";
-          socket_ip_address = "172.18.16.45";
-          plug_type = "TAPOP100v2";
-          switch_bot = "NONE";
-          usb_sd_mux_port = "/dev/usb-sd-mux/id-000000001184";
-          ext_drive_by-id = "usb-LinuxAut_sdmux_HS-SD_MMC_000000001184-0:0";
-          threads = 4;
-        };
         OrinNX1 = {
           inherit location;
           serial_port = "/dev/ttyORINNX1";
           relay_number = 2;
           device_ip_address = "172.18.16.44";
-          socket_ip_address = "172.18.16.43";
-          plug_type = "TAPOP100v2";
+          socket_ip_address = "NONE";
+          plug_type = "NONE";
           switch_bot = "NONE";
           usbhub_serial = "5220564F";
           ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XPNS0T918984B-0:0";
@@ -116,12 +104,12 @@
         Dell7330 = {
           inherit location;
           serial_port = "NONE";
-          device_ip_address = "172.18.16.23";
+          device_ip_address = "172.18.16.7";
           socket_ip_address = "NONE";
           plug_type = "NONE";
           switch_bot = "Dell7330-prod";
-          usbhub_serial = "5AC2B4AD";
-          ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XNNS0W500904J-0:0";
+          usbhub_serial = "FF62140D";
+          ext_drive_by-id = "usb-Kingston_XS2000_50026B72836E78E0-0:0";
           threads = 8;
         };
         measurement_agent = {
