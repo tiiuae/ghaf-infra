@@ -11,6 +11,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   # Checks if the author of pull request is in our predefined list of authorized users
   check-identity:
