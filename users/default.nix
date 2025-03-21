@@ -17,5 +17,6 @@
     user-github = import ./github.nix;
     user-remote-build = import ./remote-build.nix;
     user-alextserepov = import ./alextserepov.nix;
+    user-mikkos = import ./mikkos.nix;
   };
 }
