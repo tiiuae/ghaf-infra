@@ -27,6 +27,7 @@
       user-mariia
       user-leivos
       user-hrosten
+      user-mikkos
     ]);
 
   networking = {
