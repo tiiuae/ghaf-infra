@@ -13,6 +13,7 @@
             nix
             nixfmt-rfc-style
             nixos-rebuild
+            nixos-anywhere
             # parallel_env requires 'compgen' function, which is available
             # in bashInteractive, but not bash
             bashInteractive
