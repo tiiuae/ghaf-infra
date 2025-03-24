@@ -1,11 +1,17 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
-{ self, inputs, ... }:
+{
+  self,
+  inputs,
+  lib,
+  ...
+}:
 let
   inherit (inputs) deploy-rs;
 
-  mkDeployment = arch: config: hostname: {
-    inherit hostname;
+  mkDeployment = arch: config: ip: {
+    hostname = ip;
+    inherit config; # used for installation script
     profiles.system = {
       user = "root";
       path = deploy-rs.lib.${arch}.activate.nixos self.nixosConfigurations.${config};
@@ -34,7 +40,27 @@ let
 in
 {
   flake = {
-    deploy.nodes = x86-nodes // aarch64-nodes;
+    deploy =
+      let
+        nodes = x86-nodes // aarch64-nodes;
+      in
+      {
+        inherit nodes;
+        targets = lib.attrsets.mapAttrs (
+          _: node:
+          let
+            cnf = self.nixosConfigurations.${node.config}.config;
+          in
+          {
+            inherit (node) hostname config;
+            secrets =
+              if (lib.attrsets.hasAttrByPath [ "sops" "defaultSopsFile" ] cnf) then
+                cnf.sops.defaultSopsFile
+              else
+                null;
+          }
+        ) nodes;
+      };
 
     checks = {
       x86_64-linux = deploy-rs.lib.x86_64-linux.deployChecks { nodes = x86-nodes; };

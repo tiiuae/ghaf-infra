@@ -62,89 +62,58 @@ class TargetHost:
     secretspath: Optional[str] = None
 
 
-# Below dictionary defines the set of ghaf-infra configuration aliases:
-#  - Name (e.g. 'binarycache-ficolo') defines the alias name for each target.
-#  - TargetHost.hostname: host name or IP address of the target.
-#  - TargetHost.nixosconfig: name of the target nixosConfiguration.
-TARGETS = OrderedDict(
-    {
-        "binarycache-ficolo": TargetHost(
-            hostname="172.18.20.109",
-            nixosconfig="binarycache",
-            secretspath="hosts/binarycache/secrets.yaml",
-        ),
-        "monitoring-ficolo": TargetHost(
-            hostname="172.18.20.108",
-            nixosconfig="monitoring",
-            secretspath="hosts/monitoring/secrets.yaml",
-        ),
-        "build3-ficolo": TargetHost(
-            hostname="172.18.20.104",
-            nixosconfig="build3",
-            secretspath="hosts/builder/build3/secrets.yaml",
-        ),
-        "build4-ficolo": TargetHost(
-            hostname="172.18.20.105",
-            nixosconfig="build4",
-        ),
-        "himalia": TargetHost(
-            hostname="172.18.20.106",
-            nixosconfig="himalia",
-        ),
-        "testagent-dev": TargetHost(
-            hostname="172.18.16.33",
-            nixosconfig="testagent-dev",
-            secretspath="hosts/testagent/dev/secrets.yaml",
-        ),
-        "testagent-prod": TargetHost(
-            hostname="172.18.16.60",
-            nixosconfig="testagent-prod",
-            secretspath="hosts/testagent/prod/secrets.yaml",
-        ),
-        "testagent-release": TargetHost(
-            hostname="172.18.16.32",
-            nixosconfig="testagent-release",
-            secretspath="hosts/testagent/release/secrets.yaml",
-        ),
-        "hetzarm": TargetHost(
-            hostname="65.21.20.242",
-            nixosconfig="hetzarm",
-            secretspath="hosts/hetzarm/secrets.yaml",
-        ),
-        "ghaf-log": TargetHost(
-            hostname="95.217.177.197",
-            nixosconfig="ghaf-log",
-            secretspath="hosts/ghaf-log/secrets.yaml",
-        ),
-        "ghaf-coverity": TargetHost(
-            hostname="135.181.103.32",
-            nixosconfig="ghaf-coverity",
-            secretspath="hosts/ghaf-coverity/secrets.yaml",
-        ),
-        "ghaf-proxy": TargetHost(
-            hostname="95.216.200.85",
-            nixosconfig="ghaf-proxy",
-            secretspath="hosts/ghaf-proxy/secrets.yaml",
-        ),
-        "ghaf-webserver": TargetHost(
-            hostname="37.27.204.82",
-            nixosconfig="ghaf-webserver",
-            secretspath="hosts/ghaf-webserver/secrets.yaml",
-        ),
-        "testagent-uae-dev": TargetHost(
-            hostname="172.19.16.12",
-            nixosconfig="testagent-uae-dev",
-            secretspath="hosts/testagent/uae-dev/secrets.yaml",
-        ),
-    }
-)
+class Targets:
+    """Represents all installation targets"""
+
+    populated = False
+    target_dict = OrderedDict()
+
+    def all(self) -> OrderedDict:
+        """Get all hosts"""
+        if not self.populated:
+            self.populate()
+        return self.target_dict
+
+    def populate(self):
+        """Populate the target dictionary from nix evaluation"""
+        self.target_dict = OrderedDict(
+            {
+                name: TargetHost(
+                    hostname=node["hostname"],
+                    nixosconfig=node["config"],
+                    secretspath=node["secrets"],
+                )
+                for name, node in json.loads(
+                    subprocess.check_output(
+                        ["nix", "eval", "--json", f"{ROOT}#deploy.targets"]
+                    )
+                ).items()
+            }
+        )
+        self.populated = True
+
+    def get(self, alias: str) -> TargetHost:
+        """Get one host"""
+        if self.populated:
+            if alias not in self.target_dict:
+                LOG.fatal("Unknown alias '%s'", alias)
+                sys.exit(1)
+
+            return self.target_dict[alias]
+
+        node = json.loads(
+            subprocess.check_output(
+                ["nix", "eval", "--json", f"{ROOT}#deploy.targets.{alias}"]
+            )
+        )
+        return TargetHost(
+            hostname=node["hostname"],
+            nixosconfig=node["config"],
+            secretspath=node["secrets"],
+        )
 
 
-def _get_target(alias: str) -> TargetHost:
-    if alias not in TARGETS:
-        LOG.fatal("Unknown alias '%s'", alias)
-        sys.exit(1)
-    return TARGETS[alias]
+TARGETS = Targets()
 
 
 ################################################################################
@@ -225,11 +194,11 @@ def alias_list(_c: Any) -> None:
     List available targets (i.e. configurations and alias names)
 
     Example usage:
-    inv list-name
+    inv alias-list
     """
     table_rows = []
     table_rows.append(["alias", "nixosconfig", "hostname"])
-    for alias, host in TARGETS.items():
+    for alias, host in TARGETS.all().items():
         row = [alias, host.nixosconfig, host.hostname]
         table_rows.append(row)
     table = tabulate(table_rows, headers="firstrow", tablefmt="fancy_outline")
@@ -262,7 +231,7 @@ def print_keys(_c: Any, alias: str) -> None:
     Example usage:
     inv print-keys --target binarycache-ficolo
     """
-    target = _get_target(alias)
+    target = TARGETS.get(alias)
     with TemporaryDirectory() as tmpdir:
         decrypt_host_key(target, tmpdir)
         key = f"{tmpdir}/etc/ssh/ssh_host_ed25519_key"
@@ -287,35 +256,13 @@ def get_deploy_host(alias: str = "") -> DeployHost:
     """
     Return DeployHost object, given `alias`
     """
-    hostname = _get_target(alias).hostname
+    hostname = TARGETS.get(alias).hostname
     deploy_host = DeployHost(
         host=hostname,
         host_key_check=HostKeyCheck.NONE,
         # verbose_ssh=True,
     )
     return deploy_host
-
-
-@task
-def deploy(_c: Any, alias: str) -> None:
-    """
-    Deploy the configuration for `alias`.
-
-    Example usage:
-    inv deploy --alias binarycache-ficolo
-    """
-    h = get_deploy_host(alias)
-    res = h.run_local(
-        ["nix", "flake", "archive", "--to", f"ssh://{h.host}", "--json"],
-        stdout=subprocess.PIPE,
-    )
-    data = json.loads(res.stdout)
-    path = data["path"]
-    LOG.debug("data['path']: %s", path)
-    flags = "--option accept-flake-config true"
-    nixosconfig = _get_target(alias).nixosconfig
-    command = "sudo nixos-rebuild"
-    h.run(f"{command} switch {flags} --flake {path}#{nixosconfig}")
 
 
 def decrypt_host_key(target: TargetHost, tmpdir: str) -> None:
@@ -339,7 +286,7 @@ def decrypt_host_key(target: TargetHost, tmpdir: str) -> None:
                     "--extract",
                     '["ssh_host_ed25519_key"]',
                     "--decrypt",
-                    f"{ROOT}/{target.secretspath}",
+                    f"{target.secretspath}",
                 ],
                 check=True,
                 stdout=fh,
@@ -401,9 +348,9 @@ def install(c: Any, alias) -> None:
                 "'scripts/add-remote-user.sh' to add your current local "
                 "user to the remote host.",
                 remote_user,
-                _get_target(alias).hostname,
+                TARGETS.get(alias).hostname,
                 local_user,
-                _get_target(alias).nixosconfig,
+                TARGETS.get(alias).nixosconfig,
             )
             ask = input("Still continue? [y/N] ")
             if ask != "y":
@@ -438,13 +385,11 @@ def install(c: Any, alias) -> None:
         if ask != "y":
             sys.exit(1)
 
-    target = _get_target(alias)
+    target = TARGETS.get(alias)
     with TemporaryDirectory() as tmpdir:
         decrypt_host_key(target, tmpdir)
-        gitrev = "97b45ac774699b1cfd267e98a8bdecb74bace593"
-        command = f"nix run github:numtide/nixos-anywhere?rev={gitrev} --"
-        command += f" {h.host} --extra-files {tmpdir} --flake .#{target.nixosconfig}"
-        command += " --option accept-flake-config true"
+        command = f"nixos-anywhere {h.host} --extra-files {tmpdir} "
+        command += "--flake .#{target.nixosconfig} --option accept-flake-config true"
         LOG.warning(command)
         c.run(command)
 
@@ -464,13 +409,13 @@ def build_local(_c: Any, alias: str = "") -> None:
     inv build-local --alias binarycache-ficolo
     """
     if alias:
-        target_configs = [_get_target(alias).nixosconfig]
+        target_configs = [TARGETS.get(alias).nixosconfig]
     else:
-        target_configs = [target.nixosconfig for _, target in TARGETS.items()]
+        target_configs = [target.nixosconfig for _, target in TARGETS.all().items()]
     for nixosconfig in target_configs:
         cmd = (
             "nixos-rebuild build --option accept-flake-config true "
-            f" -v --flake .#{nixosconfig}"
+            f" -v --flake {ROOT}#{nixosconfig}"
         )
         exec_cmd(cmd, capture_output=False)
 

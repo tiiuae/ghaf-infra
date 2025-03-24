@@ -30,6 +30,8 @@
       user-mikkos
     ]);
 
+  sops.defaultSopsFile = ./secrets.yaml;
+
   networking = {
     hostName = "testagent-prod";
     useNetworkd = true;

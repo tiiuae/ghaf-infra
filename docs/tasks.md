@@ -5,20 +5,19 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 # Tasks
 
-Originally inspired by [nix-community infra](https://github.com/nix-community/infra) this project makes use of [pyinvoke](https://www.pyinvoke.org/) to help with deployment [tasks](../tasks.py).
+Originally inspired by [nix-community infra](https://github.com/nix-community/infra) this project makes use of [pyinvoke](https://www.pyinvoke.org/) to help with installing new hosts [tasks](../tasks.py).
 
 Run the following command to list the available tasks:
+
 ```bash
 ❯ invoke --list
 Available tasks:
 
   alias-list          List available targets (i.e. configurations and alias names)
   build-local         Build NixOS configuration `alias` locally.
-  deploy              Deploy the configuration for `alias`.
   install             Install `alias` configuration using nixos-anywhere, deploying host private key.
   pre-push            Run 'pre-push' checks.
   print-keys          Decrypt host private key, print ssh and age public keys for `alias` config.
-  reboot              Reboot host identified as `alias`.
   update-sops-files   Update all sops yaml and json files according to .sops.yaml rules.
 
 ```
@@ -26,6 +25,7 @@ Available tasks:
 In the following sections, we will explain the intended usage of the most common of the above deployment tasks.
 
 ## alias-list
+
 The `alias-list` task lists the alias names for ghaf-infra targets. Alias is simply a name given for the combination of nixosConfig and hostname. All ghaf-infra tasks that need to identify a target, accept an alias name as an argument.
 
 ```bash
@@ -68,6 +68,7 @@ Host 65.21.20.242
 Since `task.py` internally uses ssh when accessing hosts, the above example configuration would be applied when accessing the `hetzarm` alias.
 
 ## build-local
+
 The `build-local` task builds the given alias configuration locally. If the alias name is not specified `build-local` builds all alias configurations:
 
 ```bash
@@ -81,6 +82,7 @@ building '/nix/store/wks2pw9692flrfaqdpv1m0pwfyn17ggj-nixos-system-ghaf-log-24.0
 ```
 
 ## install
+
 The `install` task installs the given alias configuration on the target host with [nixos-anywhere](https://github.com/nix-community/nixos-anywhere). It will automatically partition and re-format the host hard drive, meaning all data on the target will be completely overwritten with no option to rollback. During installation, it will also decrypt and deploy the host private key from the sops secrets. The intended use of the `install` task is to install NixOS configuration on a non-NixOS host, or to repurpose an existing server.
 
 Note: `ìnstall` task assumes the given NixOS configuration is compatible with the specified host. In the existing Ghaf CI/CD infrastructure you can safely assume this holds true. However, if you plan to apply the NixOS configurations from this repository on a new infrastructure or onboard new hosts, please read the documentation in [adapting-to-new-environments.md](./adapting-to-new-environments.md).
@@ -101,21 +103,10 @@ Install configuration 'ghaf-webserver' on host '37.27.204.82'? [y/N] y
 ...
 ```
 
-## deploy
-Note: it's strongly recommended to use the [deploy-rs](https://github.com/tiiuae/ghaf-infra/blob/main/docs/deploy-rs.md) instead of the `deploy` task.
-
-The `deploy` task deploys the given alias configuration to the target host with [nixos-rebuild](https://nixos.wiki/wiki/Nixos-rebuild) `switch` subcommand. This task assumes the target host is already running NixOS, and fails if it's not.
-
-Note: unlike the changes made with `install` task, `deploy` changes can be [reverted](https://zero-to-nix.com/concepts/nixos#rollbacks) with `nixos-rebuild switch --rollback` or similar.
-
-```bash
-❯ invoke deploy --alias ghaf-webserver
-...
-```
-
 ## update-sops-files
+
 The `update-sops-files` task updates all sops yaml and json files according to the rules in [`.sops.yaml`](../.sops.yaml). The intended use is to update the secrets after adding new hosts, admins, or secrets:
 
 ```bash
-$ invoke update-sops-files
+invoke update-sops-files
 ```
