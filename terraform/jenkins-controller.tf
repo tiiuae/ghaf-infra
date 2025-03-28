@@ -62,7 +62,7 @@ module "jenkins_controller_vm" {
           "OAUTH2_PROXY_COOKIE_SECRET=${random_id.oauth2_proxy_cookie_secret.b64_url}",
           # client id and secret that are present in dex 
           "OAUTH2_PROXY_CLIENT_ID=ghaf-jenkins-controller-${local.ws}",
-          "OAUTH2_PROXY_CLIENT_SECRET=${secret_resource.oauth2_proxy_client_secret.value}",
+          "OAUTH2_PROXY_CLIENT_SECRET=${data.sops_file.secrets.data["oauth2_proxy_client_secret"]}",
           "OAUTH2_PROXY_COOKIE_DOMAINS=ghaf-jenkins-controller-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com",
         ])),
         "path" = "/var/lib/oauth2-proxy.env"
@@ -221,11 +221,4 @@ resource "azurerm_key_vault_access_policy" "binary_cache_signing_key_jenkins_con
 
 resource "random_id" "oauth2_proxy_cookie_secret" {
   byte_length = 32
-}
-
-# TODO: move to persistent?
-resource "secret_resource" "oauth2_proxy_client_secret" {
-  lifecycle {
-    prevent_destroy = true
-  }
 }

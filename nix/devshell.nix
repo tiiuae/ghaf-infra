@@ -56,6 +56,7 @@
               p.secret
               p.sops
               p.tls
+              p.sops
             ]))
           ])
           ++ [
