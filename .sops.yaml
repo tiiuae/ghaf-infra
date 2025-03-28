@@ -109,3 +109,12 @@ creation_rules:
       - *fayad
       - *vjuntunen
       - *jrautiola
+  - path_regex: terraform/terraform-secrets.yaml$
+    key_groups:
+    - age:
+      - *fayad
+      - *vjuntunen
+      - *jrautiola
+      - *hrosten
+      - *cazfi
+      - *flokli

@@ -21,6 +21,9 @@ terraform {
     secret = {
       source = "numtide/secret"
     }
+    sops = {
+      source = "carlpett/sops"
+    }
   }
   # Backend for storing terraform state (see ../state-storage)
   backend "azurerm" {
@@ -349,6 +352,10 @@ data "azurerm_storage_account" "jenkins_artifacts" {
 data "azurerm_storage_container" "jenkins_artifacts_1" {
   name                 = "jenkins-artifacts-v1"
   storage_account_name = data.azurerm_storage_account.jenkins_artifacts.name
+}
+
+data "sops_file" "secrets" {
+  source_file = "terraform-secrets.yaml"
 }
 
 ################################################################################

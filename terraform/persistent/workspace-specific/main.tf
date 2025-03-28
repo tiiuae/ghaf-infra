@@ -12,6 +12,9 @@ terraform {
     azurerm = {
       source = "hashicorp/azurerm"
     }
+    secret = {
+      source = "numtide/secret"
+    }
   }
   # Backend for storing terraform state (see ../../state-storage)
   backend "azurerm" {
