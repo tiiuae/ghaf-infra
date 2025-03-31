@@ -3,24 +3,17 @@
 
 {
   self,
-  inputs,
   config,
   ...
 }:
 {
   imports =
     [
-      # Include the results of the hardware scan.
-      ./hardware-configuration.nix
       ../agents-common.nix
+      ./hardware-configuration.nix
     ]
-    ++ (with inputs; [
-      sops-nix.nixosModules.sops
-      disko.nixosModules.disko
-    ])
     ++ (with self.nixosModules; [
-      common
-      service-openssh
+      # users who have ssh access to this machine
       user-vjuntunen
       user-flokli
       user-jrautiola
@@ -32,16 +25,9 @@
     ]);
 
   sops.defaultSopsFile = ./secrets.yaml;
-
-  networking = {
-    hostName = "testagent-prod";
-    useNetworkd = true;
-  };
-
-  boot.loader = {
-    systemd-boot.enable = true;
-    efi.canTouchEfiVariables = true;
-  };
+  nixpkgs.hostPlatform = "x86_64-linux";
+  networking.hostName = "testagent-prod";
+  services.testagent.variant = "prod";
 
   # udev rules for test devices serial connections
   services.udev.extraRules = ''
