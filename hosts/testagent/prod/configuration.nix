@@ -28,6 +28,7 @@
       user-leivos
       user-hrosten
       user-mikkos
+      user-milval
     ]);
 
   sops.defaultSopsFile = ./secrets.yaml;
