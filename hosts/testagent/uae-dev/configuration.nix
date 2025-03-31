@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   self,
-  inputs,
   config,
   ...
 }:
@@ -11,12 +10,8 @@
     [
       ./disk-config.nix
       ../agents-common.nix
-      inputs.sops-nix.nixosModules.sops
-      inputs.disko.nixosModules.disko
     ]
     ++ (with self.nixosModules; [
-      common
-      service-openssh
       user-vjuntunen
       user-flokli
       user-jrautiola
@@ -28,32 +23,17 @@
 
   sops.defaultSopsFile = ./secrets.yaml;
   nixpkgs.hostPlatform = "x86_64-linux";
+  networking.hostName = "testagent-uae-dev";
+  services.testagent.variant = "dev";
 
-  networking = {
-    hostName = "testagent-uae-dev";
-    useDHCP = true;
-  };
-
-  boot = {
-    loader = {
-      systemd-boot.enable = true;
-      efi.canTouchEfiVariables = true;
-    };
-
-    initrd.availableKernelModules = [
-      "xhci_pci"
-      "nvme"
-      "thunderbolt"
-    ];
-    kernelModules = [
-      "kvm-intel"
-    ];
-  };
-
-  hardware = {
-    enableRedistributableFirmware = true;
-    cpu.intel.updateMicrocode = true;
-  };
+  boot.initrd.availableKernelModules = [
+    "xhci_pci"
+    "nvme"
+    "thunderbolt"
+  ];
+  boot.kernelModules = [
+    "kvm-intel"
+  ];
 
   # udev rules for test devices serial connections
   # placeholder configs from finland. need updation with new uae targets, in progress

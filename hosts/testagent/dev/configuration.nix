@@ -2,21 +2,17 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   self,
-  inputs,
   config,
   ...
 }:
 {
   imports =
     [
-      ./disk-config.nix
       ../agents-common.nix
-      inputs.sops-nix.nixosModules.sops
-      inputs.disko.nixosModules.disko
+      ./disk-config.nix
     ]
     ++ (with self.nixosModules; [
-      common
-      service-openssh
+      # users who have ssh access to this machine
       user-vjuntunen
       user-flokli
       user-jrautiola
@@ -30,39 +26,24 @@
 
   sops.defaultSopsFile = ./secrets.yaml;
   nixpkgs.hostPlatform = "x86_64-linux";
+  networking.hostName = "testagent-dev";
+  services.testagent.variant = "dev";
 
-  networking = {
-    hostName = "testagent-dev";
-    useDHCP = true;
-  };
-
-  boot = {
-    loader = {
-      systemd-boot.enable = true;
-      efi.canTouchEfiVariables = true;
-    };
-
-    initrd.availableKernelModules = [
-      "vmd"
-      "xhci_pci"
-      "ahci"
-      "nvme"
-      "usbhid"
-      "usb_storage"
-      "sd_mod"
-      "sr_mod"
-      "rtsx_pci_sdmmc"
-    ];
-    kernelModules = [
-      "kvm-intel"
-      "sg"
-    ];
-  };
-
-  hardware = {
-    enableRedistributableFirmware = true;
-    cpu.intel.updateMicrocode = true;
-  };
+  boot.initrd.availableKernelModules = [
+    "vmd"
+    "xhci_pci"
+    "ahci"
+    "nvme"
+    "usbhid"
+    "usb_storage"
+    "sd_mod"
+    "sr_mod"
+    "rtsx_pci_sdmmc"
+  ];
+  boot.kernelModules = [
+    "kvm-intel"
+    "sg"
+  ];
 
   # udev rules for test devices serial connections
   services.udev.extraRules = ''

@@ -15,34 +15,114 @@ jenkins:
       disableSyntaxHighlighting: false
 
   nodes:
+    # release testagent
   - permanent:
+      name: "release-lenovo-x1"
+      labelString: "lenovo-x1"
       launcher: "inbound"
       mode: EXCLUSIVE
-      name: "lenovo-x1"
       remoteFS: "/var/lib/jenkins/agents/lenovo-x1"
       retentionStrategy: "always"
   - permanent:
+      name: "release-nuc"
+      labelString: "nuc"
       launcher: "inbound"
       mode: EXCLUSIVE
-      name: "nuc"
       remoteFS: "/var/lib/jenkins/agents/nuc"
       retentionStrategy: "always"
   - permanent:
+      name: "release-orin-agx"
+      labelString: "orin-agx"
       launcher: "inbound"
       mode: EXCLUSIVE
-      name: "orin-agx"
       remoteFS: "/var/lib/jenkins/agents/orin-agx"
       retentionStrategy: "always"
   - permanent:
+      name: "release-orin-nx"
+      labelString: "orin-nx"
       launcher: "inbound"
       mode: EXCLUSIVE
-      name: "orin-nx"
       remoteFS: "/var/lib/jenkins/agents/orin-nx"
       retentionStrategy: "always"
   - permanent:
+      name: "release-dell-7330"
+      labelString: "dell-7330"
       launcher: "inbound"
       mode: EXCLUSIVE
-      name: "dell-7330"
+      remoteFS: "/var/lib/jenkins/agents/dell-7330"
+      retentionStrategy: "always"
+
+    # prod testagent
+  - permanent:
+      name: "prod-lenovo-x1"
+      labelString: "lenovo-x1"
+      launcher: "inbound"
+      mode: EXCLUSIVE
+      remoteFS: "/var/lib/jenkins/agents/lenovo-x1"
+      retentionStrategy: "always"
+  - permanent:
+      name: "prod-nuc"
+      labelString: "nuc"
+      launcher: "inbound"
+      mode: EXCLUSIVE
+      remoteFS: "/var/lib/jenkins/agents/nuc"
+      retentionStrategy: "always"
+  - permanent:
+      name: "prod-orin-agx"
+      labelString: "orin-agx"
+      launcher: "inbound"
+      mode: EXCLUSIVE
+      remoteFS: "/var/lib/jenkins/agents/orin-agx"
+      retentionStrategy: "always"
+  - permanent:
+      name: "prod-orin-nx"
+      labelString: "orin-nx"
+      launcher: "inbound"
+      mode: EXCLUSIVE
+      remoteFS: "/var/lib/jenkins/agents/orin-nx"
+      retentionStrategy: "always"
+  - permanent:
+      name: "prod-dell-7330"
+      labelString: "dell-7330"
+      launcher: "inbound"
+      mode: EXCLUSIVE
+      remoteFS: "/var/lib/jenkins/agents/dell-7330"
+      retentionStrategy: "always"
+  
+    # dev testagent
+  - permanent:
+      name: "dev-lenovo-x1"
+      labelString: "lenovo-x1"
+      launcher: "inbound"
+      mode: EXCLUSIVE
+      remoteFS: "/var/lib/jenkins/agents/lenovo-x1"
+      retentionStrategy: "always"
+  - permanent:
+      name: "dev-nuc"
+      labelString: "nuc"
+      launcher: "inbound"
+      mode: EXCLUSIVE
+      remoteFS: "/var/lib/jenkins/agents/nuc"
+      retentionStrategy: "always"
+  - permanent:
+      name: "dev-orin-agx"
+      labelString: "orin-agx"
+      launcher: "inbound"
+      mode: EXCLUSIVE
+      remoteFS: "/var/lib/jenkins/agents/orin-agx"
+      retentionStrategy: "always"
+  - permanent:
+      name: "dev-orin-nx"
+      labelString: "orin-nx"
+      launcher: "inbound"
+      mode: EXCLUSIVE
+      remoteFS: "/var/lib/jenkins/agents/orin-nx"
+      retentionStrategy: "always"
+  - permanent:
+      name: "dev-dell-7330"
+      labelString: "dell-7330"
+      launcher: "inbound"
+      mode: EXCLUSIVE
       remoteFS: "/var/lib/jenkins/agents/dell-7330"
       retentionStrategy: "always"
 
