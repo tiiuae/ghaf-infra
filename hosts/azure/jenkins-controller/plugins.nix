@@ -966,4 +966,18 @@
         sha256 = "fe0642e50e3b30c769c2b075a5df15828f7d0a6cbc8df9917a8db14813ba9532";
         };
       };
+    matrix-auth = mkJenkinsPlugin {
+      name = "matrix-auth";
+      src = fetchurl {
+        url = "https://updates.jenkins-ci.org/download/plugins/matrix-auth/3.2.5/matrix-auth.hpi";
+        sha256 = "503126f36e3bcdaea8505be94452c23ddbe5af0585b92e6ed82bfea15ced2ac0";
+        };
+      };
+    oss-symbols-api = mkJenkinsPlugin {
+      name = "oss-symbols-api";
+      src = fetchurl {
+        url = "https://updates.jenkins-ci.org/download/plugins/oss-symbols-api/308.v0c48656b_15c1/oss-symbols-api.hpi";
+        sha256 = "61ac4385c8ebc62f9bda348df3f4d7a8e5d1c8cabad7130341072095df557d4a";
+        };
+      };
     }
