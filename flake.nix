@@ -54,7 +54,8 @@
     robot-framework = {
       url = "github:tiiuae/ci-test-automation";
       inputs = {
-        nixpkgs.follows = "nixpkgs";
+        # broken on most recent nixpkgs as of 04/04/2025
+        # nixpkgs.follows = "nixpkgs";
         flake-utils.follows = "flake-utils";
       };
     };
