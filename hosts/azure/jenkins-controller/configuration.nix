@@ -392,6 +392,32 @@ in
       }
 
       https://{$SITE_ADDRESS} {
+        
+        # as recommended by jenkins, these paths should not require auth
+        @unauthenticated {
+          path /assets /assets/*
+          path /avatar-cache /avatar-cache/*
+          path /bitbucket-scmsource-hook /bitbucket-scmsource-hook/*
+          path /blue /blue/*
+          path /cascMergeStrategy /cascMergeStrategy/*
+          path /cli /cli/*
+          path /custom-avatar-cache /custom-avatar-cache/*
+          path /git /git/*
+          path /github-webhook /github-webhook/*
+          path /instance-identity /instance-identity/*
+          path /jnlpJars /jnlpJars/*
+          path /jwt-auth /jwt-auth/*
+          path /metrics /metrics/*
+          path /reload-configuration-as-code /reload-configuration-as-code/*
+          path /static-files /static-files/*
+          path /subversion /subversion/*
+          path /wsagents /wsagents/*
+        }
+
+        handle @unauthenticated {
+          reverse_proxy localhost:8081
+        }
+        
         # Route /artifacts requests to rclone-jenkins-artifacts-browse,
         # stripping `/artifacts` from the path.
         handle_path /artifacts/* {
