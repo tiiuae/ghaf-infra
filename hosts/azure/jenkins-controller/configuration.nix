@@ -33,13 +33,91 @@ let
         exit $ERR
       '';
 
-  jenkins-casc = ./jenkins-casc.yaml;
+  jenkins-casc = {
+    appearance = {
+      pipelineGraphView = {
+        showGraphOnBuildPage = true;
+      };
+    };
+    jenkins = {
+      authorizationStrategy = {
+        loggedInUsersCanDoAnything = {
+          allowAnonymousRead = true;
+        };
+      };
+      markupFormatter = {
+        rawHtml = {
+          disableSyntaxHighlighting = false;
+        };
+      };
 
-  jenkins-casc-with-jobs = jenkins-casc // {
+      numExecutors = 4;
+      securityRealm = {
+        reverseProxy = {
+          customLogOutUrl = "/oauth2/sign_out";
+          forwardedDisplayName = "X-Forwarded-DisplayName";
+          forwardedEmail = "X-Forwarded-Mail";
+          forwardedUser = "X-Forwarded-User";
+          headerGroups = "X-Forwarded-Groups";
+          headerGroupsDelimiter = ",";
+          disableLdapEmailResolver = true;
+          inhibitInferRootDN = false;
+        };
+      };
 
-    # Configure jenkins job(s):
-    # https://jenkins-job-builder.readthedocs.io/en/latest/project_pipeline.html
-    jobs = (
+      nodes = # all permutations of device and set lists
+        lib.mapCartesianProduct
+          (
+            { set, device }:
+            {
+              permanent = {
+                name = "${set}-${device}";
+                labelString = device;
+                launcher = "inbound";
+                mode = "EXCLUSIVE";
+                remoteFS = "/var/lib/jenkins/agents/${device}";
+                retentionStrategy = "always";
+              };
+            }
+          )
+          {
+            set = [
+              "dev"
+              "prod"
+              "release"
+            ];
+            device = [
+              "lenovo-x1"
+              "nuc"
+              "orin-agx"
+              "orin-nx"
+              "riscv"
+            ];
+          };
+    };
+
+    unclassified = {
+      location = {
+        url = "\${file:/var/lib/jenkins-casc/url}";
+      };
+      lockableResourcesManager = {
+        declaredResources = [
+          {
+            description = "Nix evaluator lock";
+            name = "evaluator";
+          }
+          {
+            description = "SBOM generation lock";
+            name = "sbom";
+          }
+        ];
+      };
+      timestamper = {
+        allPipelines = true;
+      };
+    };
+
+    jobs =
       lib.mapAttrsToList
         (displayName: script: {
           script = ''
@@ -68,10 +146,7 @@ let
           "Ghaf release pipeline" = "ghaf-release-pipeline";
           "Ghaf performance tests" = "ghaf-perftest-pipeline";
           "Ghaf HW test" = "ghaf-hw-test";
-          "Ghaf parallel HW test" = "ghaf-parallel-hw-test";
-          "FMO OS main pipeline" = "fmo-os-main-pipeline";
-        }
-    );
+        };
   };
 
   get-secret =
@@ -188,7 +263,7 @@ in
       # Disable the intitial setup wizard, and the creation of initialAdminPassword.
       "-Djenkins.install.runSetupWizard=false"
       # Point to configuration-as-code config
-      "-Dcasc.jenkins.config=${builtins.toFile "jenkins-casc.yaml" (builtins.toJSON jenkins-casc-with-jobs)}"
+      "-Dcasc.jenkins.config=${builtins.toFile "jenkins-casc.yaml" (builtins.toJSON jenkins-casc)}"
       # Increase the number of rows shown in Stage View (default is 10)
       "-Dcom.cloudbees.workflow.rest.external.JobExt.maxRunsPerJob=32"
     ];
