@@ -1,4 +1,6 @@
-commons-compress-api:1.26.1-2 # 1.27 is not compatible with jenkins 2.479.2
+# pinned dependencies
+bootstrap5-api:5.3.3-2 # 5.3.3-3 requires jenkins 2.496
+# plugins
 configuration-as-code
 workflow-aggregator
 github
