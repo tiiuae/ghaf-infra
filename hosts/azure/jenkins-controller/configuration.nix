@@ -41,8 +41,41 @@ let
     };
     jenkins = {
       authorizationStrategy = {
-        loggedInUsersCanDoAnything = {
-          allowAnonymousRead = true;
+        globalMatrix = {
+          # TODO: more granular github teams needed
+          entries = [
+            {
+              group = {
+                name = "authenticated";
+                permissions = [
+                  "Agent/Build"
+                  "Job/Build"
+                  "Job/Cancel"
+                  "Job/Configure"
+                  "Job/Create"
+                  "Job/Discover"
+                  "Job/Move"
+                  "Job/Read"
+                  "Job/Workspace"
+                  "Lockable Resources/Unlock"
+                  "Lockable Resources/View"
+                  "Metrics/View"
+                  "Overall/Read"
+                  "Run/Delete"
+                  "Run/Replay"
+                  "Run/Update"
+                ];
+              };
+            }
+            {
+              group = {
+                name = "tiiuae:devenv-fi";
+                permissions = [
+                  "Overall/Administer"
+                ];
+              };
+            }
+          ];
         };
       };
       markupFormatter = {
@@ -558,6 +591,7 @@ in
       request-logging = true;
       standard-logging = true;
       reverse-proxy = true; # Needed according to https://oauth2-proxy.github.io/oauth2-proxy/configuration/integration#configuring-for-use-with-the-caddy-v2-forward_auth-directive
+      scope = "openid profile email groups"; # pass github teams as jenkins groups
       provider-display-name = "Vedenemo Auth";
       custom-sign-in-logo = "-";
     };
