@@ -85,6 +85,7 @@
                 name = "tiiuae";
               }
             ];
+            teamNameField = "slug";
           };
         }
       ];
