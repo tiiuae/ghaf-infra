@@ -42,28 +42,13 @@ let
     jenkins = {
       authorizationStrategy = {
         globalMatrix = {
-          # TODO: more granular github teams needed
           entries = [
             {
               group = {
                 name = "authenticated";
                 permissions = [
-                  "Agent/Build"
-                  "Job/Build"
-                  "Job/Cancel"
-                  "Job/Configure"
-                  "Job/Create"
-                  "Job/Discover"
-                  "Job/Move"
-                  "Job/Read"
-                  "Job/Workspace"
-                  "Lockable Resources/Unlock"
-                  "Lockable Resources/View"
-                  "Metrics/View"
                   "Overall/Read"
-                  "Run/Delete"
-                  "Run/Replay"
-                  "Run/Update"
+                  "Job/Read"
                 ];
               };
             }
