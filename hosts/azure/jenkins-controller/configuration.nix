@@ -504,24 +504,12 @@ in
 
       https://{$SITE_ADDRESS} {
         
-        # as recommended by jenkins, these paths should not require auth
         @unauthenticated {
-          path /assets /assets/*
-          path /avatar-cache /avatar-cache/*
-          path /bitbucket-scmsource-hook /bitbucket-scmsource-hook/*
-          path /blue /blue/*
-          path /cascMergeStrategy /cascMergeStrategy/*
-          path /cli /cli/*
-          path /custom-avatar-cache /custom-avatar-cache/*
-          path /git /git/*
+          # github sends webhook triggers here
           path /github-webhook /github-webhook/*
-          path /instance-identity /instance-identity/*
+          
+          # testagents need these
           path /jnlpJars /jnlpJars/*
-          path /jwt-auth /jwt-auth/*
-          path /metrics /metrics/*
-          path /reload-configuration-as-code /reload-configuration-as-code/*
-          path /static-files /static-files/*
-          path /subversion /subversion/*
           path /wsagents /wsagents/*
         }
 
