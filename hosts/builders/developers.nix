@@ -173,6 +173,13 @@ let
       ];
     }
     {
+      desc = "Rodrigo Pino";
+      name = "rodrigo";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINS5sjFgJ+OKjQQrxdlxsdG5lodd5Zei7BXCaWc/E8R9 rodrigo.pino@tii.ae"
+      ];
+    }
+    {
       desc = "Ola Rinta-Koski";
       name = "rockola";
       keys = [
