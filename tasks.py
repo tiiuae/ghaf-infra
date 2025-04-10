@@ -389,7 +389,7 @@ def install(c: Any, alias) -> None:
     with TemporaryDirectory() as tmpdir:
         decrypt_host_key(target, tmpdir)
         command = f"nixos-anywhere {h.host} --extra-files {tmpdir} "
-        command += "--flake .#{target.nixosconfig} --option accept-flake-config true"
+        command += f"--flake .#{target.nixosconfig} --option accept-flake-config true"
         LOG.warning(command)
         c.run(command)
 
