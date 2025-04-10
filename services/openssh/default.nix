@@ -32,7 +32,7 @@
   services.fail2ban = {
     enable = true;
     bantime-increment.enable = true;
-    jails.sshd.settings.filter = "sshd[mode=aggressive]";
+    jails.sshd.settings.filter = "sshd[mode=normal]";
     ignoreIP = [
       "109.204.204.138" # Tampere office IP address
     ];

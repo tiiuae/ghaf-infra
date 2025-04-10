@@ -222,6 +222,7 @@ in
     ../../azure-common.nix
     self.nixosModules.service-openssh
     self.nixosModules.service-rclone-http
+    self.nixosModules.service-monitoring
   ];
 
   users.users = {
@@ -249,6 +250,13 @@ in
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHO30maPQbVUqURaur8ze2S0vrrUivj2QdItIHsK75RS root@fayad-X1-testagent"
       ];
     };
+  };
+
+  services.monitoring = {
+    metrics.enable = true;
+    metrics.openFirewall = true;
+    metrics.ssh = true;
+    logs.enable = false;
   };
 
   # Configure /var/lib/jenkins in /etc/fstab.
@@ -534,11 +542,11 @@ in
       }
 
       https://{$SITE_ADDRESS} {
-        
+
         @unauthenticated {
           # github sends webhook triggers here
           path /github-webhook /github-webhook/*
-          
+
           # testagents need these
           path /jnlpJars /jnlpJars/*
           path /wsagents /wsagents/*
@@ -547,7 +555,7 @@ in
         handle @unauthenticated {
           reverse_proxy localhost:8081
         }
-        
+
         # Route /artifacts requests to rclone-jenkins-artifacts-browse,
         # stripping `/artifacts` from the path.
         handle_path /artifacts/* {

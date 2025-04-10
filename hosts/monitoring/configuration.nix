@@ -63,6 +63,44 @@ in
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPc04ZyZ7LgUKhV6Xr177qQn6Vf43FzUr1mS6g3jrSDj";
   };
 
+  systemd.services.populate-jenkins-known-hosts = {
+    after = [ "network.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      Restart = "on-failure";
+    };
+    script = ''
+      set -x
+
+      # Define list of jenkins controllers
+      jenkinsControllers=(
+        ghaf-jenkins-controller-vjuntunen.northeurope.cloudapp.azure.com
+        ghaf-jenkins-controller-dev.northeurope.cloudapp.azure.com
+        ghaf-jenkins-controller-prod.northeurope.cloudapp.azure.com
+      )
+
+      # Scan all controllers into a tmp file
+      tmpfile=$(mktemp)
+      for host in "''${jenkinsControllers[@]}"; do
+        ${pkgs.openssh}/bin/ssh-keyscan -t ed25519 "$host" >> "$tmpfile"
+      done
+
+      # Merge original known_hosts + scanned jenkins keys
+      cat /etc/ssh/ssh_known_hosts "$tmpfile" > /etc/ssh/sshified_known_hosts
+
+      rm "$tmpfile"
+    '';
+  };
+
+  systemd.timers.populate-jenkins-known-hosts = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "1min";
+      OnUnitActiveSec = "5min";
+      Unit = "populate-jenkins-known-hosts.service";
+    };
+  };
+
   # runs a tiny webserver on port 8888 that tunnels requests through ssh connection
   systemd.services."sshified" = {
     wantedBy = [ "multi-user.target" ];
@@ -75,12 +113,28 @@ in
         --proxy.listen-addr 127.0.0.1:8888 \
         --ssh.user sshified \
         --ssh.key-file ${config.sops.secrets.sshified_private_key.path} \
-        --ssh.known-hosts-file /etc/ssh/ssh_known_hosts \
+        --ssh.known-hosts-file /etc/ssh/sshified_known_hosts \
         --ssh.port 22 \
         -v
       '';
     };
-    restartTriggers = [ config.environment.etc."ssh/ssh_known_hosts".source ];
+    # restartTriggers = [ "/etc/ssh/sshified_known_hosts" ];
+  };
+
+  systemd.paths."restart-sshified-on-hosts-change" = {
+    wantedBy = [ "multi-user.target" ];
+    pathConfig = {
+      PathChanged = "/etc/ssh/sshified_known_hosts";
+    };
+  };
+
+  systemd.services."restart-sshified-on-hosts-change" = {
+    script = ''
+      systemctl restart sshified.service
+    '';
+    serviceConfig = {
+      Type = "oneshot";
+    };
   };
 
   services.monitoring = {
@@ -245,6 +299,31 @@ in
             targets = [ "172.18.20.108:9100" ];
             labels = {
               machine_name = "monitoring";
+            };
+          }
+        ];
+      }
+      {
+        job_name = "Azure-Jenkins-monitoring";
+        # proxy the requests through our ssh tunnel
+        proxy_url = "http://127.0.0.1:8888";
+        static_configs = [
+          {
+            targets = [ "ghaf-jenkins-controller-vjuntunen.northeurope.cloudapp.azure.com:9100" ];
+            labels = {
+              machine_name = "Jenkins vjuntunen controller";
+            };
+          }
+          {
+            targets = [ "ghaf-jenkins-controller-dev.northeurope.cloudapp.azure.com:9100" ];
+            labels = {
+              machine_name = "Jenkins DEV controller";
+            };
+          }
+          {
+            targets = [ "ghaf-jenkins-controller-prod.northeurope.cloudapp.azure.com:9100" ];
+            labels = {
+              machine_name = "Jenkins PROD controller";
             };
           }
         ];
