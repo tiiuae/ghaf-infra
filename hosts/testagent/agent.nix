@@ -81,6 +81,8 @@ in
               ExecStart = toString (
                 pkgs.writeShellScript "jenkins-connect.sh" # sh
                   ''
+                    set -x
+
                     if [[ -z "$CONTROLLER" ]]; then
                       echo "ERROR: Variable CONTROLLER not configured in $(pwd)/jenkins.env"
                       exit 6
@@ -91,7 +93,7 @@ in
                     # connects to controller with ssh and parses the secret from the jnlp file
                     JENKINS_SECRET="$(
                       ssh -i ${config.sops.secrets.ssh_host_ed25519_key.path} ${config.networking.hostName}@''${CONTROLLER#*//} \
-                      "curl -H 'X-Forwarded-User: ${config.networking.hostName}' http://localhost:8081/computer/${name}/jenkins-agent.jnlp | sed 's/.*<application-desc><argument>\([a-z0-9]*\).*/\1\n/'"
+                      "curl -H 'X-Forwarded-User: ${config.networking.hostName}' -H 'X-Forwarded-Groups: testagents' http://localhost:8081/computer/${name}/jenkins-agent.jnlp | sed 's/.*<application-desc><argument>\([a-z0-9]*\).*/\1\n/'"
                     )"
 
                     # opens a websocket connection to the jenkins controller from this agent

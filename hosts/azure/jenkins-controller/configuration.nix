@@ -60,6 +60,15 @@ let
                 ];
               };
             }
+            # used locally by testagent ssh connections
+            {
+              group = {
+                name = "testagents";
+                permissions = [
+                  "Agent/Connect"
+                ];
+              };
+            }
           ];
         };
       };
