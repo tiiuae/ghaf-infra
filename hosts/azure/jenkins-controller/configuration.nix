@@ -118,7 +118,7 @@ let
               "nuc"
               "orin-agx"
               "orin-nx"
-              "riscv"
+              "dell-7330"
             ];
           };
     };
