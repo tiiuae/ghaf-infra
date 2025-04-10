@@ -61,6 +61,7 @@ in
     nixos-ghaf-webserver = ./ghaf-webserver/configuration.nix;
     nixos-ghaf-auth = ./ghaf-auth/configuration.nix;
     nixos-testagent-uae-dev = ./testagent/uae-dev/configuration.nix;
+    nixos-hetztest = ./hetztest/configuration.nix;
   };
 
   # Expose as flake.lib.mkNixOS.
@@ -97,6 +98,7 @@ in
         "ghaf-webserver"
         "ghaf-auth"
         "testagent-uae-dev"
+        "hetztest"
       ]
   );
 }
