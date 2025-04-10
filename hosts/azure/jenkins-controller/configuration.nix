@@ -234,7 +234,7 @@ in
     testagent-prod = {
       isNormalUser = true;
       openssh.authorizedKeys.keys = [
-        "sh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILXYn8XEtZ/LoRBnM/GwNJMg0gcpFMEYEyQX3X9DTENx root@nixos"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILXYn8XEtZ/LoRBnM/GwNJMg0gcpFMEYEyQX3X9DTENx root@nixos"
       ];
     };
     testagent-release = {
