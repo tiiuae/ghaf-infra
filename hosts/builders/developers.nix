@@ -104,7 +104,9 @@ let
     {
       desc = "Joonas Loppi";
       name = "joonas";
-      keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFjarWokQFXqh4FEMHoyWVjqYwRXoGIKJLHNulNv2bn1" ];
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID0kw624nwuYMt0rju0MRfkvT6Opmww52kmlnQC71LtB joonas.loppi@unikie.com"
+      ];
     }
     {
       desc = "Johanna Rautanen";
