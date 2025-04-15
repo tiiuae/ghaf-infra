@@ -24,7 +24,16 @@
   sops.defaultSopsFile = ./secrets.yaml;
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "testagent-uae-dev";
-  services.testagent.variant = "dev";
+  services.testagent = {
+    variant = "dev";
+    hardware = [
+      "orin-agx"
+      "orin-nx"
+      "nuc"
+      "lenovo-x1"
+      "dell-7330"
+    ];
+  };
 
   boot.initrd.availableKernelModules = [
     "xhci_pci"

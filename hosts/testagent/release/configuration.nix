@@ -29,7 +29,15 @@
   sops.defaultSopsFile = ./secrets.yaml;
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "testagent-release";
-  services.testagent.variant = "release";
+  services.testagent = {
+    variant = "release";
+    hardware = [
+      "orin-agx"
+      "orin-nx"
+      "nuc"
+      "lenovo-x1"
+    ];
+  };
 
   boot.initrd.availableKernelModules = [
     "vmd"
