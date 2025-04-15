@@ -28,7 +28,16 @@
   sops.defaultSopsFile = ./secrets.yaml;
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "testagent-prod";
-  services.testagent.variant = "prod";
+  services.testagent = {
+    variant = "prod";
+    hardware = [
+      "orin-agx"
+      "orin-nx"
+      "nuc"
+      "lenovo-x1"
+      "dell-7330"
+    ];
+  };
 
   # udev rules for test devices serial connections
   services.udev.extraRules = ''
