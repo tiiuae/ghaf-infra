@@ -240,18 +240,6 @@ in
             };
           }
           {
-            targets = [ "172.18.20.106:9100" ];
-            labels = {
-              machine_name = "himalia";
-            };
-          }
-          {
-            targets = [ "172.18.20.107:9100" ];
-            labels = {
-              machine_name = "gerrit";
-            };
-          }
-          {
             targets = [ "172.18.20.108:9100" ];
             labels = {
               machine_name = "monitoring";
