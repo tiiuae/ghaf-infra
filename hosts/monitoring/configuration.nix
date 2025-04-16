@@ -270,6 +270,12 @@ in
               machine_name = "ghaf-proxy";
             };
           }
+          {
+            targets = [ "37.27.190.109:9100" ];
+            labels = {
+              machine_name = "ghaf-auth";
+            };
+          }
         ];
       }
       {

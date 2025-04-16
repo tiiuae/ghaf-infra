@@ -18,6 +18,7 @@
     ]
     ++ (with self.nixosModules; [
       common
+      service-monitoring
       service-openssh
       service-nginx
       user-jrautiola
@@ -26,6 +27,7 @@
   sops.defaultSopsFile = ./secrets.yaml;
   sops.secrets = {
     dex_env.owner = "dex";
+    vedenemo_loki_password.owner = "promtail";
   };
 
   # this server has been installed with 24.1
@@ -45,6 +47,18 @@
     loader.grub = {
       efiSupport = true;
       efiInstallAsRemovable = true;
+    };
+  };
+
+  services.monitoring = {
+    metrics = {
+      enable = true;
+      ssh = true;
+    };
+    logs = {
+      enable = true;
+      lokiAddress = "https://monitoring.vedenemo.dev";
+      auth.password_file = config.sops.secrets.vedenemo_loki_password.path;
     };
   };
 
