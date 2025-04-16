@@ -45,6 +45,8 @@ in
     nixos-az-builder = ./azure/builder/configuration.nix;
     nixos-az-jenkins-controller = ./azure/jenkins-controller/configuration.nix;
     nixos-binarycache = ./binarycache/configuration.nix;
+    nixos-build1 = ./builders/build1/configuration.nix;
+    nixos-build2 = ./builders/build2/configuration.nix;
     nixos-build3 = ./builders/build3/configuration.nix;
     nixos-build4 = ./builders/build4/configuration.nix;
     nixos-hetzarm = ./builders/hetzarm/configuration.nix;
@@ -79,6 +81,8 @@ in
         "az-builder"
         "az-jenkins-controller"
         "binarycache"
+        "build1"
+        "build2"
         "build3"
         "build4"
         "hetzarm"

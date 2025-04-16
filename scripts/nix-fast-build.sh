@@ -140,6 +140,8 @@ main () {
         ".#nixosConfigurations.az-builder.config.system.build.toplevel"
         ".#nixosConfigurations.az-jenkins-controller.config.system.build.toplevel"
         ".#nixosConfigurations.binarycache.config.system.build.toplevel"
+        ".#nixosConfigurations.build1.config.system.build.toplevel"
+        ".#nixosConfigurations.build2.config.system.build.toplevel"
         ".#nixosConfigurations.build3.config.system.build.toplevel"
         ".#nixosConfigurations.build4.config.system.build.toplevel"
         ".#nixosConfigurations.ghaf-coverity.config.system.build.toplevel"
