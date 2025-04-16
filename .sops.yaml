@@ -9,6 +9,7 @@ keys:
   - &vjuntunen age194hljejmy63ph884cnuuume7z33txlkp9an7l3yt2n3sjjere52qkvlfju
   - &cazfi age10a2kt6f07urjv6ahutda3jgr73wferkcqjhkvukwm07eaaqyrqtsh08syf
   - &fayad age18t3gss4l6l629rd8s93eh3ctycu9vjnsftehy38c8tstu2gqycxs64t4sw
+  - &ktu age1czt3ddm0wngf6h6aj0es8d4kh6y7tx7fflf2dfeafmy7apwyr59qw3rcza
 
   # hosts
   - &binarycache age1s47a3y44j695gemcl0kqgjlxxvaa50de9s69jy2l6vc8xtmk5pcskhpknl
@@ -118,3 +119,4 @@ creation_rules:
       - *hrosten
       - *cazfi
       - *flokli
+      - *ktu
