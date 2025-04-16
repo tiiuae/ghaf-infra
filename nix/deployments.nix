@@ -19,6 +19,8 @@ let
   };
 
   x86-nodes = {
+    build1 = mkDeployment "x86_64-linux" "build1" "172.18.20.102";
+    build2 = mkDeployment "x86_64-linux" "build2" "172.18.20.103";
     build3 = mkDeployment "x86_64-linux" "build3" "172.18.20.104";
     build4 = mkDeployment "x86_64-linux" "build4" "172.18.20.105";
     himalia = mkDeployment "x86_64-linux" "himalia" "172.18.20.106";
