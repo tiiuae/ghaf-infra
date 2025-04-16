@@ -59,6 +59,8 @@ in
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICMmB3Ws5MVq0DgVu+Hth/8NhNAYEwXyz4B6FRCF6Nu2";
     "95.216.200.85".publicKey =
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIALs+OQDrCKRIKkwTwI4MI+oYC3RTEus9cXCBcIyRHzl";
+    "37.27.190.109".publicKey =
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPc04ZyZ7LgUKhV6Xr177qQn6Vf43FzUr1mS6g3jrSDj";
   };
 
   # runs a tiny webserver on port 8888 that tunnels requests through ssh connection
