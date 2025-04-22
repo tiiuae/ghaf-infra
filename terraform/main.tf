@@ -115,7 +115,7 @@ locals {
     }
     dev = {
       persistent_id           = "prod"
-      vm_size_binarycache     = "Standard_D4_v3"
+      vm_size_binarycache     = "Standard_D2_v4"
       osdisk_size_binarycache = "250"
       vm_size_builder_x86     = "Standard_D16_v3"
       vm_size_builder_aarch64 = "Standard_D8ps_v5"
