@@ -32,11 +32,13 @@ creation_rules:
     - age:
       - *binarycache
       - *jrautiola
+      - *hrosten
   - path_regex: hosts/monitoring/secrets.yaml$
     key_groups:
     - age:
       - *monitoring
       - *jrautiola
+      - *hrosten
   - path_regex: hosts/testagent/prod/secrets.yaml$
     key_groups:
     - age:
@@ -44,45 +46,53 @@ creation_rules:
       - *jrautiola
       - *flokli
       - *vjuntunen
+      - *hrosten
   - path_regex: hosts/testagent/dev/secrets.yaml$
     key_groups:
     - age:
       - *testagent-dev
       - *jrautiola
       - *vjuntunen
+      - *hrosten
   - path_regex: hosts/testagent/release/secrets.yaml$
     key_groups:
     - age:
       - *testagent-release
       - *jrautiola
       - *vjuntunen
+      - *hrosten
   - path_regex: hosts/builders/build3/secrets.yaml$
     key_groups:
     - age:
       - *build3
       - *jrautiola
+      - *hrosten
   - path_regex: hosts/builders/hetzarm/secrets.yaml$
     key_groups:
     - age:
       - *hetzarm
       - *jrautiola
+      - *hrosten
   - path_regex: hosts/ghaf-log/secrets.yaml$
     key_groups:
     - age:
       - *ghaf-log
       - *jrautiola
+      - *hrosten
   - path_regex: hosts/ghaf-coverity/secrets.yaml$
     key_groups:
     - age:
       - *ghaf-coverity
       - *jrautiola
       - *fayad
+      - *hrosten
   - path_regex: hosts/ghaf-proxy/secrets.yaml$
     key_groups:
     - age:
       - *ghaf-proxy
       - *jrautiola
       - *fayad
+      - *hrosten
   - path_regex: hosts/ghaf-webserver/secrets.yaml$
     key_groups:
     - age:
@@ -93,6 +103,7 @@ creation_rules:
     - age:
       - *ghaf-auth
       - *jrautiola
+      - *hrosten
   - path_regex: hosts/testagent/credentials.yaml$
     key_groups:
     - age:
@@ -103,6 +114,7 @@ creation_rules:
       - *jrautiola
       - *vjuntunen
       - *fayad
+      - *hrosten
   - path_regex: hosts/testagent/uae-dev/secrets.yaml$
     key_groups:
     - age:
@@ -110,6 +122,7 @@ creation_rules:
       - *fayad
       - *vjuntunen
       - *jrautiola
+      - *hrosten
   - path_regex: terraform/terraform-secrets.yaml$
     key_groups:
     - age:
