@@ -31,6 +31,7 @@
     defaultSopsFile = ./secrets.yaml;
     secrets = {
       loki_password.owner = "promtail";
+      cachix-auth-token.owner = "root";
     };
   };
 
@@ -52,6 +53,13 @@
       lokiAddress = "https://monitoring.vedenemo.dev";
       auth.password_file = config.sops.secrets.loki_password.path;
     };
+  };
+
+  services.cachix-watch-store = {
+    enable = true;
+    verbose = true;
+    cacheName = "ghaf-dev";
+    cachixTokenFile = config.sops.secrets.cachix-auth-token.path;
   };
 
   boot = {
