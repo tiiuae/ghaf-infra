@@ -136,6 +136,7 @@ main () {
     [ "$DEBUG" = "true" ] && set -x
     targets_x86=(
         ".#checks"
+        ".#devShells.x86_64-linux.default"
         ".#nixosConfigurations.az-binary-cache.config.system.build.toplevel"
         ".#nixosConfigurations.az-builder.config.system.build.toplevel"
         ".#nixosConfigurations.az-jenkins-controller.config.system.build.toplevel"
