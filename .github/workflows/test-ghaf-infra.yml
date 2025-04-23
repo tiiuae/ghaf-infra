@@ -1,7 +1,7 @@
-# SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
+# SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 
-name: Run pre-push checks
+name: Build and test
 
 on:
   push:
@@ -15,91 +15,21 @@ permissions:
   contents: read
 
 jobs:
-  # Checks if the author of pull request is in our predefined list of authorized users
-  check-identity:
-    runs-on: ubuntu-latest
-    outputs:
-      authorized_user: ${{ steps.check-authorized-user.outputs.authorized_user}}
-    environment: 'internal'
-    steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
-        with:
-          egress-policy: audit
-
-      - name: Check identity
-        id: check-authorized-user
-        shell: bash
-        run: |
-          # AUTHORIZED_USERS is a newline separated list of usernames
-          if echo "${{ vars.AUTHORIZED_USERS }}" | tr -s '[:space:]' '\n' | grep -Fxq "${{ github.actor }}"; then
-            echo "User is authorized"
-            echo "authorized_user=True" >> "$GITHUB_OUTPUT"
-          else
-            echo "User not authorized"
-            echo "authorized_user=False" >> "$GITHUB_OUTPUT"
-          fi
-
-  # Authorization passes without approval if
-  # - the event is not a pull request (eg. push to main)
-  # - pull request comes from another branch in the same repo
-  # - author is in our predefined list of authorized users
-  # If none of these conditions are met, the workflow requires
-  # manual approval from a maintainer with write permissions to continue
   authorize:
-    needs: [check-identity]
-    environment: ${{
-      ( github.event_name != 'pull_request_target' ||
-        github.event.pull_request.head.repo.full_name == github.repository ||
-        needs.check-identity.outputs.authorized_user == 'True' )
-      && 'internal' || 'external' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
-        with:
-          egress-policy: audit
-
-      - run: echo "Auth OK"
-
-  # Send a warning and fail this job if the workflow file was changed.
-  # Rest of the workflow continues as normal but the job failure will grab author's attention.
-  no-workflow-changes:
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request_target' }}
-    steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
-        with:
-          egress-policy: audit
-
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.ref }}
-          fetch-depth: 0
-
-      - name: Check if workflow is modified
-        id: workflow-changed
-        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46.0.5
-        with:
-          files: .github/workflows/test-ghaf-infra.yml
-
-      - name: Send warning
-        run: |
-          if [ "${{ steps.workflow-changed.outputs.any_changed }}" == "true" ]; then
-            echo "::error::"\
-                 "This change edits workflow file '.github/workflows/test-ghaf-infra.yml'."\
-                 "Raising this error to notify that the workflow change will only take impact after merge."\
-                 "Therefore, you need to manually test the change (perhaps in a forked repo) "\
-                 "before merging to make sure the change does not break anything."
-
-            exit 1
-          fi
-
+    # Important: 'authorize' must run before checkout to ensure 'authorize.yml'
+    # runs the base version, not the untrusted version from the PR.
+    uses: ./.github/workflows/authorize.yml
+    # Skip running in forked repositories, since the workflow run would fail
+    # due to missing repository secret(s):
+    if: ${{ github.repository == 'tiiuae/ghaf-infra' }}
+    with:
+      github-org: tiiuae
+    secrets:
+      read-org-members: ${{ secrets.READ_ORG_MEMBERS }}
   build_matrix:
     name: "build"
-    # Don't run unless authorization was successful
     needs: [authorize]
+    if: needs.authorize.outputs.result == 'authorized'
     runs-on: ubuntu-latest
     timeout-minutes: 360
     strategy:
@@ -107,7 +37,6 @@ jobs:
         include:
           - arch: x86_64-linux
           - arch: aarch64-linux
-    if: ${{ always() && needs.authorize.result == 'success' }}
     concurrency:
       # Cancel any in-progress workflow runs from the same PR or branch,
       # allowing matrix jobs to run concurrently:
@@ -118,25 +47,17 @@ jobs:
         uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
         with:
           egress-policy: audit
-
+      - uses: webfactory/ssh-agent@a6f90b1f127823b31d4d4a8d96047790581349bd # v0.9.1
+        with:
+          ssh-private-key: |
+            ${{ secrets.BUILDER_SSH_KEY }}
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
             ref: ${{ github.event.pull_request.head.sha || github.ref }}
             fetch-depth: 0
-
       - name: Install nix
         uses: cachix/install-nix-action@754537aaedb35f72ab11a60cc162c49ef3016495 # v31
-
-      - uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
-        with:
-          name: ghaf-dev
-          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-      - name: Prepare build
-        run: |
-          sh -c "umask 377; echo '${{ secrets.BUILDER_SSH_KEY }}' >builder_key"
-
       - name: Build ${{ matrix.arch }}
         run: |
           if [ "${{ matrix.arch }}" == "x86_64-linux" ]; then
@@ -149,5 +70,5 @@ jobs:
             echo "::error::Unknown architecture: '${{ matrix.arch }}'"
             exit 1
           fi
-          OPTS="--remote $BUILDER --remote-ssh-option IdentityFile builder_key"
+          OPTS="--remote $BUILDER"
           nix develop --command bash -c "./scripts/nix-fast-build.sh -t $TARGET -o '$OPTS'"
