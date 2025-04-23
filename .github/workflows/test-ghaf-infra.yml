@@ -71,4 +71,4 @@ jobs:
             exit 1
           fi
           OPTS="--remote $BUILDER"
-          nix develop --command bash -c "./scripts/nix-fast-build.sh -t $TARGET -o '$OPTS'"
+          nix develop --accept-flake-config --command bash -c "./scripts/nix-fast-build.sh -t $TARGET -o '$OPTS'"
