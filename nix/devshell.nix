@@ -25,6 +25,7 @@
             python3.pkgs.pycodestyle
             python3.pkgs.pylint
             python3.pkgs.tabulate
+            python3.pkgs.aiohttp
             reuse
             sops
             ssh-to-age
@@ -61,7 +62,6 @@
           ])
           ++ [
             inputs'.nix-fast-build.packages.default
-            inputs'.jenkinsPlugins2nix.packages.jenkinsPlugins2nix
           ];
       };
     };

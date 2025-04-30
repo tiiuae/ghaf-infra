@@ -313,7 +313,29 @@ in
       "-Dcom.cloudbees.workflow.rest.external.JobExt.maxRunsPerJob=32"
     ];
 
-    plugins = import ./plugins.nix { inherit (pkgs) stdenv fetchurl; };
+    plugins =
+      let
+        manifest = builtins.fromJSON (builtins.readFile ./plugins.json);
+
+        mkJenkinsPlugin =
+          {
+            name,
+            version,
+            url,
+            sha256,
+          }:
+          lib.nameValuePair name (
+            pkgs.stdenv.mkDerivation {
+              inherit name version;
+              src = pkgs.fetchurl {
+                inherit url sha256;
+              };
+              phases = "installPhase";
+              installPhase = "cp \$src \$out";
+            }
+          );
+      in
+      builtins.listToAttrs (map mkJenkinsPlugin manifest);
   };
 
   systemd.services.jenkins.serviceConfig = {
