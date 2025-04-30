@@ -17,7 +17,6 @@
           nixfmt = {
             enable = true; # nix formatter https://github.com/NixOS/nixfmt
             package = pkgs.nixfmt-rfc-style; # rfc-166 formatting conform version
-            excludes = [ "**/plugins.nix" ]; # file is automatically generated
           };
           deadnix.enable = true; # removes dead nix code https://github.com/astro/deadnix
           statix.enable = true; # prevents use of nix anti-patterns https://github.com/nerdypepper/statix
