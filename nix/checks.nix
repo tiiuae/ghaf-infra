@@ -27,6 +27,7 @@
                 deploykit
                 invoke
                 tabulate
+                aiohttp
               ];
             }
             ''
@@ -35,16 +36,6 @@
               pylint --enable=useless-suppression -rn $(find . -type f -name "*.py" ! -path "*result*" ! -path "*eggs*")
               touch $out
             '';
-        black = pkgs.runCommandLocal "black" { nativeBuildInputs = [ pkgs.python3.pkgs.black ]; } ''
-          cd ${self.outPath}
-          black -q $(find . -type f -name "*.py" ! -path "*result*" ! -path "*eggs*")
-          touch $out
-        '';
-        terraform-fmt = pkgs.runCommandLocal "terraform-fmt" { nativeBuildInputs = [ pkgs.terraform ]; } ''
-          cd ${self.outPath}
-          terraform fmt -check -recursive
-          touch $out
-        '';
       };
     };
 }
