@@ -10,9 +10,6 @@ import asyncio
 import argparse
 from typing import Tuple
 import hashlib
-
-# comes from nix shell but pylint doesn't find it
-# pylint: disable=import-error
 import aiohttp
 
 

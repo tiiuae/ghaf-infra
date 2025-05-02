@@ -7,20 +7,18 @@
     treefmt-nix.flakeModule
   ];
   perSystem =
-    { config, pkgs, ... }:
+    { config, ... }:
     {
       treefmt.config = {
-        package = pkgs.treefmt;
         inherit (config.flake-root) projectRootFile;
 
         programs = {
-          nixfmt = {
-            enable = true; # nix formatter https://github.com/NixOS/nixfmt
-            package = pkgs.nixfmt-rfc-style; # rfc-166 formatting conform version
-          };
+          nixfmt.enable = true; # nix formatter (rfc-style) https://github.com/NixOS/nixfmt
           deadnix.enable = true; # removes dead nix code https://github.com/astro/deadnix
           statix.enable = true; # prevents use of nix anti-patterns https://github.com/nerdypepper/statix
           shellcheck.enable = true; # lints shell scripts https://github.com/koalaman/shellcheck
+          ruff-format.enable = true; # faster python formatter which is equivalent to black
+          terraform.enable = true; # terraform formatter
         };
       };
 
