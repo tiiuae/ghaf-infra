@@ -12,6 +12,12 @@
       treefmt.config = {
         inherit (config.flake-root) projectRootFile;
 
+        settings.global.excludes = [
+          "*.md"
+          "*.txt"
+          "*.png"
+        ];
+
         programs = {
           nixfmt.enable = true; # nix formatter (rfc-style) https://github.com/NixOS/nixfmt
           deadnix.enable = true; # removes dead nix code https://github.com/astro/deadnix
@@ -19,6 +25,7 @@
           shellcheck.enable = true; # lints shell scripts https://github.com/koalaman/shellcheck
           ruff-format.enable = true; # faster python formatter which is equivalent to black
           terraform.enable = true; # terraform formatter
+          actionlint.enable = true; # lints github actions
         };
       };
 
