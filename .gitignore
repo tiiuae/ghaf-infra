@@ -11,3 +11,4 @@ terraform.tfstate.backup
 .direnv
 *.tmp
 .env
+.pre-commit-config.yaml
