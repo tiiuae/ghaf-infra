@@ -114,13 +114,6 @@ Onboarding new admins require the following manual steps:
 
 Follow the instructions at <https://github.com/tiiuae/ghaf-infra/blob/main/docs/deploy-rs.md>
 
-### Git commit hook
-
-This project uses git hooks to ensure the git commit message aligns with [Ghaf commit message guidelines](https://github.com/tiiuae/ghaf/blob/main/CONTRIBUTING.md#commit-message-guidelines)
-
-To install the commit hook, run `./githooks/install-git-hooks.sh`. Commit message check [script](./githooks/check-commit.sh) will then run for all ghaf-infra git commits.
-To remove the hook, run ``rm -f .git/hooks/commit-msg`` in the repository main directory.
-
 ## License
 
 This repository uses the following licenses:
