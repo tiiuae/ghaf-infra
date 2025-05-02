@@ -109,14 +109,6 @@ let
       ];
     }
     {
-      desc = "Johanna Rautanen";
-      name = "jrautanen";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKTGKW0fxHUshYTYWRLAPIQe49Cpfg1WMDK+xXYT5FDm root@johanna-ThinkPad-T14-Gen-1"
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDlNGpvoYLy2D4rmwOh+EcRJbPlYcn6bXj3xhMbCzntk root@johanna-ThinkPad-T14-Gen-1"
-      ];
-    }
-    {
       desc = "Julius Koskela";
       name = "juliuskoskela";
       keys = [
