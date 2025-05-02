@@ -2,9 +2,19 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   perSystem =
-    { pkgs, inputs', ... }:
+    {
+      pkgs,
+      inputs',
+      config,
+      ...
+    }:
     {
       devShells.default = pkgs.mkShell {
+        shellHook = ''
+          ${config.pre-commit.installationScript}
+          echo 1>&2 "Welcome to the development shell!"
+        '';
+
         packages =
           (with pkgs; [
             azure-cli

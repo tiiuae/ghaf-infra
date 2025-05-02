@@ -7,5 +7,6 @@
     ./devshell.nix
     ./nixpkgs.nix
     ./treefmt.nix
+    ./git-hooks.nix
   ];
 }
