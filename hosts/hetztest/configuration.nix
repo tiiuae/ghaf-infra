@@ -17,12 +17,17 @@ in
       ./disk-config.nix
       (modulesPath + "/profiles/qemu-guest.nix")
       inputs.disko.nixosModules.disko
+      inputs.sops-nix.nixosModules.sops
     ]
     ++ (with self.nixosModules; [
       common
       service-openssh
       user-hrosten
     ]);
+
+  sops = {
+    defaultSopsFile = ./secrets.yaml;
+  };
 
   # this server has been installed with 24.11
   system.stateVersion = lib.mkForce "24.11";
