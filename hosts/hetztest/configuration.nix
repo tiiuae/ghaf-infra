@@ -74,6 +74,15 @@ in
   ];
   systemd.user.extraConfig = "DefaultLimitNOFILE=8192";
 
+  users.users = {
+    testagent-release = {
+      isNormalUser = true;
+      openssh.authorizedKeys.keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPP2xRl4jtu1ARpyj9W3uEo+GACLywosKhal432CgK+H"
+      ];
+    };
+  };
+
   services.jenkins = {
     enable = true;
     listenAddress = "0.0.0.0";
