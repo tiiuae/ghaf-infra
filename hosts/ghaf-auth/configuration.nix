@@ -22,6 +22,7 @@
       service-openssh
       service-nginx
       user-jrautiola
+      user-hrosten
     ]);
 
   sops.defaultSopsFile = ./secrets.yaml;
