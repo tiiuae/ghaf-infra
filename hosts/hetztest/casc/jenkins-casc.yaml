@@ -4,8 +4,25 @@ appearance:
 
 jenkins:
   authorizationStrategy:
-    loggedInUsersCanDoAnything:
-      allowAnonymousRead: false
+    globalMatrix:
+      entries:
+        - user:
+            name: admin
+            permissions:
+              - Overall/Administer
+        - group:
+            name: authenticated
+            permissions:
+              - Overall/Read
+              - Job/Read
+        - group:
+            name: 'tiiuae:devenv-fi'
+            permissions:
+              - Overall/Administer
+        - group:
+            name: testagents
+            permissions:
+              - Agent/Connect
   markupFormatter:
     rawHtml:
       disableSyntaxHighlighting: false
