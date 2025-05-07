@@ -23,6 +23,7 @@ in
       common
       service-openssh
       user-hrosten
+      user-jrautiola
     ]);
 
   sops = {
