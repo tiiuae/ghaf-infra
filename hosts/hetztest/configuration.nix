@@ -141,4 +141,5 @@ in
       Restart = "on-failure";
     };
   };
+  environment.etc."jenkins/pipelines".source = ./casc/pipelines;
 }

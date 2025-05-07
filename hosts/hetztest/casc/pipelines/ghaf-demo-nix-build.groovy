@@ -1,6 +1,6 @@
 #!/usr/bin/env groovy
 
-def REPO_URL = 'https://github.com/tiiuae/ghaf-slim-demo/'
+def REPO_URL = 'https://github.com/tiiuae/ghaf/'
 def WORKDIR  = 'checkout'
 
 properties([
