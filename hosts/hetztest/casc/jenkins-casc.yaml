@@ -16,3 +16,17 @@ appearance:
 unclassified:
   timestamper:
     allPipelines: true
+
+jobs:
+  - script: >
+      def pipeline = new File("/etc/jenkins/pipelines/ghaf-demo-nix-build.groovy");
+      if (pipeline.exists()) {
+        pipelineJob('ghaf-demo-nix-build') {
+          definition {
+            cps {
+              script(pipeline.text)
+              sandbox()
+            }
+          }
+        }
+      }
