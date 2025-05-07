@@ -1,17 +1,51 @@
-jenkins:
-
-  authorizationStrategy: unsecured
-
-  numExecutors: 4
-
-  # allow html in build description for artifacts link
-  markupFormatter:
-    rawHtml:
-      disableSyntaxHighlighting: false
-
 appearance:
   pipelineGraphView:
     showGraphOnBuildPage: true
+
+jenkins:
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+  markupFormatter:
+    rawHtml:
+      disableSyntaxHighlighting: false
+  nodes:
+    - permanent:
+        labelString: lenovo-x1
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: release-lenovo-x1
+        remoteFS: /var/lib/jenkins/agents/lenovo-x1
+        retentionStrategy: always
+    - permanent:
+        labelString: nuc
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: release-nuc
+        remoteFS: /var/lib/jenkins/agents/nuc
+        retentionStrategy: always
+    - permanent:
+        labelString: orin-agx
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: release-orin-agx
+        remoteFS: /var/lib/jenkins/agents/orin-agx
+        retentionStrategy: always
+    - permanent:
+        labelString: orin-nx
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: release-orin-nx
+        remoteFS: /var/lib/jenkins/agents/orin-nx
+        retentionStrategy: always
+    - permanent:
+        labelString: dell-7330
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: release-dell-7330
+        remoteFS: /var/lib/jenkins/agents/dell-7330
+        retentionStrategy: always
+  numExecutors: 4
 
 unclassified:
   timestamper:
