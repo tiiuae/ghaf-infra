@@ -92,7 +92,29 @@ in
       # Point to configuration-as-code config
       "-Dcasc.jenkins.config=${jenkins-casc}"
     ];
-    plugins = import ./plugins.nix { inherit (pkgs) stdenv fetchurl; };
+    plugins =
+      let
+        manifest = builtins.fromJSON (builtins.readFile ./plugins.json);
+
+        mkJenkinsPlugin =
+          {
+            name,
+            version,
+            url,
+            sha256,
+          }:
+          lib.nameValuePair name (
+            pkgs.stdenv.mkDerivation {
+              inherit name version;
+              src = pkgs.fetchurl {
+                inherit url sha256;
+              };
+              phases = "installPhase";
+              installPhase = "cp \$src \$out";
+            }
+          );
+      in
+      builtins.listToAttrs (map mkJenkinsPlugin manifest);
   };
 
   systemd.services.jenkins = {
@@ -142,4 +164,29 @@ in
     };
   };
   environment.etc."jenkins/pipelines".source = ./casc/pipelines;
+
+  services.caddy = {
+    enable = true;
+    enableReload = false;
+    configFile = pkgs.writeText "Caddyfile" ''
+      # Disable the admin API, we don't want to reconfigure Caddy at runtime.
+      {
+        admin off
+      }
+
+      https://hetztest.vedenemo.dev {
+        handle {
+          reverse_proxy localhost:8081
+        }
+      }
+    '';
+  };
+
+  # Expose the HTTP[S] port. We still need HTTP for the HTTP-01 challenge.
+  # While TLS-ALPN-01 could be used, disabling HTTP-01 seems only possible from
+  # the JSON config, which won't work alongside Caddyfile.
+  networking.firewall.allowedTCPPorts = [
+    80
+    443
+  ];
 }
