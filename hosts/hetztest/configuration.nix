@@ -8,6 +8,9 @@
   lib,
   ...
 }:
+let
+  jenkins-casc = ./casc;
+in
 {
   imports =
     [
@@ -70,4 +73,72 @@
     }
   ];
   systemd.user.extraConfig = "DefaultLimitNOFILE=8192";
+
+  services.jenkins = {
+    enable = true;
+    listenAddress = "0.0.0.0";
+    port = 8081;
+    withCLI = true;
+    packages = with pkgs; [
+      bashInteractive # 'sh' step in jenkins pipeline requires this
+      coreutils
+      git
+      nix
+      openssh
+    ];
+    extraJavaOptions = [
+      # Useful when the 'sh' step fails:
+      "-Dorg.jenkinsci.plugins.durabletask.BourneShellScript.LAUNCH_DIAGNOSTICS=true"
+      # Point to configuration-as-code config
+      "-Dcasc.jenkins.config=${jenkins-casc}"
+    ];
+    plugins = import ./plugins.nix { inherit (pkgs) stdenv fetchurl; };
+  };
+
+  systemd.services.jenkins = {
+    # Make `jenkins-cli` available
+    path = with pkgs; [ jenkins ];
+    # Implicit URL parameter for `jenkins-cli`
+    environment = {
+      JENKINS_URL = "http://localhost:8081";
+    };
+    postStart =
+      let
+        jenkins-auth = "-auth admin:\"$(cat /var/lib/jenkins/secrets/initialAdminPassword)\"";
+        # Disable setup wizard and restart
+        jenkins-init = pkgs.writeText "groovy" ''
+          #!groovy
+          import jenkins.model.*
+          import jenkins.install.*
+          Jenkins.getInstance().setInstallState(InstallState.INITIAL_SETUP_COMPLETED)
+          Jenkins.getInstance().save()
+          Jenkins.getInstance().restart()
+        '';
+        # Trigger all pipelines
+        jenkins-trigger-all = pkgs.writeText "groovy" ''
+          #!groovy
+          import jenkins.model.*
+          import hudson.model.*
+          for (job in Jenkins.getInstance().getAllItems(Job)) {
+            println("Triggering job: " + job.getName())
+            job.scheduleBuild(0);
+          }
+        '';
+      in
+      ''
+        echo "Waiting jenkins to become online"
+        until jenkins-cli ${jenkins-auth} who-am-i >/dev/null 2>&1; do sleep 1; done
+        echo "Disable setup wizard and restart jenkins"
+        jenkins-cli ${jenkins-auth} groovy = < ${jenkins-init}
+        echo "Waiting jenkins to shutdown"
+        until ! jenkins-cli ${jenkins-auth} who-am-i >/dev/null 2>&1; do sleep 1; done
+        echo "Waiting jenkins to restart"
+        until jenkins-cli ${jenkins-auth} who-am-i >/dev/null 2>&1; do sleep 1; done
+        echo "Triggering jenkins jobs"
+        jenkins-cli ${jenkins-auth} groovy = < ${jenkins-trigger-all}
+      '';
+    serviceConfig = {
+      Restart = "on-failure";
+    };
+  };
 }
