@@ -23,6 +23,7 @@
       user-cazfi
       user-hrosten
       user-jrautiola
+      user-vjuntunen
       user-github
       user-remote-build
     ]);
