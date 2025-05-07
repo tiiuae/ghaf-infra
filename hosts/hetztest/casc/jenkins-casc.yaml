@@ -1,0 +1,18 @@
+jenkins:
+
+  authorizationStrategy: unsecured
+
+  numExecutors: 4
+
+  # allow html in build description for artifacts link
+  markupFormatter:
+    rawHtml:
+      disableSyntaxHighlighting: false
+
+appearance:
+  pipelineGraphView:
+    showGraphOnBuildPage: true
+
+unclassified:
+  timestamper:
+    allPipelines: true
