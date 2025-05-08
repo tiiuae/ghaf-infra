@@ -127,7 +127,15 @@
             "jrautiola"
             "kaitusa"
             "vjuntunen"
-          ];
+          ]
+        ++ [
+          {
+            id = "hetztest";
+            name = "hetztest";
+            redirectURIs = [ "https://hetztest.vedenemo.dev/oauth2/callback" ];
+            secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
+          }
+        ];
     };
   };
 
