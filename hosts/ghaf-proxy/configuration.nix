@@ -21,15 +21,9 @@
       common
       service-openssh
       service-monitoring
-      user-jrautiola
-      user-fayad
-      user-cazfi
+      team-devenv
       user-bmg
       user-flokli
-      user-hrosten
-      user-ktu
-      user-vjuntunen
-      user-alextserepov
     ]);
 
   # this server has been installed with 24.05

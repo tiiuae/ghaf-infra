@@ -13,16 +13,9 @@
       ./hardware-configuration.nix
     ]
     ++ (with self.nixosModules; [
-      # users who have ssh access to this machine
-      user-vjuntunen
+      team-devenv
+      team-testers
       user-flokli
-      user-jrautiola
-      user-mariia
-      user-leivos
-      user-hrosten
-      user-mikkos
-      user-milval
-      user-ktu
     ]);
 
   sops.defaultSopsFile = ./secrets.yaml;

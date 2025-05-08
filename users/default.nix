@@ -19,5 +19,8 @@
     user-alextserepov = import ./alextserepov.nix;
     user-mikkos = import ./mikkos.nix;
     user-milval = import ./milval.nix;
+
+    team-devenv = import ./teams/devenv.nix;
+    team-testers = import ./teams/testers.nix;
   };
 }

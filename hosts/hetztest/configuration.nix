@@ -23,8 +23,7 @@ in
     ++ (with self.nixosModules; [
       common
       service-openssh
-      user-hrosten
-      user-jrautiola
+      team-devenv
     ]);
 
   # this server has been installed with 24.11

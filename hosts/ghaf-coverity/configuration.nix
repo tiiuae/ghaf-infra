@@ -24,9 +24,7 @@ in
     ++ (with self.nixosModules; [
       common
       service-openssh
-      user-jrautiola
-      user-ktu
-      user-fayad
+      team-devenv
     ]);
 
   # this server has been installed with 24.05

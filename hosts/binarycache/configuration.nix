@@ -25,9 +25,7 @@
       service-openssh
       service-binary-cache
       service-nginx
-      user-jrautiola
-      user-cazfi
-      user-hrosten
+      team-devenv
       user-avnik
     ]);
 

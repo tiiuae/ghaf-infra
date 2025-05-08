@@ -16,10 +16,10 @@
       inputs.sops-nix.nixosModules.sops
     ]
     ++ (with self.nixosModules; [
+      service-openssh
+      team-devenv
       user-bmg
-      user-ktu
       user-avnik
-      user-vjuntunen
       user-github # Remove when all GhA workflows moved to build4
       user-remote-build # Remove when all jenkins builds moved to build4
     ]);
