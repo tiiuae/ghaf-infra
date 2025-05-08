@@ -12,13 +12,9 @@
       ../agents-common.nix
     ]
     ++ (with self.nixosModules; [
-      user-vjuntunen
+      team-devenv
+      team-testers
       user-flokli
-      user-jrautiola
-      user-mariia
-      user-leivos
-      user-hrosten
-      user-fayad
     ]);
 
   sops.defaultSopsFile = ./secrets.yaml;

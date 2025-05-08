@@ -12,6 +12,8 @@
       ../builders-common.nix
     ]
     ++ (with self.nixosModules; [
+      service-openssh
+      team-devenv
       user-github
       user-remote-build
     ]);

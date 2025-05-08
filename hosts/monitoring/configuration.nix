@@ -36,8 +36,7 @@ in
       ficolo-common
       service-openssh
       service-nginx
-      user-jrautiola
-      user-vjuntunen
+      team-devenv
     ]);
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";

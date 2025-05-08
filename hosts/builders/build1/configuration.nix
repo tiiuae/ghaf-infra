@@ -15,6 +15,8 @@
       inputs.sops-nix.nixosModules.sops
     ]
     ++ (with self.nixosModules; [
+      service-openssh
+      team-devenv
       user-github
       user-remote-build
     ]);

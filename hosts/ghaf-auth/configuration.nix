@@ -21,8 +21,7 @@
       service-monitoring
       service-openssh
       service-nginx
-      user-jrautiola
-      user-hrosten
+      team-devenv
     ]);
 
   sops.defaultSopsFile = ./secrets.yaml;

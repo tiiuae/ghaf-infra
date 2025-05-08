@@ -22,10 +22,7 @@
       service-openssh
       service-nginx
       service-monitoring
-      user-jrautiola
-      user-cazfi
-      user-hrosten
-      user-ktu
+      team-devenv
       user-bmg
       user-vunnyso
     ]);

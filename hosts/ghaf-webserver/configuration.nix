@@ -23,8 +23,7 @@
       common
       service-openssh
       service-nginx
-      user-cazfi
-      user-jrautiola
+      team-devenv
     ]);
 
   # List packages installed in system profile

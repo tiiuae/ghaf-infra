@@ -20,10 +20,7 @@
       common
       service-openssh
       service-monitoring
-      user-cazfi
-      user-hrosten
-      user-jrautiola
-      user-vjuntunen
+      team-devenv
       user-github
       user-remote-build
     ]);

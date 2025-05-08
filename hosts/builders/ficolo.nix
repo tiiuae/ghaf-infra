@@ -15,10 +15,6 @@
     ++ (with self.nixosModules; [
       common
       ficolo-common
-      service-openssh
-      user-cazfi
-      user-hrosten
-      user-jrautiola
     ]);
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
