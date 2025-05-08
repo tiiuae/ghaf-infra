@@ -6,6 +6,7 @@
   inputs,
   modulesPath,
   lib,
+  config,
   ...
 }:
 let
@@ -25,10 +26,6 @@ in
       user-hrosten
       user-jrautiola
     ]);
-
-  sops = {
-    defaultSopsFile = ./secrets.yaml;
-  };
 
   # this server has been installed with 24.11
   system.stateVersion = lib.mkForce "24.11";
@@ -91,7 +88,7 @@ in
 
   services.jenkins = {
     enable = true;
-    listenAddress = "0.0.0.0";
+    listenAddress = "localhost";
     port = 8081;
     withCLI = true;
     packages = with pkgs; [
@@ -106,6 +103,8 @@ in
       "-Dorg.jenkinsci.plugins.durabletask.BourneShellScript.LAUNCH_DIAGNOSTICS=true"
       # Point to configuration-as-code config
       "-Dcasc.jenkins.config=${jenkins-casc}"
+      # Disable the intitial setup wizard, and the creation of initialAdminPassword.
+      "-Djenkins.install.runSetupWizard=false"
     ];
     plugins =
       let
@@ -133,47 +132,6 @@ in
   };
 
   systemd.services.jenkins = {
-    # Make `jenkins-cli` available
-    path = with pkgs; [ jenkins ];
-    # Implicit URL parameter for `jenkins-cli`
-    environment = {
-      JENKINS_URL = "http://localhost:8081";
-    };
-    postStart =
-      let
-        jenkins-auth = "-auth admin:\"$(cat /var/lib/jenkins/secrets/initialAdminPassword)\"";
-        # Disable setup wizard and restart
-        jenkins-init = pkgs.writeText "groovy" ''
-          #!groovy
-          import jenkins.model.*
-          import jenkins.install.*
-          Jenkins.getInstance().setInstallState(InstallState.INITIAL_SETUP_COMPLETED)
-          Jenkins.getInstance().save()
-          Jenkins.getInstance().restart()
-        '';
-        # Trigger all pipelines
-        jenkins-trigger-all = pkgs.writeText "groovy" ''
-          #!groovy
-          import jenkins.model.*
-          import hudson.model.*
-          for (job in Jenkins.getInstance().getAllItems(Job)) {
-            println("Triggering job: " + job.getName())
-            job.scheduleBuild(0);
-          }
-        '';
-      in
-      ''
-        echo "Waiting jenkins to become online"
-        until jenkins-cli ${jenkins-auth} who-am-i >/dev/null 2>&1; do sleep 1; done
-        echo "Disable setup wizard and restart jenkins"
-        jenkins-cli ${jenkins-auth} groovy = < ${jenkins-init}
-        echo "Waiting jenkins to shutdown"
-        until ! jenkins-cli ${jenkins-auth} who-am-i >/dev/null 2>&1; do sleep 1; done
-        echo "Waiting jenkins to restart"
-        until jenkins-cli ${jenkins-auth} who-am-i >/dev/null 2>&1; do sleep 1; done
-        echo "Triggering jenkins jobs"
-        jenkins-cli ${jenkins-auth} groovy = < ${jenkins-trigger-all}
-      '';
     serviceConfig = {
       Restart = "on-failure";
     };
@@ -190,11 +148,95 @@ in
       }
 
       https://hetztest.vedenemo.dev {
+
+        @unauthenticated {
+          # github sends webhook triggers here
+          path /github-webhook /github-webhook/*
+
+          # testagents need these
+          path /jnlpJars /jnlpJars/*
+          path /wsagents /wsagents/*
+        }
+
+        handle @unauthenticated {
+          reverse_proxy localhost:8081
+        }
+
+        # Proxy all other requests to jenkins as-is, but delegate auth to
+        # oauth2-proxy.
+        # Also see https://oauth2-proxy.github.io/oauth2-proxy/configuration/integration#configuring-for-use-with-the-caddy-v2-forward_auth-directive
+
+        handle /oauth2/* {
+          reverse_proxy localhost:4180 {
+            # oauth2-proxy requires the X-Real-IP and X-Forwarded-{Proto,Host,Uri} headers.
+            # The reverse_proxy directive automatically sets X-Forwarded-{For,Proto,Host} headers.
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-Uri {uri}
+          }
+        }
+
         handle {
+          forward_auth localhost:4180 {
+            uri /oauth2/auth
+
+            # oauth2-proxy requires the X-Real-IP and X-Forwarded-{Proto,Host,Uri} headers.
+            # The forward_auth directive automatically sets the X-Forwarded-{For,Proto,Host,Method,Uri} headers.
+            header_up X-Real-IP {remote_host}
+
+            copy_headers {
+              X-Auth-Request-User>X-Forwarded-User
+              X-Auth-Request-Groups>X-Forwarded-Groups
+              X-Auth-Request-Email>X-Forwarded-Mail
+              X-Auth-Request-Preferred-Username>X-Forwarded-DisplayName
+            }
+
+            # If oauth2-proxy returns a 401 status, redirect the client to the sign-in page.
+            @error status 401
+            handle_response @error {
+              redir * /oauth2/sign_in?rd={scheme}://{host}{uri}
+            }
+          }
           reverse_proxy localhost:8081
         }
       }
     '';
+  };
+
+  sops = {
+    defaultSopsFile = ./secrets.yaml;
+    secrets = {
+      oauth2_proxy_client_secret.owner = "oauth2-proxy";
+      oauth2_proxy_cookie_secret.owner = "oauth2-proxy";
+    };
+    templates.oauth2_proxy_env = {
+      content = ''
+        OAUTH2_PROXY_COOKIE_SECRET=${config.sops.placeholder.oauth2_proxy_cookie_secret}
+      '';
+      owner = "oauth2-proxy";
+    };
+  };
+
+  services.oauth2-proxy = {
+    enable = true;
+    clientID = "hetztest";
+    clientSecret = null;
+    cookie.secret = null;
+    provider = "oidc";
+    oidcIssuerUrl = "https://auth.vedenemo.dev";
+    setXauthrequest = true;
+    cookie.secure = false;
+    extraConfig = {
+      email-domain = "*";
+      auth-logging = true;
+      request-logging = true;
+      standard-logging = true;
+      reverse-proxy = true;
+      scope = "openid profile email groups";
+      provider-display-name = "Vedenemo Auth";
+      custom-sign-in-logo = "-";
+      client-secret-file = config.sops.secrets.oauth2_proxy_client_secret.path;
+    };
+    keyFile = config.sops.templates.oauth2_proxy_env.path;
   };
 
   # Expose the HTTP[S] port. We still need HTTP for the HTTP-01 challenge.
