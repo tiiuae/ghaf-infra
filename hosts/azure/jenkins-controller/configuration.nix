@@ -211,11 +211,6 @@ let
         print(s.value)
       '';
 
-  # nixos 24.05 pkgs is used for rclone
-  old-pkgs = import inputs.nixpkgs-24-05 { inherit (pkgs) system; };
-
-  # rclone 1.68.2 breaks our pipelines, keep using the old 1.66 version
-  rclone = old-pkgs.callPackage ../../../pkgs/rclone { };
 in
 {
   imports = [
@@ -445,7 +440,7 @@ in
       RuntimeDirectory = "rclone-http";
       EnvironmentFile = "/var/lib/rclone-jenkins-artifacts/env";
       ExecStart = lib.concatStringsSep " " [
-        "${rclone}/bin/rclone"
+        "${pkgs.rclone}/bin/rclone"
         "serve"
         "webdav"
         "--dir-cache-time"
@@ -478,7 +473,7 @@ in
       RuntimeDirectory = "rclone-http";
       EnvironmentFile = "/var/lib/rclone-jenkins-artifacts/env";
       ExecStart = lib.concatStringsSep " " [
-        "${rclone}/bin/rclone"
+        "${pkgs.rclone}/bin/rclone"
         "serve"
         "http"
         "--read-only"
