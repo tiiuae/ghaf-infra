@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 {
+  self,
   inputs,
   lib,
   config,
@@ -11,6 +12,12 @@ let
   asGB = size: toString (size * 1024 * 1024 * 1024);
 in
 {
+  # revision of the flake the configuration was built from.
+  # $ nixos-version --configuration-revision
+  system.configurationRevision = toString (
+    self.rev or self.dirtyRev or self.lastModified or "unknown"
+  );
+
   nixpkgs.config.allowUnfree = true;
 
   nix = {
