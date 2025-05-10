@@ -79,9 +79,9 @@
   },
   {
     "name": "configuration-as-code",
-    "version": "1958.vddc0d369b_e16",
-    "url": "https://updates.jenkins.io/download/plugins/configuration-as-code/1958.vddc0d369b_e16/configuration-as-code.hpi",
-    "sha256": "0a6xalvqcknivgwr8iqsv6dyvr2y38a4ndqmwah33qg405hcp84r"
+    "version": "1963.v24e046127a_3f",
+    "url": "https://updates.jenkins.io/download/plugins/configuration-as-code/1963.v24e046127a_3f/configuration-as-code.hpi",
+    "sha256": "1bd5pw780vzdmaam01g8dky52zyw76b4hl989h9symkk8smzmmjc"
   },
   {
     "name": "json-api",
@@ -108,6 +108,12 @@
     "sha256": "0hkyq457yqaxhkqvkwq9h0jv7jsk4c9ysa9293c8ymg1wwlz55c9"
   },
   {
+    "name": "configuration-as-code-groovy",
+    "version": "1.1",
+    "url": "https://updates.jenkins.io/download/plugins/configuration-as-code-groovy/1.1/configuration-as-code-groovy.hpi",
+    "sha256": "0rp88gy67n18yb8cq2p2ypaqalki647l1i396qj340ivbfjb8aiw"
+  },
+  {
     "name": "workflow-aggregator",
     "version": "608.v67378e9d3db_1",
     "url": "https://updates.jenkins.io/download/plugins/workflow-aggregator/608.v67378e9d3db_1/workflow-aggregator.hpi",
@@ -127,9 +133,9 @@
   },
   {
     "name": "ionicons-api",
-    "version": "82.v0597178874e1",
-    "url": "https://updates.jenkins.io/download/plugins/ionicons-api/82.v0597178874e1/ionicons-api.hpi",
-    "sha256": "14zq8xn7dnwf06nqq3k21lakd68q2gq241gqpxqf09d3w95433pc"
+    "version": "88.va_4187cb_eddf1",
+    "url": "https://updates.jenkins.io/download/plugins/ionicons-api/88.va_4187cb_eddf1/ionicons-api.hpi",
+    "sha256": "0vzs1m251knzbjk3qpxk29pycs04dh50y1b0pw6vswkmb05a8vid"
   },
   {
     "name": "workflow-scm-step",
@@ -277,9 +283,9 @@
   },
   {
     "name": "pipeline-milestone-step",
-    "version": "127.vb_52887ca_3b_6d",
-    "url": "https://updates.jenkins.io/download/plugins/pipeline-milestone-step/127.vb_52887ca_3b_6d/pipeline-milestone-step.hpi",
-    "sha256": "0fclh1bbv7b5diikm5cwcahncx51iyjv9nr5l8j774jgn803v7wa"
+    "version": "134.vdf60d179845f",
+    "url": "https://updates.jenkins.io/download/plugins/pipeline-milestone-step/134.vdf60d179845f/pipeline-milestone-step.hpi",
+    "sha256": "1vkawq6rpvf443yswaagj1fwzbdfcc3d6k9riclb4sfysid3v5mb"
   },
   {
     "name": "pipeline-stage-step",
@@ -457,9 +463,9 @@
   },
   {
     "name": "jsoup",
-    "version": "1.19.1-38.v216a_f3721b_3c",
-    "url": "https://updates.jenkins.io/download/plugins/jsoup/1.19.1-38.v216a_f3721b_3c/jsoup.hpi",
-    "sha256": "1ndyva20kb5r9l6f374c3iwv8g4qaq3kl58cvlr99wxhcgphfy7y"
+    "version": "1.20.1-46.ve5f1416988c2",
+    "url": "https://updates.jenkins.io/download/plugins/jsoup/1.20.1-46.ve5f1416988c2/jsoup.hpi",
+    "sha256": "1w77qna5avr784xvr8sy2n7kl7mcxknp6snpkm6sb6biy4xzz6p7"
   },
   {
     "name": "token-macro",
@@ -552,202 +558,10 @@
     "sha256": "1294ynm62fnm1avx276mm4rxf6dh3rhy57l1kpnk3jrwazbwp2y8"
   },
   {
-    "name": "slack",
-    "version": "761.v2a_8770f0d169",
-    "url": "https://updates.jenkins.io/download/plugins/slack/761.v2a_8770f0d169/slack.hpi",
-    "sha256": "1ba4jsisqwzamqrwgbh3fb8js47cn10g2gq1xs4pd8nh2vv8acy6"
-  },
-  {
-    "name": "apache-httpcomponents-client-5-api",
-    "version": "5.4.4-144.vc483d91903d2",
-    "url": "https://updates.jenkins.io/download/plugins/apache-httpcomponents-client-5-api/5.4.4-144.vc483d91903d2/apache-httpcomponents-client-5-api.hpi",
-    "sha256": "1hzz26spr0rncisf6f61kvsvrkwgfnhgkwn4xl4c34mlcwqw5sq7"
-  },
-  {
     "name": "timestamper",
     "version": "1.28",
     "url": "https://updates.jenkins.io/download/plugins/timestamper/1.28/timestamper.hpi",
     "sha256": "1vjpmhhygy6hgi8sgs3wx212savi8d211rzy1cnh7vvgy80z0w5f"
-  },
-  {
-    "name": "blueocean",
-    "version": "1.27.19",
-    "url": "https://updates.jenkins.io/download/plugins/blueocean/1.27.19/blueocean.hpi",
-    "sha256": "002lmw7751wfkgi0nj9lkb1myqg62aln2n17x8kjz00ksg7hcmyj"
-  },
-  {
-    "name": "blueocean-bitbucket-pipeline",
-    "version": "1.27.19",
-    "url": "https://updates.jenkins.io/download/plugins/blueocean-bitbucket-pipeline/1.27.19/blueocean-bitbucket-pipeline.hpi",
-    "sha256": "0mm7ld326a3rd3bxzsjgdvgwsxi1agiwh31n4lfsn0bd84vifays"
-  },
-  {
-    "name": "blueocean-commons",
-    "version": "1.27.19",
-    "url": "https://updates.jenkins.io/download/plugins/blueocean-commons/1.27.19/blueocean-commons.hpi",
-    "sha256": "1hdvyycm7xcss91d4vjf6a36qc84as3dgqpdcfdc8anqfbi9j5dy"
-  },
-  {
-    "name": "blueocean-pipeline-api-impl",
-    "version": "1.27.19",
-    "url": "https://updates.jenkins.io/download/plugins/blueocean-pipeline-api-impl/1.27.19/blueocean-pipeline-api-impl.hpi",
-    "sha256": "1bvn0yx0xm1skp7flxawr86z8x1l973n4dq564lx7z3gqycn50c1"
-  },
-  {
-    "name": "blueocean-pipeline-scm-api",
-    "version": "1.27.19",
-    "url": "https://updates.jenkins.io/download/plugins/blueocean-pipeline-scm-api/1.27.19/blueocean-pipeline-scm-api.hpi",
-    "sha256": "1qf96k2f071i5l6gk7g47466n8qqbkpf7khydww10b6ap637i2jg"
-  },
-  {
-    "name": "blueocean-rest",
-    "version": "1.27.19",
-    "url": "https://updates.jenkins.io/download/plugins/blueocean-rest/1.27.19/blueocean-rest.hpi",
-    "sha256": "1vrahm8fg709cvwx8a04qx3zd3g511f3p693jm0jkfjdrrn43mvb"
-  },
-  {
-    "name": "pubsub-light",
-    "version": "1.19",
-    "url": "https://updates.jenkins.io/download/plugins/pubsub-light/1.19/pubsub-light.hpi",
-    "sha256": "03adq3xss9kkrzgy7z4iqjbk5wlngx5ghc7s6klnyn6m33da0vy0"
-  },
-  {
-    "name": "blueocean-rest-impl",
-    "version": "1.27.19",
-    "url": "https://updates.jenkins.io/download/plugins/blueocean-rest-impl/1.27.19/blueocean-rest-impl.hpi",
-    "sha256": "1w6ckx6qhgb45z7wkysd6scsz559r1x9apb4aqh0n8l1wipbg3jz"
-  },
-  {
-    "name": "blueocean-jwt",
-    "version": "1.27.19",
-    "url": "https://updates.jenkins.io/download/plugins/blueocean-jwt/1.27.19/blueocean-jwt.hpi",
-    "sha256": "0sww5f12rs8z75n99aaabnyyx5d60by798nrgjknkg3hw971sk98"
-  },
-  {
-    "name": "blueocean-web",
-    "version": "1.27.19",
-    "url": "https://updates.jenkins.io/download/plugins/blueocean-web/1.27.19/blueocean-web.hpi",
-    "sha256": "16n3526vn7m5lajig2hnhqi68m32pvgywl0i6rwpfjd5n8zfc595"
-  },
-  {
-    "name": "blueocean-core-js",
-    "version": "1.27.19",
-    "url": "https://updates.jenkins.io/download/plugins/blueocean-core-js/1.27.19/blueocean-core-js.hpi",
-    "sha256": "033ix1b50k4vwcx3323wvqlzqxnv9zpd4kakiyf2wda0hyzny9wp"
-  },
-  {
-    "name": "jenkins-design-language",
-    "version": "1.27.19",
-    "url": "https://updates.jenkins.io/download/plugins/jenkins-design-language/1.27.19/jenkins-design-language.hpi",
-    "sha256": "0h6wwpv1ci2w5dryfmp5v6kc3m11dfzh1j6qh8bibjks6warljph"
-  },
-  {
-    "name": "favorite",
-    "version": "2.225.v68765b_b_a_1fa_3",
-    "url": "https://updates.jenkins.io/download/plugins/favorite/2.225.v68765b_b_a_1fa_3/favorite.hpi",
-    "sha256": "1j6fd1wddv6y6493yagvxpjhkyck30bazl2faqazn5in1c5xh2f6"
-  },
-  {
-    "name": "github-branch-source",
-    "version": "1815.v9152b_2ff7a_1b_",
-    "url": "https://updates.jenkins.io/download/plugins/github-branch-source/1815.v9152b_2ff7a_1b_/github-branch-source.hpi",
-    "sha256": "03852xlq1yh93hcxsv295vwjy9injjnv4l9byc6ayw08sr4zvayi"
-  },
-  {
-    "name": "htmlpublisher",
-    "version": "425",
-    "url": "https://updates.jenkins.io/download/plugins/htmlpublisher/425/htmlpublisher.hpi",
-    "sha256": "1hvmvbbkacbih1a2z0vx17gj1hbnagjspva1bx54zax5x94bbb43"
-  },
-  {
-    "name": "pipeline-graph-analysis",
-    "version": "235.vb_a_a_36b_f248c2",
-    "url": "https://updates.jenkins.io/download/plugins/pipeline-graph-analysis/235.vb_a_a_36b_f248c2/pipeline-graph-analysis.hpi",
-    "sha256": "0lw09j5km1alc8zw0lp4lj3iik6x1izidnd99gqxqf0ramwaaihj"
-  },
-  {
-    "name": "cloudbees-bitbucket-branch-source",
-    "version": "936.1.0",
-    "url": "https://updates.jenkins.io/download/plugins/cloudbees-bitbucket-branch-source/936.1.0/cloudbees-bitbucket-branch-source.hpi",
-    "sha256": "1ip7mz233jhkihx7ndn4cmh237nd7nh0d79l6w37qvy5lbqw5wg2"
-  },
-  {
-    "name": "authentication-tokens",
-    "version": "1.131.v7199556c3004",
-    "url": "https://updates.jenkins.io/download/plugins/authentication-tokens/1.131.v7199556c3004/authentication-tokens.hpi",
-    "sha256": "0kbbfv7m019jqslwzbc7nhkaa1kfz2g02d67i55sia4wxx2sqmch"
-  },
-  {
-    "name": "handy-uri-templates-2-api",
-    "version": "2.1.8-36.v85e4cb_234a_13",
-    "url": "https://updates.jenkins.io/download/plugins/handy-uri-templates-2-api/2.1.8-36.v85e4cb_234a_13/handy-uri-templates-2-api.hpi",
-    "sha256": "1qbidag7bwb668ka4gvq5dsrwzrisaxcrwxa2bzhddja61xvy89m"
-  },
-  {
-    "name": "blueocean-config",
-    "version": "1.27.19",
-    "url": "https://updates.jenkins.io/download/plugins/blueocean-config/1.27.19/blueocean-config.hpi",
-    "sha256": "0x7j95ba97v9njdhczr90n84rxw2gmb28bimfiw7szzhxnc4qq4y"
-  },
-  {
-    "name": "blueocean-dashboard",
-    "version": "1.27.19",
-    "url": "https://updates.jenkins.io/download/plugins/blueocean-dashboard/1.27.19/blueocean-dashboard.hpi",
-    "sha256": "0ig1g6a6y1aks2ps03zr4cq5rqh05jvk25b0k8xyyjmvcyqdig4s"
-  },
-  {
-    "name": "blueocean-events",
-    "version": "1.27.19",
-    "url": "https://updates.jenkins.io/download/plugins/blueocean-events/1.27.19/blueocean-events.hpi",
-    "sha256": "0f38ipsfwd9f4675mxw44sfs5c9vhjp7x43zlyfhcx5hizr3rm5z"
-  },
-  {
-    "name": "sse-gateway",
-    "version": "1.28",
-    "url": "https://updates.jenkins.io/download/plugins/sse-gateway/1.28/sse-gateway.hpi",
-    "sha256": "04xd6rh0cw8s4w028d9gwnz1sskfn9r0c0xm3870k78rvzkgkq9w"
-  },
-  {
-    "name": "blueocean-executor-info",
-    "version": "1.27.19",
-    "url": "https://updates.jenkins.io/download/plugins/blueocean-executor-info/1.27.19/blueocean-executor-info.hpi",
-    "sha256": "0lrg7qhvddpnjpcf09p0qyy7h369dic83214h5l6830kmwr9pcni"
-  },
-  {
-    "name": "blueocean-git-pipeline",
-    "version": "1.27.19",
-    "url": "https://updates.jenkins.io/download/plugins/blueocean-git-pipeline/1.27.19/blueocean-git-pipeline.hpi",
-    "sha256": "13m8plyh0kzwwj27sxlrqd65jk10b9zzlkfhl1xfr0z695v51sys"
-  },
-  {
-    "name": "blueocean-github-pipeline",
-    "version": "1.27.19",
-    "url": "https://updates.jenkins.io/download/plugins/blueocean-github-pipeline/1.27.19/blueocean-github-pipeline.hpi",
-    "sha256": "1v5bccsmb06dd053y85i7p25449q0b23z3lbq37hhw6h9jb91pry"
-  },
-  {
-    "name": "blueocean-i18n",
-    "version": "1.27.19",
-    "url": "https://updates.jenkins.io/download/plugins/blueocean-i18n/1.27.19/blueocean-i18n.hpi",
-    "sha256": "0m757nrvqf88xmlqbhv22rblxmkx92wd1fyxli6lgcfc0vm8r76w"
-  },
-  {
-    "name": "blueocean-personalization",
-    "version": "1.27.19",
-    "url": "https://updates.jenkins.io/download/plugins/blueocean-personalization/1.27.19/blueocean-personalization.hpi",
-    "sha256": "1zbrjzn4632mc5jrlvqchmfzz7gqyzngr6q2gq5f7ccdxs0f0f7k"
-  },
-  {
-    "name": "blueocean-pipeline-editor",
-    "version": "1.27.19",
-    "url": "https://updates.jenkins.io/download/plugins/blueocean-pipeline-editor/1.27.19/blueocean-pipeline-editor.hpi",
-    "sha256": "11xihkr7hr0jwk38kx36cacajzd0i7hfvzxryndcj375xn5v7h50"
-  },
-  {
-    "name": "blueocean-display-url",
-    "version": "2.4.4",
-    "url": "https://updates.jenkins.io/download/plugins/blueocean-display-url/2.4.4/blueocean-display-url.hpi",
-    "sha256": "0yniw3c8rs98wh1if1p76cr70qzigda3p895z6jdjpdkr1n6qhq2"
   },
   {
     "name": "pipeline-stage-view",
@@ -762,34 +576,22 @@
     "sha256": "0cplnfgsx0rh88fxq2f1lcp1rvygwh8amrlg14czmqyqr32h49j3"
   },
   {
+    "name": "pipeline-graph-analysis",
+    "version": "235.vb_a_a_36b_f248c2",
+    "url": "https://updates.jenkins.io/download/plugins/pipeline-graph-analysis/235.vb_a_a_36b_f248c2/pipeline-graph-analysis.hpi",
+    "sha256": "0lw09j5km1alc8zw0lp4lj3iik6x1izidnd99gqxqf0ramwaaihj"
+  },
+  {
     "name": "pipeline-graph-view",
-    "version": "477.v42d998fde36d",
-    "url": "https://updates.jenkins.io/download/plugins/pipeline-graph-view/477.v42d998fde36d/pipeline-graph-view.hpi",
-    "sha256": "0ygpa0248lx55sw9g2n1j05bq5l4bqhz1gv1x0y31l747wc4ibkv"
+    "version": "521.v799963fd568a_",
+    "url": "https://updates.jenkins.io/download/plugins/pipeline-graph-view/521.v799963fd568a_/pipeline-graph-view.hpi",
+    "sha256": "16hr83l7x8mzzykrzw4kn4mrwpp35ad1x3pzcc88y566d088gpx6"
   },
   {
-    "name": "github-pullrequest",
-    "version": "0.7.2",
-    "url": "https://updates.jenkins.io/download/plugins/github-pullrequest/0.7.2/github-pullrequest.hpi",
-    "sha256": "0gpsdxpms0q3ilswpqp3igspq9y3dpvwaxgjgglpn82s494xkjpd"
-  },
-  {
-    "name": "block-queued-job",
-    "version": "0.2.0",
-    "url": "https://updates.jenkins.io/download/plugins/block-queued-job/0.2.0/block-queued-job.hpi",
-    "sha256": "008dfk2dh2n8sbqp02fx0cir4cmzpvnzkqlrn2z7fzblbbgr4vql"
-  },
-  {
-    "name": "email-ext",
-    "version": "1876.v28d8d38315b_d",
-    "url": "https://updates.jenkins.io/download/plugins/email-ext/1876.v28d8d38315b_d/email-ext.hpi",
-    "sha256": "0s31h0nnj7rmgjda5v6fgz9wa47l7j9h579x566jrz9kn4s6pz60"
-  },
-  {
-    "name": "jucies",
-    "version": "0.2.1",
-    "url": "https://updates.jenkins.io/download/plugins/jucies/0.2.1/jucies.hpi",
-    "sha256": "1lwkxy0n2ww5hszpsyi6q0whm5mdjs8apxacv1lhkk5qplcmb14q"
+    "name": "github-branch-source",
+    "version": "1815.v9152b_2ff7a_1b_",
+    "url": "https://updates.jenkins.io/download/plugins/github-branch-source/1815.v9152b_2ff7a_1b_/github-branch-source.hpi",
+    "sha256": "03852xlq1yh93hcxsv295vwjy9injjnv4l9byc6ayw08sr4zvayi"
   },
   {
     "name": "pipeline-utility-steps",
@@ -814,6 +616,54 @@
     "version": "6.0.0",
     "url": "https://updates.jenkins.io/download/plugins/robot/6.0.0/robot.hpi",
     "sha256": "1c3fixqkp9g39401scba2l4gkfkvkw9ik8h3bmiirxg76qcfv3yh"
+  },
+  {
+    "name": "blueocean-rest-impl",
+    "version": "1.27.19",
+    "url": "https://updates.jenkins.io/download/plugins/blueocean-rest-impl/1.27.19/blueocean-rest-impl.hpi",
+    "sha256": "1w6ckx6qhgb45z7wkysd6scsz559r1x9apb4aqh0n8l1wipbg3jz"
+  },
+  {
+    "name": "blueocean-jwt",
+    "version": "1.27.19",
+    "url": "https://updates.jenkins.io/download/plugins/blueocean-jwt/1.27.19/blueocean-jwt.hpi",
+    "sha256": "0sww5f12rs8z75n99aaabnyyx5d60by798nrgjknkg3hw971sk98"
+  },
+  {
+    "name": "blueocean-commons",
+    "version": "1.27.19",
+    "url": "https://updates.jenkins.io/download/plugins/blueocean-commons/1.27.19/blueocean-commons.hpi",
+    "sha256": "1hdvyycm7xcss91d4vjf6a36qc84as3dgqpdcfdc8anqfbi9j5dy"
+  },
+  {
+    "name": "blueocean-rest",
+    "version": "1.27.19",
+    "url": "https://updates.jenkins.io/download/plugins/blueocean-rest/1.27.19/blueocean-rest.hpi",
+    "sha256": "1vrahm8fg709cvwx8a04qx3zd3g511f3p693jm0jkfjdrrn43mvb"
+  },
+  {
+    "name": "blueocean-web",
+    "version": "1.27.19",
+    "url": "https://updates.jenkins.io/download/plugins/blueocean-web/1.27.19/blueocean-web.hpi",
+    "sha256": "16n3526vn7m5lajig2hnhqi68m32pvgywl0i6rwpfjd5n8zfc595"
+  },
+  {
+    "name": "blueocean-core-js",
+    "version": "1.27.19",
+    "url": "https://updates.jenkins.io/download/plugins/blueocean-core-js/1.27.19/blueocean-core-js.hpi",
+    "sha256": "033ix1b50k4vwcx3323wvqlzqxnv9zpd4kakiyf2wda0hyzny9wp"
+  },
+  {
+    "name": "jenkins-design-language",
+    "version": "1.27.19",
+    "url": "https://updates.jenkins.io/download/plugins/jenkins-design-language/1.27.19/jenkins-design-language.hpi",
+    "sha256": "0h6wwpv1ci2w5dryfmp5v6kc3m11dfzh1j6qh8bibjks6warljph"
+  },
+  {
+    "name": "favorite",
+    "version": "2.225.v68765b_b_a_1fa_3",
+    "url": "https://updates.jenkins.io/download/plugins/favorite/2.225.v68765b_b_a_1fa_3/favorite.hpi",
+    "sha256": "1j6fd1wddv6y6493yagvxpjhkyck30bazl2faqazn5in1c5xh2f6"
   },
   {
     "name": "lockable-resources",
