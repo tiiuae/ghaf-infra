@@ -6,6 +6,12 @@ jenkins:
   authorizationStrategy:
     globalMatrix:
       entries:
+        - user:
+            name: api_user
+            permissions:
+              - Job/Build
+              - Job/Cancel
+              - Job/Read
         - group:
             name: authenticated
             permissions:
@@ -74,16 +80,41 @@ unclassified:
   timestamper:
     allPipelines: true
 
-jobs:
-  - script: >
-      def pipeline = new File("/etc/jenkins/pipelines/ghaf-demo-nix-build.groovy");
-      if (pipeline.exists()) {
-        pipelineJob('ghaf-demo-nix-build') {
-          definition {
-            cps {
-              script(pipeline.text)
-              sandbox()
-            }
-          }
-        }
+# https://plugins.jenkins.io/configuration-as-code-groovy/
+groovy:
+  # Setup jenkins api token:
+  - script: |
+      import jenkins.model.*
+      import hudson.model.*
+      import jenkins.security.ApiTokenProperty
+      def token = new File("/run/secrets/jenkins_api_token");
+      if (token.exists()) {
+        println("Setting up api token")
+        def user = User.get('api_user')
+        user.getProperty(ApiTokenProperty.class).tokenStore.addFixedNewToken("t1", token.text)
+        user.save()
+      }
+  # Load pipelines:
+  - script: |
+      import jenkins.model.*
+      import hudson.model.*
+      import org.jenkinsci.plugins.workflow.job.WorkflowJob
+      import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition
+      println("Loading pipelines")
+      def pipelines = new File("/etc/jenkins/pipelines/")
+      pipelines.eachFile() { file ->
+        println("Loading pipeline from: " + file.name)
+        def pipeline_name = file.name.substring(0, file.name.lastIndexOf('.'))
+        def job = new WorkflowJob(Jenkins.getInstance(), pipeline_name)
+        job.definition = new CpsFlowDefinition(file.text, true)
+        job.save()
+      }
+      Jenkins.getInstance().reload()
+  # Trigger all pipelines on jenkins service (re)start:
+  - script: |
+      import jenkins.model.*
+      import hudson.model.*
+      for (job in Jenkins.getInstance().getAllItems(Job)) {
+        println("Triggering job: " + job.getName())
+        job.scheduleBuild(0);
       }

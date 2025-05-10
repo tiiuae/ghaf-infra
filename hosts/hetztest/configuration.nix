@@ -148,10 +148,19 @@ in
 
       https://hetztest.vedenemo.dev {
 
-        @unauthenticated {
-          # github sends webhook triggers here
-          path /github-webhook /github-webhook/*
+        # Introduce /trigger/* api mapping them directly to jenkins /job/*
+        # letting jenkins handle the authentication for /trigger/* paths.
+        # This makes it possible to authenticate with jenkins api token for
+        # requests on /trigger/* endpoints.
+        handle_path /trigger/* {
+          rewrite * /job{uri}
+          reverse_proxy localhost:8081
+        }
+        handle /login {
+          redir * /
+        }
 
+        @unauthenticated {
           # testagents need these
           path /jnlpJars /jnlpJars/*
           path /wsagents /wsagents/*
@@ -206,6 +215,7 @@ in
     secrets = {
       oauth2_proxy_client_secret.owner = "oauth2-proxy";
       oauth2_proxy_cookie_secret.owner = "oauth2-proxy";
+      jenkins_api_token.owner = "jenkins";
     };
     templates.oauth2_proxy_env = {
       content = ''
