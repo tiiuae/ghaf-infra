@@ -24,11 +24,11 @@ jenkins:
       remoteFS: "/var/lib/jenkins/agents/lenovo-x1"
       retentionStrategy: "always"
   - permanent:
-      name: "release-nuc"
-      labelString: "nuc"
+      name: "release-orin-agx-64"
+      labelString: "orin-agx-64"
       launcher: "inbound"
       mode: EXCLUSIVE
-      remoteFS: "/var/lib/jenkins/agents/nuc"
+      remoteFS: "/var/lib/jenkins/agents/orin-agx-64"
       retentionStrategy: "always"
   - permanent:
       name: "release-orin-agx"
@@ -61,11 +61,11 @@ jenkins:
       remoteFS: "/var/lib/jenkins/agents/lenovo-x1"
       retentionStrategy: "always"
   - permanent:
-      name: "prod-nuc"
-      labelString: "nuc"
+      name: "prod-orin-agx-64"
+      labelString: "orin-agx-64"
       launcher: "inbound"
       mode: EXCLUSIVE
-      remoteFS: "/var/lib/jenkins/agents/nuc"
+      remoteFS: "/var/lib/jenkins/agents/orin-agx-64"
       retentionStrategy: "always"
   - permanent:
       name: "prod-orin-agx"
@@ -88,7 +88,7 @@ jenkins:
       mode: EXCLUSIVE
       remoteFS: "/var/lib/jenkins/agents/dell-7330"
       retentionStrategy: "always"
-  
+
     # dev testagent
   - permanent:
       name: "dev-lenovo-x1"
@@ -98,11 +98,11 @@ jenkins:
       remoteFS: "/var/lib/jenkins/agents/lenovo-x1"
       retentionStrategy: "always"
   - permanent:
-      name: "dev-nuc"
-      labelString: "nuc"
+      name: "dev-orin-agx-64"
+      labelString: "orin-agx-64"
       launcher: "inbound"
       mode: EXCLUSIVE
-      remoteFS: "/var/lib/jenkins/agents/nuc"
+      remoteFS: "/var/lib/jenkins/agents/orin-agx-64"
       retentionStrategy: "always"
   - permanent:
       name: "dev-orin-agx"

@@ -26,7 +26,7 @@
     hardware = [
       "orin-agx"
       "orin-nx"
-      "nuc"
+      "orin-agx-64"
       "lenovo-x1"
       "dell-7330"
     ];
@@ -34,9 +34,14 @@
 
   # udev rules for test devices serial connections
   services.udev.extraRules = ''
+    # Orin nx
     SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTD0W9KS", SYMLINK+="ttyORINNX1", MODE="0666", GROUP="dialout"
-    SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTC0VRXR", SYMLINK+="ttyNUC1", MODE="0666", GROUP="dialout"
-    SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea71", ATTRS{serial}=="0642246B630C149011EC987B167DB04", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="ttyRISCV1", MODE="0666", GROUP="dialout"
+
+    # Orin AGX1
+    SUBSYSTEM=="tty", KERNEL=="ttyACM[0-9]*", ATTRS{serial}=="TOPO375FF8FA", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="ttyAGX1", MODE="0666", GROUP="dialout"
+
+    # Orin AGX64
+    SUBSYSTEM=="tty", KERNEL=="ttyACM[0-9]*", ATTRS{serial}=="TOPO47B579E5", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="ttyAGX64", MODE="0666", GROUP="dialout"
   '';
 
   # Details of the hardware devices connected to this host
@@ -47,9 +52,9 @@
     builtins.toJSON {
       addresses = {
         relay_serial_port = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A10KZ5VO-if00-port0";
-        NUC1 = {
+        OrinAGX64 = {
           inherit location;
-          serial_port = "/dev/ttyNUC1";
+          serial_port = "/dev/ttyAGX64";
           relay_number = 3;
           device_ip_address = "172.18.16.50";
           socket_ip_address = "NONE";
@@ -57,11 +62,11 @@
           switch_bot = "NONE";
           usbhub_serial = "F0A0D6CF";
           ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XPNJ0TB00828W-0:0";
-          threads = 8;
+          threads = 12;
         };
         OrinAGX1 = {
           inherit location;
-          serial_port = "/dev/ttyACM0";
+          serial_port = "/dev/ttyAGX1";
           relay_number = 4;
           device_ip_address = "172.18.16.36";
           socket_ip_address = "NONE";
