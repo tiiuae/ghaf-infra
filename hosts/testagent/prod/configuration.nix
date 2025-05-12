@@ -44,6 +44,12 @@
     SUBSYSTEM=="tty", KERNEL=="ttyACM[0-9]*", ATTRS{serial}=="TOPO47B579E5", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="ttyAGX64", MODE="0666", GROUP="dialout"
   '';
 
+  # Trigger UDEV rules
+  system.activationScripts.udevTrigger = ''
+    echo "==> Triggering udev rules for already plugged devices..."
+    /run/current-system/sw/bin/udevadm trigger --subsystem-match=tty
+  '';
+
   # Details of the hardware devices connected to this host
   environment.etc."jenkins/test_config.json".text =
     let
