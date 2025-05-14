@@ -58,17 +58,32 @@ jobs:
             fetch-depth: 0
       - name: Install nix
         uses: cachix/install-nix-action@526118121621777ccd86f79b04685a9319637641 # v31
+      - name: Add builders to ssh_known_hosts
+        shell: bash
+        run: |
+          sudo sh -c "echo '${BUILDER_SSH_KNOWN_HOST}' >>/etc/ssh/ssh_known_hosts"
+        env:
+          BUILDER_SSH_KNOWN_HOST: '${{ vars.BUILDER_SSH_KNOWN_HOST }}'
       - name: Build ${{ matrix.arch }}
+        shell: bash
         run: |
           if [ "${{ matrix.arch }}" == "x86_64-linux" ]; then
-            BUILDER='${{ vars.BUILDER_X86 }}'
-            TARGET='x86'
+            BUILDER="${BUILDER_X86}"
+            # x86 targets: all nixosConfigurations except hetzarm, also build x86 devShell
+            FILTER='(^nixosConfigurations\.((?!hetzarm).)*$|^devShells.x86_64-linux.*$)'
           elif [ "${{ matrix.arch }}" == "aarch64-linux" ]; then
-            BUILDER='${{ vars.BUILDER_AARCH }}'
-            TARGET='aarch'
+            BUILDER="${BUILDER_AARCH}"
+            # aarch64 targets: hetzarm nixosConfiguration
+            FILTER='^nixosConfigurations.*hetzarm.*'
           else
             echo "::error::Unknown architecture: '${{ matrix.arch }}'"
             exit 1
           fi
-          OPTS="--remote $BUILDER"
-          nix develop --accept-flake-config --command bash -c "./scripts/nix-fast-build.sh -t $TARGET -o '$OPTS'"
+          OPTS="--remote $BUILDER --no-download --skip-cached --option accept-flake-config true"
+          # Build 'checks' on both x86 and aarch
+          ./scripts/nix-fast-build.sh -t "checks" -o "$OPTS"
+          # Build arch-specific targets based on FILTER
+          ./scripts/nix-fast-build.sh -f "$FILTER" -o "$OPTS"
+        env:
+          BUILDER_X86: ${{ vars.BUILDER_X86 }}
+          BUILDER_AARCH: ${{ vars.BUILDER_AARCH }}
