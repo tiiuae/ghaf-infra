@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   self,
+  inputs,
   ...
 }:
 {
@@ -10,6 +11,7 @@
       ../ficolo.nix
       ../cross-compilation.nix
       ../builders-common.nix
+      inputs.sops-nix.nixosModules.sops
     ]
     ++ (with self.nixosModules; [
       service-openssh
@@ -19,6 +21,8 @@
     ]);
 
   # build2 specific configuration
+
+  sops.defaultSopsFile = ./secrets.yaml;
 
   networking.hostName = "build2";
 
