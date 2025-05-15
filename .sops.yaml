@@ -71,24 +71,28 @@ creation_rules:
       - *build1
       - *hrosten
       - *jrautiola
+      - *fayad
   - path_regex: hosts/builders/build2/secrets.yaml$
     key_groups:
     - age:
       - *build2
       - *hrosten
       - *jrautiola
+      - *fayad
   - path_regex: hosts/builders/build3/secrets.yaml$
     key_groups:
     - age:
       - *build3
       - *jrautiola
       - *hrosten
+      - *fayad
   - path_regex: hosts/builders/build4/secrets.yaml$
     key_groups:
     - age:
       - *build4
       - *jrautiola
       - *hrosten
+      - *fayad
   - path_regex: hosts/builders/hetzarm/secrets.yaml$
     key_groups:
     - age:
