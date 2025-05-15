@@ -20,6 +20,7 @@ keys:
   - &build1 age15xx3qgw69hsmjyw64zmh9q0akyl3mh73dtvmdvhgezplqwaprstqffth7g
   - &build2 age123c6y9ws4za8xzc5wtm20gfsv2exfp69tvfmzcsu7l377u7s89tq8ymhc3
   - &build3 age1q7c2wlrpj0dvthdg7v9j4jmee0kzda8ggtp4nq8jay9u4catee3sn9pa0w
+  - &build4 age146j4dfg9974kxe8hegjrdq5ywaldxw5j3fnkghxc6jkrrf0tndpsjjs0x3
   - &hetzarm age1ppunea05ue028qezt9rvhp59dgcskkleetyjpqtxzea7vtp4ppfqh7ltuy
   - &hetztest age1av993eefvndhv2apa4x7tpc7ezyhuj3jz9866vtulnrdwmjqe5hqrjc2z8
   - &ghaf-log age15kk5q4u68pfsy5auzah6klsdk6p50jnkr986u7vpzfrnj30pz4ssq7wnud
@@ -80,6 +81,12 @@ creation_rules:
     key_groups:
     - age:
       - *build3
+      - *jrautiola
+      - *hrosten
+  - path_regex: hosts/builders/build4/secrets.yaml$
+    key_groups:
+    - age:
+      - *build4
       - *jrautiola
       - *hrosten
   - path_regex: hosts/builders/hetzarm/secrets.yaml$
