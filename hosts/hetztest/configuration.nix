@@ -105,6 +105,58 @@ in
     };
   };
 
+  systemd.services.populate-builder-machines = {
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      Restart = "on-failure";
+    };
+    script = ''
+      mkdir -p /etc/nix
+      echo "ssh://build2.vedenemo.dev x86_64-linux - 20 10 kvm,nixos-test,benchmark,big-parallel" >/etc/nix/machines
+      echo "ssh://hetzarm.vedenemo.dev aarch64-linux - 20 10 kvm,nixos-test,benchmark,big-parallel" >>/etc/nix/machines
+    '';
+  };
+
+  nix.extraOptions = ''
+    connect-timeout = 5
+    system-features = nixos-test benchmark big-parallel kvm
+    builders = @/etc/nix/machines
+    max-jobs = 0
+    trusted-public-keys = ghaf-dev.cachix.org-1:S3M8x3no8LFQPBfHw1jl6nmP8A7cVWKntoMKN3IsEQY= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+    substituters = https://ghaf-dev.cachix.org https://cache.nixos.org
+    builders-use-substitutes = true
+  '';
+
+  programs.ssh = {
+    # Known builder host public keys, these go to /root/.ssh/known_hosts
+    knownHosts."build1.vedenemo.dev".publicKey =
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILrcs+NiYzO14n5FystgcN5WJSLeBc+BR67vGs2cwY7d";
+    knownHosts."build2.vedenemo.dev".publicKey =
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILL40b7SbAcL1MK3D5U9IgVRR87myFLTzVdryQnVqb7p";
+    knownHosts."hetzarm.vedenemo.dev".publicKey =
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILx4zU4gIkTY/1oKEOkf9gTJChdx/jR3lDgZ7p/c7LEK";
+
+    # Custom options to /etc/ssh/ssh_config
+    extraConfig = lib.mkAfter ''
+      Host build1.vedenemo.dev
+      Hostname build1.vedenemo.dev
+      User remote-build
+      IdentityFile /run/secrets/vedenemo_builder_ssh_key
+
+      Host build2.vedenemo.dev
+      Hostname build2.vedenemo.dev
+      User remote-build
+      IdentityFile /run/secrets/vedenemo_builder_ssh_key
+
+      Host hetzarm.vedenemo.dev
+      Hostname hetzarm.vedenemo.dev
+      User remote-build
+      IdentityFile /run/secrets/vedenemo_builder_ssh_key
+    '';
+  };
+
   services.jenkins = {
     enable = true;
     listenAddress = "localhost";
