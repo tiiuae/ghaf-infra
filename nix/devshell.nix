@@ -12,7 +12,30 @@
       devShells.default = pkgs.mkShell {
         shellHook = ''
           ${config.pre-commit.installationScript}
+          FLAKE_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+          if [ -z "$FLAKE_ROOT" ]; then
+            echo "WARNING: flake root not round; skipping helpers installation."
+            return
+          fi
+          prefetch-plugins-azure-controller () {
+            python "$FLAKE_ROOT"/scripts/resolve_plugins.py \
+              --jenkins-version ${pkgs.jenkins.version} \
+              --plugins-file "$FLAKE_ROOT"/hosts/azure/jenkins-controller/plugins.txt \
+              --output "$FLAKE_ROOT"/hosts/azure/jenkins-controller/plugins.json
+          }
+          prefetch-plugins-hetztest () {
+            python "$FLAKE_ROOT"/scripts/resolve_plugins.py \
+              --jenkins-version ${pkgs.jenkins.version} \
+              --plugins-file "$FLAKE_ROOT"/hosts/hetztest/plugins.txt \
+              --output "$FLAKE_ROOT"/hosts/hetztest/plugins.json
+          }
+          echo ""
           echo 1>&2 "Welcome to the development shell!"
+          echo ""
+          echo "This shell provides following helper commands:"
+          echo " - prefetch-plugins-azure-controller"
+          echo " - prefetch-plugins-hetztest"
+          echo ""
         '';
 
         packages =

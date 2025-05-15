@@ -13,6 +13,7 @@ precedence = "closest"
 path = [
   "flake.lock",
   "**.patch",
+  "**.txt",
   "**.yml",
   "**.yaml",
   "**/provider.tf",
