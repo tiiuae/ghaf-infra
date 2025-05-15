@@ -165,9 +165,15 @@ in
     packages = with pkgs; [
       bashInteractive # 'sh' step in jenkins pipeline requires this
       coreutils
+      colorized-logs
+      csvkit
+      curl
       git
+      jq
       nix
       openssh
+      wget
+      zstd
     ];
     extraJavaOptions = [
       # Useful when the 'sh' step fails:
@@ -176,6 +182,8 @@ in
       "-Dcasc.jenkins.config=${jenkins-casc}"
       # Disable the intitial setup wizard, and the creation of initialAdminPassword.
       "-Djenkins.install.runSetupWizard=false"
+      # Allow setting undefined parameter 'DESC' on a (ghaf-hw-test) pipeline
+      "-Dhudson.model.ParametersAction.safeParameters=DESC"
     ];
     plugins =
       let
@@ -242,6 +250,9 @@ in
         }
 
         @unauthenticated {
+          # github sends webhook triggers here
+          path /github-webhook /github-webhook/*
+
           # testagents need these
           path /jnlpJars /jnlpJars/*
           path /wsagents /wsagents/*
@@ -294,10 +305,10 @@ in
   sops = {
     defaultSopsFile = ./secrets.yaml;
     secrets = {
+      vedenemo_builder_ssh_key.owner = "root";
       oauth2_proxy_client_secret.owner = "oauth2-proxy";
       oauth2_proxy_cookie_secret.owner = "oauth2-proxy";
       jenkins_api_token.owner = "jenkins";
-      vedenemo_builder_ssh_key.owner = "jenkins";
       jenkins_github_webhook_secret.owner = "jenkins";
       jenkins_github_commit_status_token.owner = "jenkins";
     };
