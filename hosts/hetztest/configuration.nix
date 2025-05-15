@@ -136,6 +136,7 @@ in
     };
   };
   environment.etc."jenkins/pipelines".source = ./casc/pipelines;
+  environment.etc."jenkins/nix-fast-build.sh".source = "${self.outPath}/scripts/nix-fast-build.sh";
 
   services.caddy = {
     enable = true;

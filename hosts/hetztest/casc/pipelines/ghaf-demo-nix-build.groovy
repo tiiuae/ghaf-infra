@@ -37,7 +37,7 @@ pipeline {
           )
           script {
             sh '''
-              nix build .#checks.x86_64-linux.package-doc
+              /etc/jenkins/nix-fast-build.sh -h
             '''
           }
         }
