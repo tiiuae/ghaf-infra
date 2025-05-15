@@ -122,9 +122,10 @@ groovy:
       import hudson.model.*
       import org.jenkinsci.plugins.workflow.job.WorkflowJob
       import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition
+      import groovy.io.FileType
       println("Loading pipelines")
       def pipelines = new File("/etc/jenkins/pipelines/")
-      pipelines.eachFile() { file ->
+      pipelines.eachFile(FileType.FILES) { file ->
         println("Loading pipeline from: " + file.name)
         def pipeline_name = file.name.substring(0, file.name.lastIndexOf('.'))
         def job = new WorkflowJob(Jenkins.getInstance(), pipeline_name)
