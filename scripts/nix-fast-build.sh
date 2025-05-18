@@ -60,9 +60,9 @@ usage () {
     echo ""
     echo "  Following command builds the target 'checks.x86_64-linux.treefmt' on the"
     echo "  remote builder 'my_builder' authenticating as current user, symlinking"
-    echo "  build outputs in current directory with 'result' prefix:"
+    echo "  build outputs in current directory with 'result-' prefix:"
     echo ""
-    echo "    $MYNAME -t checks.x86_64-linux.treefmt -o '--remote my-builder' -s result"
+    echo "    $MYNAME -t checks.x86_64-linux.treefmt -o '--remote my-builder' -s result-"
     echo ""
     echo "  --"
     echo ""
@@ -175,7 +175,10 @@ argparse () {
         print_err "either '-f' or '-t' must be specified"; usage; exit 1;
     fi
     if [ -n "$FILTER" ] && (( ${#TARGETS[@]} != 0 )); then
-        print_err "'-f' and '-t' are mutually exclusive"; usage; exit 1;
+        print_err "'-f' and '-t' are mutually exclusive"; exit 1;
+    fi
+    if [ -n "$SYMLINK" ] && grep -q -- '--no-download' <<<"$OPTS"; then
+        print_err "'-s' with '--no-download': would likely miss some out-links"; exit 1;
     fi
     echo "[+] OPTS='$OPTS'"
     if [ -n "$FILTER" ]; then
@@ -189,7 +192,9 @@ argparse () {
 }
 
 fast_build () {
-    target=".#$1"
+    set -ueEo pipefail
+    target="$1"
+    logfile="$TMPDIR/nix-fast-build-out.$target.$PPID.log"
     timer_begin=$(date +%s)
     echo "[+] $(date +"%H:%M:%S") Start: nix-fast-build '$target'"
     # Do not use ssh ControlMaster as it might cause issues with
@@ -201,42 +206,39 @@ fast_build () {
     # we need to export the relevant option in `NIX_SSHOPTS` to completely
     # disable ssh multiplexing:
     export NIX_SSHOPTS="-o ControlMaster=no"
-    set -o pipefail
     # shellcheck disable=SC2086 # intented word splitting of $OPTS
     nix-fast-build \
-      --flake "$target" \
+      --flake ".#$target" \
       --eval-workers 4 \
       --remote-ssh-option ControlMaster no \
       --remote-ssh-option ConnectTimeout 10 \
       --no-nom \
       $OPTS \
-      2>&1 | tee -a "$TMPDIR/nix-fast-build-out.log"
+      2>&1 | tee -a "$logfile"
     ret="$?"
     lapse=$(( $(date +%s) - timer_begin ))
     echo "[+] $(date +"%H:%M:%S") Stop: nix-fast-build '$target' (took ${lapse}s; exit $ret)"
-    # This function runs in its own process, this sets the process exit status
-    exit $ret
-}
-
-symlink_results () {
-    # nix-fast-build doesn't create out-links locally, when building on remote.
-    # This function is a workaround to create out-links also in such cases.
-    # TODO: this should be fixed in nix-fast-build instead.
-    if [ -z "$SYMLINK" ]; then
-        return
+    # nix-fast-build doesn't create out-links locally when building on remote.
+    # TODO: this should be fixed in nix-fast-build instead the below hack.
+    if [ -n "$SYMLINK" ] && grep -q -- '--remote' <<<"$OPTS"; then
+        echo "[+] Symlinking build outputs"
+        matches=$(grep -c -E '^/nix/store/[^ ]+$' "$logfile")
+        i=0; while IFS= read -r path; do
+            if ! [ -e "$path" ]; then
+                echo "[+] Skipping symlink (not available locally): $path"
+                continue
+            fi
+            ((i=i+1))
+            link_name="${SYMLINK}${target}"
+            if (( matches > 1 )); then
+              link_name="${SYMLINK}${target}_$i"
+            fi
+            echo "[+] Creating symlink: $link_name -> $path"
+            ln -sfn "$path" "$link_name"
+        done < <(grep -E '^/nix/store/[^ ]+$' "$logfile")
     fi
-    echo "[+] Symlinking build outputs"
-    grep -E '^/nix/store/[^ ]+$' "$TMPDIR/nix-fast-build-out.log" | while read -r path;
-    do
-        if ! [ -e "$path" ]; then
-            echo "Skipping symlink (not available locally): $path"
-            continue
-        fi
-        link_postfix=$(sed -n -E "s/.*[0-9a-z]{32}(-.+)$/\1/p" <<< "$path")
-        link_name="${SYMLINK}${link_postfix}"
-        echo "[+] Creating symlink: $link_name"
-        ln -sfn "$path" "$link_name"
-    done
+    # This function runs in its own process; set the process exit status:
+    exit $ret
 }
 
 ################################################################################
@@ -258,9 +260,8 @@ main () {
     # terminate the execution of all jobs immediately if one job fails
     # (--halt 2). Keep-order (-k) and line-buffer (--lb) keep the output
     # logs readable.
-    export -f fast_build nix-fast-build; export OPTS TMPDIR;
+    export -f fast_build nix-fast-build; export OPTS TMPDIR SYMLINK;
     parallel --will-cite -j 4 --halt 2 -k --lb fast_build ::: "${TARGETS[@]}"
-    symlink_results
 }
 
 main "$@"
