@@ -221,7 +221,7 @@ in
 
       https://hetztest.vedenemo.dev {
 
-        # Introduce /trigger/* api mapping them directly to jenkins /job/*
+        # Introduce /trigger/* api mapping requests directly to jenkins /job/*
         # letting jenkins handle the authentication for /trigger/* paths.
         # This makes it possible to authenticate with jenkins api token for
         # requests on /trigger/* endpoints.
@@ -231,6 +231,14 @@ in
         }
         handle /login {
           redir * /
+        }
+
+        # Route /artifacts requests to caddy file_server
+        handle_path /artifacts* {
+          root * /var/lib/jenkins/artifacts
+          file_server {
+            browse
+          }
         }
 
         @unauthenticated {
