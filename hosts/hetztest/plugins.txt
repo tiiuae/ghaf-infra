@@ -4,6 +4,7 @@ configuration-as-code
 configuration-as-code-groovy
 copyartifact
 github
+github-pullrequest
 matrix-auth
 pipeline-build-step
 pipeline-graph-view

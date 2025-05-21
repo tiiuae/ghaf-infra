@@ -18,6 +18,12 @@
     "sha256": "1m1ppbja2rn315sc720gxhi3ji64nqfdawa3rgdbd60ybry1zrwm"
   },
   {
+    "name": "block-queued-job",
+    "version": "0.2.0",
+    "url": "https://updates.jenkins.io/download/plugins/block-queued-job/0.2.0/block-queued-job.hpi",
+    "sha256": "008dfk2dh2n8sbqp02fx0cir4cmzpvnzkqlrn2z7fzblbbgr4vql"
+  },
+  {
     "name": "blueocean-commons",
     "version": "1.27.19",
     "url": "https://updates.jenkins.io/download/plugins/blueocean-commons/1.27.19/blueocean-commons.hpi",
@@ -61,9 +67,9 @@
   },
   {
     "name": "bouncycastle-api",
-    "version": "2.30.1.80-256.vf98926042a_9b_",
-    "url": "https://updates.jenkins.io/download/plugins/bouncycastle-api/2.30.1.80-256.vf98926042a_9b_/bouncycastle-api.hpi",
-    "sha256": "0ywffghbah7xmx1gbbggk2ygslf2hdx9fhhjivr9iz3f3i4a2jqn"
+    "version": "2.30.1.80-261.v00c0e2618ec3",
+    "url": "https://updates.jenkins.io/download/plugins/bouncycastle-api/2.30.1.80-261.v00c0e2618ec3/bouncycastle-api.hpi",
+    "sha256": "1h06h7iqyvppi28x7mcw42gh1im3g0lay1rhxhimg42ly8fisa0n"
   },
   {
     "name": "branch-api",
@@ -109,9 +115,9 @@
   },
   {
     "name": "commons-text-api",
-    "version": "1.13.0-153.v91dcd89e2a_22",
-    "url": "https://updates.jenkins.io/download/plugins/commons-text-api/1.13.0-153.v91dcd89e2a_22/commons-text-api.hpi",
-    "sha256": "1hll1jgxv99q6n2lgggas586m9ax1i5dc4x1s54vy1jbxq16z04h"
+    "version": "1.13.1-176.v74d88f22034b_",
+    "url": "https://updates.jenkins.io/download/plugins/commons-text-api/1.13.1-176.v74d88f22034b_/commons-text-api.hpi",
+    "sha256": "0vbh3gz4v827i7y560lqf3g2mqy31pz920znxy0q5q80c7aqf60x"
   },
   {
     "name": "conditional-buildstep",
@@ -180,6 +186,12 @@
     "sha256": "0fhl944wbkjnmlni94i14hy73xhagnn4rmd4lybcpb085k5xxirm"
   },
   {
+    "name": "email-ext",
+    "version": "1876.v28d8d38315b_d",
+    "url": "https://updates.jenkins.io/download/plugins/email-ext/1876.v28d8d38315b_d/email-ext.hpi",
+    "sha256": "0s31h0nnj7rmgjda5v6fgz9wa47l7j9h579x566jrz9kn4s6pz60"
+  },
+  {
     "name": "favorite",
     "version": "2.225.v68765b_b_a_1fa_3",
     "url": "https://updates.jenkins.io/download/plugins/favorite/2.225.v68765b_b_a_1fa_3/favorite.hpi",
@@ -220,6 +232,12 @@
     "version": "1815.v9152b_2ff7a_1b_",
     "url": "https://updates.jenkins.io/download/plugins/github-branch-source/1815.v9152b_2ff7a_1b_/github-branch-source.hpi",
     "sha256": "03852xlq1yh93hcxsv295vwjy9injjnv4l9byc6ayw08sr4zvayi"
+  },
+  {
+    "name": "github-pullrequest",
+    "version": "0.7.2",
+    "url": "https://updates.jenkins.io/download/plugins/github-pullrequest/0.7.2/github-pullrequest.hpi",
+    "sha256": "0gpsdxpms0q3ilswpqp3igspq9y3dpvwaxgjgglpn82s494xkjpd"
   },
   {
     "name": "gson-api",
@@ -330,6 +348,12 @@
     "sha256": "1w77qna5avr784xvr8sy2n7kl7mcxknp6snpkm6sb6biy4xzz6p7"
   },
   {
+    "name": "jucies",
+    "version": "0.2.1",
+    "url": "https://updates.jenkins.io/download/plugins/jucies/0.2.1/jucies.hpi",
+    "sha256": "1lwkxy0n2ww5hszpsyi6q0whm5mdjs8apxacv1lhkk5qplcmb14q"
+  },
+  {
     "name": "junit",
     "version": "1335.v6b_a_a_e18534e1",
     "url": "https://updates.jenkins.io/download/plugins/junit/1335.v6b_a_a_e18534e1/junit.hpi",
@@ -421,9 +445,9 @@
   },
   {
     "name": "pipeline-graph-view",
-    "version": "521.v799963fd568a_",
-    "url": "https://updates.jenkins.io/download/plugins/pipeline-graph-view/521.v799963fd568a_/pipeline-graph-view.hpi",
-    "sha256": "16hr83l7x8mzzykrzw4kn4mrwpp35ad1x3pzcc88y566d088gpx6"
+    "version": "533.v1610543dc627",
+    "url": "https://updates.jenkins.io/download/plugins/pipeline-graph-view/533.v1610543dc627/pipeline-graph-view.hpi",
+    "sha256": "11s6f80n49svn0ljzisc9k6h9i2dkmraaqcnpn5ggh5bcy3l3nv3"
   },
   {
     "name": "pipeline-groovy-lib",
@@ -439,9 +463,9 @@
   },
   {
     "name": "pipeline-milestone-step",
-    "version": "134.vdf60d179845f",
-    "url": "https://updates.jenkins.io/download/plugins/pipeline-milestone-step/134.vdf60d179845f/pipeline-milestone-step.hpi",
-    "sha256": "1vkawq6rpvf443yswaagj1fwzbdfcc3d6k9riclb4sfysid3v5mb"
+    "version": "138.v78ca_76831a_43",
+    "url": "https://updates.jenkins.io/download/plugins/pipeline-milestone-step/138.v78ca_76831a_43/pipeline-milestone-step.hpi",
+    "sha256": "1lf4bgdz96krg3k8a8rmlkf5n63dx11kdx4c0gqjslk2garpykq7"
   },
   {
     "name": "pipeline-model-api",
@@ -589,9 +613,9 @@
   },
   {
     "name": "timestamper",
-    "version": "1.28",
-    "url": "https://updates.jenkins.io/download/plugins/timestamper/1.28/timestamper.hpi",
-    "sha256": "1vjpmhhygy6hgi8sgs3wx212savi8d211rzy1cnh7vvgy80z0w5f"
+    "version": "1.29",
+    "url": "https://updates.jenkins.io/download/plugins/timestamper/1.29/timestamper.hpi",
+    "sha256": "120ma5v0vamkvmzbwjwnd6849j2mvr7zxc2kdfashm89afsqb5a7"
   },
   {
     "name": "token-macro",
