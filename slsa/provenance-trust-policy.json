@@ -1,0 +1,28 @@
+{
+  "version": "1.0",
+  "signature": {
+    "certificate": "INT-Ghaf-Devenv-Provenance",
+    "verifier_rev": "bdb2dbf",
+    "verify": true
+  },
+  "criteria": [
+    {
+      "id": "target-repo-ghaf",
+      "description": "Target repository is tiiuae/ghaf",
+      "cel": "predicate.buildDefinition.externalParameters.target.repository == 'https://github.com/tiiuae/ghaf/'",
+      "required": true
+    },
+    {
+      "id": "builder-id-azure",
+      "description": "Builder ID is dev, prod or release",
+      "cel": "predicate.runDetails.builder.id in [ 'https://ghaf-jenkins-controller-dev.northeurope.cloudapp.azure.com/', 'https://ghaf-jenkins-controller-prod.northeurope.cloudapp.azure.com/', 'https://ghaf-jenkins-controller-release.northeurope.cloudapp.azure.com/' ]",
+      "required": true
+    },
+    {
+      "id": "built-recently",
+      "description": "Build was finished less than hour ago",
+      "cel": "now - timestamp(predicate.runDetails.metadata.startedOn) < duration('1h')",
+      "required": true
+    }
+  ]
+}
