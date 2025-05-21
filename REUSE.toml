@@ -18,7 +18,8 @@ path = [
   "**.yaml",
   "**/provider.tf",
   "**/backend.tf",
-  "**/plugins.json",
+  "**.json",
   "**.png",
   "**.groovy",
+  "**/go.sum"
 ]

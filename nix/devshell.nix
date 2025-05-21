@@ -40,6 +40,7 @@
 
         packages =
           (with pkgs; [
+            go
             azure-cli
             git
             jq
