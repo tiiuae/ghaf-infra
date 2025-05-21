@@ -298,6 +298,8 @@ in
       oauth2_proxy_cookie_secret.owner = "oauth2-proxy";
       jenkins_api_token.owner = "jenkins";
       vedenemo_builder_ssh_key.owner = "jenkins";
+      jenkins_github_webhook_secret.owner = "jenkins";
+      jenkins_github_commit_status_token.owner = "jenkins";
     };
     templates.oauth2_proxy_env = {
       content = ''
