@@ -30,11 +30,6 @@
 
   networking.hostName = "build1";
 
-  services.monitoring = {
-    metrics.enable = true;
-    logs.enable = true;
-  };
-
   services.cachix-watch-store = {
     enable = true;
     verbose = true;

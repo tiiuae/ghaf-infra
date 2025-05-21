@@ -39,4 +39,14 @@
       efi.canTouchEfiVariables = true;
     };
   };
+
+  services.monitoring = {
+    metrics.enable = true;
+    logs.enable = true;
+  };
+
+  nix.settings = {
+    cores = 8;
+    max-jobs = 16;
+  };
 }

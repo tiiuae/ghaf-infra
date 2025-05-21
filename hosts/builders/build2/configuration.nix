@@ -25,9 +25,4 @@
   sops.defaultSopsFile = ./secrets.yaml;
 
   networking.hostName = "build2";
-
-  services.monitoring = {
-    metrics.enable = true;
-    logs.enable = true;
-  };
 }

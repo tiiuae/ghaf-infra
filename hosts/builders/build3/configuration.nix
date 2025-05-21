@@ -29,11 +29,6 @@
     secrets.ssh_private_key.owner = "root";
   };
 
-  services.monitoring = {
-    metrics.enable = true;
-    logs.enable = true;
-  };
-
   networking.hostName = "build3";
 
   nix.settings.trusted-users = [ "@wheel" ];
