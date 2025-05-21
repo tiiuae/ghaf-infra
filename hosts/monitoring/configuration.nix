@@ -18,7 +18,7 @@ in
   sops.defaultSopsFile = ./secrets.yaml;
   sops.secrets = {
     sshified_private_key.owner = "sshified";
-    loki_basic_auth.owner = "nginx";
+    metrics_basic_auth.owner = "nginx";
     # github oauth app credentials
     github_client_id.owner = "grafana";
     github_client_secret.owner = "grafana";
@@ -266,6 +266,14 @@ in
       );
     };
 
+    pushgateway = {
+      enable = true;
+      web = {
+        external-url = "https://monitoring.vedenemo.dev/push/";
+        listen-address = "127.0.0.1:9091";
+      };
+    };
+
     scrapeConfigs = [
       {
         job_name = "ficolo-internal-monitoring";
@@ -398,6 +406,15 @@ in
           }
         ];
       }
+      {
+        job_name = "pushgateway";
+        metrics_path = "/push/metrics";
+        static_configs = [
+          {
+            targets = [ "127.0.0.1:9091" ];
+          }
+        ];
+      }
     ];
   };
 
@@ -425,7 +442,12 @@ in
         locations = {
           "/" = grafana;
           "/loki" = loki // {
-            basicAuthFile = config.sops.secrets.loki_basic_auth.path;
+            basicAuthFile = config.sops.secrets.metrics_basic_auth.path;
+          };
+          "/push/" = {
+            proxyPass = "http://${config.services.prometheus.pushgateway.web.listen-address}";
+            proxyWebsockets = true;
+            basicAuthFile = config.sops.secrets.metrics_basic_auth.path;
           };
         };
       };

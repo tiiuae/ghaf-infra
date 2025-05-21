@@ -18,7 +18,11 @@
       user-flokli
     ]);
 
-  sops.defaultSopsFile = ./secrets.yaml;
+  sops = {
+    defaultSopsFile = ./secrets.yaml;
+    secrets.metrics_password.owner = "root";
+  };
+
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "testagent-prod";
   services.testagent = {
