@@ -75,6 +75,12 @@ jenkins:
       headerGroups: X-Forwarded-Groups
       headerGroupsDelimiter: ','
       inhibitInferRootDN: false
+  log:
+    recorders:
+    - loggers:
+      - name: "org.jenkinsci.plugins.github"
+        level: "ALL"
+      name: "Debug"
 
 credentials:
   system:
