@@ -343,6 +343,23 @@ in
     keyFile = config.sops.templates.oauth2_proxy_env.path;
   };
 
+  systemd.services.jenkins-purge-artifacts = {
+    after = [ "jenkins.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      User = "jenkins";
+      WorkingDirectory = "/var/lib/jenkins";
+    };
+    script = builtins.readFile ./purge-jenkins-artifacts.sh;
+  };
+  systemd.timers.jenkins-purge-artifacts = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "hourly";
+    };
+  };
+
   # Expose the HTTP[S] port. We still need HTTP for the HTTP-01 challenge.
   # While TLS-ALPN-01 could be used, disabling HTTP-01 seems only possible from
   # the JSON config, which won't work alongside Caddyfile.
