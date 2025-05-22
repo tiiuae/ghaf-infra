@@ -101,6 +101,10 @@ unclassified:
     - credentialsId: "jenkins-github-commit-status-token"
     hookSecretConfigs:
     - credentialsId: "jenkins-github-webhook-secret"
+  lockableResourcesManager:
+    declaredResources:
+    - name: "evaluator"
+      description: "Nix evaluator lock"
 
 # https://plugins.jenkins.io/configuration-as-code-groovy/
 groovy:

@@ -13,6 +13,12 @@ def create_pipeline(List<Map> targets) {
   def artifacts_href = "<a href=\"/${artifacts}\">📦 Artifacts</a>"
   currentBuild.description = "${artifacts_href}"
   sh "mkdir -p ${artifacts_local_dir}"
+  // Evaluate
+  stage("Eval") {
+    lock('evaluator') {
+      sh 'nix flake show --all-systems | ansi2txt'
+    }
+  }
   targets.each {
     def shortname = it.target.substring(it.target.lastIndexOf('.') + 1)
     pipeline["${it.target}"] = {

@@ -162,6 +162,12 @@
     "sha256": "03bxygj33xmishd2pbqkrgnwwijs7akfyq1g5xwy68gwgc39qn1s"
   },
   {
+    "name": "data-tables-api",
+    "version": "2.2.2-1",
+    "url": "https://updates.jenkins.io/download/plugins/data-tables-api/2.2.2-1/data-tables-api.hpi",
+    "sha256": "02k2bmy60f4q4psy90i0a4iila5ndl3fv4mahb8jgs925kk20cqc"
+  },
+  {
     "name": "display-url-api",
     "version": "2.209.v582ed814ff2f",
     "url": "https://updates.jenkins.io/download/plugins/display-url-api/2.209.v582ed814ff2f/display-url-api.hpi",
@@ -360,6 +366,12 @@
     "sha256": "0x1mykh9vvbfyp3q9qg6yy359p13k36a8pcb9bd3fq920yabc93w"
   },
   {
+    "name": "lockable-resources",
+    "version": "1349.v8b_ccb_c5487f7",
+    "url": "https://updates.jenkins.io/download/plugins/lockable-resources/1349.v8b_ccb_c5487f7/lockable-resources.hpi",
+    "sha256": "11fj40llz4diq93wqc9zaz3w4lsfb8fkrq09vw8lmjhri41qk5r8"
+  },
+  {
     "name": "mailer",
     "version": "489.vd4b_25144138f",
     "url": "https://updates.jenkins.io/download/plugins/mailer/489.vd4b_25144138f/mailer.hpi",
@@ -445,9 +457,9 @@
   },
   {
     "name": "pipeline-graph-view",
-    "version": "533.v1610543dc627",
-    "url": "https://updates.jenkins.io/download/plugins/pipeline-graph-view/533.v1610543dc627/pipeline-graph-view.hpi",
-    "sha256": "11s6f80n49svn0ljzisc9k6h9i2dkmraaqcnpn5ggh5bcy3l3nv3"
+    "version": "536.vd9674ce4b_46a_",
+    "url": "https://updates.jenkins.io/download/plugins/pipeline-graph-view/536.vd9674ce4b_46a_/pipeline-graph-view.hpi",
+    "sha256": "07f2n14xqmvgl5s48vpwzbh9dl9vrilwjpwr80dsyk31qavizam6"
   },
   {
     "name": "pipeline-groovy-lib",
