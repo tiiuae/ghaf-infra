@@ -15,8 +15,7 @@ properties([
     string(name: 'CI_TEST_REPO_URL', defaultValue: 'https://github.com/tiiuae/ci-test-automation.git', description: 'Select ci-test-automation repository.'),
     string(name: 'CI_TEST_REPO_BRANCH', defaultValue: 'main', description: 'Select ci-test-automation branch to checkout.'),
     string(name: 'IMG_URL', defaultValue: '', description: 'Target image url.'),
-    string(name: 'TESTSET', defaultValue: '_relayboot_', description: 'Target testset, e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.)'),
-    booleanParam(name: 'RELOAD_ONLY', defaultValue: true, description: 'Reload pipeline configuration without running any other stages.')
+    string(name: 'TESTSET', defaultValue: '_relayboot_', description: 'Target testset, e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.)')
   ])
 ])
 
@@ -152,7 +151,7 @@ pipeline {
   }
   stages {
     stage('Reload only') {
-      when { expression { !params || params.RELOAD_ONLY } }
+      when { expression { params && params.RELOAD_ONLY } }
       steps {
         script {
           currentBuild.result = 'ABORTED'

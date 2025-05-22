@@ -63,7 +63,7 @@ pipeline {
   }
   stages {
     stage('Reload only') {
-      when { expression { !env.GITHUB_PR_NUMBER } }
+      when { expression { params && params.RELOAD_ONLY } }
       steps {
         script {
           currentBuild.result = 'ABORTED'
@@ -72,7 +72,7 @@ pipeline {
         }
       }
     }
-    stage('Setup') {
+    stage('Checkout') {
       steps {
         dir(WORKDIR) {
           // https://www.jenkins.io/doc/pipeline/steps/params/scmgit/#scmgit
@@ -106,6 +106,12 @@ pipeline {
               )
             ],
           )
+        }
+      }
+    }
+    stage('Setup') {
+      steps {
+        dir(WORKDIR) {
           script {
             MODULES.utils = load "/etc/jenkins/pipelines/modules/utils.groovy"
             PIPELINE = MODULES.utils.create_pipeline(TARGETS)

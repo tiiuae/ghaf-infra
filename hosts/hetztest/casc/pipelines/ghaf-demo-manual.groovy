@@ -37,8 +37,7 @@ def TARGETS = [
 properties([
   githubProjectProperty(displayName: '', projectUrlStr: REPO_URL),
   parameters([
-    string(name: 'GITREF', defaultValue: 'main', description: 'Git reference (Commit/Branch/Tag)'),
-    booleanParam(name: 'RELOAD_ONLY', defaultValue: true, description: 'Reload pipeline configuration without running any other stages')
+    string(name: 'GITREF', defaultValue: 'main', description: 'Git reference (Commit/Branch/Tag)')
   ])
 ])
 pipeline {
@@ -48,7 +47,7 @@ pipeline {
   }
   stages {
     stage('Reload only') {
-      when { expression { !params || params.RELOAD_ONLY } }
+      when { expression { params && params.RELOAD_ONLY } }
       steps {
         script {
           currentBuild.result = 'ABORTED'
@@ -57,7 +56,7 @@ pipeline {
         }
       }
     }
-    stage('Setup') {
+    stage('Checkout') {
       steps {
         dir(WORKDIR) {
           checkout scmGit(
@@ -65,6 +64,12 @@ pipeline {
             extensions: [[$class: 'WipeWorkspace']],
             userRemoteConfigs: [[url: REPO_URL]]
           )
+        }
+      }
+    }
+    stage('Setup') {
+      steps {
+        dir(WORKDIR) {
           script {
             MODULES.utils = load "/etc/jenkins/pipelines/modules/utils.groovy"
             PIPELINE = MODULES.utils.create_pipeline(TARGETS)

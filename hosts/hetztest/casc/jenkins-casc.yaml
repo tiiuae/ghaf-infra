@@ -147,7 +147,8 @@ groovy:
   - script: |
       import jenkins.model.*
       import hudson.model.*
+      def params = new ParametersAction([ new StringParameterValue("RELOAD_ONLY", "true")])
       for (job in Jenkins.getInstance().getAllItems(Job)) {
         println("Triggering job: " + job.getName())
-        job.scheduleBuild(0);
+        job.scheduleBuild2(0, params);
       }

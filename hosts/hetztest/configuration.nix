@@ -182,8 +182,8 @@ in
       "-Dcasc.jenkins.config=${jenkins-casc}"
       # Disable the intitial setup wizard, and the creation of initialAdminPassword.
       "-Djenkins.install.runSetupWizard=false"
-      # Allow setting undefined parameter 'DESC' on a (ghaf-hw-test) pipeline
-      "-Dhudson.model.ParametersAction.safeParameters=DESC"
+      # Allow setting the following possibly undefined parameters
+      "-Dhudson.model.ParametersAction.safeParameters=DESC,RELOAD_ONLY"
     ];
     plugins =
       let
