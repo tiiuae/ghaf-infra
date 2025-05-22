@@ -5,6 +5,7 @@ configuration-as-code-groovy
 copyartifact
 github
 github-pullrequest
+lockable-resources
 matrix-auth
 pipeline-build-step
 pipeline-graph-view

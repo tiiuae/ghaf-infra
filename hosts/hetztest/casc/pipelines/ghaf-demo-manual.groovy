@@ -66,7 +66,6 @@ pipeline {
             userRemoteConfigs: [[url: REPO_URL]]
           )
           script {
-            sh 'nix flake show --all-systems | ansi2txt'
             MODULES.utils = load "/etc/jenkins/pipelines/modules/utils.groovy"
             PIPELINE = MODULES.utils.create_pipeline(TARGETS)
           }
