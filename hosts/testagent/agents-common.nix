@@ -115,6 +115,7 @@ in
       (python3.withPackages (ps: with ps; [ pyserial ]))
       connect-script
       disconnect-script
+      self.packages.${pkgs.system}.policy-checker
     ]);
 
   # This server is only exposed to the internal network
