@@ -32,8 +32,9 @@ jobs:
             .github/workflows/authorize.yml
             .github/workflows/test-ghaf-infra.yml
       - name: Send warning
+        shell: bash
         run: |
-          if [ "${{ steps.workflow-changed.outputs.any_changed }}" == "true" ]; then
+          if [ "${ANY_WORKFLOWS_CHANGED}" == "true" ]; then
             echo "::error::"\
                  "This change edits a workflow file that triggers on 'pull_request_target'. "\
                  "Raising this error to notify that the workflow change will only take "\
@@ -44,3 +45,5 @@ jobs:
                  "will be misleading."
             exit 1
           fi
+        env:
+          ANY_WORKFLOWS_CHANGED: ${{ steps.workflow-changed.outputs.any_changed }}
