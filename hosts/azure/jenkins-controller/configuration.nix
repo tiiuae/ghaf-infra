@@ -115,7 +115,7 @@ let
             ];
             device = [
               "lenovo-x1"
-              "nuc"
+              "orin-agx-64"
               "orin-agx"
               "orin-nx"
               "dell-7330"
