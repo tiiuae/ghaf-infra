@@ -409,6 +409,7 @@ in
       {
         job_name = "pushgateway";
         metrics_path = "/push/metrics";
+        honor_labels = true;
         static_configs = [
           {
             targets = [ "127.0.0.1:9091" ];

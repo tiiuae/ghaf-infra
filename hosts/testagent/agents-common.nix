@@ -58,6 +58,7 @@ in
       ./agent.nix
       inputs.sops-nix.nixosModules.sops
       inputs.disko.nixosModules.disko
+      self.nixosModules.service-monitoring
     ]
     ++ (with self.nixosModules; [
       common
@@ -121,4 +122,30 @@ in
   # This server is only exposed to the internal network
   # fail2ban only causes issues here
   services.fail2ban.enable = lib.mkForce false;
+
+  services.monitoring = {
+    metrics.enable = true;
+    logs.enable = false;
+  };
+
+  systemd.services.push-testagent-metrics = {
+    description = "Push testagent metrics to Prometheus Pushgateway";
+    serviceConfig = {
+      Type = "oneshot";
+    };
+    path = [ pkgs.curl ];
+    script = ''
+      password=$(cat ${config.sops.secrets.metrics_password.path})
+      metrics=$(curl -s http://127.0.0.1:${toString config.services.prometheus.exporters.node.port}/metrics)
+      echo "$metrics" | curl -u logger:$password --data-binary @- https://monitoring.vedenemo.dev/push/metrics/job/${config.networking.hostName}
+    '';
+  };
+
+  systemd.timers.push-testagent-metrics = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "1min";
+      OnUnitActiveSec = "1min";
+    };
+  };
 }
