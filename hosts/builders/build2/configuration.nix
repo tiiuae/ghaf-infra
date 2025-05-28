@@ -22,6 +22,13 @@
 
   # build2 specific configuration
 
+  disko.devices.disk = {
+    sda.device = "/dev/disk/by-id/scsi-362cea7f0737489002786fe0bbde781c4";
+    sdb.device = "/dev/disk/by-id/ata-DELLBOSS_VD_9c8a18dee7d80010";
+    root.device = "/dev/disk/by-id/nvme-Dell_Ent_NVMe_AGN_MU_U.2_1.6TB_S61ENE0N801254";
+    home.device = "/dev/disk/by-id/nvme-Dell_Ent_NVMe_AGN_MU_U.2_1.6TB_S61ENE0N801252";
+  };
+
   sops.defaultSopsFile = ./secrets.yaml;
 
   networking.hostName = "build2";

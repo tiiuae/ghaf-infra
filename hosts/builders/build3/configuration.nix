@@ -24,6 +24,13 @@
       user-remote-build # Remove when all jenkins builds moved to build4
     ]);
 
+  disko.devices.disk = {
+    sda.device = "/dev/disk/by-id/ata-DELLBOSS_VD_22781d60fbbe0010";
+    sdb.device = "/dev/disk/by-id/scsi-362cea7f07374850027870046da90a1b0";
+    root.device = "/dev/disk/by-id/nvme-Dell_Ent_NVMe_AGN_MU_U.2_1.6TB_S61ENE0N801247";
+    home.device = "/dev/disk/by-id/nvme-Dell_Ent_NVMe_AGN_MU_U.2_1.6TB_S61ENE0N801257";
+  };
+
   sops = {
     defaultSopsFile = ./secrets.yaml;
     secrets.ssh_private_key.owner = "root";

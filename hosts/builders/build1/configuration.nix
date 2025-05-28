@@ -23,6 +23,13 @@
 
   # build1 specific configuration
 
+  disko.devices.disk = {
+    sda.device = "/dev/disk/by-id/ata-DELLBOSS_VD_74c47b68af530010";
+    sdb.device = "/dev/disk/by-id/scsi-362cea7f07374e7002785cfaa0d8881ae";
+    root.device = "/dev/disk/by-id/nvme-Dell_Ent_NVMe_AGN_MU_U.2_1.6TB_S61ENE0N801250";
+    home.device = "/dev/disk/by-id/nvme-Dell_Ent_NVMe_AGN_MU_U.2_1.6TB_S61ENE0N801255";
+  };
+
   sops = {
     defaultSopsFile = ./secrets.yaml;
     secrets.cachix-auth-token.owner = "root";

@@ -1,10 +1,11 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
+{ lib, ... }:
 {
   disko.devices = {
     disk = {
       sda = {
-        device = "/dev/sda";
+        device = lib.mkDefault "/dev/sda";
         type = "disk";
         content = {
           type = "gpt";
@@ -34,7 +35,7 @@
         };
       };
       sdb = {
-        device = "/dev/sdb";
+        device = lib.mkDefault "/dev/sdb";
         type = "disk";
         content = {
           type = "gpt";
@@ -51,7 +52,7 @@
         };
       };
       root = {
-        device = "/dev/nvme0n1";
+        device = lib.mkDefault "/dev/nvme0n1";
         type = "disk";
         content = {
           type = "gpt";
@@ -68,7 +69,7 @@
         };
       };
       home = {
-        device = "/dev/nvme1n1";
+        device = lib.mkDefault "/dev/nvme1n1";
         type = "disk";
         content = {
           type = "gpt";
