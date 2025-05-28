@@ -4,7 +4,7 @@
   disko.devices = {
     disk = {
       vda = {
-        device = "/dev/nvme0n1";
+        device = "/dev/disk/by-id/nvme-PC801_NVMe_SK_hynix_1TB__SDB4N76791030544L";
         type = "disk";
         content = {
           type = "gpt";

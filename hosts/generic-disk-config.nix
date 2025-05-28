@@ -4,6 +4,7 @@
 {
   disko.devices = {
     disk.disk1 = {
+      # replace this with disk/by-id
       device = lib.mkDefault "/dev/sda";
       type = "disk";
       content = {

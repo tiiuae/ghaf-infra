@@ -3,7 +3,7 @@
 {
   disko.devices.disk = {
     nvme0 = {
-      device = "/dev/nvme0n1";
+      device = "/dev/disk/by-id/nvme-INTEL_SSDPF2KX038TZ_PHAC212302XD3P8AGN";
       type = "disk";
       content = {
         type = "gpt";
@@ -34,7 +34,7 @@
     };
 
     nvme1 = {
-      device = "/dev/nvme1n1";
+      device = "/dev/disk/by-id/nvme-INTEL_SSDPF2KX038TZ_PHAC21220A8J3P8AGN";
       type = "disk";
       content = {
         type = "gpt";

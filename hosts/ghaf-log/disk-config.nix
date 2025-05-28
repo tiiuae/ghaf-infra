@@ -3,7 +3,7 @@
 {
   disko.devices.disk = {
     os = {
-      device = "/dev/disk/by-path/pci-0000:06:00.0-scsi-0:0:0:0";
+      device = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_48387827";
       type = "disk";
       content = {
         type = "gpt";

@@ -5,7 +5,8 @@
   disko.devices = {
     disk = {
       vda = {
-        device = "/dev/vda";
+        # there is no id for this virtual disk
+        device = "/dev/disk/by-path/pci-0000:03:00.0";
         type = "disk";
         content = {
           type = "gpt";
