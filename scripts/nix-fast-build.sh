@@ -209,9 +209,9 @@ fast_build () {
     # shellcheck disable=SC2086 # intented word splitting of $OPTS
     nix-fast-build \
       --flake ".#$target" \
-      --eval-workers 4 \
+      --eval-workers 3 \
       --remote-ssh-option ControlMaster no \
-      --remote-ssh-option ConnectTimeout 10 \
+      --remote-ssh-option ConnectTimeout 30 \
       --no-nom \
       $OPTS \
       2>&1 | tee -a "$logfile"
@@ -261,7 +261,7 @@ main () {
     # (--halt 2). Keep-order (-k) and line-buffer (--lb) keep the output
     # logs readable.
     export -f fast_build nix-fast-build; export OPTS TMPDIR SYMLINK;
-    parallel --will-cite -j 4 --halt 2 -k --lb fast_build ::: "${TARGETS[@]}"
+    parallel --will-cite -j 2 --halt 2 -k --lb fast_build ::: "${TARGETS[@]}"
 }
 
 main "$@"
