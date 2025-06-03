@@ -101,9 +101,9 @@ locals {
   opts = {
     priv = {
       persistent_id           = "priv"
-      vm_size_binarycache     = "Standard_D2_v3"
+      vm_size_binarycache     = "Standard_D2_v5"
       osdisk_size_binarycache = "50"
-      vm_size_builder_x86     = "Standard_D2_v3"
+      vm_size_builder_x86     = "Standard_D2_v5"
       vm_size_builder_aarch64 = "Standard_D2ps_v5"
       osdisk_size_builder     = "150"
       vm_size_controller      = "Standard_E4_v5"
@@ -115,9 +115,9 @@ locals {
     }
     dev = {
       persistent_id           = "prod"
-      vm_size_binarycache     = "Standard_D2_v4"
+      vm_size_binarycache     = "Standard_D2_v5"
       osdisk_size_binarycache = "250"
-      vm_size_builder_x86     = "Standard_D16_v3"
+      vm_size_builder_x86     = "Standard_D16_v5"
       vm_size_builder_aarch64 = "Standard_D8ps_v5"
       osdisk_size_builder     = "250"
       vm_size_controller      = "Standard_E4_v5"
@@ -129,9 +129,9 @@ locals {
     }
     prod = {
       persistent_id           = "prod"
-      vm_size_binarycache     = "Standard_D4_v3"
+      vm_size_binarycache     = "Standard_D4_v5"
       osdisk_size_binarycache = "250"
-      vm_size_builder_x86     = "Standard_D16_v3"
+      vm_size_builder_x86     = "Standard_D16_v5"
       vm_size_builder_aarch64 = "Standard_D8ps_v5"
       osdisk_size_builder     = "250"
       vm_size_controller      = "Standard_E4_v5"
@@ -143,9 +143,9 @@ locals {
     }
     release = {
       persistent_id           = "release"
-      vm_size_binarycache     = "Standard_D4_v3"
+      vm_size_binarycache     = "Standard_D4_v5"
       osdisk_size_binarycache = "250"
-      vm_size_builder_x86     = "Standard_D64_v3"
+      vm_size_builder_x86     = "Standard_D64_v5"
       vm_size_builder_aarch64 = "Standard_D64ps_v5"
       osdisk_size_builder     = "500"
       vm_size_controller      = "Standard_E4_v5"
