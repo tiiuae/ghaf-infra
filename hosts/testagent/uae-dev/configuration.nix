@@ -27,10 +27,7 @@
     variant = "dev";
     hardware = [
       "orin-agx"
-      "orin-nx"
-      "nuc"
       "lenovo-x1"
-      "dell-7330"
     ];
   };
 
@@ -46,9 +43,20 @@
   # udev rules for test devices serial connections
   # placeholder configs from finland. need updation with new uae targets, in progress
   services.udev.extraRules = ''
-    SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTD0W9KS", SYMLINK+="ttyORINNX1", MODE="0666", GROUP="dialout"
-    SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTD0WF8Y", SYMLINK+="ttyNUC1", MODE="0666", GROUP="dialout"
-    SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea71", ATTRS{serial}=="04A629B8AB87AB8111ECB2A38815028", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="ttyRISCV1", MODE="0666", GROUP="dialout"
+    # Orin agx
+    # SSD-drive
+    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S6XNNS0W202677W", SYMLINK+="ssdORINAGX1", MODE="0666", GROUP="dialout"
+
+    # Lenovo X1
+    # SSD-drive
+    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S6XPNS0W606188E", SYMLINK+="ssdX1", MODE="0666", GROUP="dialout"
+  '';
+
+  # Trigger UDEV rules
+  system.activationScripts.udevTrigger = ''
+    echo "==> Triggering udev rules..."
+    /run/current-system/sw/bin/udevadm trigger --subsystem-match=tty
+    /run/current-system/sw/bin/udevadm trigger --subsystem-match=block
   '';
 
   # Details of the hardware devices connected to this host
@@ -67,7 +75,7 @@
           plug_type = "TAPOP100v2";
           switch_bot = "NONE";
           usbhub_serial = "0x2954223B";
-          ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XNNS0W202677W-0:0";
+          ext_drive_by-id = "/dev/ssdORINAGX1";
           threads = 8;
         };
         LenovoX1-1 = {
@@ -78,7 +86,7 @@
           plug_type = "NONE";
           switch_bot = "LenovoX1-uae-dev";
           usbhub_serial = "0x99EB9D84";
-          ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XPNS0W606188E-0:0";
+          ext_drive_by-id = "/dev/ssdX1";
           threads = 20;
         };
       };
