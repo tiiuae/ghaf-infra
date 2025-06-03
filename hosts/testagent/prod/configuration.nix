@@ -40,18 +40,33 @@
   services.udev.extraRules = ''
     # Orin nx
     SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTD0W9KS", SYMLINK+="ttyORINNX1", MODE="0666", GROUP="dialout"
+    # SSD-drive
+    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S6XPNS0T918984B", SYMLINK+="ssdORINNX1", MODE="0666", GROUP="dialout"
 
     # Orin AGX1
     SUBSYSTEM=="tty", KERNEL=="ttyACM[0-9]*", ATTRS{serial}=="TOPO375FF8FA", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="ttyAGX1", MODE="0666", GROUP="dialout"
+    # SSD-drive
+    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S6WXNS0W300153T", SYMLINK+="ssdORINAGX1", MODE="0666", GROUP="dialout"
 
     # Orin AGX64
     SUBSYSTEM=="tty", KERNEL=="ttyACM[0-9]*", ATTRS{serial}=="TOPO47B579E5", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="ttyAGX64", MODE="0666", GROUP="dialout"
+    # SSD-drive
+    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S6XPNJ0TB00828W", SYMLINK+="ssdORINAGX64", MODE="0666", GROUP="dialout"
+
+    # Lenovo X1
+    # SSD-drive
+    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S7MLNS0X532696T", SYMLINK+="ssdX1", MODE="0666", GROUP="dialout"
+
+    # Dell 7330
+    # SSD-drive
+    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B72836E78E0", SYMLINK+="ssdDELL7330", MODE="0666", GROUP="dialout"
   '';
 
   # Trigger UDEV rules
   system.activationScripts.udevTrigger = ''
-    echo "==> Triggering udev rules for already plugged devices..."
+    echo "==> Triggering udev rules..."
     /run/current-system/sw/bin/udevadm trigger --subsystem-match=tty
+    /run/current-system/sw/bin/udevadm trigger --subsystem-match=block
   '';
 
   # Details of the hardware devices connected to this host
@@ -71,7 +86,7 @@
           plug_type = "NONE";
           switch_bot = "NONE";
           usbhub_serial = "F0A0D6CF";
-          ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XPNJ0TB00828W-0:0";
+          ext_drive_by-id = "/dev/ssdORINAGX64";
           threads = 12;
         };
         OrinAGX1 = {
@@ -83,7 +98,7 @@
           plug_type = "NONE";
           switch_bot = "NONE";
           usbhub_serial = "92D8AEB7";
-          ext_drive_by-id = "usb-Samsung_PSSD_T7_S6WXNS0W300153T-0:0";
+          ext_drive_by-id = "/dev/ssdORINAGX1";
           threads = 12;
         };
         LenovoX1-1 = {
@@ -94,7 +109,7 @@
           plug_type = "NONE";
           switch_bot = "LenovoX1-prod";
           usbhub_serial = "641B6D74";
-          ext_drive_by-id = "usb-Samsung_PSSD_T7_S7MLNS0X532696T-0:0";
+          ext_drive_by-id = "/dev/ssdX1";
           threads = 20;
         };
         OrinNX1 = {
@@ -106,7 +121,7 @@
           plug_type = "NONE";
           switch_bot = "NONE";
           usbhub_serial = "5220564F";
-          ext_drive_by-id = "usb-Samsung_PSSD_T7_S6XPNS0T918984B-0:0";
+          ext_drive_by-id = "/dev/ssdORINNX1";
           threads = 8;
         };
         Dell7330 = {
@@ -117,7 +132,7 @@
           plug_type = "NONE";
           switch_bot = "Dell7330-prod";
           usbhub_serial = "FF62140D";
-          ext_drive_by-id = "usb-Kingston_XS2000_50026B72836E78E0-0:0";
+          ext_drive_by-id = "/dev/ssdDELL7330";
           threads = 8;
         };
         measurement_agent = {
