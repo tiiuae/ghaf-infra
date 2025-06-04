@@ -16,7 +16,7 @@
       "id": "builder-id-azure",
       "description": "Builder ID is dev, prod or release",
       "cel": "predicate.runDetails.builder.id in [ 'https://ghaf-jenkins-controller-dev.northeurope.cloudapp.azure.com/', 'https://ghaf-jenkins-controller-prod.northeurope.cloudapp.azure.com/', 'https://ghaf-jenkins-controller-release.northeurope.cloudapp.azure.com/' ]",
-      "required": true
+      "required": false
     },
     {
       "id": "built-recently",

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 {
+  self,
   pkgs,
   inputs,
   lib,
@@ -28,6 +29,7 @@ let
         [
           brainstem
           inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
+          self.packages.${pkgs.system}.policy-checker
         ]
         ++ (with pkgs; [
           curl
