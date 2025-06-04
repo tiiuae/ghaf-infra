@@ -55,7 +55,10 @@ func VerifySignature(provenance_file string, provenance_signature string, policy
 
 func provenanceCheck(provenance_file string, config TrustPolicy) {
 	// Read and unmarshal the provenance file into a map
-	raw, _ := os.ReadFile(provenance_file)
+	raw, err := os.ReadFile(provenance_file)
+	if err != nil {
+		panic(err)
+	}
 	var input map[string]any
 	_ = json.Unmarshal(raw, &input)
 
@@ -144,7 +147,10 @@ func main() {
 			}
 
 			// read the trust policy file
-			raw, _ := os.ReadFile(config_file)
+			raw, err := os.ReadFile(config_file)
+			if err != nil {
+				panic(err)
+			}
 			var config TrustPolicy
 			_ = json.Unmarshal(raw, &config)
 

@@ -148,4 +148,7 @@ in
       OnUnitActiveSec = "1min";
     };
   };
+
+  environment.etc."jenkins/provenance-trust-policy.json".source =
+    ../../slsa/provenance-trust-policy.json;
 }
