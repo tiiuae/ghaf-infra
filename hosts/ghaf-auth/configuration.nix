@@ -111,6 +111,7 @@
             name = "ghaf-jenkins-controller-${ws}";
             redirectURIs = [
               "https://ghaf-jenkins-controller-${ws}.northeurope.cloudapp.azure.com/oauth2/callback"
+              "https://ghaf-jenkins-controller-${ws}.uaenorth.cloudapp.azure.com/oauth2/callback"
             ];
             secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
           })
@@ -126,6 +127,7 @@
             "jrautiola"
             "kaitusa"
             "vjuntunen"
+            "fayad"
           ]
         ++ [
           {
