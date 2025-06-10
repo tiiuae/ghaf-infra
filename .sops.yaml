@@ -22,6 +22,7 @@ keys:
   - &build3 age1q7c2wlrpj0dvthdg7v9j4jmee0kzda8ggtp4nq8jay9u4catee3sn9pa0w
   - &build4 age146j4dfg9974kxe8hegjrdq5ywaldxw5j3fnkghxc6jkrrf0tndpsjjs0x3
   - &hetzarm age1ppunea05ue028qezt9rvhp59dgcskkleetyjpqtxzea7vtp4ppfqh7ltuy
+  - &hetz86 age1ydut4g6l23rkkmv55vsg7sg2a80cv6ur343px9e4sdlm7wtxjumqacgndl
   - &hetztest age1av993eefvndhv2apa4x7tpc7ezyhuj3jz9866vtulnrdwmjqe5hqrjc2z8
   - &ghaf-log age15kk5q4u68pfsy5auzah6klsdk6p50jnkr986u7vpzfrnj30pz4ssq7wnud
   - &ghaf-coverity age1z825k99myjmfcml86pujcmtj96psvj8c3m08me8kkq03tkpwy9xql4jt9y
@@ -98,6 +99,13 @@ creation_rules:
     key_groups:
     - age:
       - *hetzarm
+      - *jrautiola
+      - *hrosten
+      - *fayad
+  - path_regex: hosts/builders/hetz86/secrets.yaml$
+    key_groups:
+    - age:
+      - *hetz86
       - *jrautiola
       - *hrosten
       - *fayad
