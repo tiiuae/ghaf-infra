@@ -62,6 +62,7 @@ in
     nixos-ghaf-auth = ./ghaf-auth/configuration.nix;
     nixos-testagent-uae-dev = ./testagent/uae-dev/configuration.nix;
     nixos-hetztest = ./hetztest/configuration.nix;
+    nixos-hetz86 = ./builders/hetz86/configuration.nix;
   };
 
   # Expose as flake.lib.mkNixOS.
@@ -99,6 +100,7 @@ in
         "ghaf-auth"
         "testagent-uae-dev"
         "hetztest"
+        "hetz86"
       ]
   );
 }
