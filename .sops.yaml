@@ -43,6 +43,7 @@ creation_rules:
       - *monitoring
       - *jrautiola
       - *hrosten
+      - *fayad
   - path_regex: hosts/testagent/prod/secrets.yaml$
     key_groups:
     - age:
@@ -99,6 +100,7 @@ creation_rules:
       - *hetzarm
       - *jrautiola
       - *hrosten
+      - *fayad
   - path_regex: hosts/ghaf-log/secrets.yaml$
     key_groups:
     - age:
@@ -130,6 +132,7 @@ creation_rules:
       - *ghaf-auth
       - *jrautiola
       - *hrosten
+      - *fayad
   - path_regex: hosts/hetztest/secrets.yaml$
     key_groups:
     - age:
