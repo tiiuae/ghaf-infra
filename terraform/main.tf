@@ -80,9 +80,10 @@ locals {
 
   ext_builder_machines = [
     "ssh://remote-build@build4.vedenemo.dev x86_64-linux /etc/secrets/remote-build-ssh-key 32 3 kvm,nixos-test,benchmark,big-parallel - -",
+    "ssh://remote-build@hetz86.vedenemo.dev x86_64-linux /etc/secrets/remote-build-ssh-key 48 3 kvm,nixos-test,benchmark,big-parallel - -",
     "ssh://remote-build@hetzarm.vedenemo.dev aarch64-linux /etc/secrets/remote-build-ssh-key 40 3 kvm,nixos-test,benchmark,big-parallel - -"
   ]
-  ext_builder_keyscan = ["build4.vedenemo.dev", "hetzarm.vedenemo.dev"]
+  ext_builder_keyscan = ["build4.vedenemo.dev", "hetzarm.vedenemo.dev", "hetz86.vedenemo.dev"]
 
   # We can not automatically assign alternative names per environment type
   # since we support having potentially many environments of the same type.
