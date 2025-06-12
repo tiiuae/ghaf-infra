@@ -107,16 +107,19 @@ in
   environment.systemPackages =
     [
       brainstem
-      inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
+      connect-script
+      disconnect-script
+      self.packages.${pkgs.system}.policy-checker
     ]
+    ++ (with inputs.robot-framework.packages.${pkgs.system}; [
+      ghaf-robot
+      KMTronic
+    ])
     ++ (with pkgs; [
       minicom
       usbsdmux
       grafana-loki
       (python3.withPackages (ps: with ps; [ pyserial ]))
-      connect-script
-      disconnect-script
-      self.packages.${pkgs.system}.policy-checker
     ]);
 
   # This server is only exposed to the internal network
