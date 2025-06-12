@@ -73,7 +73,6 @@ in
 
       # Define list of jenkins controllers
       jenkinsControllers=(
-        ghaf-jenkins-controller-vjuntunen.northeurope.cloudapp.azure.com
         ghaf-jenkins-controller-dev.northeurope.cloudapp.azure.com
         ghaf-jenkins-controller-prod.northeurope.cloudapp.azure.com
       )
@@ -95,7 +94,7 @@ in
     wantedBy = [ "timers.target" ];
     timerConfig = {
       OnBootSec = "1min";
-      OnUnitActiveSec = "5min";
+      OnUnitActiveSec = "10min";
       Unit = "populate-jenkins-known-hosts.service";
     };
   };
@@ -117,7 +116,6 @@ in
         -v
       '';
     };
-    # restartTriggers = [ "/etc/ssh/sshified_known_hosts" ];
   };
 
   systemd.paths."restart-sshified-on-hosts-change" = {
@@ -315,12 +313,6 @@ in
         # proxy the requests through our ssh tunnel
         proxy_url = "http://127.0.0.1:8888";
         static_configs = [
-          {
-            targets = [ "ghaf-jenkins-controller-vjuntunen.northeurope.cloudapp.azure.com:9100" ];
-            labels = {
-              machine_name = "Jenkins vjuntunen controller";
-            };
-          }
           {
             targets = [ "ghaf-jenkins-controller-dev.northeurope.cloudapp.azure.com:9100" ];
             labels = {
