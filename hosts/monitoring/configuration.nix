@@ -11,7 +11,6 @@
 }:
 let
   # "public" but really only available with ficolo vpn
-  public-ip = "172.18.20.108";
   sshified = pkgs.callPackage ../../pkgs/sshified/default.nix { };
 in
 {
@@ -60,6 +59,8 @@ in
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIALs+OQDrCKRIKkwTwI4MI+oYC3RTEus9cXCBcIyRHzl";
     "37.27.190.109".publicKey =
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPc04ZyZ7LgUKhV6Xr177qQn6Vf43FzUr1mS6g3jrSDj";
+    "37.27.170.242".publicKey =
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG05U1SHacBIrp3dH7g5O1k8pct/QVwHfuW/TkBYxLnp";
   };
 
   systemd.services.populate-jenkins-known-hosts = {
@@ -193,7 +194,7 @@ in
         name = "prometheus";
         type = "prometheus";
         isDefault = true;
-        url = "http://${config.services.prometheus.listenAddress}:${toString config.services.prometheus.port}";
+        url = "http://${config.services.prometheus.listenAddress}:${toString config.services.prometheus.port}/prometheus";
       }
       {
         name = "loki";
@@ -244,9 +245,8 @@ in
 
     port = 9090;
     listenAddress = "0.0.0.0";
-    webExternalUrl = "http://${public-ip}:${toString config.services.prometheus.port}";
+    webExternalUrl = "/prometheus/";
     checkConfig = true;
-
     globalConfig.scrape_interval = "15s";
 
     # blackbox exporter can ping abritrary urls for us
@@ -336,6 +336,12 @@ in
             targets = [ "65.21.20.242:9100" ];
             labels = {
               machine_name = "hetzarm";
+            };
+          }
+          {
+            targets = [ "37.27.170.242:9100" ];
+            labels = {
+              machine_name = "hetz86";
             };
           }
           {
@@ -441,6 +447,9 @@ in
             proxyPass = "http://${config.services.prometheus.pushgateway.web.listen-address}";
             proxyWebsockets = true;
             basicAuthFile = config.sops.secrets.metrics_basic_auth.path;
+          };
+          "/prometheus/" = {
+            proxyPass = "http://127.0.0.1:${toString config.services.prometheus.port}";
           };
         };
       };
