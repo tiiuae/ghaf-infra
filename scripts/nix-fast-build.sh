@@ -16,7 +16,6 @@
 
 ################################################################################
 
-# Set shell options after env_parallel as it would otherwise fail
 set -e # exit immediately if a command fails
 set -E # exit immediately if a command fails (subshells)
 set -u # treat unset variables as an error and exit
@@ -36,7 +35,9 @@ usage () {
     echo "Options:"
     echo " -h    Print this help message."
     echo " -v    Set the script verbosity to DEBUG."
-    echo " -s    Symlink top-level outputs with the out-link SYMLINK."
+    echo " -s    Fix nix-fast-build with option '--remote': locally symlink top-level"
+    echo "       outputs with out-link name SYMLINK. Only impacts invocations with '-o'"
+    echo "       option '--remote', otherwise ignored."
     echo " -o    Options passed directly to nix-fast-build. See available options at:"
     echo "       https://github.com/Mic92/nix-fast-build#reference."
     echo " -f    Target selector filter - regular expression applied over flake outputs"
@@ -218,11 +219,14 @@ fast_build () {
     ret="$?"
     lapse=$(( $(date +%s) - timer_begin ))
     echo "[+] $(date +"%H:%M:%S") Stop: nix-fast-build '$target' (took ${lapse}s; exit $ret)"
+    outs=$(grep -c -E '^/nix/store/[^ ]+$' "$logfile" || true)
+    if (( outs == 0 )); then
+        echo "[+] Warning: build '$target' produced no outputs"
+    fi
     # nix-fast-build doesn't create out-links locally when building on remote.
     # TODO: this should be fixed in nix-fast-build instead the below hack.
-    if [ -n "$SYMLINK" ] && grep -q -- '--remote' <<<"$OPTS"; then
-        echo "[+] Symlinking build outputs"
-        matches=$(grep -c -E '^/nix/store/[^ ]+$' "$logfile")
+    if (( outs > 0 )) && [ -n "$SYMLINK" ] && grep -q -- '--remote' <<<"$OPTS"; then
+        echo "[+] Symlinking build outputs (outputs=$outs)"
         i=0; while IFS= read -r path; do
             if ! [ -e "$path" ]; then
                 echo "[+] Skipping symlink (not available locally): $path"
@@ -230,7 +234,7 @@ fast_build () {
             fi
             ((i=i+1))
             link_name="${SYMLINK}${target}"
-            if (( matches > 1 )); then
+            if (( outs > 1 )); then
               link_name="${SYMLINK}${target}_$i"
             fi
             echo "[+] Creating symlink: $link_name -> $path"
