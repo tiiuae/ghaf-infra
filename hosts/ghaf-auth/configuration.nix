@@ -131,9 +131,9 @@
           ]
         ++ [
           {
-            id = "hetztest";
-            name = "hetztest";
-            redirectURIs = [ "https://hetztest.vedenemo.dev/oauth2/callback" ];
+            id = "hetzci-prod";
+            name = "hetzci-prod";
+            redirectURIs = [ "https://hetzci-prod.vedenemo.dev/oauth2/callback" ];
             secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
           }
         ];

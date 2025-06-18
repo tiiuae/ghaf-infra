@@ -23,18 +23,18 @@
               --plugins-file "$FLAKE_ROOT"/hosts/azure/jenkins-controller/plugins.txt \
               --output "$FLAKE_ROOT"/hosts/azure/jenkins-controller/plugins.json
           }
-          prefetch-plugins-hetztest () {
+          prefetch-plugins-hetzci-prod () {
             python "$FLAKE_ROOT"/scripts/resolve_plugins.py \
               --jenkins-version ${pkgs.jenkins.version} \
-              --plugins-file "$FLAKE_ROOT"/hosts/hetztest/plugins.txt \
-              --output "$FLAKE_ROOT"/hosts/hetztest/plugins.json
+              --plugins-file "$FLAKE_ROOT"/hosts/hetzci-prod/plugins.txt \
+              --output "$FLAKE_ROOT"/hosts/hetzci-prod/plugins.json
           }
           echo ""
           echo 1>&2 "Welcome to the development shell!"
           echo ""
           echo "This shell provides following helper commands:"
           echo " - prefetch-plugins-azure-controller"
-          echo " - prefetch-plugins-hetztest"
+          echo " - prefetch-plugins-hetzci-prod"
           echo ""
         '';
 

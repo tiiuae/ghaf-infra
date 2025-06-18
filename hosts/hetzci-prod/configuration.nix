@@ -33,7 +33,7 @@ in
   hardware.enableRedistributableFirmware = true;
 
   networking = {
-    hostName = "hetztest";
+    hostName = "hetzci-prod";
     useDHCP = true;
   };
 
@@ -227,7 +227,7 @@ in
         admin off
       }
 
-      https://hetztest.vedenemo.dev {
+      https://hetzci-prod.vedenemo.dev {
 
         # Introduce /trigger/* api mapping requests directly to jenkins /job/*
         # letting jenkins handle the authentication for /trigger/* paths.
@@ -322,7 +322,7 @@ in
 
   services.oauth2-proxy = {
     enable = true;
-    clientID = "hetztest";
+    clientID = "hetzci-prod";
     clientSecret = null;
     cookie.secret = null;
     provider = "oidc";

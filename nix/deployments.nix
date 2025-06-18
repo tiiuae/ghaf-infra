@@ -35,7 +35,7 @@ let
     ghaf-webserver = mkDeployment "x86_64-linux" "ghaf-webserver" "37.27.204.82";
     ghaf-auth = mkDeployment "x86_64-linux" "ghaf-auth" "37.27.190.109";
     testagent-uae-dev = mkDeployment "x86_64-linux" "testagent-uae-dev" "172.19.16.12";
-    hetztest = mkDeployment "x86_64-linux" "hetztest" "157.180.43.236";
+    hetzci-prod = mkDeployment "x86_64-linux" "hetzci-prod" "157.180.43.236";
     hetz86 = mkDeployment "x86_64-linux" "hetz86" "37.27.170.242";
   };
 
