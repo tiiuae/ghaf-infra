@@ -169,7 +169,7 @@ credentials:
 
 unclassified:
   location:
-    url: "https://hetztest.vedenemo.dev"
+    url: "https://hetzci-prod.vedenemo.dev"
   timestamper:
     allPipelines: true
   gitHubPluginConfig:
