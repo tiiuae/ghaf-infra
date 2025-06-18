@@ -14,6 +14,8 @@ in
     settings = {
       # Enable flakes and 'nix' command
       experimental-features = "nix-command flakes";
+      # https://github.com/NixOS/nix/issues/11728
+      download-buffer-size = 524288000;
       # When free disk space in /nix/store drops below min-free during build,
       # perform a garbage-collection until max-free bytes are available or there
       # is no more garbage.
