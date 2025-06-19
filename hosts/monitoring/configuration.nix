@@ -345,6 +345,12 @@ in
             };
           }
           {
+            targets = [ "65.108.7.79:9100" ];
+            labels = {
+              machine_name = "hetz86-build3";
+            };
+          }
+          {
             targets = [ "95.217.177.197:9100" ];
             labels = {
               machine_name = "ghaf-log";

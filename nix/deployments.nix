@@ -38,6 +38,7 @@ let
     hetzci-prod = mkDeployment "x86_64-linux" "hetzci-prod" "157.180.43.236";
     hetzci-dev = mkDeployment "x86_64-linux" "hetzci-dev" "157.180.119.138";
     hetz86 = mkDeployment "x86_64-linux" "hetz86" "37.27.170.242";
+    hetz86-build3 = mkDeployment "x86_64-linux" "hetz86-build3" "65.108.7.79";
   };
 
   aarch64-nodes = {
