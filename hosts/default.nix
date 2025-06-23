@@ -64,7 +64,7 @@ in
     nixos-hetzci-dev = ./hetzci-dev/configuration.nix;
     nixos-hetzci-prod = ./hetzci-prod/configuration.nix;
     nixos-hetz86 = ./builders/hetz86/configuration.nix;
-    nixos-hetz86-build3 = ./builders/hetz86-build3/configuration.nix;
+    nixos-hetz86-builder = ./builders/hetz86-builder/configuration.nix;
   };
 
   # Expose as flake.lib.mkNixOS.
@@ -104,7 +104,7 @@ in
         "hetzci-dev"
         "hetzci-prod"
         "hetz86"
-        "hetz86-build3"
+        "hetz86-builder"
       ]
   );
 }

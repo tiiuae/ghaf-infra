@@ -23,7 +23,7 @@ keys:
   - &build4 age146j4dfg9974kxe8hegjrdq5ywaldxw5j3fnkghxc6jkrrf0tndpsjjs0x3
   - &hetzarm age1ppunea05ue028qezt9rvhp59dgcskkleetyjpqtxzea7vtp4ppfqh7ltuy
   - &hetz86 age1ydut4g6l23rkkmv55vsg7sg2a80cv6ur343px9e4sdlm7wtxjumqacgndl
-  - &hetz86-build3 age13p9uu27kv9qchcxy6dd8s602fep5zk3xqe8pwhe7yqaa5hyj697qhax6g8
+  - &hetz86-builder age13p9uu27kv9qchcxy6dd8s602fep5zk3xqe8pwhe7yqaa5hyj697qhax6g8
   - &hetzci-prod age1av993eefvndhv2apa4x7tpc7ezyhuj3jz9866vtulnrdwmjqe5hqrjc2z8
   - &hetzci-dev age10xhyyjrhackyac2f042t3z8yqld3sh39ul3mukwkt6gyr7gn9upq8n30gm
   - &ghaf-log age15kk5q4u68pfsy5auzah6klsdk6p50jnkr986u7vpzfrnj30pz4ssq7wnud
@@ -111,10 +111,10 @@ creation_rules:
       - *jrautiola
       - *hrosten
       - *fayad
-  - path_regex: hosts/builders/hetz86-build3/secrets.yaml$
+  - path_regex: hosts/builders/hetz86-builder/secrets.yaml$
     key_groups:
     - age:
-      - *hetz86-build3
+      - *hetz86-builder
       - *jrautiola
       - *hrosten
       - *fayad
