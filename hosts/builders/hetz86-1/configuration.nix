@@ -28,6 +28,7 @@
     defaultSopsFile = ./secrets.yaml;
     secrets = {
       loki_password.owner = "promtail";
+      cachix-auth-token.owner = "root";
     };
   };
 
@@ -37,6 +38,13 @@
   networking = {
     hostName = "hetz86-1";
     useDHCP = true;
+  };
+
+  services.cachix-watch-store = {
+    enable = true;
+    verbose = true;
+    cacheName = "ghaf-dev";
+    cachixTokenFile = config.sops.secrets.cachix-auth-token.path;
   };
 
   services.monitoring = {
