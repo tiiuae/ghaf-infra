@@ -114,7 +114,7 @@ in
     };
     script = ''
       mkdir -p /etc/nix
-      echo "ssh://build2.vedenemo.dev x86_64-linux - 20 10 kvm,nixos-test,benchmark,big-parallel" >/etc/nix/machines
+      echo "ssh://hetz86-1.vedenemo.dev x86_64-linux - 20 10 kvm,nixos-test,benchmark,big-parallel" >/etc/nix/machines
       echo "ssh://hetzarm.vedenemo.dev aarch64-linux - 20 10 kvm,nixos-test,benchmark,big-parallel" >>/etc/nix/machines
     '';
   };
@@ -131,22 +131,15 @@ in
 
   programs.ssh = {
     # Known builder host public keys, these go to /root/.ssh/known_hosts
-    knownHosts."build1.vedenemo.dev".publicKey =
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILrcs+NiYzO14n5FystgcN5WJSLeBc+BR67vGs2cwY7d";
-    knownHosts."build2.vedenemo.dev".publicKey =
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILL40b7SbAcL1MK3D5U9IgVRR87myFLTzVdryQnVqb7p";
+    knownHosts."hetz86-1.vedenemo.dev".publicKey =
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG05U1SHacBIrp3dH7g5O1k8pct/QVwHfuW/TkBYxLnp";
     knownHosts."hetzarm.vedenemo.dev".publicKey =
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILx4zU4gIkTY/1oKEOkf9gTJChdx/jR3lDgZ7p/c7LEK";
 
     # Custom options to /etc/ssh/ssh_config
     extraConfig = lib.mkAfter ''
-      Host build1.vedenemo.dev
-      Hostname build1.vedenemo.dev
-      User remote-build
-      IdentityFile /run/secrets/vedenemo_builder_ssh_key
-
-      Host build2.vedenemo.dev
-      Hostname build2.vedenemo.dev
+      Host hetz86-1.vedenemo.dev
+      Hostname hetz86-1.vedenemo.dev
       User remote-build
       IdentityFile /run/secrets/vedenemo_builder_ssh_key
 
