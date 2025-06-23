@@ -81,8 +81,17 @@
     ];
   };
 
+  # hetz86-builder can use this as remote builder
+  users.users.hetz86-builder = {
+    isNormalUser = true;
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFZVnXp7IosGUWb0xj5NSJKAUcTIO9VIfbRD6K28eLxc"
+    ];
+  };
+
   nix.settings.trusted-users = [
     "@wheel"
     "build3"
+    "hetz86-builder"
   ];
 }
