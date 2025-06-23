@@ -42,9 +42,12 @@ ghaf-infra
 │   │   ├── build2
 │   │   ├── build3
 │   │   ├── build4
-│   │   ├── hetz86
+│   │   ├── hetz86-1
+│   │   ├── hetz86-builder
 │   │   ├── hetzarm
 │   │   └── developers.nix # Users with access to build3 and hetzarm
+│   ├── hetzci-dev # Ghaf dev CI in hetzner (https://hetzci-dev.vedenemo.dev)
+│   ├── hetzci-prod # Ghaf prod CI in hetzner (https://hetzci-prod.vedenemo.dev)
 │   ├── ...
 │   └── testagent # Stand-alone testagent configurations
 │       ├── dev
@@ -73,7 +76,8 @@ The configuration in this repository is split in two parts:
 - `terraform/` directory contains the terraform configuration describing the image-based CI setup in Azure infra. An example instance is the 'prod' instance, which provides the Jenkins interface at: <https://ghaf-jenkins-controller-prod.northeurope.cloudapp.azure.com/> as well as the Ghaf nix binary cache at: <https://prod-cache.vedenemo.dev>. The host configuration files in `hosts/azure` describe the NixOS configuration for the `binary-cache`, `builder`, and `jenkins-controller` hosts as outlined in [README-azure.md](https://github.com/tiiuae/ghaf-infra/blob/main/terraform/README-azure.md#image-based-builds).
 - In addition to the terraform Azure infra, this repository contains NixOS configurations for various other stand-alone hosts in Ghaf CI/CD infra.
   Following are examples of some of the stand-alone configurations and their current usage in the CI/CD infrastructure:
-  - `hosts/builders/hetz86` x86_64 remote builder in Hetzner cloud (hetz86.vedenemo.dev). Currently, `hetz86` is used as a remote builder for non-release Jenkins builds.
+  - `hosts/builders/hetz86-1` x86_64 remote builder in Hetzner cloud (hetz86-1.vedenemo.dev). Currently, `hetz86-1` is used as a remote builder for non-release Jenkins builds.
+  - `hosts/builders/hetz86-builder` x86_64 remote builder in Hetzner cloud. Hostname builder.vedenemo.dev will soon point to this host.
   - `hosts/builders/hetzarm` aarch64 remote builder in Hetzner cloud (hetzarm.vedenemo.dev). Developers can use `hetzarm.vedenemo.dev` as a remote builder for Ghaf aarch builds. Additionally, `hetzarm` is used both from Ghaf github actions and non-release Jenkins builds as a remote builder.
   - `hosts/builders/build1` x86_64 remote builder in Ficolo cloud (build1.vedenemo.dev). Currently, `build1` is used as a remote builder for Ghaf github actions (to be retired).
   - `hosts/builders/build2` x86_64 remote builder in Ficolo cloud (build2.vedenemo.dev). Currently, `build2` is not assigned to any specific task (to be retired).
