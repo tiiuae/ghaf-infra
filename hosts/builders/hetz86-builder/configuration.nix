@@ -56,7 +56,7 @@
           "kvm"
         ];
         mandatoryFeatures = [ ];
-        sshUser = "build3";
+        sshUser = "hetz86-builder";
         sshKey = config.sops.secrets.ssh_private_key.path;
       }
     ];
