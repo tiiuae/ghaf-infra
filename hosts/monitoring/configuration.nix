@@ -341,7 +341,7 @@ in
           {
             targets = [ "37.27.170.242:9100" ];
             labels = {
-              machine_name = "hetz86";
+              machine_name = "hetz86-1";
             };
           }
           {
