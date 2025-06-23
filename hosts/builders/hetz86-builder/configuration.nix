@@ -36,7 +36,7 @@
   hardware.enableRedistributableFirmware = true;
 
   networking = {
-    hostName = "hetz86-build3";
+    hostName = "hetz86-builder";
     useDHCP = true;
   };
 
