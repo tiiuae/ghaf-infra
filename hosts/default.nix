@@ -63,7 +63,7 @@ in
     nixos-testagent-uae-dev = ./testagent/uae-dev/configuration.nix;
     nixos-hetzci-dev = ./hetzci-dev/configuration.nix;
     nixos-hetzci-prod = ./hetzci-prod/configuration.nix;
-    nixos-hetz86 = ./builders/hetz86/configuration.nix;
+    nixos-hetz86-1 = ./builders/hetz86-1/configuration.nix;
     nixos-hetz86-builder = ./builders/hetz86-builder/configuration.nix;
   };
 
@@ -103,7 +103,7 @@ in
         "testagent-uae-dev"
         "hetzci-dev"
         "hetzci-prod"
-        "hetz86"
+        "hetz86-1"
         "hetz86-builder"
       ]
   );
