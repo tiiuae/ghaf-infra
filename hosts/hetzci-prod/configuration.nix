@@ -97,10 +97,28 @@ in
   boot.kernel.sysctl."vm.overcommit_memory" = "1";
 
   users.users = {
+    testagent-dev = {
+      isNormalUser = true;
+      openssh.authorizedKeys.keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDVZVd2ZBBHBYCJVOhjhfVXi4lrVYtcH5CkQjTqBfg/4 root@nixos"
+      ];
+    };
+    testagent-prod = {
+      isNormalUser = true;
+      openssh.authorizedKeys.keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILXYn8XEtZ/LoRBnM/GwNJMg0gcpFMEYEyQX3X9DTENx root@nixos"
+      ];
+    };
     testagent-release = {
       isNormalUser = true;
       openssh.authorizedKeys.keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPP2xRl4jtu1ARpyj9W3uEo+GACLywosKhal432CgK+H"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPP2xRl4jtu1ARpyj9W3uEo+GACLywosKhal432CgK+H mytarget"
+      ];
+    };
+    testagent-uae-dev = {
+      isNormalUser = true;
+      openssh.authorizedKeys.keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHO30maPQbVUqURaur8ze2S0vrrUivj2QdItIHsK75RS root@fayad-X1-testagent"
       ];
     };
   };
