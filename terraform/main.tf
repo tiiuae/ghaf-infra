@@ -134,7 +134,7 @@ locals {
       vm_size_builder_x86     = "Standard_D16_v5"
       vm_size_builder_aarch64 = "Standard_D8ps_v5"
       osdisk_size_builder     = "250"
-      vm_size_controller      = "Standard_E4_v5"
+      vm_size_controller      = "Standard_E16_v5"
       osdisk_size_controller  = "1000"
       num_builders_x86        = 0
       num_builders_aarch64    = 0
