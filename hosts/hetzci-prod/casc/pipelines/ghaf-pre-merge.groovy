@@ -44,7 +44,7 @@ properties([
       events: [Open(), commitChanged(), close(), nonMergeable(skip: true)],
       abortRunning: true,
       cancelQueued: true,
-      preStatus: false, // TODO: skip setting statuses for now
+      preStatus: false,
       skipFirstRun: false,
       userRestriction: [users: '', orgs: 'tiiuae'],
       repoProviders: [
@@ -55,6 +55,28 @@ properties([
     )
   ])
 ])
+
+def setBuildStatus(String message, String state, String commit) {
+  if (!commit) {
+    println "Skip setting GitHub commit status"
+    return
+  }
+  return // TODO: remove this when we start running pre-merge in hetzci-prod
+  withCredentials([string(credentialsId: 'jenkins-github-commit-status-token', variable: 'TOKEN')]) {
+    env.TOKEN = "$TOKEN"
+    String status_url = "https://api.github.com/repos/tiiuae/ghaf/statuses/$commit"
+    sh """
+      # set -x
+      curl -H \"Authorization: token \$TOKEN\" \
+        -X POST \
+        -d '{\"description\": \"$message\", \
+             \"state\": \"$state\", \
+             \"context\": "jenkins-pre-merge", \
+             \"target_url\" : \"$BUILD_URL\" }' \
+        ${status_url}
+    """
+  }
+}
 
 pipeline {
   agent { label 'built-in' }
@@ -106,6 +128,11 @@ pipeline {
               )
             ],
           )
+          script {
+            sh 'git fetch pr_origin pull/${GITHUB_PR_NUMBER}/head:PR_head'
+            env.TARGET_COMMIT = sh(script: 'git rev-parse PR_head', returnStdout: true).trim()
+            println "TARGET_COMMIT: ${env.TARGET_COMMIT}"
+          }
         }
       }
     }
@@ -113,6 +140,7 @@ pipeline {
       steps {
         dir(WORKDIR) {
           script {
+            setBuildStatus("Manual trigger: pending", "pending", env.TARGET_COMMIT)
             MODULES.utils = load "/etc/jenkins/pipelines/modules/utils.groovy"
             PIPELINE = MODULES.utils.create_pipeline(TARGETS)
           }
@@ -126,6 +154,18 @@ pipeline {
             parallel PIPELINE
           }
         }
+      }
+    }
+  }
+  post {
+    success {
+      script {
+        setBuildStatus("Manual trigger: success", "success", env.TARGET_COMMIT)
+      }
+    }
+    unsuccessful {
+      script {
+        setBuildStatus("Manual trigger: failure", "failure", env.TARGET_COMMIT)
       }
     }
   }
