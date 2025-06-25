@@ -31,7 +31,7 @@ def create_pipeline(List<Map> targets) {
         sh "cp -P ${it.target} ${artifacts_local_dir}/"
       }
       // Test
-      if (it.testset != null) {
+      if (it.testset != null && !it.testset.isEmpty()) {
         stage("Test ${shortname}") {
           def img_path = run_cmd("find -L ${it.target} -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print -quit")
           if (!img_path) {
