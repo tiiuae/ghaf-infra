@@ -37,9 +37,35 @@ def TARGETS = [
 properties([
   githubProjectProperty(displayName: '', projectUrlStr: REPO_URL),
   parameters([
-    string(name: 'GITHUB_PR_NUMBER', defaultValue: '', description: 'Ghaf PR number')
+    string(name: 'GITHUB_PR_NUMBER', defaultValue: '', description: 'Ghaf PR number'),
+    booleanParam(name: 'SET_PR_STATUS', defaultValue: true, description: 'Write the commit status in GitHub PR')
   ])
 ])
+
+////////////////////////////////////////////////////////////////////////////////
+
+def setBuildStatus(String message, String state, String commit) {
+  if (!params.SET_PR_STATUS || !commit) {
+    println "Skip setting GitHub commit status"
+    return
+  }
+  withCredentials([string(credentialsId: 'jenkins-github-commit-status-token', variable: 'TOKEN')]) {
+    env.TOKEN = "$TOKEN"
+    String status_url = "https://api.github.com/repos/tiiuae/ghaf/statuses/$commit"
+    sh """
+      # set -x
+      curl -H \"Authorization: token \$TOKEN\" \
+        -X POST \
+        -d '{\"description\": \"$message\", \
+             \"state\": \"$state\", \
+             \"context\": "jenkins-pre-merge", \
+             \"target_url\" : \"$BUILD_URL\" }' \
+        ${status_url}
+    """
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 pipeline {
   agent { label 'built-in' }
@@ -87,6 +113,7 @@ pipeline {
       steps {
         dir(WORKDIR) {
           script {
+            setBuildStatus("Manual trigger: pending", "pending", env.TARGET_COMMIT)
             MODULES.utils = load "/etc/jenkins/pipelines/modules/utils.groovy"
             PIPELINE = MODULES.utils.create_pipeline(TARGETS)
           }
@@ -100,6 +127,18 @@ pipeline {
             parallel PIPELINE
           }
         }
+      }
+    }
+  }
+  post {
+    success {
+      script {
+        setBuildStatus("Manual trigger: success", "success", env.TARGET_COMMIT)
+      }
+    }
+    unsuccessful {
+      script {
+        setBuildStatus("Manual trigger: failure", "failure", env.TARGET_COMMIT)
       }
     }
   }
