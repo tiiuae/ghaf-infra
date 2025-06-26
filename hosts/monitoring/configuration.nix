@@ -440,6 +440,10 @@ in
         proxyPass = "http://127.0.0.1:${toString config.services.loki.configuration.server.http_listen_port}/loki";
         proxyWebsockets = true;
       };
+      prometheus = {
+        proxyPass = "http://127.0.0.1:${toString config.services.prometheus.port}";
+        proxyWebsockets = true;
+      };
     in
     {
       "monitoring.vedenemo.dev" = {
@@ -456,8 +460,8 @@ in
             proxyWebsockets = true;
             basicAuthFile = config.sops.secrets.metrics_basic_auth.path;
           };
-          "/prometheus/" = {
-            proxyPass = "http://127.0.0.1:${toString config.services.prometheus.port}";
+          "/prometheus/" = prometheus // {
+            basicAuthFile = config.sops.secrets.metrics_basic_auth.path;
           };
         };
       };
@@ -467,6 +471,7 @@ in
         locations = {
           "/" = grafana;
           "/loki" = loki;
+          "/prometheus/" = prometheus;
         };
       };
     };
