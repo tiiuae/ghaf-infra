@@ -61,8 +61,9 @@ in
     nixos-ghaf-webserver = ./ghaf-webserver/configuration.nix;
     nixos-ghaf-auth = ./ghaf-auth/configuration.nix;
     nixos-testagent-uae-dev = ./testagent/uae-dev/configuration.nix;
-    nixos-hetzci-dev = ./hetzci-dev/configuration.nix;
-    nixos-hetzci-prod = ./hetzci-prod/configuration.nix;
+    nixos-hetzci-dev = ./hetzci/dev/configuration.nix;
+    nixos-hetzci-prod = ./hetzci/prod/configuration.nix;
+    nixos-hetzci-vm = ./hetzci/vm/configuration.nix;
     nixos-hetz86-1 = ./builders/hetz86-1/configuration.nix;
     nixos-hetz86-builder = ./builders/hetz86-builder/configuration.nix;
   };
@@ -74,37 +75,69 @@ in
 
   # for each systemName, call mkNixOS on it, and set flake.nixosConfigurations
   # to an attrset from systemName to the result of that mkNixOS call.
-  flake.nixosConfigurations = builtins.listToAttrs (
-    builtins.map
-      (name: {
-        inherit name;
-        value = mkNixOS { systemName = name; };
-      })
-      [
-        "az-binary-cache"
-        "az-builder"
-        "az-jenkins-controller"
-        "binarycache"
-        "build1"
-        "build2"
-        "build3"
-        "build4"
-        "hetzarm"
-        "monitoring"
-        "himalia"
-        "testagent-prod"
-        "testagent-dev"
-        "testagent-release"
-        "ghaf-log"
-        "ghaf-coverity"
-        "ghaf-proxy"
-        "ghaf-webserver"
-        "ghaf-auth"
-        "testagent-uae-dev"
-        "hetzci-dev"
-        "hetzci-prod"
-        "hetz86-1"
-        "hetz86-builder"
-      ]
-  );
+  flake.nixosConfigurations =
+    (builtins.listToAttrs (
+      builtins.map
+        (name: {
+          inherit name;
+          value = mkNixOS { systemName = name; };
+        })
+        [
+          "az-binary-cache"
+          "az-builder"
+          "az-jenkins-controller"
+          "binarycache"
+          "build1"
+          "build2"
+          "build3"
+          "build4"
+          "hetzarm"
+          "monitoring"
+          "himalia"
+          "testagent-prod"
+          "testagent-dev"
+          "testagent-release"
+          "ghaf-log"
+          "ghaf-coverity"
+          "ghaf-proxy"
+          "ghaf-webserver"
+          "ghaf-auth"
+          "testagent-uae-dev"
+          "hetzci-dev"
+          "hetzci-prod"
+          "hetz86-1"
+          "hetz86-builder"
+        ]
+    ))
+    // {
+      hetzci-vm = inputs.nixpkgs.lib.nixosSystem {
+        specialArgs = {
+          inherit inputs self;
+        };
+        modules = [
+          (import ./vm-nixos-qemu.nix {
+            disk_gb = 200;
+            vcpus = 4;
+            ram_gb = 20;
+          })
+          self.nixosModules.nixos-hetzci-vm
+          {
+            nixpkgs.hostPlatform = "x86_64-linux";
+            # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/virtualisation/qemu-vm.nix
+            virtualisation.vmVariant.virtualisation.forwardPorts = [
+              {
+                from = "host";
+                host.port = 8080;
+                guest.port = 80;
+              }
+              {
+                from = "host";
+                host.port = 2222;
+                guest.port = 22;
+              }
+            ];
+          }
+        ];
+      };
+    };
 }

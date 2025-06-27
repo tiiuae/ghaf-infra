@@ -12,36 +12,63 @@ def TARGETS = [
     testset: null,
   ],
   [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug",
-    testset: '_relayboot_',
+    testset: '_relayboot_gui_regression_',
+  ],
+  [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-installer",
+    testset: null,
+  ],
+  [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-release",
+    testset: '_relayboot_gui_regression_',
+  ],
+  [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-release-installer",
+    testset: null,
+  ],
+  [ target: "packages.x86_64-linux.lenovo-x1-gen11-hardening-debug",
+    testset: '_relayboot_gui_regression_',
+  ],
+  [ target: "packages.x86_64-linux.lenovo-x1-gen11-hardening-debug-installer",
+    testset: null,
   ],
   [ target: "packages.x86_64-linux.dell-latitude-7230-debug",
     testset: null,
   ],
   [ target: "packages.x86_64-linux.dell-latitude-7330-debug",
-    testset: '_relayboot_',
+    testset: '_relayboot_gui_regression_',
   ],
   [ target: "packages.aarch64-linux.nvidia-jetson-orin-agx-debug",
-    testset: '_relayboot_',
+    testset: '_relayboot_gui_regression_',
+  ],
+  [ target: "packages.aarch64-linux.nvidia-jetson-orin-agx64-debug",
+    testset: '_relayboot_gui_regression_',
   ],
   [ target: "packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64",
-    testset: '_relayboot_',
+    testset: '_relayboot_gui_regression_',
+  ],
+  [ target: "packages.x86_64-linux.nvidia-jetson-orin-agx64-debug-from-x86_64",
+    testset: '_relayboot_gui_regression_',
   ],
   [ target: "packages.aarch64-linux.nvidia-jetson-orin-nx-debug",
-    testset: '_relayboot_',
+    testset: '_relayboot_gui_regression_',
   ],
   [ target: "packages.x86_64-linux.nvidia-jetson-orin-nx-debug-from-x86_64",
-    testset: '_relayboot_',
+    testset: '_relayboot_gui_regression_',
+  ],
+  [ target: "packages.x86_64-linux.generic-x86_64-debug",
+    testset: '_relayboot_gui_regression_',
+  ],
+  [ target: "packages.aarch64-linux.nxp-imx8mp-evk-debug",
+    testset: null,
   ],
 ]
 
 properties([
-  githubProjectProperty(displayName: '', projectUrlStr: REPO_URL),
-  parameters([
-    string(name: 'GITREF', defaultValue: 'main', description: 'Git reference (Commit/Branch/Tag)')
-  ])
+  githubProjectProperty(displayName: '', projectUrlStr: REPO_URL)
 ])
 pipeline {
   agent { label 'built-in' }
+  triggers {
+    cron('@midnight')
+  }
   options {
     buildDiscarder(logRotator(numToKeepStr: '10'))
   }
@@ -60,7 +87,7 @@ pipeline {
       steps {
         dir(WORKDIR) {
           checkout scmGit(
-            branches: [[name: params.GITREF]],
+            branches: [[name: 'main']],
             extensions: [[$class: 'WipeWorkspace']],
             userRemoteConfigs: [[url: REPO_URL]]
           )
