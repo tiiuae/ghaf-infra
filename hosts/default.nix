@@ -61,8 +61,8 @@ in
     nixos-ghaf-webserver = ./ghaf-webserver/configuration.nix;
     nixos-ghaf-auth = ./ghaf-auth/configuration.nix;
     nixos-testagent-uae-dev = ./testagent/uae-dev/configuration.nix;
-    nixos-hetzci-dev = ./hetzci-dev/configuration.nix;
-    nixos-hetzci-prod = ./hetzci-prod/configuration.nix;
+    nixos-hetzci-dev = ./hetzci/dev/configuration.nix;
+    nixos-hetzci-prod = ./hetzci/prod/configuration.nix;
     nixos-hetz86-1 = ./builders/hetz86-1/configuration.nix;
     nixos-hetz86-builder = ./builders/hetz86-builder/configuration.nix;
   };
