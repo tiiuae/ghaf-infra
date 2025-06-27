@@ -127,8 +127,8 @@ in
             virtualisation.vmVariant.virtualisation.forwardPorts = [
               {
                 from = "host";
-                host.port = 8081;
-                guest.port = 8081;
+                host.port = 8080;
+                guest.port = 80;
               }
               {
                 from = "host";
