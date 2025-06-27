@@ -33,7 +33,7 @@ in
   hardware.enableRedistributableFirmware = true;
 
   networking = {
-    hostName = "hetzci-dev";
+    hostName = "hetzci-vm";
     useDHCP = true;
   };
 
@@ -232,25 +232,15 @@ in
   services.caddy = {
     enable = true;
     enableReload = false;
+    # Stub Caddy config for the hetzci-vm
     configFile = pkgs.writeText "Caddyfile" ''
-      # Disable the admin API, we don't want to reconfigure Caddy at runtime.
       {
         admin off
+        debug
+        auto_https off
       }
 
-      https://hetzci-dev.vedenemo.dev {
-
-        # Introduce /trigger/* api mapping requests directly to jenkins /job/*
-        # letting jenkins handle the authentication for /trigger/* paths.
-        # This makes it possible to authenticate with jenkins api token for
-        # requests on /trigger/* endpoints.
-        handle_path /trigger/* {
-          rewrite * /job{uri}
-          reverse_proxy localhost:8081
-        }
-        handle /login {
-          redir * /
-        }
+      http://localhost, http://127.0.0.1 {
 
         # Route /artifacts requests to caddy file_server
         handle_path /artifacts* {
@@ -260,53 +250,7 @@ in
           }
         }
 
-        @unauthenticated {
-          # github sends webhook triggers here
-          path /github-webhook /github-webhook/*
-
-          # testagents need these
-          path /jnlpJars /jnlpJars/*
-          path /wsagents /wsagents/*
-        }
-
-        handle @unauthenticated {
-          reverse_proxy localhost:8081
-        }
-
-        # Proxy all other requests to jenkins as-is, but delegate auth to
-        # oauth2-proxy.
-        # Also see https://oauth2-proxy.github.io/oauth2-proxy/configuration/integration#configuring-for-use-with-the-caddy-v2-forward_auth-directive
-
-        handle /oauth2/* {
-          reverse_proxy localhost:4180 {
-            # oauth2-proxy requires the X-Real-IP and X-Forwarded-{Proto,Host,Uri} headers.
-            # The reverse_proxy directive automatically sets X-Forwarded-{For,Proto,Host} headers.
-            header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-Uri {uri}
-          }
-        }
-
         handle {
-          forward_auth localhost:4180 {
-            uri /oauth2/auth
-
-            # oauth2-proxy requires the X-Real-IP and X-Forwarded-{Proto,Host,Uri} headers.
-            # The forward_auth directive automatically sets the X-Forwarded-{For,Proto,Host,Method,Uri} headers.
-            header_up X-Real-IP {remote_host}
-
-            copy_headers {
-              X-Auth-Request-User>X-Forwarded-User
-              X-Auth-Request-Groups>X-Forwarded-Groups
-              X-Auth-Request-Email>X-Forwarded-Mail
-              X-Auth-Request-Preferred-Username>X-Forwarded-DisplayName
-            }
-
-            # If oauth2-proxy returns a 401 status, redirect the client to the sign-in page.
-            @error status 401
-            handle_response @error {
-              redir * /oauth2/sign_in?rd={scheme}://{host}{uri}
-            }
-          }
           reverse_proxy localhost:8081
         }
       }
@@ -333,7 +277,7 @@ in
 
   services.oauth2-proxy = {
     enable = true;
-    clientID = "hetzci-dev";
+    clientID = "hetzci-vm";
     clientSecret = null;
     cookie.secret = null;
     provider = "oidc";
@@ -376,7 +320,6 @@ in
   # the JSON config, which won't work alongside Caddyfile.
   networking.firewall.allowedTCPPorts = [
     80
-    443
   ];
 
   # VM specific configuration:
@@ -385,11 +328,6 @@ in
       source = "$HOME/.config/vmshared/hetzci-vm";
       target = "/shared";
     };
-    networking.firewall.allowedTCPPorts = [ 8081 ];
-    services.caddy = lib.mkForce {
-      enable = false;
-    };
-    services.jenkins.listenAddress = lib.mkForce "0.0.0.0";
   };
 
 }
