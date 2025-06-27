@@ -186,7 +186,7 @@ pipeline {
     stage('Image download') {
       steps {
         script {
-          img_path = run_wget(params.IMG_URL, TMP_IMG_DIR)
+          def img_path = run_wget(params.IMG_URL, TMP_IMG_DIR)
           println "Downloaded image to workspace: ${img_path}"
           // Uncompress
           if(img_path.endsWith(".zst")) {
@@ -228,16 +228,16 @@ pipeline {
             def SECTOR = 512
             def MIB_TO_SECTORS = 20480
             // Disk size in 512-byte sectors
-            def SECTORS = sh(script: "/run/wrappers/bin/sudo blockdev --getsz /dev/disk/by-id/${dev}", returnStdout: true).trim()
+            def SECTORS = sh(script: "/run/wrappers/bin/sudo blockdev --getsz ${dev}", returnStdout: true).trim()
             // Unmount possible mounted filesystems
-            sh "sync; /run/wrappers/bin/sudo umount -q /dev/disk/by-id/${dev}* || true"
+            sh "sync; /run/wrappers/bin/sudo umount -q ${dev}* || true"
             // Wipe first 10MiB of disk
-            sh "/run/wrappers/bin/sudo dd if=/dev/zero of=/dev/disk/by-id/${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} conv=fsync status=none"
+            sh "/run/wrappers/bin/sudo dd if=/dev/zero of=${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} conv=fsync status=none"
             // Wipe last 10MiB of disk
-            sh "/run/wrappers/bin/sudo dd if=/dev/zero of=/dev/disk/by-id/${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} seek=\$(( ${SECTORS} - ${MIB_TO_SECTORS} )) conv=fsync status=none"
+            sh "/run/wrappers/bin/sudo dd if=/dev/zero of=${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} seek=\$(( ${SECTORS} - ${MIB_TO_SECTORS} )) conv=fsync status=none"
           }
           // Write the image
-          sh "/run/wrappers/bin/sudo dd if=${env.IMG_PATH} of=/dev/disk/by-id/${dev} bs=1M status=progress conv=fsync"
+          sh "/run/wrappers/bin/sudo dd if=${env.IMG_PATH} of=${dev} bs=1M status=progress conv=fsync"
           // Unmount
           sh "${unmount_cmd}"
         }
