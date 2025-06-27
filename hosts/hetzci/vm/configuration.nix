@@ -378,4 +378,18 @@ in
     80
     443
   ];
+
+  # VM specific configuration:
+  virtualisation.vmVariant = {
+    virtualisation.sharedDirectories.shr = {
+      source = "$HOME/.config/vmshared/hetzci-vm";
+      target = "/shared";
+    };
+    networking.firewall.allowedTCPPorts = [ 8081 ];
+    services.caddy = lib.mkForce {
+      enable = false;
+    };
+    services.jenkins.listenAddress = lib.mkForce "0.0.0.0";
+  };
+
 }

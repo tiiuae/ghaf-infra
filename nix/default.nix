@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   imports = [
+    ./apps.nix
     ./checks.nix
     ./deployments.nix
     ./devshell.nix
