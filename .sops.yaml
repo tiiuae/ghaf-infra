@@ -150,13 +150,13 @@ creation_rules:
       - *jrautiola
       - *hrosten
       - *fayad
-  - path_regex: hosts/hetzci-prod/secrets.yaml$
+  - path_regex: hosts/hetzci/prod/secrets.yaml$
     key_groups:
     - age:
       - *hetzci-prod
       - *hrosten
       - *jrautiola
-  - path_regex: hosts/hetzci-dev/secrets.yaml$
+  - path_regex: hosts/hetzci/dev/secrets.yaml$
     key_groups:
     - age:
       - *hetzci-dev
