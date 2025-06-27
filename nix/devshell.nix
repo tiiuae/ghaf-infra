@@ -26,14 +26,20 @@
           prefetch-plugins-hetzci-prod () {
             python "$FLAKE_ROOT"/scripts/resolve_plugins.py \
               --jenkins-version ${pkgs.jenkins.version} \
-              --plugins-file "$FLAKE_ROOT"/hosts/hetzci-prod/plugins.txt \
-              --output "$FLAKE_ROOT"/hosts/hetzci-prod/plugins.json
+              --plugins-file "$FLAKE_ROOT"/hosts/hetzci/prod/plugins.txt \
+              --output "$FLAKE_ROOT"/hosts/hetzci/prod/plugins.json
           }
           prefetch-plugins-hetzci-dev () {
             python "$FLAKE_ROOT"/scripts/resolve_plugins.py \
               --jenkins-version ${pkgs.jenkins.version} \
-              --plugins-file "$FLAKE_ROOT"/hosts/hetzci-dev/plugins.txt \
-              --output "$FLAKE_ROOT"/hosts/hetzci-dev/plugins.json
+              --plugins-file "$FLAKE_ROOT"/hosts/hetzci/dev/plugins.txt \
+              --output "$FLAKE_ROOT"/hosts/hetzci/dev/plugins.json
+          }
+          prefetch-plugins-hetzci-vm () {
+            python "$FLAKE_ROOT"/scripts/resolve_plugins.py \
+              --jenkins-version ${pkgs.jenkins.version} \
+              --plugins-file "$FLAKE_ROOT"/hosts/hetzci/vm/plugins.txt \
+              --output "$FLAKE_ROOT"/hosts/hetzci/vm/plugins.json
           }
           echo ""
           echo 1>&2 "Welcome to the development shell!"
@@ -42,6 +48,7 @@
           echo " - prefetch-plugins-azure-controller"
           echo " - prefetch-plugins-hetzci-dev"
           echo " - prefetch-plugins-hetzci-prod"
+          echo " - prefetch-plugins-hetzci-vm"
           echo ""
         '';
 
