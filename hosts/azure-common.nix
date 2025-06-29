@@ -31,8 +31,8 @@ in
     Restart = "on-failure";
   };
 
-  # Enable azure agent
-  virtualisation.azure.agent.enable = true;
+  # Enable azure service
+  services.waagent.enable = true;
 
   # enable cloud-init, so instance metadata is set accordingly and we can use
   # cloud-config for ssh key management.
