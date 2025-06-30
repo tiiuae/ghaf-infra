@@ -48,8 +48,8 @@ Each subdirectory under `hosts/hetzci` contains the configuration for the given 
 - `secrets.yaml` encrypted sops secrets specific to given environment
 
 There are three independent hetzci environments: `dev`, `prod`, and `vm` each in its own subdirectory:
-- `prod`: production jenkins CI to support ghaf development activities. The `prod` jenkins web interface is available at: https://hetzci-prod.vedenemo.dev/
-- `dev`: development jenkins CI to support ghaf-infra and ghaf hw-test development activities. The `dev` jenkins web interface is available at: https://hetzci-dev.vedenemo.dev/
+- `prod`: production jenkins CI to support ghaf development activities. The `prod` jenkins web interface is available at: https://ci-prod.vedenemo.dev/
+- `dev`: development jenkins CI to support ghaf-infra and ghaf hw-test development activities. The `dev` jenkins web interface is available at: https://ci-dev.vedenemo.dev/
 - `vm`: configuration which can be run in Qemu VM locally to support testing hetzci changes in a local VM before deploying to `dev` or `prod`. The configuration is modified to allow local testing, as an example: `caddy` service configuration is simplified, `jenkins` configuration is modified to not require authentication, and `getty` automatically logs in as root.
 
 We want to keep the configurations fully independent in each environment to be able to test changes in non-prod environment(s) before promoting the change to `prod`. For this reason, many parts of the hetzci configuration need to be duplicated between the different configuration subdirectories. On developing a configuration change, we anticipate the change is first introduced in `vm` subdirectory, then moves forward to `dev`, and finally copied over to `prod` as explained below.
@@ -88,7 +88,7 @@ As an example, to ssh from host to guest, you would run:
 # To access the guest ssh from your localhost
 ❯ ssh -p 2222 localhost
 ```
-Similarly, while the VM is running, you can access the jenkins interface locally over URL http://127.0.0.1:8080.
+Similarly, while the VM is running, you can access the VM jenkins interface locally over URL http://127.0.0.1:8080.
 
 To stop the VM, use `Ctrl-a` `x` or command `shutdown now` in the VM terminal.
 

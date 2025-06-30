@@ -133,13 +133,13 @@
           {
             id = "hetzci-prod";
             name = "hetzci-prod";
-            redirectURIs = [ "https://hetzci-prod.vedenemo.dev/oauth2/callback" ];
+            redirectURIs = [ "https://ci-prod.vedenemo.dev/oauth2/callback" ];
             secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
           }
           {
             id = "hetzci-dev";
             name = "hetzci-dev";
-            redirectURIs = [ "https://hetzci-dev.vedenemo.dev/oauth2/callback" ];
+            redirectURIs = [ "https://ci-dev.vedenemo.dev/oauth2/callback" ];
             secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
           }
         ];

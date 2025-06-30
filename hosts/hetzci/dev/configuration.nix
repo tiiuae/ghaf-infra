@@ -238,7 +238,7 @@ in
         admin off
       }
 
-      https://hetzci-dev.vedenemo.dev {
+      https://ci-dev.vedenemo.dev {
 
         # Introduce /trigger/* api mapping requests directly to jenkins /job/*
         # letting jenkins handle the authentication for /trigger/* paths.
