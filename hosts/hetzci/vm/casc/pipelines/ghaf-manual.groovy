@@ -10,7 +10,7 @@ def PIPELINE = [:]
 properties([
   githubProjectProperty(displayName: '', projectUrlStr: REPO_URL),
   parameters([
-    string(name: 'GITREF', defaultValue: 'main', description: 'Git reference (Commit/Branch/Tag)'),
+    string(name: 'GITREF', defaultValue: 'main', description: 'Ghaf git reference (Commit/Branch/Tag)'),
     string(name: 'TESTSET', defaultValue: null, description: 'By default tests are skipped. To run hw-tests, define the target testset here; e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.)'),
     booleanParam(name: 'doc', defaultValue: true, description: 'Enable target packages.x86_64-linux.doc'),
     booleanParam(name: 'lenovo_x1_carbon_gen11_debug', defaultValue: false, description: 'Enable target packages.x86_64-linux.lenovo-x1-carbon-gen11-debug'),
