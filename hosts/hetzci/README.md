@@ -100,9 +100,48 @@ After testing changes locally in a VM as explained above, copy the same changes 
 ❯ deploy -s .#hetzci-dev
 ```
 
+Which would a deploy the changes to https://ci-dev.vedenemo.dev
+
 ### Deploy Changes to prod
 
 After testing changes locally in a VM and optionally in a `dev` environment as explained above, copy the same changes to `prod` environment and deploy:
 ```bash
 ❯ deploy -s .#hetzci-prod
 ```
+
+Which would a deploy the changes to https://ci-prod.vedenemo.dev
+
+## Jenkins pipeline overview
+
+This section summarizes the jenkins pipelines and current availablility in each environment:
+
+|                       | prod | dev | vm |
+|-----------------------|------|-----|----|
+| ghaf-hw-test          | x    | x   | x  |
+| ghaf-main             | x    |     | x  |
+| ghaf-manual           | x    | x   | x  |
+| ghaf-nightly          | x    |     | x  |
+| ghaf-pre-merge        | x    |     | x  |
+| ghaf-pre-merge-manual |      | x   | x  |
+
+
+All pipelines can be tested locally in the `vm` environment, but obviously by default no testagents connect to your localhost, so HW tests would not run for pipelines triggered in local VM.
+
+#### ghaf-hw-test
+Runs Ghaf hw-tests given a ghaf image and a testset. Can be triggered manually to run a hw-test ad-hoc.
+
+#### ghaf-main
+Runs on push to Ghaf main. Triggered by a GitHub webhook sent to `prod` environment.
+
+#### ghaf-manual
+Allows manually triggering a set of Ghaf builds and optionally run a specified set of hw-tests against the builds.
+
+#### ghaf-nightly
+Triggers nightly on schedule.
+
+#### ghaf-pre-merge
+Runs on all changes to Ghaf PRs authored by tiiuae organization members. Triggered by a GitHub webhook sent to `prod` environment.
+
+#### ghaf-pre-merge-manual
+Allows manually triggering a pre-merge check given a Ghaf PR number. Optionally writes the check status to GitHub PR.
+
