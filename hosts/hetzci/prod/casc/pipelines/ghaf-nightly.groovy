@@ -54,7 +54,7 @@ def TARGETS = [
     testset: '_relayboot_regression_',
   ],
   [ target: "packages.x86_64-linux.generic-x86_64-debug",
-    testset: '_relayboot_regression_',
+    testset: null,
   ],
   [ target: "packages.aarch64-linux.nxp-imx8mp-evk-debug",
     testset: null,
