@@ -67,7 +67,7 @@ properties([
 pipeline {
   agent { label 'built-in' }
   triggers {
-    cron('@midnight')
+    cron('H 23 * * *')
   }
   options {
     buildDiscarder(logRotator(numToKeepStr: '10'))
