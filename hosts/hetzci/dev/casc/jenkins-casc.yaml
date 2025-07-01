@@ -51,25 +51,25 @@ jenkins:
         remoteFS: /var/lib/jenkins/agents/lenovo-x1
         retentionStrategy: always
     - permanent:
-        labelString: nuc
+        labelString: orin-agx-64
         launcher: inbound
         mode: EXCLUSIVE
-        name: dev-nuc
-        remoteFS: /var/lib/jenkins/agents/nuc
+        name: dev-orin-agx-64
+        remoteFS: /var/lib/jenkins/agents/orin-agx-64
         retentionStrategy: always
     - permanent:
-        labelString: nuc
+        labelString: orin-agx-64
         launcher: inbound
         mode: EXCLUSIVE
-        name: prod-nuc
-        remoteFS: /var/lib/jenkins/agents/nuc
+        name: prod-orin-agx-64
+        remoteFS: /var/lib/jenkins/agents/orin-agx-64
         retentionStrategy: always
     - permanent:
-        labelString: nuc
+        labelString: orin-agx-64
         launcher: inbound
         mode: EXCLUSIVE
-        name: release-nuc
-        remoteFS: /var/lib/jenkins/agents/nuc
+        name: release-orin-agx-64
+        remoteFS: /var/lib/jenkins/agents/orin-agx-64
         retentionStrategy: always
     - permanent:
         labelString: orin-agx
