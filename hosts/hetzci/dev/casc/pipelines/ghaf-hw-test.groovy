@@ -50,9 +50,6 @@ def init() {
   } else if(params.IMG_URL.contains("lenovo-x1-")) {
     env.DEVICE_NAME = 'LenovoX1-1'
     env.DEVICE_TAG = 'lenovo-x1'
-  } else if(params.IMG_URL.contains("microchip-icicle-")) {
-    env.DEVICE_NAME = 'Polarfire1'
-    env.DEVICE_TAG = 'riscv'
   } else if(params.IMG_URL.contains("dell-latitude-7330-")) {
     env.DEVICE_NAME = 'Dell7330'
     env.DEVICE_TAG = 'dell-7330'
