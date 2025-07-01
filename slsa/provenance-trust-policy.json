@@ -21,7 +21,7 @@
     {
       "id": "built-recently",
       "description": "Build was finished less than hour ago",
-      "cel": "now - timestamp(predicate.runDetails.metadata.startedOn) < duration('1h')",
+      "cel": "now - timestamp(predicate.runDetails.metadata.startedOn) < duration('2h')",
       "required": true
     }
   ]
