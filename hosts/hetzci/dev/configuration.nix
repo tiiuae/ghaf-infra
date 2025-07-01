@@ -220,6 +220,8 @@ in
       in
       builtins.listToAttrs (map mkJenkinsPlugin manifest);
   };
+  # Jenkins home dir (by default at /var/lib/jenkins) mode needs to be 755
+  users.users.jenkins.homeMode = "755";
 
   systemd.services.jenkins = {
     serviceConfig = {
