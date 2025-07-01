@@ -8,56 +8,23 @@ def WORKDIR  = 'checkout'
 def PIPELINE = [:]
 
 def TARGETS = [
-  [ target: "packages.x86_64-linux.doc",
-    testset: null,
-  ],
   [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug",
-    testset: '_relayboot_gui_regression_',
-  ],
-  [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-installer",
-    testset: null,
-  ],
-  [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-release",
-    testset: null,
-  ],
-  [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-release-installer",
-    testset: null,
-  ],
-  [ target: "packages.x86_64-linux.lenovo-x1-gen11-hardening-debug",
-    testset: null,
-  ],
-  [ target: "packages.x86_64-linux.lenovo-x1-gen11-hardening-debug-installer",
-    testset: null,
-  ],
-  [ target: "packages.x86_64-linux.dell-latitude-7230-debug",
-    testset: null,
+    testset: '_relayboot_perf_',
   ],
   [ target: "packages.x86_64-linux.dell-latitude-7330-debug",
-    testset: '_relayboot_regression_',
+    testset: '_relayboot_perf_',
   ],
   [ target: "packages.aarch64-linux.nvidia-jetson-orin-agx-debug",
-    testset: '_relayboot_regression_',
-  ],
-  [ target: "packages.aarch64-linux.nvidia-jetson-orin-agx64-debug",
-    testset: '_relayboot_regression_',
+    testset: '_relayboot_perf_',
   ],
   [ target: "packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64",
-    testset: '_relayboot_regression_',
-  ],
-  [ target: "packages.x86_64-linux.nvidia-jetson-orin-agx64-debug-from-x86_64",
-    testset: '_relayboot_regression_',
+    testset: '_relayboot_perf_',
   ],
   [ target: "packages.aarch64-linux.nvidia-jetson-orin-nx-debug",
-    testset: '_relayboot_regression_',
+    testset: '_relayboot_perf_',
   ],
   [ target: "packages.x86_64-linux.nvidia-jetson-orin-nx-debug-from-x86_64",
-    testset: '_relayboot_regression_',
-  ],
-  [ target: "packages.x86_64-linux.generic-x86_64-debug",
-    testset: null,
-  ],
-  [ target: "packages.aarch64-linux.nxp-imx8mp-evk-debug",
-    testset: null,
+    testset: '_relayboot_perf_',
   ],
 ]
 
@@ -67,7 +34,7 @@ properties([
 pipeline {
   agent { label 'built-in' }
   triggers {
-    cron('H 23 * * *')
+    cron('H 22 * * *')
   }
   options {
     buildDiscarder(logRotator(numToKeepStr: '30'))
