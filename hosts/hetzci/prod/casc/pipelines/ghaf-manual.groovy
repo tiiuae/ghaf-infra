@@ -12,14 +12,14 @@ properties([
   parameters([
     string(name: 'GITREF', defaultValue: 'main', description: 'Ghaf git reference (Commit/Branch/Tag)'),
     string(name: 'TESTSET', defaultValue: null, description: 'By default tests are skipped. To run hw-tests, define the target testset here; e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.)'),
-    booleanParam(name: 'doc', defaultValue: true, description: 'Enable target packages.x86_64-linux.doc'),
-    booleanParam(name: 'lenovo_x1_carbon_gen11_debug', defaultValue: false, description: 'Enable target packages.x86_64-linux.lenovo-x1-carbon-gen11-debug'),
-    booleanParam(name: 'dell_latitude_7230_debug', defaultValue: false, description: 'Enable target packages.x86_64-linux.dell-latitude-7230-debug'),
-    booleanParam(name: 'dell_latitude_7330_debug', defaultValue: false, description: 'Enable target packages.x86_64-linux.dell-latitude-7330-debug'),
-    booleanParam(name: 'nvidia_jetson_orin_agx_debug_from_x86_64', defaultValue: false, description: 'Enable target packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64'),
-    booleanParam(name: 'nvidia_jetson_orin_nx_debug_from_x86_64', defaultValue: false, description: 'Enable target packages.x86_64-linux.nvidia-jetson-orin-nx-debug-from-x86_64'),
-    booleanParam(name: 'nvidia_jetson_orin_agx_debug', defaultValue: false, description: 'Enable target packages.aarch64-linux.nvidia-jetson-orin-agx-debug'),
-    booleanParam(name: 'nvidia_jetson_orin_nx_debug', defaultValue: false, description: 'Enable target packages.aarch64-linux.nvidia-jetson-orin-nx-debug')
+    booleanParam(name: 'doc', defaultValue: true, description: 'Build target packages.x86_64-linux.doc'),
+    booleanParam(name: 'lenovo_x1_carbon_gen11_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.lenovo-x1-carbon-gen11-debug'),
+    booleanParam(name: 'dell_latitude_7230_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.dell-latitude-7230-debug'),
+    booleanParam(name: 'dell_latitude_7330_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.dell-latitude-7330-debug'),
+    booleanParam(name: 'nvidia_jetson_orin_agx_debug_from_x86_64', defaultValue: false, description: 'Build target packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64'),
+    booleanParam(name: 'nvidia_jetson_orin_nx_debug_from_x86_64', defaultValue: false, description: 'Build target packages.x86_64-linux.nvidia-jetson-orin-nx-debug-from-x86_64'),
+    booleanParam(name: 'nvidia_jetson_orin_agx_debug', defaultValue: false, description: 'Build target packages.aarch64-linux.nvidia-jetson-orin-agx-debug'),
+    booleanParam(name: 'nvidia_jetson_orin_nx_debug', defaultValue: false, description: 'Build target packages.aarch64-linux.nvidia-jetson-orin-nx-debug')
   ])
 ])
 pipeline {
