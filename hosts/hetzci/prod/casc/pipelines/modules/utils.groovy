@@ -6,13 +6,13 @@ def run_cmd(String cmd) {
 
 def create_pipeline(List<Map> targets) {
   def pipeline = [:]
-  def stamp = run_cmd('date +"%Y%m%d_%H%M%S"')
+  def stamp = run_cmd('date +"%Y%m%d_%H%M%S%3N"')
   def commit = run_cmd('git rev-parse HEAD')
   def artifacts = "artifacts/${env.JOB_BASE_NAME}/${stamp}-commit_${commit}"
   def artifacts_local_dir = "/var/lib/jenkins/${artifacts}"
   def artifacts_href = "<a href=\"/${artifacts}\">📦 Artifacts</a>"
   currentBuild.description = "${artifacts_href}"
-  sh "mkdir -p ${artifacts_local_dir}"
+  sh "mkdir -v -p ${artifacts_local_dir}; sync"
   // Evaluate
   stage("Eval") {
     lock('evaluator') {
