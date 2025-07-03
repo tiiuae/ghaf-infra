@@ -64,11 +64,11 @@ pipeline {
             }
             if (params.dell_latitude_7230_debug) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.dell-latitude-7230-debug", testset: params.TESTSET ])
+                [ target: "packages.x86_64-linux.dell-latitude-7230-debug", testset: null ])
             }
             if (params.dell_latitude_7330_debug) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.dell-latitude-7330-debug", testset: null ])
+                [ target: "packages.x86_64-linux.dell-latitude-7330-debug", testset: params.TESTSET ])
             }
             if (params.nvidia_jetson_orin_agx_debug_from_x86_64) {
               TARGETS.push(
