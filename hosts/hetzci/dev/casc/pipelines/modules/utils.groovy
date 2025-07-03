@@ -12,7 +12,6 @@ def create_pipeline(List<Map> targets) {
   def artifacts_local_dir = "/var/lib/jenkins/${artifacts}"
   def artifacts_href = "<a href=\"/${artifacts}\">📦 Artifacts</a>"
   currentBuild.description = "${artifacts_href}"
-  sh "mkdir -v -p ${artifacts_local_dir}; sync"
   // Evaluate
   stage("Eval") {
     lock('evaluator') {
@@ -28,7 +27,7 @@ def create_pipeline(List<Map> targets) {
       }
       // Archive
       stage("Archive ${shortname}") {
-        sh "cp -P ${it.target} ${artifacts_local_dir}/"
+        sh "mkdir -v -p ${artifacts_local_dir} && cp -P ${it.target} ${artifacts_local_dir}/"
       }
       // Test
       if (it.testset != null && !it.testset.isEmpty()) {
