@@ -23,7 +23,6 @@ let
     build2 = mkDeployment "x86_64-linux" "build2" "172.18.20.103";
     build3 = mkDeployment "x86_64-linux" "build3" "172.18.20.104";
     build4 = mkDeployment "x86_64-linux" "build4" "172.18.20.105";
-    himalia = mkDeployment "x86_64-linux" "himalia" "172.18.20.106";
     monitoring = mkDeployment "x86_64-linux" "monitoring" "172.18.20.108";
     binarycache = mkDeployment "x86_64-linux" "binarycache" "172.18.20.109";
     testagent-prod = mkDeployment "x86_64-linux" "testagent-prod" "172.18.16.60";

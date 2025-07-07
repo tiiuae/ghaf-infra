@@ -51,7 +51,6 @@ in
     nixos-build4 = ./builders/build4/configuration.nix;
     nixos-hetzarm = ./builders/hetzarm/configuration.nix;
     nixos-monitoring = ./monitoring/configuration.nix;
-    nixos-himalia = ./himalia/configuration.nix;
     nixos-testagent-prod = ./testagent/prod/configuration.nix;
     nixos-testagent-dev = ./testagent/dev/configuration.nix;
     nixos-testagent-release = ./testagent/release/configuration.nix;
@@ -93,7 +92,6 @@ in
           "build4"
           "hetzarm"
           "monitoring"
-          "himalia"
           "testagent-prod"
           "testagent-dev"
           "testagent-release"
