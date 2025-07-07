@@ -40,7 +40,6 @@ Current ghaf-infra targets:
 │ monitoring-ficolo  │ monitoring        │ 172.18.20.108  │
 │ build3-ficolo      │ build3            │ 172.18.20.104  │
 │ build4-ficolo      │ build4            │ 172.18.20.105  │
-│ himalia            │ himalia           │ 172.18.20.106  │
 │ testagent-dev      │ testagent-dev     │ 172.18.16.33   │
 │ testagent-prod     │ testagent-prod    │ 172.18.16.60   │
 │ testagent-release  │ testagent-release │ 172.18.16.32   │
