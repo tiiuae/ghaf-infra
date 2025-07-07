@@ -23,6 +23,7 @@ in
     ++ (with self.nixosModules; [
       common
       service-openssh
+      service-monitoring
       team-devenv
     ]);
 
@@ -327,12 +328,25 @@ in
       jenkins_api_token.owner = "jenkins";
       jenkins_github_webhook_secret.owner = "jenkins";
       jenkins_github_commit_status_token.owner = "jenkins";
+      loki_password.owner = "promtail";
     };
     templates.oauth2_proxy_env = {
       content = ''
         OAUTH2_PROXY_COOKIE_SECRET=${config.sops.placeholder.oauth2_proxy_cookie_secret}
       '';
       owner = "oauth2-proxy";
+    };
+  };
+
+  services.monitoring = {
+    metrics = {
+      enable = true;
+      ssh = true;
+    };
+    logs = {
+      enable = true;
+      lokiAddress = "https://monitoring.vedenemo.dev";
+      auth.password_file = config.sops.secrets.loki_password.path;
     };
   };
 

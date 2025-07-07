@@ -63,6 +63,10 @@ in
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG05U1SHacBIrp3dH7g5O1k8pct/QVwHfuW/TkBYxLnp";
     "65.108.7.79".publicKey =
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG68NdmOw3mhiBZwDv81dXitePoc1w//p/LpsHHA8QRp";
+    "157.180.119.138".publicKey =
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ8XgXW7leM8yIOyU86aDztcWBGKkBAgTiu5yaAcJcvD";
+    "157.180.43.236".publicKey =
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBdDmtt7At/xDNCF0aIDvXc2T9GTP0HWaAt4DEAejcE6";
   };
 
   systemd.services.populate-jenkins-known-hosts = {
@@ -368,6 +372,18 @@ in
             targets = [ "37.27.190.109:9100" ];
             labels = {
               machine_name = "ghaf-auth";
+            };
+          }
+          {
+            targets = [ "157.180.119.138:9100" ];
+            labels = {
+              machine_name = "hetzci-dev";
+            };
+          }
+          {
+            targets = [ "157.180.43.236:9100" ];
+            labels = {
+              machine_name = "hetzci-prod";
             };
           }
         ];
