@@ -189,6 +189,9 @@ in
     extraJavaOptions = [
       # Useful when the 'sh' step fails:
       "-Dorg.jenkinsci.plugins.durabletask.BourneShellScript.LAUNCH_DIAGNOSTICS=true"
+      # If we want to allow robot framework reports, we need to adjust Jenkins CSP:
+      # https://plugins.jenkins.io/robot/#plugin-content-log-file-not-showing-properly
+      "-Dhudson.model.DirectoryBrowserSupport.CSP=\"sandbox allow-scripts; default-src 'none'; img-src 'self' data: ; style-src 'self' 'unsafe-inline' data: ; script-src 'self' 'unsafe-inline' 'unsafe-eval';\""
       # Point to configuration-as-code config
       "-Dcasc.jenkins.config=${jenkins-casc}"
       # Disable the intitial setup wizard, and the creation of initialAdminPassword.
