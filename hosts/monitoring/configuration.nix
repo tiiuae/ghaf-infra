@@ -398,7 +398,6 @@ in
           {
             targets = [
               "ghaf-jenkins-controller-prod.northeurope.cloudapp.azure.com"
-              "prod-cache.vedenemo.dev"
             ];
             labels = {
               env = "prod";
