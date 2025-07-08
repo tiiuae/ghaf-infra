@@ -19,7 +19,6 @@ def create_pipeline(List<Map> targets) {
   def artifacts = "artifacts/${env.JOB_BASE_NAME}/${stamp}-commit_${commit}"
   def artifacts_local_dir = "/var/lib/jenkins/${artifacts}"
   def artifacts_href = "<a href=\"/${artifacts}\">📦 Artifacts</a>"
-  append_to_build_description(artifacts_href)
   // Evaluate
   stage("Eval") {
     lock('evaluator') {
@@ -36,6 +35,9 @@ def create_pipeline(List<Map> targets) {
       // Archive
       stage("Archive ${shortname}") {
         sh "mkdir -v -p ${artifacts_local_dir} && cp -P ${it.target} ${artifacts_local_dir}/"
+        if (!currentBuild.description.contains(artifacts_href)) {
+          append_to_build_description(artifacts_href)
+        }
       }
       // Test
       if (it.testset != null && !it.testset.isEmpty()) {
@@ -73,7 +75,12 @@ def create_pipeline(List<Map> targets) {
   return pipeline
 }
 
-def setBuildStatus(String message, String state, String commit) {
+def set_github_commit_status(
+  String message,
+  String state,
+  String commit,
+  String project = "tiiuae/ghaf",
+  String context = "jenkins-pre-merge") {
   if (!commit) {
     println "Skip setting GitHub commit status"
     return
@@ -81,14 +88,14 @@ def setBuildStatus(String message, String state, String commit) {
   println "Setting GitHub commit status"
   withCredentials([string(credentialsId: 'jenkins-github-commit-status-token', variable: 'TOKEN')]) {
     env.TOKEN = "$TOKEN"
-    String status_url = "https://api.github.com/repos/tiiuae/ghaf/statuses/$commit"
+    String status_url = "https://api.github.com/repos/$project/statuses/$commit"
     sh """
       # set -x
       curl -H \"Authorization: token \$TOKEN\" \
         -X POST \
         -d '{\"description\": \"$message\", \
              \"state\": \"$state\", \
-             \"context\": "jenkins-pre-merge", \
+             \"context\": "$context", \
              \"target_url\" : \"$BUILD_URL\" }' \
         ${status_url}
     """

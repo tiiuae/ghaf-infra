@@ -119,7 +119,7 @@ pipeline {
         dir(WORKDIR) {
           script {
             MODULES.utils = load "/etc/jenkins/pipelines/modules/utils.groovy"
-            MODULES.utils.setBuildStatus("Pending", "pending", env.TARGET_COMMIT)
+            MODULES.utils.set_github_commit_status("Pending", "pending", env.TARGET_COMMIT)
             PIPELINE = MODULES.utils.create_pipeline(TARGETS)
           }
         }
@@ -138,12 +138,12 @@ pipeline {
   post {
     success {
       script {
-        MODULES.utils.setBuildStatus("Successful", "success", env.TARGET_COMMIT)
+        MODULES.utils.set_github_commit_status("Successful", "success", env.TARGET_COMMIT)
       }
     }
     unsuccessful {
       script {
-        MODULES.utils.setBuildStatus("Failure", "failure", env.TARGET_COMMIT)
+        MODULES.utils.set_github_commit_status("Failure", "failure", env.TARGET_COMMIT)
       }
     }
   }
