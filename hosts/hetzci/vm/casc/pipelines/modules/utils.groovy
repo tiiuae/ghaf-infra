@@ -4,6 +4,14 @@ def run_cmd(String cmd) {
   return sh(script: cmd, returnStdout:true).trim()
 }
 
+def append_to_build_description(String text) {
+  if(!currentBuild.description) {
+    currentBuild.description = text
+  } else {
+    currentBuild.description = "${currentBuild.description}<br>${text}"
+  }
+}
+
 def create_pipeline(List<Map> targets) {
   def pipeline = [:]
   def stamp = run_cmd('date +"%Y%m%d_%H%M%S%3N"')
@@ -11,7 +19,7 @@ def create_pipeline(List<Map> targets) {
   def artifacts = "artifacts/${env.JOB_BASE_NAME}/${stamp}-commit_${commit}"
   def artifacts_local_dir = "/var/lib/jenkins/${artifacts}"
   def artifacts_href = "<a href=\"/${artifacts}\">📦 Artifacts</a>"
-  currentBuild.description = "${artifacts_href}"
+  append_to_build_description(artifacts_href)
   // Evaluate
   stage("Eval") {
     lock('evaluator') {
@@ -51,7 +59,7 @@ def create_pipeline(List<Map> targets) {
             unstable("FAILED: ${it.target} ${it.testset}")
             currentBuild.result = "FAILURE"
             def test_href = "<a href=\"${job.absoluteUrl}\">⛔ ${shortname}</a>"
-            currentBuild.description = "${currentBuild.description}<br>${test_href}"
+            append_to_build_description(test_href)
           }
           copyArtifacts(
             projectName: "ghaf-hw-test",

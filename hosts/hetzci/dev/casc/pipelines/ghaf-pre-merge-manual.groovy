@@ -61,6 +61,11 @@ pipeline {
     stage('Checkout') {
       steps {
         dir(WORKDIR) {
+          script {
+            if (!params.GITHUB_PR_NUMBER) {
+              error('Missing GITHUB_PR_NUMBER')
+            }
+          }
           checkout scmGit(
             userRemoteConfigs: [[
               url: REPO_URL,
@@ -92,6 +97,8 @@ pipeline {
             if (params.SET_PR_STATUS) {
               MODULES.utils.setBuildStatus("Manual trigger: pending", "pending", env.TARGET_COMMIT)
             }
+            def pr_href = "<a href=\"${REPO_URL}/pull/${params.GITHUB_PR_NUMBER}\">🧩 PR#${params.GITHUB_PR_NUMBER}</a>"
+            MODULES.utils.append_to_build_description(pr_href)
             PIPELINE = MODULES.utils.create_pipeline(TARGETS)
           }
         }
