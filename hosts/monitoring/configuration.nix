@@ -7,22 +7,30 @@
   inputs,
   lib,
   config,
+  machines,
   ...
 }:
 let
-  # "public" but really only available with ficolo vpn
   sshified = pkgs.callPackage ../../pkgs/sshified/default.nix { };
-in
-{
-  sops.defaultSopsFile = ./secrets.yaml;
-  sops.secrets = {
-    sshified_private_key.owner = "sshified";
-    metrics_basic_auth.owner = "nginx";
-    # github oauth app credentials
-    github_client_id.owner = "grafana";
-    github_client_secret.owner = "grafana";
+
+  # populates known hosts as well as grafana scrape targets
+  sshMonitoredHosts = {
+    inherit (machines)
+      ghaf-log
+      ghaf-proxy
+      ghaf-auth
+      hetzarm
+      hetz86-1
+      hetz86-builder
+      hetzci-dev
+      hetzci-prod
+      ;
   };
 
+  domain = "monitoring.vedenemo.dev";
+
+in
+{
   imports =
     [
       ./disk-config.nix
@@ -38,36 +46,28 @@ in
       team-devenv
     ]);
 
-  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+  sops = {
+    defaultSopsFile = ./secrets.yaml;
+    secrets = {
+      sshified_private_key.owner = "sshified";
+      metrics_basic_auth.owner = "nginx";
 
-  networking = {
-    hostName = "monitoring";
-    firewall = {
-      allowedTCPPorts = [ config.services.prometheus.port ];
-      allowedUDPPorts = [ config.services.prometheus.port ];
+      # github oauth app credentials
+      github_client_id.owner = "grafana";
+      github_client_secret.owner = "grafana";
     };
   };
 
+  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+  networking.hostName = "monitoring";
+
   users.users."sshified".isNormalUser = true;
 
-  services.openssh.knownHosts = {
-    "65.21.20.242".publicKey =
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILx4zU4gIkTY/1oKEOkf9gTJChdx/jR3lDgZ7p/c7LEK";
-    "95.217.177.197".publicKey =
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICMmB3Ws5MVq0DgVu+Hth/8NhNAYEwXyz4B6FRCF6Nu2";
-    "95.216.200.85".publicKey =
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIALs+OQDrCKRIKkwTwI4MI+oYC3RTEus9cXCBcIyRHzl";
-    "37.27.190.109".publicKey =
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPc04ZyZ7LgUKhV6Xr177qQn6Vf43FzUr1mS6g3jrSDj";
-    "37.27.170.242".publicKey =
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG05U1SHacBIrp3dH7g5O1k8pct/QVwHfuW/TkBYxLnp";
-    "65.108.7.79".publicKey =
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG68NdmOw3mhiBZwDv81dXitePoc1w//p/LpsHHA8QRp";
-    "157.180.119.138".publicKey =
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ8XgXW7leM8yIOyU86aDztcWBGKkBAgTiu5yaAcJcvD";
-    "157.180.43.236".publicKey =
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBdDmtt7At/xDNCF0aIDvXc2T9GTP0HWaAt4DEAejcE6";
-  };
+  # add public keys of hosts we monitor through ssh
+  services.openssh.knownHosts = lib.mapAttrs (_: host: {
+    hostNames = [ host.ip ];
+    inherit (host) publicKey;
+  }) sshMonitoredHosts;
 
   systemd.services.populate-jenkins-known-hosts = {
     after = [ "network.target" ];
@@ -156,7 +156,7 @@ in
       server = {
         http_port = 3000;
         http_addr = "127.0.0.1";
-        domain = "monitoring.vedenemo.dev";
+        inherit domain;
         enforce_domain = true;
 
         # the default root_url is unaware of our nginx reverse proxy,
@@ -273,7 +273,7 @@ in
     pushgateway = {
       enable = true;
       web = {
-        external-url = "https://monitoring.vedenemo.dev/push/";
+        external-url = "https://${domain}/push/";
         listen-address = "127.0.0.1:9091";
       };
     };
@@ -281,38 +281,34 @@ in
     scrapeConfigs = [
       {
         job_name = "ficolo-internal-monitoring";
-        static_configs = [
-          {
-            targets = [ "172.18.20.102:9100" ];
-            labels = {
-              machine_name = "build1";
+        static_configs =
+          lib.mapAttrsToList
+            (name: value: {
+              targets = [ "${value.ip}:9100" ];
+              labels = {
+                machine_name = name;
+              };
+            })
+            {
+              inherit (machines)
+                build1
+                build2
+                build3
+                build4
+                monitoring
+                ;
             };
-          }
-          {
-            targets = [ "172.18.20.103:9100" ];
-            labels = {
-              machine_name = "build2";
-            };
-          }
-          {
-            targets = [ "172.18.20.104:9100" ];
-            labels = {
-              machine_name = "build3";
-            };
-          }
-          {
-            targets = [ "172.18.20.105:9100" ];
-            labels = {
-              machine_name = "build4";
-            };
-          }
-          {
-            targets = [ "172.18.20.108:9100" ];
-            labels = {
-              machine_name = "monitoring";
-            };
-          }
-        ];
+      }
+      {
+        job_name = "ssh-monitoring";
+        # proxy the requests through our ssh tunnel
+        proxy_url = "http://127.0.0.1:8888";
+        static_configs = lib.mapAttrsToList (name: value: {
+          targets = [ "${value.ip}:9100" ];
+          labels = {
+            machine_name = name;
+          };
+        }) sshMonitoredHosts;
       }
       {
         job_name = "Azure-Jenkins-monitoring";
@@ -329,61 +325,6 @@ in
             targets = [ "ghaf-jenkins-controller-prod.northeurope.cloudapp.azure.com:9100" ];
             labels = {
               machine_name = "Jenkins PROD controller";
-            };
-          }
-        ];
-      }
-      {
-        job_name = "ssh-monitoring";
-        # proxy the requests through our ssh tunnel
-        proxy_url = "http://127.0.0.1:8888";
-        static_configs = [
-          {
-            targets = [ "65.21.20.242:9100" ];
-            labels = {
-              machine_name = "hetzarm";
-            };
-          }
-          {
-            targets = [ "37.27.170.242:9100" ];
-            labels = {
-              machine_name = "hetz86-1";
-            };
-          }
-          {
-            targets = [ "65.108.7.79:9100" ];
-            labels = {
-              machine_name = "hetz86-builder";
-            };
-          }
-          {
-            targets = [ "95.217.177.197:9100" ];
-            labels = {
-              machine_name = "ghaf-log";
-            };
-          }
-          {
-            targets = [ "95.216.200.85:9100" ];
-            labels = {
-              machine_name = "ghaf-proxy";
-            };
-          }
-          {
-            targets = [ "37.27.190.109:9100" ];
-            labels = {
-              machine_name = "ghaf-auth";
-            };
-          }
-          {
-            targets = [ "157.180.119.138:9100" ];
-            labels = {
-              machine_name = "hetzci-dev";
-            };
-          }
-          {
-            targets = [ "157.180.43.236:9100" ];
-            labels = {
-              machine_name = "hetzci-prod";
             };
           }
         ];
@@ -461,7 +402,7 @@ in
       };
     in
     {
-      "monitoring.vedenemo.dev" = {
+      "${domain}" = {
         default = true;
         enableACME = true;
         forceSSL = true;
@@ -482,7 +423,7 @@ in
       };
 
       # no auth required when accessing through internal ip address
-      "172.18.20.108" = {
+      "${machines.monitoring.ip}" = {
         locations = {
           "/" = grafana;
           "/loki" = loki;

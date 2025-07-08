@@ -1,7 +1,12 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 #
-{ self, lib, ... }:
+{
+  self,
+  lib,
+  machines,
+  ...
+}:
 {
   imports = [ self.nixosModules.service-monitoring ];
 
@@ -12,6 +17,6 @@
 
   services.monitoring = {
     metrics.openFirewall = true;
-    logs.lokiAddress = lib.mkDefault "http://172.18.20.108";
+    logs.lokiAddress = lib.mkDefault "http://${machines.monitoring.ip}";
   };
 }
