@@ -8,9 +8,11 @@
   ...
 }:
 let
+  machines = import ./machines.nix;
+
   # make self and inputs available in nixos modules
   specialArgs = {
-    inherit self inputs;
+    inherit self inputs machines;
   };
 
   # Calls nixosSystem with a toplevel config
@@ -109,9 +111,7 @@ in
     ))
     // {
       hetzci-vm = inputs.nixpkgs.lib.nixosSystem {
-        specialArgs = {
-          inherit inputs self;
-        };
+        inherit specialArgs;
         modules = [
           (import ./vm-nixos-qemu.nix {
             disk_gb = 200;

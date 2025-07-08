@@ -7,41 +7,47 @@
   ...
 }:
 let
+  machines = import ../hosts/machines.nix;
+
   inherit (inputs) deploy-rs;
 
-  mkDeployment = arch: config: ip: {
+  mkDeployment = config: ip: {
     hostname = ip;
     inherit config; # used for installation script
-    profiles.system = {
-      user = "root";
-      path = deploy-rs.lib.${arch}.activate.nixos self.nixosConfigurations.${config};
-    };
+    profiles.system =
+      let
+        cfg = self.nixosConfigurations.${config};
+      in
+      {
+        user = "root";
+        path = deploy-rs.lib.${cfg.config.nixpkgs.hostPlatform.system}.activate.nixos cfg;
+      };
   };
 
   x86-nodes = {
-    build1 = mkDeployment "x86_64-linux" "build1" "172.18.20.102";
-    build2 = mkDeployment "x86_64-linux" "build2" "172.18.20.103";
-    build3 = mkDeployment "x86_64-linux" "build3" "172.18.20.104";
-    build4 = mkDeployment "x86_64-linux" "build4" "172.18.20.105";
-    monitoring = mkDeployment "x86_64-linux" "monitoring" "172.18.20.108";
-    binarycache = mkDeployment "x86_64-linux" "binarycache" "172.18.20.109";
-    testagent-prod = mkDeployment "x86_64-linux" "testagent-prod" "172.18.16.60";
-    testagent-dev = mkDeployment "x86_64-linux" "testagent-dev" "172.18.16.33";
-    testagent-release = mkDeployment "x86_64-linux" "testagent-release" "172.18.16.32";
-    ghaf-log = mkDeployment "x86_64-linux" "ghaf-log" "95.217.177.197";
-    ghaf-coverity = mkDeployment "x86_64-linux" "ghaf-coverity" "135.181.103.32";
-    ghaf-proxy = mkDeployment "x86_64-linux" "ghaf-proxy" "95.216.200.85";
-    ghaf-webserver = mkDeployment "x86_64-linux" "ghaf-webserver" "37.27.204.82";
-    ghaf-auth = mkDeployment "x86_64-linux" "ghaf-auth" "37.27.190.109";
-    testagent-uae-dev = mkDeployment "x86_64-linux" "testagent-uae-dev" "172.19.16.12";
-    hetzci-prod = mkDeployment "x86_64-linux" "hetzci-prod" "157.180.43.236";
-    hetzci-dev = mkDeployment "x86_64-linux" "hetzci-dev" "157.180.119.138";
-    hetz86-1 = mkDeployment "x86_64-linux" "hetz86-1" "37.27.170.242";
-    hetz86-builder = mkDeployment "x86_64-linux" "hetz86-builder" "65.108.7.79";
+    build1 = mkDeployment "build1" machines.build1.ip;
+    build2 = mkDeployment "build2" machines.build2.ip;
+    build3 = mkDeployment "build3" machines.build3.ip;
+    build4 = mkDeployment "build4" machines.build4.ip;
+    monitoring = mkDeployment "monitoring" machines.monitoring.ip;
+    binarycache = mkDeployment "binarycache" machines.binarycache.ip;
+    testagent-prod = mkDeployment "testagent-prod" machines.testagent-prod.ip;
+    testagent-dev = mkDeployment "testagent-dev" machines.testagent-dev.ip;
+    testagent-release = mkDeployment "testagent-release" machines.testagent-release.ip;
+    testagent-uae-dev = mkDeployment "testagent-uae-dev" machines.testagent-uae-dev.ip;
+    ghaf-log = mkDeployment "ghaf-log" machines.ghaf-log.ip;
+    ghaf-coverity = mkDeployment "ghaf-coverity" machines.ghaf-coverity.ip;
+    ghaf-proxy = mkDeployment "ghaf-proxy" machines.ghaf-proxy.ip;
+    ghaf-webserver = mkDeployment "ghaf-webserver" machines.ghaf-webserver.ip;
+    ghaf-auth = mkDeployment "ghaf-auth" machines.ghaf-auth.ip;
+    hetzci-prod = mkDeployment "hetzci-prod" machines.hetzci-prod.ip;
+    hetzci-dev = mkDeployment "hetzci-dev" machines.hetzci-dev.ip;
+    hetz86-1 = mkDeployment "hetz86-1" machines.hetz86-1.ip;
+    hetz86-builder = mkDeployment "hetz86-builder" machines.hetz86-builder.ip;
   };
 
   aarch64-nodes = {
-    hetzarm = mkDeployment "aarch64-linux" "hetzarm" "65.21.20.242";
+    hetzarm = mkDeployment "hetzarm" machines.hetzarm.ip;
   };
 in
 {
