@@ -73,7 +73,6 @@
             reuse
             sops
             ssh-to-age
-            deploy-rs
             wget
             terragrunt
             (terraform.withPlugins (p: [
@@ -104,9 +103,10 @@
               p.sops
             ]))
           ])
-          ++ [
-            inputs'.nix-fast-build.packages.default
-          ];
+          ++ (with inputs'; [
+            nix-fast-build.packages.default
+            deploy-rs.packages.default
+          ]);
       };
     };
 }
