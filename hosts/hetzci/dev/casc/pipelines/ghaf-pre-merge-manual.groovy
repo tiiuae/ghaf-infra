@@ -95,7 +95,7 @@ pipeline {
           script {
             MODULES.utils = load "/etc/jenkins/pipelines/modules/utils.groovy"
             if (params.SET_PR_STATUS) {
-              MODULES.utils.setBuildStatus("Manual trigger: pending", "pending", env.TARGET_COMMIT)
+              MODULES.utils.set_github_commit_status("Manual trigger: pending", "pending", env.TARGET_COMMIT)
             }
             def pr_href = "<a href=\"${REPO_URL}/pull/${params.GITHUB_PR_NUMBER}\">🧩 PR#${params.GITHUB_PR_NUMBER}</a>"
             MODULES.utils.append_to_build_description(pr_href)
@@ -118,14 +118,14 @@ pipeline {
     success {
       script {
         if (params.SET_PR_STATUS) {
-          MODULES.utils.setBuildStatus("Manual trigger: success", "success", env.TARGET_COMMIT)
+          MODULES.utils.set_github_commit_status("Manual trigger: success", "success", env.TARGET_COMMIT)
         }
       }
     }
     unsuccessful {
       script {
         if (params.SET_PR_STATUS) {
-          MODULES.utils.setBuildStatus("Manual trigger: failure", "failure", env.TARGET_COMMIT)
+          MODULES.utils.set_github_commit_status("Manual trigger: failure", "failure", env.TARGET_COMMIT)
         }
       }
     }
