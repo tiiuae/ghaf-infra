@@ -35,7 +35,7 @@ def create_pipeline(List<Map> targets) {
       // Archive
       stage("Archive ${shortname}") {
         sh "mkdir -v -p ${artifacts_local_dir} && cp -P ${it.target} ${artifacts_local_dir}/"
-        if (!currentBuild.description.contains(artifacts_href)) {
+        if (!currentBuild.description || !currentBuild.description.contains(artifacts_href)) {
           append_to_build_description(artifacts_href)
         }
       }
