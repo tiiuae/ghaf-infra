@@ -45,7 +45,7 @@ properties([
 pipeline {
   agent { label 'built-in' }
   options {
-    buildDiscarder(logRotator(numToKeepStr: '10'))
+    buildDiscarder(logRotator(numToKeepStr: '100'))
   }
   stages {
     stage('Reload only') {

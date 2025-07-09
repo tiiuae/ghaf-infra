@@ -141,7 +141,7 @@ def ghaf_robot_test(String testname='relayboot') {
 pipeline {
   agent { label init() }
   options {
-    buildDiscarder(logRotator(numToKeepStr: '100'))
+    buildDiscarder(logRotator(numToKeepStr: '1000'))
   }
   stages {
     stage('Reload only') {
