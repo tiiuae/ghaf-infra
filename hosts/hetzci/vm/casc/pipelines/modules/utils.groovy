@@ -34,7 +34,10 @@ def create_pipeline(List<Map> targets) {
       }
       // Archive
       stage("Archive ${shortname}") {
-        sh "mkdir -v -p ${artifacts_local_dir} && cp -P ${it.target} ${artifacts_local_dir}/"
+        sh """
+          mkdir -v -p ${artifacts_local_dir} && cp -P ${it.target} ${artifacts_local_dir}/
+          ln -sf /var/lib/jenkins/jobs/${JOB_BASE_NAME}/builds/${BUILD_NUMBER}/log ${artifacts_local_dir}/log
+        """
         if (!currentBuild.description || !currentBuild.description.contains(artifacts_href)) {
           append_to_build_description(artifacts_href)
         }
@@ -57,6 +60,10 @@ def create_pipeline(List<Map> targets) {
               booleanParam(name: "RELOAD_ONLY", value: false),
             ],
           )
+          sh """
+            mkdir -v -p ${artifacts_local_dir}/test-results
+            cp /var/lib/jenkins/jobs/ghaf-hw-test/builds/${job.number}/log ${artifacts_local_dir}/test-results/${it.target}.log
+          """
           if (job.result != "SUCCESS") {
             unstable("FAILED: ${it.target} ${it.testset}")
             currentBuild.result = "FAILURE"
