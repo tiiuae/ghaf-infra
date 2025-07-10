@@ -9,8 +9,7 @@ This repository contains NixOS and Terraform configuration for the [Ghaf](https:
 
 ## Getting Started
 
-This document assumes you have [`nix`](https://nixos.org/download.html) package manager installed on your development host.
-Experimental feature "nix-command" must be enabled.
+This document assumes you have [`nix`](https://nixos.org/download.html) with flakes support.
 
 Clone this repository:
 
@@ -19,11 +18,10 @@ Clone this repository:
 ❯ cd ghaf-infra
 ```
 
-Bootstrap ghaf-infra development environment, loading the required development dependencies:
+Bootstrap nix shell with the required dependencies:
 
 ```bash
-# Start a nix-shell with required dependencies:
-❯ nix-shell
+❯ nix develop
 ```
 
 All commands referenced in the documentation are executed inside the nix-shell.
@@ -57,7 +55,7 @@ ghaf-infra
 ├── scripts # Misc helper scripts
 ├── services # NixOS service modules
 ├── slsa # SLSA provenance buildtype document
-├── terraform  # Azure ghaf-infra terraform configuration
+├── terraform  # Azure ghaf-infra terraform configuration (to be replaced with: hosts/hetzci/)
 │   ├── ...
 │   ├── main.tf
 │   ├── README-azure.md
@@ -72,7 +70,7 @@ ghaf-infra
 Ghaf-infra repository includes configuration files for Ghaf CI/CD infrastructure.
 The configuration in this repository is split in two parts:
 
-- `terraform/` directory contains the terraform configuration describing the image-based CI setup in Azure infra. An example instance is the 'prod' instance, which provides the Jenkins interface at: <https://ghaf-jenkins-controller-prod.northeurope.cloudapp.azure.com/> as well as the Ghaf nix binary cache at: <https://prod-cache.vedenemo.dev>. The host configuration files in `hosts/azure` describe the NixOS configuration for the `binary-cache`, `builder`, and `jenkins-controller` hosts as outlined in [README-azure.md](https://github.com/tiiuae/ghaf-infra/blob/main/terraform/README-azure.md#image-based-builds).
+- `terraform/` directory contains the terraform configuration describing the image-based CI setup in Azure infra. The host configuration files in `hosts/azure` describe the NixOS configuration for the `binary-cache`, `builder`, and `jenkins-controller` hosts as outlined in [README-azure.md](https://github.com/tiiuae/ghaf-infra/blob/main/terraform/README-azure.md#image-based-builds). The `terraform/` configuration will soon be retired and replaced with the configuraiton under `hosts/hetzci/`.
 - In addition to the terraform Azure infra, this repository contains NixOS configurations for various other stand-alone hosts in Ghaf CI/CD infra.
   Following are examples of some of the stand-alone configurations and their current usage in the CI/CD infrastructure:
   - `hosts/builders/build1` x86_64 remote builder in Ficolo cloud (build1.vedenemo.dev). Currently, `build1` is used as a remote builder for Ghaf github actions (to be retired).
@@ -120,9 +118,9 @@ Onboarding new admins require the following manual steps:
 - If they need to manage sops secrets, add their [age key](./docs/adapting-to-new-environments.md#add-your-admin-sops-key) to [.sops.yaml](.sops.yaml), update the `creation_rules`, and run the [`update-sops-files`](./docs/tasks.md#update-sops-files) task.
 - [Deploy](./docs/deploy-rs.md) the new configuration to changed hosts (build3, hetzarm).
 
-### Testing hetzci changes locally in a vm
+### Hetzci development
 
-Follow the instructions at https://github.com/tiiuae/ghaf-infra/tree/main/hosts/hetzci#develop-and-test-changes-locally-in-a-vm
+See the README at https://github.com/tiiuae/ghaf-infra/blob/main/hosts/hetzci/README.md
 
 
 ### Deploy changes using deploy-rs
