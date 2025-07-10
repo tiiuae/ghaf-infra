@@ -200,18 +200,17 @@ pipeline {
         // We don't want to maintain these flashing details here:
         script {
           // Determine mount commands
-          def mount_cmd, unmount_cmd
           if(params.IMG_URL.contains("microchip-icicle-")) {
             def muxport = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'usb_sd_mux_port')
-            mount_cmd = "/run/wrappers/bin/sudo usbsdmux ${muxport} host; sleep 10"
-            unmount_cmd = "/run/wrappers/bin/sudo usbsdmux ${muxport} dut"
+            env.MOUNT_CMD = "/run/wrappers/bin/sudo usbsdmux ${muxport} host; sleep 10"
+            env.UNMOUNT_CMD = "/run/wrappers/bin/sudo usbsdmux ${muxport} dut"
           } else {
             def serial = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'usbhub_serial')
-            mount_cmd = "/run/wrappers/bin/sudo AcronameHubCLI -u 0 -s ${serial}; sleep 10"
-            unmount_cmd = "/run/wrappers/bin/sudo AcronameHubCLI -u 1 -s ${serial}"
+            env.MOUNT_CMD = "/run/wrappers/bin/sudo AcronameHubCLI -u 0 -s ${serial}; sleep 10"
+            env.UNMOUNT_CMD = "/run/wrappers/bin/sudo AcronameHubCLI -u 1 -s ${serial}"
           }
           // Mount the target disk
-          sh "${mount_cmd}"
+          sh "${env.MOUNT_CMD}"
           // Read the device name
           def dev = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'ext_drive_by-id')
           println "Using device '$dev'"
@@ -233,7 +232,18 @@ pipeline {
           // Write the image
           sh "/run/wrappers/bin/sudo dd if=${env.IMG_PATH} of=${dev} bs=1M status=progress conv=fsync"
           // Unmount
-          sh "${unmount_cmd}"
+          sh "${env.UNMOUNT_CMD}"
+        }
+      }
+    }
+    stage('Run Ghaf-installer') {
+      when { expression { env.TARGET.contains("lenovo-x1-carbon-gen11-debug-installer") } }
+      steps {
+        script {
+          println "Run ghaf-installer"
+          ghaf_robot_test('installer')
+          println "Disconnect SSD from the laptop"
+          sh "${env.MOUNT_CMD}"
         }
       }
     }
@@ -284,6 +294,18 @@ pipeline {
       steps {
         script {
           ghaf_robot_test('performance')
+        }
+      }
+    }
+    stage('Wipe system') {
+      when { expression { env.TARGET.contains("lenovo-x1-carbon-gen11-debug-installer")} }
+      steps {
+        script {
+          ghaf_robot_test('turnoff')
+          println "Connect SSD to the laptop"
+          sh "${env.UNMOUNT_CMD}; sleep 10"
+          println "Wipe the internal memory of the laptop"
+          ghaf_robot_test('wiping')
         }
       }
     }
