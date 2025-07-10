@@ -57,6 +57,8 @@ def create_pipeline(List<Map> targets) {
               booleanParam(name: "RELOAD_ONLY", value: false),
             ],
           )
+          println("ghaf-hw-test log '${it.target}':")
+          sh "cat /var/lib/jenkins/jobs/ghaf-hw-test/builds/${job.number}/log | sed 's/^/    /'"
           if (job.result != "SUCCESS") {
             unstable("FAILED: ${it.target} ${it.testset}")
             currentBuild.result = "FAILURE"
