@@ -82,6 +82,8 @@ To run the `hosts/hetzci/vm` config in a local Qemu VM, execute the `run-hetzci-
 ```
 Which starts a headless VM with a console in the current terminal.
 
+Note: the `run-hetzci-vm` app target in this flake can be run by anyone, but only when run by a user that owns the secret key of one of the age public keys declared in the relevant section of [`.sops.yaml`](https://github.com/tiiuae/ghaf-infra/blob/f440c7fed409cd0ed73b4389e21751a92647d2e3/.sops.yaml#L166-L175) do the secrets get decrypted. In all other cases, the [user is notified](https://github.com/tiiuae/ghaf-infra/blob/f440c7fed409cd0ed73b4389e21751a92647d2e3/nix/apps.nix#L13-L20) and the VM will boot-up without secrets. To request access to relevant sops secrets, generate an age key following instructions from [this documentation](https://github.com/tiiuae/ci-vm-example?tab=readme-ov-file#generating-and-adding-an-admin-sops-key) and send a PR adding your key to [`.sops.yaml`](https://github.com/tiiuae/ghaf-infra/blob/f440c7fed409cd0ed73b4389e21751a92647d2e3/.sops.yaml#L166-L175).
+
 `hetzci-vm` configuration automatically sets port forwarding to allow accessing `ssh` over host port 2222 and `jenkins` web interface over host port 8080.
 As an example, to ssh from host to guest, you would run:
 ```bash
@@ -94,22 +96,47 @@ To stop the VM, use `Ctrl-a` `x` or command `shutdown now` in the VM terminal.
 
 ### Deploy Changes to dev
 
-After testing changes locally in a VM as explained above, copy the same changes to the `dev` environment and deploy following the documentation in [deploy-rs.md](https://github.com/tiiuae/ghaf-infra/blob/main/docs/deploy-rs.md):
+After testing changes locally in a VM as explained above, copy the same changes to the `dev` directory and deploy following the documentation in [deploy-rs.md](https://github.com/tiiuae/ghaf-infra/blob/main/docs/deploy-rs.md):
 
 ```bash
 ❯ deploy -s .#hetzci-dev
 ```
 
-Which would a deploy the changes to https://ci-dev.vedenemo.dev
+Which would deploy the changes to https://ci-dev.vedenemo.dev
 
 ### Deploy Changes to prod
 
-After testing changes locally in a VM and optionally in a `dev` environment as explained above, copy the same changes to `prod` environment and deploy:
+After testing changes locally in a VM and optionally in a `dev` environment as explained above, copy the same changes to `prod` directory and deploy:
 ```bash
 ❯ deploy -s .#hetzci-prod
 ```
 
-Which would a deploy the changes to https://ci-prod.vedenemo.dev
+Which would deploy the changes to https://ci-prod.vedenemo.dev
+
+### Verify Deployed Version
+
+Ensure the git revision deployed on the target host matches the git revision you expect:
+```bash
+# Run the 'nixos-version --configuration-revision' on the deployed remote
+# host to show the deployed git revision on remote. Below, we use
+# ci-dev.vedenemo.dev as an example:
+❯ ssh ci-dev.vedenemo.dev  'nixos-version --configuration-revision'
+f440c7fed409cd0ed73b4389e21751a92647d2e3
+```
+
+### Connect Test Agents
+
+On non-VM environments, you need to manually connect the test HW agents to the deployed Jenkins host.
+Find the relevant testagent IP address at [`hosts/machines.nix`](https://github.com/tiiuae/ghaf-infra/blob/f440c7fed409cd0ed73b4389e21751a92647d2e3/hosts/machines.nix#L76-L94) and connect the test HW to the deployed environment:
+
+```bash
+# Run the connect script on remote testagent to connect the test devices.
+# Below example connects the testagent-dev agents to ci-dev Jenkins instance:
+❯ ssh 172.18.16.33 connect https://ci-dev.vedenemo.dev
+...
+CONTROLLER=https://ci-dev.vedenemo.dev
+Connected agents to the controller
+```
 
 ## Jenkins Pipelines
 
@@ -117,6 +144,9 @@ All pipelines can be tested locally in the `vm` environment, but obviously no te
 
 #### ghaf-hw-test
 Runs Ghaf hw-tests given a ghaf image and a testset. Can be triggered manually to run a hw-test ad-hoc.
+
+#### ghaf-hw-test-manual
+Pipeline to help Ghaf HW test development.
 
 #### ghaf-main
 Runs on push to Ghaf main. Triggered by a GitHub webhook sent to `prod` environment.
