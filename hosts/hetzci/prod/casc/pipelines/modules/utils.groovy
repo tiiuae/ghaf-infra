@@ -1,5 +1,7 @@
 #!/usr/bin/env groovy
 
+import groovy.json.JsonOutput
+
 def run_cmd(String cmd) {
   return sh(script: cmd, returnStdout:true).trim()
 }
@@ -15,8 +17,11 @@ def append_to_build_description(String text) {
 def create_pipeline(List<Map> targets) {
   def pipeline = [:]
   def stamp = run_cmd('date +"%Y%m%d_%H%M%S%3N"')
-  def commit = run_cmd('git rev-parse HEAD')
-  def artifacts = "artifacts/${env.JOB_BASE_NAME}/${stamp}-commit_${commit}"
+  def target_commit = run_cmd('git rev-parse HEAD')
+  def target_repo = run_cmd('git remote get-url origin')
+  def host_name = run_cmd('hostname')
+  def host_revision = run_cmd('/run/current-system/sw/bin/nixos-version --configuration-revision')
+  def artifacts = "artifacts/${env.JOB_BASE_NAME}/${stamp}-commit_${target_commit}"
   def artifacts_local_dir = "/var/lib/jenkins/${artifacts}"
   def artifacts_href = "<a href=\"/${artifacts}\">📦 Artifacts</a>"
   // Evaluate
@@ -27,10 +32,50 @@ def create_pipeline(List<Map> targets) {
   }
   targets.each {
     def shortname = it.target.substring(it.target.lastIndexOf('.') + 1)
+    def build_beg = ''
+    def build_end = ''
     pipeline["${it.target}"] = {
       // Build
       stage("Build ${shortname}") {
+        build_beg = run_cmd('date +%s')
         sh "nix build -v .#${it.target} --out-link ${it.target}"
+        build_end = run_cmd('date +%s')
+      }
+      // Provenance
+      stage("Provenance ${shortname}") {
+        def ext_params = """
+          {
+            "target": {
+              "name": "${it.target}",
+              "repository": "${target_repo}",
+              "ref": "${target_commit}"
+            },
+            "workflow": {
+              "name": "${host_name}",
+              "repository": "https://github.com/tiiuae/ghaf-infra",
+              "ref": "${host_revision}"
+            },
+            "job": "${env.JOB_NAME}",
+            "jobParams": ${JsonOutput.toJson(params)},
+            "buildRun": "${env.BUILD_ID}"
+          }
+        """
+        withEnv([
+          'PROVENANCE_BUILD_TYPE="https://github.com/tiiuae/ghaf-infra/blob/ea938e90/slsa/v1.0/L1/buildtype.md"',
+          "PROVENANCE_BUILDER_ID=${env.JENKINS_URL}",
+          "PROVENANCE_INVOCATION_ID=${env.BUILD_URL}",
+          "PROVENANCE_TIMESTAMP_BEGIN=${build_beg}",
+          "PROVENANCE_TIMESTAMP_FINISHED=${build_end}",
+          "PROVENANCE_EXTERNAL_PARAMS=${ext_params}"
+        ]) {
+          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+            sh """
+              provenance .#${it.target} --recursive --out ${it.target}.json
+              mkdir -v -p ${artifacts_local_dir}/scs/${it.target}
+              cp ${it.target}.json ${artifacts_local_dir}/scs/${it.target}/provenance.json
+            """
+          }
+        }
       }
       // Archive
       stage("Archive ${shortname}") {
