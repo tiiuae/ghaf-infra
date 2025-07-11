@@ -166,19 +166,25 @@ in
     listenAddress = "localhost";
     port = 8081;
     withCLI = true;
-    packages = with pkgs; [
-      bashInteractive # 'sh' step in jenkins pipeline requires this
-      coreutils
-      colorized-logs
-      csvkit
-      curl
-      git
-      jq
-      nix
-      openssh
-      wget
-      zstd
-    ];
+    packages =
+      with pkgs;
+      [
+        bashInteractive # 'sh' step in jenkins pipeline requires this
+        coreutils
+        colorized-logs
+        csvkit
+        curl
+        git
+        hostname
+        jq
+        nix
+        openssh
+        wget
+        zstd
+      ]
+      ++ [
+        inputs.sbomnix.packages.${pkgs.system}.sbomnix # provenance
+      ];
     extraJavaOptions = [
       # Useful when the 'sh' step fails:
       "-Dorg.jenkinsci.plugins.durabletask.BourneShellScript.LAUNCH_DIAGNOSTICS=true"
