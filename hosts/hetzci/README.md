@@ -22,6 +22,8 @@ Bootstrap nix shell with the required dependencies:
 ❯ nix develop
 ```
 
+All example commands in this document are executed from this nix shell.
+
 ## Directory Structure
 ```
 hosts/hetzci/
@@ -41,7 +43,7 @@ hosts/hetzci/
     └── secrets.yaml
 
 ```
-Each subdirectory under `hosts/hetzci` contains the configuration for the given hetzci environment. Configuration for each environment follows the same structure:
+Each subdirectory under [`hosts/hetzci`](https://github.com/tiiuae/ghaf-infra/tree/main/hosts/hetzci) contains the configuration for the given hetzci environment. Configuration for each environment follows the same structure:
 - `casc` directory contains the jenkins configuration-as-code config, with the main configuration at `casc/jenkins-casc.yaml`
 - `casc/pipelines` contains the jenkins pipelines and pipeline modules for the specific environment
 - `configuration.nix` is the nixosConfiguration for the jenkins host
@@ -68,7 +70,7 @@ Following sections describe the intended workflow for hetzci development.
 │       └───run-hetzci-vm: app
 ...
 ```
-Flake apps target `run-hetzci-vm` allows running `hosts/hetzci/vm` configuration locally in a Qemu VM decrypting the host sops secrets following the rules set in [`.sops.yaml`](https://github.com/tiiuae/ghaf-infra/blob/main/.sops.yaml). The general idea is explained in [tiiuae/ci-vm-example](https://github.com/tiiuae/ci-vm-example?tab=readme-ov-file#secrets).
+Flake apps target [`run-hetzci-vm`](https://github.com/tiiuae/ghaf-infra/blob/79ea3c3e8b7426a71c39bab64ffcfb99c259a143/nix/apps.nix#L64-L69) allows running [`hosts/hetzci/vm`](https://github.com/tiiuae/ghaf-infra/tree/main/hosts/hetzci/vm) configuration locally in a Qemu VM decrypting the host sops secrets following the rules set in [`.sops.yaml`](https://github.com/tiiuae/ghaf-infra/blob/main/.sops.yaml). The general idea is explained in [tiiuae/ci-vm-example](https://github.com/tiiuae/ci-vm-example?tab=readme-ov-file#secrets).
 
 On running the VM target, a disk file (.qcow2) will be created on the current working directory. Any state data accumulated on the VM will persist as long as the associated disk file is not removed. For instance, changes to virtual machine's `/nix/store` will persist reboots as long as the disk file is not removed between the VM boot cycles. Similarly, the VM state can be cleared by removing the VM .qcow2 disk file on the host.
 
@@ -84,7 +86,7 @@ Which starts a headless VM with a console in the current terminal.
 
 Note: the `run-hetzci-vm` app target in this flake can be run by anyone, but only when run by a user that owns the secret key of one of the age public keys declared in the relevant section of [`.sops.yaml`](https://github.com/tiiuae/ghaf-infra/blob/f440c7fed409cd0ed73b4389e21751a92647d2e3/.sops.yaml#L166-L175) do the secrets get decrypted. In all other cases, the [user is notified](https://github.com/tiiuae/ghaf-infra/blob/f440c7fed409cd0ed73b4389e21751a92647d2e3/nix/apps.nix#L13-L20) and the VM will boot-up without secrets. To request access to relevant sops secrets, generate an age key following instructions from [this documentation](https://github.com/tiiuae/ci-vm-example?tab=readme-ov-file#generating-and-adding-an-admin-sops-key) and send a PR adding your key to [`.sops.yaml`](https://github.com/tiiuae/ghaf-infra/blob/f440c7fed409cd0ed73b4389e21751a92647d2e3/.sops.yaml#L166-L175).
 
-`hetzci-vm` configuration automatically sets port forwarding to allow accessing `ssh` over host port 2222 and `jenkins` web interface over host port 8080.
+`hetzci-vm` configuration automatically sets port forwarding to allow accessing `ssh` over [host port 2222](https://github.com/tiiuae/ghaf-infra/blob/79ea3c3e8b7426a71c39bab64ffcfb99c259a143/hosts/default.nix#L133) and `jenkins` web interface over [host port 8080](https://github.com/tiiuae/ghaf-infra/blob/79ea3c3e8b7426a71c39bab64ffcfb99c259a143/hosts/default.nix#L128).
 As an example, to ssh from host to guest, you would run:
 ```bash
 # To access the guest ssh from your localhost
