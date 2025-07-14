@@ -84,6 +84,15 @@ def run_wget(String url, String to_dir) {
   return sh_ret_out("wget --force-directories --timestamping -P ${to_dir} ${url} 2>&1 | grep -Po '${to_dir}[^’]+'")
 }
 
+@NonCPS
+def get_scs_url(String img_url) {
+  // Why NonCPS? See: https://stackoverflow.com/a/48465528
+  def match = img_url =~ /(.*commit_[a-f0-9]{40})\/([^\/]+)/
+  def artifacts_url = match[0][1]
+  def target_name = match[0][2]
+  return "${artifacts_url}/scs/${target_name}"
+}
+
 def get_test_conf_property(String file_path, String device, String property) {
   // Get the requested device property data from test_config.json file
   def device_data = readJSON file: file_path
@@ -174,6 +183,20 @@ pipeline {
             echo { \\\"Job\\\": \\\"${env.TARGET}\\\" } > ${TEST_CONFIG_DIR}/${BUILD_NUMBER}.json
             ls -la ${TEST_CONFIG_DIR}
           """
+        }
+      }
+    }
+    stage('Verify provenance (stub)') {
+      steps {
+        script {
+          def scs_url = get_scs_url(params.IMG_URL)
+          println("scs_url: ${scs_url}")
+          def provenance_url = "${scs_url}/provenance.json"
+          println("provenance_url: ${provenance_url}")
+          def provenance_path = run_wget(provenance_url, TMP_IMG_DIR)
+          println "Downloaded provenance to workspace: ${provenance_path}"
+          // TODO: policy-checker needs signature file, which we don't generate in hetzci yet
+          sh "policy-checker ${provenance_path} --policy /etc/jenkins/provenance-trust-policy.json || true"
         }
       }
     }
