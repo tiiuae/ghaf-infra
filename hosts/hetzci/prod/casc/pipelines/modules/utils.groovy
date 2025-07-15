@@ -18,7 +18,7 @@ def create_pipeline(List<Map> targets) {
   def pipeline = [:]
   def stamp = run_cmd('date +"%Y%m%d_%H%M%S%3N"')
   def target_commit = run_cmd('git rev-parse HEAD')
-  def target_repo = run_cmd('git remote get-url origin')
+  def target_repo = run_cmd('git remote get-url origin || git remote get-url pr_origin')
   def host_name = run_cmd('hostname')
   def host_revision = run_cmd('/run/current-system/sw/bin/nixos-version --configuration-revision')
   def artifacts = "artifacts/${env.JOB_BASE_NAME}/${stamp}-commit_${target_commit}"
