@@ -25,6 +25,7 @@ in
       common
       service-openssh
       team-devenv
+      team-testers
     ]);
 
   # this server has been installed with 24.11
