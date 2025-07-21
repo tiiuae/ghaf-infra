@@ -5,7 +5,7 @@ module policy-checker
 go 1.23.7
 
 require (
-	github.com/google/cel-go v0.25.0
+	github.com/google/cel-go v0.26.0
 	github.com/urfave/cli/v3 v3.3.8
 )
 
