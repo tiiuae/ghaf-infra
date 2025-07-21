@@ -26,6 +26,7 @@ in
       service-openssh
       service-monitoring
       team-devenv
+      team-testers
     ]);
 
   # this server has been installed with 24.11
