@@ -101,6 +101,7 @@ in
     git
     htop
     nix-info
+    nixVersions.latest # use the latest version of 'nix'
   ];
 
   # Shell
