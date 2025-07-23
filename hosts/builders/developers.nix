@@ -22,9 +22,9 @@ let
     }
     {
       desc = "Mariia Azbeleva";
-      name = "azbeleva";
+      name = "mariia";
       keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMXq8i5FHMw7vRpAZeXnYux5e6xFgObJgq4+bnY/6s7f mariia@mariia-ThinkPad-T14-Gen-3"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM3TWpdHLfTiL9mvw4REkUrd/ob5Nto8XqSIrPPhn7gG"
       ];
     }
     {
