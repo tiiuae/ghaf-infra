@@ -69,43 +69,6 @@ in
     inherit (host) publicKey;
   }) sshMonitoredHosts;
 
-  systemd.services.populate-jenkins-known-hosts = {
-    after = [ "network.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      Restart = "on-failure";
-    };
-    script = ''
-      set -x
-
-      # Define list of jenkins controllers
-      jenkinsControllers=(
-        ghaf-jenkins-controller-dev.northeurope.cloudapp.azure.com
-        ghaf-jenkins-controller-prod.northeurope.cloudapp.azure.com
-      )
-
-      # Scan all controllers into a tmp file
-      tmpfile=$(mktemp)
-      for host in "''${jenkinsControllers[@]}"; do
-        ${pkgs.openssh}/bin/ssh-keyscan -t ed25519 "$host" >> "$tmpfile"
-      done
-
-      # Merge original known_hosts + scanned jenkins keys
-      cat /etc/ssh/ssh_known_hosts "$tmpfile" > /etc/ssh/sshified_known_hosts
-
-      rm "$tmpfile"
-    '';
-  };
-
-  systemd.timers.populate-jenkins-known-hosts = {
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnBootSec = "1min";
-      OnUnitActiveSec = "10min";
-      Unit = "populate-jenkins-known-hosts.service";
-    };
-  };
-
   # runs a tiny webserver on port 8888 that tunnels requests through ssh connection
   systemd.services."sshified" = {
     wantedBy = [ "multi-user.target" ];
@@ -311,25 +274,6 @@ in
         }) sshMonitoredHosts;
       }
       {
-        job_name = "Azure-Jenkins-monitoring";
-        # proxy the requests through our ssh tunnel
-        proxy_url = "http://127.0.0.1:8888";
-        static_configs = [
-          {
-            targets = [ "ghaf-jenkins-controller-dev.northeurope.cloudapp.azure.com:9100" ];
-            labels = {
-              machine_name = "Jenkins DEV controller";
-            };
-          }
-          {
-            targets = [ "ghaf-jenkins-controller-prod.northeurope.cloudapp.azure.com:9100" ];
-            labels = {
-              machine_name = "Jenkins PROD controller";
-            };
-          }
-        ];
-      }
-      {
         job_name = "blackbox";
         metrics_path = "/probe";
         params.module = [ "https_success" ];
@@ -353,15 +297,13 @@ in
         ];
         static_configs = [
           {
-            targets = [
-              "ghaf-jenkins-controller-prod.northeurope.cloudapp.azure.com"
-            ];
+            targets = [ "ci-prod.vedenemo.dev" ];
             labels = {
               env = "prod";
             };
           }
           {
-            targets = [ "ghaf-jenkins-controller-dev.northeurope.cloudapp.azure.com" ];
+            targets = [ "ci-dev.vedenemo.dev" ];
             labels = {
               env = "dev";
             };
