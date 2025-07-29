@@ -235,6 +235,15 @@ resource "azurerm_virtual_network" "azfunc-vnet" {
   resource_group_name = azurerm_resource_group.infra.name
 }
 
+# Slice out a subnet for the Azure functions
+resource "azurerm_subnet" "azfunc-snet" {
+  name                 = "ghaf-infra-azfunc-snet"
+  resource_group_name  = azurerm_resource_group.infra.name
+  virtual_network_name = azurerm_virtual_network.azfunc-vnet.name
+  address_prefixes     = ["10.3.4.0/26"]
+}
+
+
 # Peering ghaf-infra-vnet to s2s gateway vnet for connectivity with Tampere
 
 resource "azurerm_virtual_network_peering" "ghaf-infra-vnet-to-s2s-vnet" {
