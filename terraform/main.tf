@@ -193,12 +193,20 @@ resource "azurerm_resource_group" "infra" {
 
 ################################################################################
 
+# Virtual network of S2S gateway
+data "azurerm_virtual_network" "s2s-vnet" {
+  name                = "ghaf-infra-s2s-vnet"
+  resource_group_name = "ghaf-infra-s2s-rg"
+}
+
+################################################################################
+
 # Environment specific resources
 
 # Virtual network
 resource "azurerm_virtual_network" "vnet" {
   name                = "ghaf-infra-vnet"
-  address_space       = ["10.0.0.0/16"]
+  address_space       = ["10.3.0.0/22"]
   location            = azurerm_resource_group.infra.location
   resource_group_name = azurerm_resource_group.infra.name
 }
@@ -208,7 +216,7 @@ resource "azurerm_subnet" "jenkins" {
   name                 = "ghaf-infra-jenkins"
   resource_group_name  = azurerm_resource_group.infra.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.2.0/24"]
+  address_prefixes     = ["10.3.1.0/24"]
 }
 
 # Slice out a subnet for the builders
@@ -216,7 +224,63 @@ resource "azurerm_subnet" "builders" {
   name                 = "ghaf-infra-builders"
   resource_group_name  = azurerm_resource_group.infra.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.4.0/28"]
+  address_prefixes     = ["10.3.2.0/24"]
+}
+
+# Virtual network for Azure functions
+resource "azurerm_virtual_network" "azfunc-vnet" {
+  name                = "azfunc-vnet"
+  address_space       = ["10.3.4.0/24"]
+  location            = azurerm_resource_group.infra.location
+  resource_group_name = azurerm_resource_group.infra.name
+}
+
+# Peering ghaf-infra-vnet to s2s gateway vnet for connectivity with Tampere
+
+resource "azurerm_virtual_network_peering" "ghaf-infra-vnet-to-s2s-vnet" {
+  name                         = "ghaf-infra-vnet-to-s2s-vnet"
+  resource_group_name          = azurerm_resource_group.infra.name
+  virtual_network_name         = azurerm_virtual_network.vnet.name
+  remote_virtual_network_id    = data.azurerm_virtual_network.s2s-vnet.id
+  allow_virtual_network_access = true
+  allow_forwarded_traffic      = true
+  allow_gateway_transit        = false
+  use_remote_gateways          = true
+}
+
+resource "azurerm_virtual_network_peering" "s2s-vnet-to-ghaf-infra-vnet" {
+  name                         = "s2s-vnet-to-ghaf-infra-vnet-${local.ws}"
+  resource_group_name          = data.azurerm_virtual_network.s2s-vnet.resource_group_name
+  virtual_network_name         = data.azurerm_virtual_network.s2s-vnet.name
+  remote_virtual_network_id    = azurerm_virtual_network.vnet.id
+  allow_virtual_network_access = true
+  allow_forwarded_traffic      = true
+  allow_gateway_transit        = true
+  use_remote_gateways          = false
+}
+
+# Peering Azure functions vnet  to s2s gateway vnet for connectivity with Tampere
+
+resource "azurerm_virtual_network_peering" "azfunc-vnet-to-s2s-vnet" {
+  name                         = "azfunc-vnet-to-s2s-vnet"
+  resource_group_name          = azurerm_resource_group.infra.name
+  virtual_network_name         = azurerm_virtual_network.azfunc-vnet.name
+  remote_virtual_network_id    = data.azurerm_virtual_network.s2s-vnet.id
+  allow_virtual_network_access = true
+  allow_forwarded_traffic      = true
+  allow_gateway_transit        = false
+  use_remote_gateways          = true
+}
+
+resource "azurerm_virtual_network_peering" "s2s-vnet-to-azfunc-vnet" {
+  name                         = "s2s-vnet-to-azfunc-vnet-${local.ws}"
+  resource_group_name          = data.azurerm_virtual_network.s2s-vnet.resource_group_name
+  virtual_network_name         = data.azurerm_virtual_network.s2s-vnet.name
+  remote_virtual_network_id    = azurerm_virtual_network.azfunc-vnet.id
+  allow_virtual_network_access = true
+  allow_forwarded_traffic      = true
+  allow_gateway_transit        = true
+  use_remote_gateways          = false
 }
 
 # https://github.com/hashicorp/terraform-provider-azurerm/issues/15609
