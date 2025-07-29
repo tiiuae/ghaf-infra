@@ -229,7 +229,7 @@ resource "azurerm_subnet" "builders" {
 
 # Virtual network for Azure functions
 resource "azurerm_virtual_network" "azfunc-vnet" {
-  name                = "azfunc-vnet"
+  name                = "ghaf-infra-azfunc-vnet"
   address_space       = ["10.3.4.0/24"]
   location            = azurerm_resource_group.infra.location
   resource_group_name = azurerm_resource_group.infra.name
@@ -262,7 +262,7 @@ resource "azurerm_virtual_network_peering" "s2s-vnet-to-ghaf-infra-vnet" {
 # Peering Azure functions vnet  to s2s gateway vnet for connectivity with Tampere
 
 resource "azurerm_virtual_network_peering" "azfunc-vnet-to-s2s-vnet" {
-  name                         = "azfunc-vnet-to-s2s-vnet"
+  name                         = "ghaf-infra-azfunc-vnet-to-s2s-vnet"
   resource_group_name          = azurerm_resource_group.infra.name
   virtual_network_name         = azurerm_virtual_network.azfunc-vnet.name
   remote_virtual_network_id    = data.azurerm_virtual_network.s2s-vnet.id
@@ -273,7 +273,7 @@ resource "azurerm_virtual_network_peering" "azfunc-vnet-to-s2s-vnet" {
 }
 
 resource "azurerm_virtual_network_peering" "s2s-vnet-to-azfunc-vnet" {
-  name                         = "s2s-vnet-to-azfunc-vnet-${local.ws}"
+  name                         = "s2s-vnet-to-ghaf-infra-azfunc-vnet-${local.ws}"
   resource_group_name          = data.azurerm_virtual_network.s2s-vnet.resource_group_name
   virtual_network_name         = data.azurerm_virtual_network.s2s-vnet.name
   remote_virtual_network_id    = azurerm_virtual_network.azfunc-vnet.id
