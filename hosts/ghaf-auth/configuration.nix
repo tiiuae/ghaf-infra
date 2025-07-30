@@ -8,6 +8,9 @@
   config,
   ...
 }:
+let
+  domain = "auth.vedenemo.dev";
+in
 {
   imports =
     [
@@ -66,8 +69,9 @@
     enable = true;
 
     environmentFile = config.sops.secrets.dex_env.path;
+
     settings = {
-      issuer = "https://auth.vedenemo.dev";
+      issuer = "https://${domain}";
       enablePasswordDB = false;
 
       storage = {
@@ -93,62 +97,64 @@
             useLoginAsID = true;
             clientID = "$GITHUB_CLIENT_ID";
             clientSecret = "$GITHUB_CLIENT_SECRET";
-            redirectURI = "https://auth.vedenemo.dev/callback";
+            redirectURI = "https://${domain}/callback";
             orgs = [
-              {
-                name = "tiiuae";
-              }
+              { name = "tiiuae"; }
             ];
             teamNameField = "slug";
           };
         }
       ];
 
-      staticClients =
-        map
-          (ws: {
-            id = "ghaf-jenkins-controller-${ws}";
-            name = "ghaf-jenkins-controller-${ws}";
-            redirectURIs = [
-              "https://ghaf-jenkins-controller-${ws}.northeurope.cloudapp.azure.com/oauth2/callback"
-              "https://ghaf-jenkins-controller-${ws}.uaenorth.cloudapp.azure.com/oauth2/callback"
-            ];
-            secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
-          })
-          [
-            "dev"
-            "prod"
-            "release"
-
-            "alextserepov"
-            "cazfi"
-            "flokli"
-            "henri"
-            "jrautiola"
-            "kaitusa"
-            "vjuntunen"
-            "fayad"
-          ]
-        ++ [
-          {
-            id = "hetzci-prod";
-            name = "hetzci-prod";
-            redirectURIs = [ "https://ci-prod.vedenemo.dev/oauth2/callback" ];
-            secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
-          }
-          {
-            id = "hetzci-dev";
-            name = "hetzci-dev";
-            redirectURIs = [ "https://ci-dev.vedenemo.dev/oauth2/callback" ];
-            secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
-          }
-        ];
+      staticClients = [
+        {
+          id = "ghaf-jenkins-controller-uaenorth";
+          name = "Ghaf Jenkins controller (uaenorth)";
+          redirectURIs =
+            map (env: "https://ghaf-jenkins-controller-${env}.uaenorth.cloudapp.azure.com/oauth2/callback")
+              [
+                "dev"
+                "prod"
+                "release"
+              ];
+          secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
+        }
+        {
+          id = "ghaf-jenkins-controller-northeurope";
+          name = "Ghaf Jenkins controller (northeurope)";
+          redirectURIs =
+            map (env: "https://ghaf-jenkins-controller-${env}.northeurope.cloudapp.azure.com/oauth2/callback")
+              [
+                "release"
+                "alextserepov"
+                "cazfi"
+                "flokli"
+                "henri"
+                "jrautiola"
+                "kaitusa"
+                "vjuntunen"
+                "fayad"
+              ];
+          secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
+        }
+        {
+          id = "hetzci-prod";
+          name = "ci-prod.vedenemo.dev";
+          redirectURIs = [ "https://ci-prod.vedenemo.dev/oauth2/callback" ];
+          secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
+        }
+        {
+          id = "hetzci-dev";
+          name = "ci-dev.vedenemo.dev";
+          redirectURIs = [ "https://ci-dev.vedenemo.dev/oauth2/callback" ];
+          secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
+        }
+      ];
     };
   };
 
   systemd.services.dex.serviceConfig = {
     StateDirectory = "dex";
-    DynamicUser = lib.mkForce false;
     User = "dex";
     Group = "dex";
   };
@@ -167,7 +173,7 @@
         forceSSL = true;
         default = true;
         locations."/" = {
-          proxyPass = "http://127.0.0.1:5556";
+          proxyPass = "http://${config.services.dex.settings.web.http}";
         };
       };
     };
