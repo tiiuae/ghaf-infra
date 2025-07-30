@@ -28,6 +28,10 @@ in
     # Making legacy nix commands consistent as well
     nixPath = lib.mapAttrsToList (key: value: "${key}=${value.to.path}") config.nix.registry;
 
+    # Fix for https://github.com/NixOS/nix/issues/13358
+    # 2.30 is not available in 25.05 so grab it from unstable
+    package = (import inputs.nixpkgs-unstable { inherit (pkgs) system; }).nixVersions.nix_2_30;
+
     settings = {
       # We can trust root and any users with sudo rights
       trusted-users = [
@@ -101,7 +105,6 @@ in
     git
     htop
     nix-info
-    nixVersions.latest # use the latest version of 'nix'
   ];
 
   # Shell
