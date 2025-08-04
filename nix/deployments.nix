@@ -36,7 +36,6 @@ let
     testagent-release = mkDeployment "testagent-release" machines.testagent-release.ip;
     testagent-uae-dev = mkDeployment "testagent-uae-dev" machines.testagent-uae-dev.ip;
     ghaf-log = mkDeployment "ghaf-log" machines.ghaf-log.ip;
-    ghaf-coverity = mkDeployment "ghaf-coverity" machines.ghaf-coverity.ip;
     ghaf-proxy = mkDeployment "ghaf-proxy" machines.ghaf-proxy.ip;
     ghaf-webserver = mkDeployment "ghaf-webserver" machines.ghaf-webserver.ip;
     ghaf-auth = mkDeployment "ghaf-auth" machines.ghaf-auth.ip;

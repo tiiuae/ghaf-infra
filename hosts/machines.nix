@@ -6,10 +6,6 @@
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICMmB3Ws5MVq0DgVu+Hth/8NhNAYEwXyz4B6FRCF6Nu2";
   };
 
-  ghaf-coverity = {
-    ip = "135.181.103.32";
-  };
-
   ghaf-proxy = {
     ip = "95.216.200.85";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIALs+OQDrCKRIKkwTwI4MI+oYC3RTEus9cXCBcIyRHzl";

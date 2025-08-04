@@ -45,7 +45,6 @@ Current ghaf-infra targets:
 │ testagent-release  │ testagent-release │ 172.18.16.32   │
 │ hetzarm            │ hetzarm           │ 65.21.20.242   │
 │ ghaf-log           │ ghaf-log          │ 95.217.177.197 │
-│ ghaf-coverity      │ ghaf-coverity     │ 135.181.103.32 │
 │ ghaf-proxy         │ ghaf-proxy        │ 95.216.200.85  │
 │ ghaf-webserver     │ ghaf-webserver    │ 37.27.204.82   │
 ╘════════════════════╧═══════════════════╧════════════════╛
