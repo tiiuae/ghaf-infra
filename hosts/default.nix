@@ -57,7 +57,6 @@ in
     nixos-testagent-dev = ./testagent/dev/configuration.nix;
     nixos-testagent-release = ./testagent/release/configuration.nix;
     nixos-ghaf-log = ./ghaf-log/configuration.nix;
-    nixos-ghaf-coverity = ./ghaf-coverity/configuration.nix;
     nixos-ghaf-proxy = ./ghaf-proxy/configuration.nix;
     nixos-ghaf-webserver = ./ghaf-webserver/configuration.nix;
     nixos-ghaf-auth = ./ghaf-auth/configuration.nix;
@@ -98,7 +97,6 @@ in
           "testagent-dev"
           "testagent-release"
           "ghaf-log"
-          "ghaf-coverity"
           "ghaf-proxy"
           "ghaf-webserver"
           "ghaf-auth"
