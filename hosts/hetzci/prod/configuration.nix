@@ -369,6 +369,7 @@ in
       provider-display-name = "Vedenemo Auth";
       custom-sign-in-logo = "-";
       client-secret-file = config.sops.secrets.oauth2_proxy_client_secret.path;
+      whitelist-domain = "ci-prod.vedenemo.dev";
     };
     keyFile = config.sops.templates.oauth2_proxy_env.path;
   };
