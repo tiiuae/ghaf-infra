@@ -66,6 +66,13 @@ let
       ];
     }
     {
+      desc = "Gayathri Deepa";
+      name = "gayathri";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGJSuGlmQ/iMu7JGL7L4jVT3d+o4MiOsuh0e1ZVkBUKq gayathri.deepa@tii.ae"
+      ];
+    }
+    {
       desc = "Hai To";
       name = "haito";
       keys = [
