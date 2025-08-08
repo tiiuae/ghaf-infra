@@ -3,7 +3,6 @@
 {
   self,
   inputs,
-  lib,
   config,
   ...
 }:
@@ -13,13 +12,12 @@
       ./disk-config.nix
       ../developers.nix
       ../builders-common.nix
+      ../../hetzner-robot.nix
       inputs.disko.nixosModules.disko
-      inputs.sops-nix.nixosModules.sops
     ]
     ++ (with self.nixosModules; [
       common
       service-openssh
-      service-monitoring
       team-devenv
       user-github
       user-remote-build
@@ -28,29 +26,19 @@
   sops = {
     defaultSopsFile = ./secrets.yaml;
     secrets = {
-      loki_password.owner = "promtail";
       cachix-auth-token.owner = "root";
     };
   };
 
-  nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
-  hardware.enableRedistributableFirmware = true;
-
-  networking = {
-    hostName = "hetzarm";
-    useDHCP = true;
-  };
+  nixpkgs.hostPlatform = "aarch64-linux";
+  networking.hostName = "hetzarm";
 
   services.monitoring = {
     metrics = {
       enable = true;
       ssh = true;
     };
-    logs = {
-      enable = true;
-      lokiAddress = "https://monitoring.vedenemo.dev";
-      auth.password_file = config.sops.secrets.loki_password.path;
-    };
+    logs.enable = true;
   };
 
   services.cachix-watch-store = {
@@ -58,19 +46,6 @@
     verbose = true;
     cacheName = "ghaf-dev";
     cachixTokenFile = config.sops.secrets.cachix-auth-token.path;
-  };
-
-  boot = {
-    initrd.availableKernelModules = [
-      "nvme"
-      "usbhid"
-    ];
-    # use predictable network interface names (eth0)
-    kernelParams = [ "net.ifnames=0" ];
-    loader = {
-      systemd-boot.enable = true;
-      efi.canTouchEfiVariables = true;
-    };
   };
 
   # build3 can use this as remote builder

@@ -13,13 +13,12 @@
       ./disk-config.nix
       ../developers.nix
       ../builders-common.nix
+      ../../hetzner-robot.nix
       inputs.disko.nixosModules.disko
-      inputs.sops-nix.nixosModules.sops
     ]
     ++ (with self.nixosModules; [
       common
       service-openssh
-      service-monitoring
       team-devenv
       user-github
       user-remote-build
@@ -28,17 +27,21 @@
   sops = {
     defaultSopsFile = ./secrets.yaml;
     secrets = {
-      loki_password.owner = "promtail";
       ssh_private_key.owner = "root";
     };
   };
 
   nixpkgs.hostPlatform = "x86_64-linux";
-  hardware.enableRedistributableFirmware = true;
+  networking.hostName = "hetz86-builder";
 
-  networking = {
-    hostName = "hetz86-builder";
-    useDHCP = true;
+  boot.kernelModules = [ "kvm-amd" ];
+
+  services.monitoring = {
+    metrics = {
+      enable = true;
+      ssh = true;
+    };
+    logs.enable = true;
   };
 
   # use hetzarm as aarch64 remote builder
@@ -65,34 +68,5 @@
 
   programs.ssh.knownHosts = {
     "hetzarm.vedenemo.dev".publicKey = machines.hetzarm.publicKey;
-  };
-
-  services.monitoring = {
-    metrics = {
-      enable = true;
-      ssh = true;
-    };
-    logs = {
-      enable = true;
-      lokiAddress = "https://monitoring.vedenemo.dev";
-      auth.password_file = config.sops.secrets.loki_password.path;
-    };
-  };
-
-  boot = {
-    kernelModules = [ "kvm-amd" ];
-    initrd.availableKernelModules = [
-      "xhci_pci"
-      "ahci"
-      "nvme"
-      "usbhid"
-    ];
-
-    # use predictable network interface names (eth0)
-    kernelParams = [ "net.ifnames=0" ];
-    loader = {
-      systemd-boot.enable = true;
-      efi.canTouchEfiVariables = true;
-    };
   };
 }

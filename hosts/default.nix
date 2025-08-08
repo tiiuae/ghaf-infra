@@ -60,6 +60,7 @@ in
     nixos-ghaf-proxy = ./ghaf-proxy/configuration.nix;
     nixos-ghaf-webserver = ./ghaf-webserver/configuration.nix;
     nixos-ghaf-auth = ./ghaf-auth/configuration.nix;
+    nixos-ghaf-monitoring = ./ghaf-monitoring/configuration.nix;
     nixos-testagent-uae-dev = ./testagent/uae-dev/configuration.nix;
     nixos-hetzci-dev = ./hetzci/dev/configuration.nix;
     nixos-hetzci-prod = ./hetzci/prod/configuration.nix;
@@ -100,6 +101,7 @@ in
           "ghaf-proxy"
           "ghaf-webserver"
           "ghaf-auth"
+          "ghaf-monitoring"
           "testagent-uae-dev"
           "hetzci-dev"
           "hetzci-prod"

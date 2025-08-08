@@ -2,26 +2,24 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   self,
-  inputs,
-  modulesPath,
   lib,
   config,
+  inputs,
   ...
 }:
 {
   imports =
     [
       ./disk-config.nix
-      (modulesPath + "/profiles/qemu-guest.nix")
+      ../hetzner-cloud.nix
+      ./loki.nix
       inputs.sops-nix.nixosModules.sops
       inputs.disko.nixosModules.disko
-      ./loki.nix
     ]
     ++ (with self.nixosModules; [
       common
       service-openssh
       service-nginx
-      service-monitoring
       team-devenv
       user-bmg
       user-vunnyso
@@ -35,41 +33,16 @@
       # github oauth app credentials
       github_client_id.owner = "grafana";
       github_client_secret.owner = "grafana";
-      # vedenemo monitoring
-      vedenemo_loki_password.owner = "promtail";
     };
   };
 
-  nixpkgs.hostPlatform = "x86_64-linux";
-  hardware.enableRedistributableFirmware = true;
-
-  networking = {
-    hostName = "ghaf-log";
-    useDHCP = true;
-  };
-
-  boot = {
-    # use predictable network interface names (eth0)
-    kernelParams = [ "net.ifnames=0" ];
-    loader.grub = {
-      efiSupport = true;
-      efiInstallAsRemovable = true;
-    };
-  };
-
-  # this server has been reinstalled with 24.05
   system.stateVersion = lib.mkForce "24.05";
+  nixpkgs.hostPlatform = "x86_64-linux";
+  networking.hostName = "ghaf-log";
 
   services.monitoring = {
-    metrics = {
-      enable = true;
-      ssh = true;
-    };
-    logs = {
-      enable = true;
-      lokiAddress = "https://monitoring.vedenemo.dev";
-      auth.password_file = config.sops.secrets.vedenemo_loki_password.path;
-    };
+    metrics.enable = true;
+    logs.enable = true;
   };
 
   # Grafana
@@ -135,11 +108,6 @@
         url = "http://${config.services.loki.configuration.server.http_listen_address}:${toString config.services.loki.configuration.server.http_listen_port}";
       }
     ];
-  };
-
-  security.acme = {
-    acceptTerms = true;
-    defaults.email = "trash@unikie.com";
   };
 
   services.nginx = {

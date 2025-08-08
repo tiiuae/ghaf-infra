@@ -4,43 +4,36 @@
 {
   pkgs,
   self,
-  inputs,
   lib,
   config,
   machines,
+  inputs,
   ...
 }:
 let
   sshified = pkgs.callPackage ../../pkgs/sshified/default.nix { };
+  domain = "monitoring.vedenemo.dev";
+  volumeMount = config.disko.devices.disk.data.content.mountpoint;
 
   # populates known hosts as well as grafana scrape targets
   sshMonitoredHosts = {
     inherit (machines)
-      ghaf-log
-      ghaf-proxy
-      ghaf-auth
       hetzarm
       hetz86-1
       hetz86-builder
-      hetzci-dev
-      hetzci-prod
       ;
   };
-
-  domain = "monitoring.vedenemo.dev";
-
 in
 {
   imports =
     [
       ./disk-config.nix
+      ../hetzner-cloud.nix
       inputs.sops-nix.nixosModules.sops
       inputs.disko.nixosModules.disko
     ]
     ++ (with self.nixosModules; [
       common
-      qemu-common
-      ficolo-common
       service-openssh
       service-nginx
       team-devenv
@@ -58,16 +51,11 @@ in
     };
   };
 
+  system.stateVersion = lib.mkForce "25.05";
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-  networking.hostName = "monitoring";
+  networking.hostName = "ghaf-monitoring";
 
   users.users."sshified".isNormalUser = true;
-
-  # add public keys of hosts we monitor through ssh
-  services.openssh.knownHosts = lib.mapAttrs (_: host: {
-    hostNames = [ host.ip ];
-    inherit (host) publicKey;
-  }) sshMonitoredHosts;
 
   # runs a tiny webserver on port 8888 that tunnels requests through ssh connection
   systemd.services."sshified" = {
@@ -81,29 +69,21 @@ in
         --proxy.listen-addr 127.0.0.1:8888 \
         --ssh.user sshified \
         --ssh.key-file ${config.sops.secrets.sshified_private_key.path} \
-        --ssh.known-hosts-file /etc/ssh/sshified_known_hosts \
+        --ssh.known-hosts-file /etc/ssh/ssh_known_hosts \
         --ssh.port 22 \
         -v
       '';
     };
+    restartTriggers = [ config.environment.etc."ssh/ssh_known_hosts".source ];
   };
 
-  systemd.paths."restart-sshified-on-hosts-change" = {
-    wantedBy = [ "multi-user.target" ];
-    pathConfig = {
-      PathChanged = "/etc/ssh/sshified_known_hosts";
-    };
-  };
+  # add public keys of hosts we monitor through ssh
+  services.openssh.knownHosts = lib.mapAttrs (_: host: {
+    hostNames = [ host.ip ];
+    inherit (host) publicKey;
+  }) sshMonitoredHosts;
 
-  systemd.services."restart-sshified-on-hosts-change" = {
-    script = ''
-      systemctl restart sshified.service
-    '';
-    serviceConfig = {
-      Type = "oneshot";
-    };
-  };
-
+  # monitors also itself
   services.monitoring = {
     metrics.enable = true;
     logs = {
@@ -114,6 +94,8 @@ in
 
   services.grafana = {
     enable = true;
+
+    dataDir = volumeMount + "/grafana";
 
     settings = {
       server = {
@@ -146,10 +128,12 @@ in
       # github OIDC
       "auth.github" = {
         enabled = true;
+        allow_assign_grafana_admin = true;
+
         client_id = "$__file{${config.sops.secrets.github_client_id.path}}";
         client_secret = "$__file{${config.sops.secrets.github_client_secret.path}}";
+
         allowed_organizations = [ "tiiuae" ];
-        allow_assign_grafana_admin = true;
         team_ids = "7362549"; # devenv-fi
         role_attribute_path = "contains(groups[*], '@tiiuae/devenv-fi') && 'GrafanaAdmin'";
       };
@@ -162,8 +146,8 @@ in
       {
         name = "prometheus";
         type = "prometheus";
-        isDefault = true;
         url = "http://${config.services.prometheus.listenAddress}:${toString config.services.prometheus.port}/prometheus";
+        isDefault = true;
       }
       {
         name = "loki";
@@ -176,11 +160,13 @@ in
   services.loki = {
     enable = true;
 
+    dataDir = volumeMount + "/loki";
+
     configuration = {
       auth_enabled = false;
       server = {
         http_listen_port = 3100;
-        http_listen_address = "127.0.0.1";
+        http_listen_address = "0.0.0.0";
       };
 
       common = {
@@ -209,13 +195,21 @@ in
     };
   };
 
+  # Workaround for prometheus to store data outside of /var/lib
+  # https://discourse.nixos.org/t/custom-prometheus-data-directory/50741/5
+  systemd.tmpfiles.rules = [
+    "D ${volumeMount}/prometheus 0751 prometheus prometheus - -"
+    "L+ /var/lib/${config.services.prometheus.stateDir}/data - - - - ${volumeMount}/prometheus"
+  ];
+
   services.prometheus = {
     enable = true;
 
     port = 9090;
-    listenAddress = "0.0.0.0";
+    listenAddress = "127.0.0.1";
     webExternalUrl = "/prometheus/";
     checkConfig = true;
+    retentionTime = "90d";
     globalConfig.scrape_interval = "15s";
 
     # blackbox exporter can ping abritrary urls for us
@@ -243,27 +237,28 @@ in
 
     scrapeConfigs = [
       {
-        job_name = "ficolo-internal-monitoring";
+        job_name = "hetzner-cloud";
         static_configs =
           lib.mapAttrsToList
             (name: value: {
-              targets = [ "${value.ip}:9100" ];
+              targets = [ "${value.internal_ip}:9100" ];
               labels = {
                 machine_name = name;
               };
             })
             {
               inherit (machines)
-                build1
-                build2
-                build3
-                build4
-                monitoring
+                ghaf-log
+                ghaf-proxy
+                ghaf-auth
+                ghaf-monitoring
+                hetzci-dev
+                hetzci-prod
                 ;
             };
       }
       {
-        job_name = "ssh-monitoring";
+        job_name = "hetzner-robot";
         # proxy the requests through our ssh tunnel
         proxy_url = "http://127.0.0.1:8888";
         static_configs = lib.mapAttrsToList (name: value: {
@@ -272,43 +267,6 @@ in
             machine_name = name;
           };
         }) sshMonitoredHosts;
-      }
-      {
-        job_name = "blackbox";
-        metrics_path = "/probe";
-        params.module = [ "https_success" ];
-        relabel_configs = [
-          {
-            source_labels = [ "__address__" ];
-            target_label = "__param_target";
-          }
-          {
-            source_labels = [ "__param_target" ];
-            target_label = "instance";
-          }
-          {
-            source_labels = [ "__param_target" ];
-            target_label = "machine_name";
-          }
-          {
-            target_label = "__address__";
-            replacement = "127.0.0.1:9115";
-          }
-        ];
-        static_configs = [
-          {
-            targets = [ "ci-prod.vedenemo.dev" ];
-            labels = {
-              env = "prod";
-            };
-          }
-          {
-            targets = [ "ci-dev.vedenemo.dev" ];
-            labels = {
-              env = "dev";
-            };
-          }
-        ];
       }
       {
         job_name = "pushgateway";
@@ -323,49 +281,33 @@ in
     ];
   };
 
-  services.nginx.virtualHosts =
-    let
-      grafana = {
-        proxyPass = "http://127.0.0.1:${toString config.services.grafana.settings.server.http_port}";
-        proxyWebsockets = true;
-      };
-      loki = {
-        proxyPass = "http://127.0.0.1:${toString config.services.loki.configuration.server.http_listen_port}/loki";
-        proxyWebsockets = true;
-      };
-      prometheus = {
-        proxyPass = "http://127.0.0.1:${toString config.services.prometheus.port}";
-        proxyWebsockets = true;
-      };
-    in
-    {
-      "${domain}" = {
-        default = true;
-        enableACME = true;
-        forceSSL = true;
-        locations = {
-          "/" = grafana;
-          "/loki" = loki // {
-            basicAuthFile = config.sops.secrets.metrics_basic_auth.path;
-          };
-          "/push/" = {
-            proxyPass = "http://${config.services.prometheus.pushgateway.web.listen-address}";
-            proxyWebsockets = true;
-            basicAuthFile = config.sops.secrets.metrics_basic_auth.path;
-          };
-          "/prometheus/" = prometheus // {
-            basicAuthFile = config.sops.secrets.metrics_basic_auth.path;
-          };
-        };
-      };
+  services.nginx.virtualHosts = {
+    "${domain}" = {
+      default = true;
+      enableACME = true;
+      forceSSL = true;
 
-      # no auth required when accessing through internal ip address
-      "${machines.monitoring.ip}" = {
-        locations = {
-          "/" = grafana;
-          "/loki" = loki;
-          "/prometheus/" = prometheus;
+      locations = {
+        "/" = {
+          proxyPass = "http://127.0.0.1:${toString config.services.grafana.settings.server.http_port}";
+          # proxyWebsockets = true;
+        };
+        "/loki" = {
+          proxyPass = "http://127.0.0.1:${toString config.services.loki.configuration.server.http_listen_port}/loki";
+          # proxyWebsockets = true;
+          basicAuthFile = config.sops.secrets.metrics_basic_auth.path;
+        };
+        "/push/" = {
+          proxyPass = "http://${config.services.prometheus.pushgateway.web.listen-address}";
+          # proxyWebsockets = true;
+          basicAuthFile = config.sops.secrets.metrics_basic_auth.path;
+        };
+        "/prometheus/" = {
+          proxyPass = "http://127.0.0.1:${toString config.services.prometheus.port}";
+          # proxyWebsockets = true;
+          basicAuthFile = config.sops.secrets.metrics_basic_auth.path;
         };
       };
     };
+  };
 }

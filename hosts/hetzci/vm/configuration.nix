@@ -4,7 +4,6 @@
   self,
   pkgs,
   inputs,
-  modulesPath,
   lib,
   config,
   machines,
@@ -17,9 +16,9 @@ in
   imports =
     [
       ./disk-config.nix
-      (modulesPath + "/profiles/qemu-guest.nix")
-      inputs.disko.nixosModules.disko
+      ../../hetzner-cloud.nix
       inputs.sops-nix.nixosModules.sops
+      inputs.disko.nixosModules.disko
     ]
     ++ (with self.nixosModules; [
       common
@@ -28,25 +27,9 @@ in
       team-testers
     ]);
 
-  # this server has been installed with 24.11
   system.stateVersion = lib.mkForce "24.11";
-
   nixpkgs.hostPlatform = "x86_64-linux";
-  hardware.enableRedistributableFirmware = true;
-
-  networking = {
-    hostName = "hetzci-vm";
-    useDHCP = true;
-  };
-
-  boot = {
-    # use predictable network interface names (eth0)
-    kernelParams = [ "net.ifnames=0" ];
-    loader.grub = {
-      efiSupport = true;
-      efiInstallAsRemovable = true;
-    };
-  };
+  networking.hostName = "hetzci-vm";
 
   environment.systemPackages = with pkgs; [
     screen
