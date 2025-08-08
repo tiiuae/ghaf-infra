@@ -40,11 +40,6 @@
     hostName = "binarycache";
   };
 
-  security.acme = {
-    acceptTerms = true;
-    defaults.email = "trash@unikie.com";
-  };
-
   services.monitoring = {
     metrics.enable = true;
     logs.enable = true;

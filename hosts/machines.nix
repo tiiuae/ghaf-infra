@@ -3,21 +3,30 @@
 {
   ghaf-log = {
     ip = "95.217.177.197";
+    internal_ip = "10.0.0.7";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICMmB3Ws5MVq0DgVu+Hth/8NhNAYEwXyz4B6FRCF6Nu2";
   };
 
   ghaf-proxy = {
     ip = "95.216.200.85";
+    internal_ip = "10.0.0.3";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIALs+OQDrCKRIKkwTwI4MI+oYC3RTEus9cXCBcIyRHzl";
   };
 
   ghaf-webserver = {
     ip = "37.27.204.82";
+    internal_ip = "10.0.0.8";
   };
 
   ghaf-auth = {
     ip = "37.27.190.109";
+    internal_ip = "10.0.0.4";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPc04ZyZ7LgUKhV6Xr177qQn6Vf43FzUr1mS6g3jrSDj";
+  };
+
+  ghaf-monitoring = {
+    ip = "135.181.103.32";
+    internal_ip = "10.0.0.2";
   };
 
   hetzarm = {
@@ -37,11 +46,13 @@
 
   hetzci-dev = {
     ip = "157.180.119.138";
+    internal_ip = "10.0.0.6";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ8XgXW7leM8yIOyU86aDztcWBGKkBAgTiu5yaAcJcvD";
   };
 
   hetzci-prod = {
     ip = "157.180.43.236";
+    internal_ip = "10.0.0.5";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBdDmtt7At/xDNCF0aIDvXc2T9GTP0HWaAt4DEAejcE6";
   };
 

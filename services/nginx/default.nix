@@ -25,4 +25,9 @@
     enable = true;
     params.nginx = { };
   };
+
+  security.acme = {
+    acceptTerms = true;
+    defaults.email = "trash@unikie.com";
+  };
 }

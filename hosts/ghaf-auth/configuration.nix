@@ -2,10 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   self,
-  inputs,
-  modulesPath,
   lib,
   config,
+  inputs,
   ...
 }:
 let
@@ -15,54 +14,31 @@ in
   imports =
     [
       ./disk-config.nix
-      (modulesPath + "/profiles/qemu-guest.nix")
+      ../hetzner-cloud.nix
       inputs.sops-nix.nixosModules.sops
       inputs.disko.nixosModules.disko
     ]
     ++ (with self.nixosModules; [
       common
-      service-monitoring
       service-openssh
       service-nginx
       team-devenv
     ]);
 
-  sops.defaultSopsFile = ./secrets.yaml;
-  sops.secrets = {
-    dex_env.owner = "dex";
-    vedenemo_loki_password.owner = "promtail";
-  };
-
-  # this server has been installed with 24.1
-  system.stateVersion = lib.mkForce "24.11";
-
-  nixpkgs.hostPlatform = "x86_64-linux";
-  hardware.enableRedistributableFirmware = true;
-
-  networking = {
-    hostName = "ghaf-auth";
-    useDHCP = true;
-  };
-
-  boot = {
-    # use predictable network interface names (eth0)
-    kernelParams = [ "net.ifnames=0" ];
-    loader.grub = {
-      efiSupport = true;
-      efiInstallAsRemovable = true;
+  sops = {
+    defaultSopsFile = ./secrets.yaml;
+    secrets = {
+      dex_env.owner = "dex";
     };
   };
+
+  system.stateVersion = lib.mkForce "24.11";
+  nixpkgs.hostPlatform = "x86_64-linux";
+  networking.hostName = "ghaf-auth";
 
   services.monitoring = {
-    metrics = {
-      enable = true;
-      ssh = true;
-    };
-    logs = {
-      enable = true;
-      lokiAddress = "https://monitoring.vedenemo.dev";
-      auth.password_file = config.sops.secrets.vedenemo_loki_password.path;
-    };
+    metrics.enable = true;
+    logs.enable = true;
   };
 
   services.dex = {
@@ -177,10 +153,5 @@ in
         };
       };
     };
-  };
-
-  security.acme = {
-    acceptTerms = true;
-    defaults.email = "trash@unikie.com";
   };
 }

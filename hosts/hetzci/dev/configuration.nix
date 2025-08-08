@@ -4,7 +4,6 @@
   self,
   pkgs,
   inputs,
-  modulesPath,
   lib,
   config,
   machines,
@@ -17,37 +16,20 @@ in
   imports =
     [
       ./disk-config.nix
-      (modulesPath + "/profiles/qemu-guest.nix")
-      inputs.disko.nixosModules.disko
+      ../../hetzner-cloud.nix
       inputs.sops-nix.nixosModules.sops
+      inputs.disko.nixosModules.disko
     ]
     ++ (with self.nixosModules; [
       common
       service-openssh
-      service-monitoring
       team-devenv
       team-testers
     ]);
 
-  # this server has been installed with 24.11
   system.stateVersion = lib.mkForce "24.11";
-
   nixpkgs.hostPlatform = "x86_64-linux";
-  hardware.enableRedistributableFirmware = true;
-
-  networking = {
-    hostName = "hetzci-dev";
-    useDHCP = true;
-  };
-
-  boot = {
-    # use predictable network interface names (eth0)
-    kernelParams = [ "net.ifnames=0" ];
-    loader.grub = {
-      efiSupport = true;
-      efiInstallAsRemovable = true;
-    };
-  };
+  networking.hostName = "hetzci-dev";
 
   environment.systemPackages = with pkgs; [
     screen
@@ -339,15 +321,8 @@ in
   };
 
   services.monitoring = {
-    metrics = {
-      enable = true;
-      ssh = true;
-    };
-    logs = {
-      enable = true;
-      lokiAddress = "https://monitoring.vedenemo.dev";
-      auth.password_file = config.sops.secrets.loki_password.path;
-    };
+    metrics.enable = true;
+    logs.enable = true;
   };
 
   services.oauth2-proxy = {
