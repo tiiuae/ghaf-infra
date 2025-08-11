@@ -72,7 +72,9 @@ pipeline {
       steps {
         dir(WORKDIR) {
           script {
-            parallel PIPELINE
+            PIPELINE.each { key, value ->
+              value()
+            }
           }
         }
       }
