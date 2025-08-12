@@ -6,7 +6,7 @@ go 1.23.7
 
 require (
 	github.com/google/cel-go v0.26.0
-	github.com/urfave/cli/v3 v3.3.8
+	github.com/urfave/cli/v3 v3.4.1
 )
 
 require (
