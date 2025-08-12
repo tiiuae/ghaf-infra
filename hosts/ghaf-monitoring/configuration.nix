@@ -155,6 +155,59 @@ in
         url = "http://${config.services.loki.configuration.server.http_listen_address}:${toString config.services.loki.configuration.server.http_listen_port}";
       }
     ];
+
+    provision.dashboards.settings.providers =
+      let
+        # helper function for dashboards, src can take a local file or the output of fetchDashboard.
+        # also takes an attrset of strings to replace, useful to declare the datasource IDs
+        dashboard =
+          {
+            name,
+            src,
+            replacements ? { },
+          }:
+          {
+            inherit name;
+            options.path = pkgs.writeText "${name}.json" (
+              builtins.replaceStrings (builtins.attrNames replacements) (builtins.attrValues replacements) (
+                builtins.readFile src
+              )
+            );
+          };
+
+        # downloads dashboard json from https://grafana.com/grafana/dashboards/
+        fetchDashboard =
+          {
+            id,
+            version,
+            hash,
+          }:
+          pkgs.fetchurl {
+            inherit hash;
+            name = "dashboard-${toString id}_rev${toString version}.json";
+            url = "https://grafana.com/api/dashboards/${toString id}/revisions/${toString version}/download";
+          };
+      in
+      [
+        (dashboard {
+          name = "node-exporter-full";
+          src = fetchDashboard {
+            hash = "sha256-fReu5M4+jrjiTN8kaM/2KPG5WYSe+H1z21T/Iv2JSuA=";
+            id = 15172;
+            version = 6;
+          };
+          replacements = {
+            "\${DS_PROMETHEUS}" = "prometheus";
+          };
+        })
+        (dashboard {
+          name = "ssh-connections";
+          src = ./provision/dashboards/ssh-connections.json;
+          replacements = {
+            "\${DS_LOKI}" = "loki";
+          };
+        })
+      ];
   };
 
   services.loki = {
