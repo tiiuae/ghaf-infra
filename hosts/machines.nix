@@ -27,6 +27,7 @@
   ghaf-monitoring = {
     ip = "135.181.103.32";
     internal_ip = "10.0.0.2";
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG4gFTuMYnoOpDrknKhD2qlBhsCLiR00K7dpRfmm14F7";
   };
 
   hetzarm = {
