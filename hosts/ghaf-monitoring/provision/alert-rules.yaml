@@ -1,0 +1,169 @@
+apiVersion: 1
+groups:
+    - orgId: 1
+      name: Disk space
+      folder: Alerts
+      interval: 1m
+      rules:
+        - uid: beuvsalzfeigwe
+          title: Low disk space (ext4)
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: prometheus
+              model:
+                editorMode: code
+                expr: |-
+                    floor(
+                      min by(device, machine_name) (
+                        (node_filesystem_free_bytes{fstype="ext4"})
+                        / 1024 / 1024 / 1024
+                        and ignoring(device, machine_name)
+                        node_filesystem_size_bytes{fstype="ext4"} > 1 * 1024 * 1024 * 1024
+                      )
+                    )
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 20
+                        type: lt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Error
+          for: 1m
+          annotations:
+            summary: '{{ $labels.device }} on {{ $labels.machine_name }} has {{ (index $values "A").Value }} GB of free space left'
+          isPaused: false
+        - uid: feuvsf9f7dla8c
+          title: Low disk space /boot
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: prometheus
+              model:
+                editorMode: code
+                expr: floor(min by(mountpoint, machine_name) (node_filesystem_free_bytes{mountpoint="/boot"} / 1024 / 1024))
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 100
+                        type: lt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Error
+          for: 1m
+          annotations:
+            summary: '{{ $labels.machine_name }} /boot partition has {{ (index $values "A").Value }} MB of free space left'
+          isPaused: false
+    - orgId: 1
+      name: Health checks
+      folder: Alerts
+      interval: 1m
+      rules:
+        - uid: "1"
+          title: up?
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: prometheus
+              model:
+                editorMode: code
+                expr: up{}
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1
+                        type: ne
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          dashboardUid: ""
+          panelId: 0
+          noDataState: Alerting
+          execErrState: Error
+          for: 1m
+          annotations:
+            summary: '{{ $labels.machine_name }} is down!'
+          isPaused: false

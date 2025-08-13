@@ -48,6 +48,8 @@ in
       # github oauth app credentials
       github_client_id.owner = "grafana";
       github_client_secret.owner = "grafana";
+
+      slack_webhook_url.owner = "grafana";
     };
   };
 
@@ -146,12 +148,14 @@ in
       {
         name = "prometheus";
         type = "prometheus";
+        uid = "prometheus";
         url = "http://${config.services.prometheus.listenAddress}:${toString config.services.prometheus.port}/prometheus";
         isDefault = true;
       }
       {
         name = "loki";
         type = "loki";
+        uid = "loki";
         url = "http://${config.services.loki.configuration.server.http_listen_address}:${toString config.services.loki.configuration.server.http_listen_port}";
       }
     ];
@@ -208,6 +212,50 @@ in
           };
         })
       ];
+
+    provision.alerting = {
+      contactPoints.settings.contactPoints = [
+        {
+          name = "slack";
+          receivers = [
+            {
+              uid = "1";
+              type = "slack";
+              settings = {
+                text = ''{{ template "summary_only" . }}'';
+                title = "Alert status";
+                url = "$__file{${config.sops.secrets.slack_webhook_url.path}}";
+              };
+            }
+          ];
+        }
+      ];
+      policies.settings.policies = [
+        {
+          receiver = "slack";
+          group_interval = "1m";
+          group_by = [
+            "grafana_folder"
+            "alertname"
+          ];
+        }
+      ];
+      templates.settings.templates = [
+        {
+          name = "summary_only";
+          template = ''
+            {{- range .Alerts.Firing }} 
+            🚨 {{ .Annotations.summary }}
+            {{ end }}
+            {{- range .Alerts.Resolved }} 
+            ✅ {{ .Annotations.summary }}
+            {{ end }}
+          '';
+        }
+      ];
+
+      rules.path = ./provision/alert-rules.yaml;
+    };
   };
 
   services.loki = {
@@ -343,21 +391,17 @@ in
       locations = {
         "/" = {
           proxyPass = "http://127.0.0.1:${toString config.services.grafana.settings.server.http_port}";
-          # proxyWebsockets = true;
         };
         "/loki" = {
           proxyPass = "http://127.0.0.1:${toString config.services.loki.configuration.server.http_listen_port}/loki";
-          # proxyWebsockets = true;
           basicAuthFile = config.sops.secrets.metrics_basic_auth.path;
         };
         "/push/" = {
           proxyPass = "http://${config.services.prometheus.pushgateway.web.listen-address}";
-          # proxyWebsockets = true;
           basicAuthFile = config.sops.secrets.metrics_basic_auth.path;
         };
         "/prometheus/" = {
           proxyPass = "http://127.0.0.1:${toString config.services.prometheus.port}";
-          # proxyWebsockets = true;
           basicAuthFile = config.sops.secrets.metrics_basic_auth.path;
         };
       };
