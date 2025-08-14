@@ -1,6 +1,8 @@
 appearance:
   pipelineGraphView:
     showGraphOnBuildPage: true
+  themeManager:
+    theme: "darkSystem" # follow system theme 
 
 jenkins:
   # Disable authentication for hetzci-vm Jenkins instance
