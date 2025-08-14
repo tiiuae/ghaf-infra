@@ -162,6 +162,12 @@
     "sha256": "10c2zpz5944wqabi1hwjfnmh4cd9jaz66wg0xlzd7xkka3ma36l0"
   },
   {
+    "name": "dark-theme",
+    "version": "524.vd675b_22b_30cb_",
+    "url": "https://updates.jenkins.io/download/plugins/dark-theme/524.vd675b_22b_30cb_/dark-theme.hpi",
+    "sha256": "15h6l51805b4vkcc895z06h20nardxqn19h0mwkhkdcfqwr1jy11"
+  },
+  {
     "name": "data-tables-api",
     "version": "2.3.2-3",
     "url": "https://updates.jenkins.io/download/plugins/data-tables-api/2.3.2-3/data-tables-api.hpi",
@@ -640,6 +646,12 @@
     "version": "1758.v87f0f880c067",
     "url": "https://updates.jenkins.io/download/plugins/support-core/1758.v87f0f880c067/support-core.hpi",
     "sha256": "0clz81fhcnd55rg0wdj399s2lrsp1csi7bxl2vqd23v8p0qrl8h7"
+  },
+  {
+    "name": "theme-manager",
+    "version": "319.v9193461f9671",
+    "url": "https://updates.jenkins.io/download/plugins/theme-manager/319.v9193461f9671/theme-manager.hpi",
+    "sha256": "1b11kpb1663k1hw4as7r6iw1lzn27z1wnl69lvrl8ad60hpgar6j"
   },
   {
     "name": "timestamper",

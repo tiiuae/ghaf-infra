@@ -16,3 +16,4 @@ robot
 timestamper
 uno-choice
 workflow-aggregator
+dark-theme
