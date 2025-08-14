@@ -82,7 +82,7 @@ jobs:
           fi
           OPTS="--remote $BUILDER --no-download --skip-cached --option accept-flake-config true"
           # Build 'checks' on both x86 and aarch
-          ./scripts/nix-fast-build.sh -t "checks" -o "$OPTS"
+          ./scripts/nix-fast-build.sh -t "checks.${{ matrix.arch }}" -o "$OPTS"
           # Build arch-specific targets based on FILTER
           ./scripts/nix-fast-build.sh -f "$FILTER" -o "$OPTS"
         env:
