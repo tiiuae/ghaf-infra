@@ -43,7 +43,6 @@ in
 
   services.dex = {
     enable = true;
-
     environmentFile = config.sops.secrets.dex_env.path;
 
     settings = {
@@ -55,12 +54,15 @@ in
         config.file = "/var/lib/dex/dex.db";
       };
 
-      web = {
-        http = "127.0.0.1:5556";
+      web.http = "127.0.0.1:5556";
+
+      frontend = {
+        issuer = "Vedenemo Auth";
+        theme = "dark";
       };
 
       oauth2 = {
-        skipApprovalScreen = true;
+        skipApprovalScreen = false;
         alwaysShowLoginScreen = false;
       };
 
@@ -82,50 +84,66 @@ in
         }
       ];
 
-      staticClients = [
-        {
-          id = "ghaf-jenkins-controller-uaenorth";
-          name = "Ghaf Jenkins controller (uaenorth)";
-          redirectURIs =
-            map (env: "https://ghaf-jenkins-controller-${env}.uaenorth.cloudapp.azure.com/oauth2/callback")
-              [
-                "dev"
-                "prod"
-                "release"
-              ];
-          secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
-        }
-        {
-          id = "ghaf-jenkins-controller-northeurope";
-          name = "Ghaf Jenkins controller (northeurope)";
-          redirectURIs =
-            map (env: "https://ghaf-jenkins-controller-${env}.northeurope.cloudapp.azure.com/oauth2/callback")
-              [
-                "release"
-                "alextserepov"
-                "cazfi"
-                "flokli"
-                "henri"
-                "jrautiola"
-                "kaitusa"
-                "vjuntunen"
-                "fayad"
-              ];
-          secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
-        }
-        {
-          id = "hetzci-prod";
-          name = "ci-prod.vedenemo.dev";
-          redirectURIs = [ "https://ci-prod.vedenemo.dev/oauth2/callback" ];
-          secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
-        }
-        {
-          id = "hetzci-dev";
-          name = "ci-dev.vedenemo.dev";
-          redirectURIs = [ "https://ci-dev.vedenemo.dev/oauth2/callback" ];
-          secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
-        }
-      ];
+      expiry = {
+        idTokens = "24h";
+        refreshTokens.absoluteLifetime = "168h"; # 7 days
+      };
+
+      staticClients =
+        let
+          grantTypes = [
+            "authorization_code"
+            "refresh_token"
+          ];
+        in
+        [
+          {
+            id = "ghaf-jenkins-controller-uaenorth";
+            name = "Ghaf Jenkins controller (uaenorth)";
+            redirectURIs =
+              map (env: "https://ghaf-jenkins-controller-${env}.uaenorth.cloudapp.azure.com/oauth2/callback")
+                [
+                  "dev"
+                  "prod"
+                  "release"
+                ];
+            secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
+            inherit grantTypes;
+          }
+          {
+            id = "ghaf-jenkins-controller-northeurope";
+            name = "Ghaf Jenkins controller (northeurope)";
+            redirectURIs =
+              map (env: "https://ghaf-jenkins-controller-${env}.northeurope.cloudapp.azure.com/oauth2/callback")
+                [
+                  "release"
+                  "alextserepov"
+                  "cazfi"
+                  "flokli"
+                  "henri"
+                  "jrautiola"
+                  "kaitusa"
+                  "vjuntunen"
+                  "fayad"
+                ];
+            secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
+            inherit grantTypes;
+          }
+          {
+            id = "hetzci-prod";
+            name = "ci-prod.vedenemo.dev";
+            redirectURIs = [ "https://ci-prod.vedenemo.dev/oauth2/callback" ];
+            secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
+            inherit grantTypes;
+          }
+          {
+            id = "hetzci-dev";
+            name = "ci-dev.vedenemo.dev";
+            redirectURIs = [ "https://ci-dev.vedenemo.dev/oauth2/callback" ];
+            secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
+            inherit grantTypes;
+          }
+        ];
     };
   };
 
