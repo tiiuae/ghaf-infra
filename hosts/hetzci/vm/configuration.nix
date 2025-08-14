@@ -278,9 +278,10 @@ in
       request-logging = true;
       standard-logging = true;
       reverse-proxy = true;
-      scope = "openid profile email groups";
-      provider-display-name = "Vedenemo Auth";
-      custom-sign-in-logo = "-";
+      scope = "openid profile email groups offline_access";
+      cookie-expire = "168h";
+      cookie-refresh = "24h";
+      skip-provider-button = true;
       client-secret-file = config.sops.secrets.oauth2_proxy_client_secret.path;
     };
     keyFile = config.sops.templates.oauth2_proxy_env.path;
