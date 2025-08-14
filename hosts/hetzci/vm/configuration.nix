@@ -154,6 +154,7 @@ in
       with pkgs;
       [
         bashInteractive # 'sh' step in jenkins pipeline requires this
+        cachix
         coreutils
         colorized-logs
         csvkit
@@ -162,6 +163,7 @@ in
         hostname
         jq
         nix
+        nixos-rebuild
         openssh
         wget
         zstd
@@ -254,6 +256,7 @@ in
       jenkins_api_token.owner = "jenkins";
       jenkins_github_webhook_secret.owner = "jenkins";
       jenkins_github_commit_status_token.owner = "jenkins";
+      cachix-auth-token.owner = "jenkins";
     };
     templates.oauth2_proxy_env = {
       content = ''
