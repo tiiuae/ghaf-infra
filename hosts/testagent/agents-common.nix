@@ -118,8 +118,13 @@ in
     ++ (with pkgs; [
       minicom
       usbsdmux
+      jq
+      curl
       grafana-loki
       (python3.withPackages (ps: with ps; [ pyserial ]))
+      (pkgs.writeShellScriptBin "push_relays_status" (
+        builtins.readFile "${self}/scripts/push_relays_status.sh"
+      ))
     ]);
 
   # This server is only exposed to the internal network
@@ -136,11 +141,22 @@ in
     serviceConfig = {
       Type = "oneshot";
     };
-    path = [ pkgs.curl ];
+    path = with pkgs; [
+      jq
+      curl
+      coreutils
+      gawk
+      inputs.robot-framework.packages.${pkgs.system}.KMTronic
+      (pkgs.writeShellScriptBin "push_relays_status" (
+        builtins.readFile "${self}/scripts/push_relays_status.sh"
+      ))
+    ];
     script = ''
       password=$(cat ${config.sops.secrets.metrics_password.path})
       metrics=$(curl -s http://127.0.0.1:${toString config.services.prometheus.exporters.node.port}/metrics)
       echo "$metrics" | curl -u logger:$password --data-binary @- https://monitoring.vedenemo.dev/push/metrics/job/${config.networking.hostName}
+
+      push_relays_status ${config.networking.hostName} "$password"
     '';
   };
 
