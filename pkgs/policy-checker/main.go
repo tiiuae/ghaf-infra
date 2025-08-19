@@ -77,10 +77,11 @@ func provenanceCheck(provenance_file string, config TrustPolicy) {
 
 	// add current time into the input so it can be used in the queries
 	input["now"] = time.Now()
+	fmt.Printf("Current time is: %s\n\n", input["now"])
 
 	failures := false
 	for _, ruleset := range config.Criteria {
-		fmt.Println(fmt.Sprintf(":: %s", ruleset.Description))
+		fmt.Printf(":: %s\n", ruleset.Description)
 
 		ast, issues := env.Compile(ruleset.Cel)
 		if issues != nil && issues.Err() != nil {
