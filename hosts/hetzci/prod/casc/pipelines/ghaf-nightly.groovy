@@ -59,6 +59,9 @@ def TARGETS = [
   [ target: "packages.aarch64-linux.nxp-imx8mp-evk-debug",
     testset: null,
   ],
+  [ target: "packages.x86_64-linux.system76-darp11-b-debug",
+    testset: null,
+  ],
 ]
 
 properties([

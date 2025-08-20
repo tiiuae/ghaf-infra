@@ -19,7 +19,8 @@ properties([
     booleanParam(name: 'nvidia_jetson_orin_agx_debug_from_x86_64', defaultValue: false, description: 'Build target packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64'),
     booleanParam(name: 'nvidia_jetson_orin_nx_debug_from_x86_64', defaultValue: false, description: 'Build target packages.x86_64-linux.nvidia-jetson-orin-nx-debug-from-x86_64'),
     booleanParam(name: 'nvidia_jetson_orin_agx_debug', defaultValue: false, description: 'Build target packages.aarch64-linux.nvidia-jetson-orin-agx-debug'),
-    booleanParam(name: 'nvidia_jetson_orin_nx_debug', defaultValue: false, description: 'Build target packages.aarch64-linux.nvidia-jetson-orin-nx-debug')
+    booleanParam(name: 'nvidia_jetson_orin_nx_debug', defaultValue: false, description: 'Build target packages.aarch64-linux.nvidia-jetson-orin-nx-debug'),
+    booleanParam(name: 'system76_darp11_b_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.system76-darp11-b-debug')
   ])
 ])
 pipeline {
@@ -85,6 +86,10 @@ pipeline {
             if (params.nvidia_jetson_orin_nx_debug) {
               TARGETS.push(
                 [ target: "packages.aarch64-linux.nvidia-jetson-orin-nx-debug", testset: params.TESTSET ])
+            }
+            if (params.system76_darp11_b_debug) {
+              TARGETS.push(
+                [ target: "packages.x86_64-linux.system76-darp11-b-debug", testset: null ])
             }
             MODULES.utils = load "/etc/jenkins/pipelines/modules/utils.groovy"
             PIPELINE = MODULES.utils.create_pipeline(TARGETS)
