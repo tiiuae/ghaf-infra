@@ -35,6 +35,7 @@ in
     ++ (with self.nixosModules; [
       common
       service-openssh
+      service-nebula
       service-nginx
       team-devenv
     ]);
@@ -50,12 +51,21 @@ in
       github_client_secret.owner = "grafana";
 
       slack_webhook_url.owner = "grafana";
+
+      nebula-cert.owner = config.nebula.user;
+      nebula-key.owner = config.nebula.user;
     };
   };
 
   system.stateVersion = lib.mkForce "25.05";
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   networking.hostName = "ghaf-monitoring";
+
+  nebula = {
+    enable = true;
+    cert = config.sops.secrets.nebula-cert.path;
+    key = config.sops.secrets.nebula-key.path;
+  };
 
   users.users."sshified".isNormalUser = true;
 
@@ -353,6 +363,7 @@ in
                 ghaf-proxy
                 ghaf-auth
                 ghaf-monitoring
+                ghaf-lighthouse
                 hetzci-dev
                 hetzci-prod
                 hetzci-release
@@ -369,6 +380,20 @@ in
             machine_name = name;
           };
         }) sshMonitoredHosts;
+      }
+      {
+        job_name = "nebula";
+        static_configs =
+          map
+            (name: {
+              targets = [ "${name}.sumu.vedenemo.dev:9100" ];
+              labels = {
+                machine_name = name;
+              };
+            })
+            [
+              "testagent-dev"
+            ];
       }
       {
         job_name = "pushgateway";

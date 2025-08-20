@@ -27,7 +27,15 @@
   ghaf-monitoring = {
     ip = "135.181.103.32";
     internal_ip = "10.0.0.2";
+    nebula_ip = "10.42.42.2";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG4gFTuMYnoOpDrknKhD2qlBhsCLiR00K7dpRfmm14F7";
+  };
+
+  ghaf-lighthouse = {
+    ip = "65.109.141.136";
+    internal_ip = "10.0.0.10";
+    nebula_ip = "10.42.42.1";
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG9dKZmXqN8in6/0jglv+/txjWRkRJkPOUSVUGTx6KaG";
   };
 
   hetzarm = {
@@ -89,6 +97,7 @@
 
   testagent-dev = {
     ip = "172.18.16.33";
+    nebula_ip = "10.42.42.11";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDVZVd2ZBBHBYCJVOhjhfVXi4lrVYtcH5CkQjTqBfg/4";
   };
 

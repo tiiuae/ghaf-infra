@@ -33,6 +33,7 @@ keys:
   - &ghaf-proxy age1sv50w7ydcqxxng4nfpvretqhusfkjewtrzpu4006z685xgplha2sa9tv9v
   - &ghaf-auth age1xuynsp2q9cj0h7f3syha7p7n8t034m2u8qldn6zlwx4nee8d5chskr4el7
   - &ghaf-monitoring age1g2g220kp8p47al7w3jdqtpyw77u5pgc8ntz2zu50uez76vj7agtqqwwpyd
+  - &ghaf-lighthouse age1wcs30q9l7c3vk3tgs3zmu86hcgjaaujckmt0fjm2w9xlvqnk4cyqndvx4n
   - &testagent-uae-dev age1sl8yrksst9aq2fhg8t8h7tysgzm6ks00n9hxsvj8x6frsnrskd4szerqez
 
 creation_rules:
@@ -152,6 +153,13 @@ creation_rules:
       - *jrautiola
       - *hrosten
       - *fayad
+  - path_regex: hosts/ghaf-lighthouse/secrets.yaml$
+    key_groups:
+    - age:
+      - *ghaf-lighthouse
+      - *jrautiola
+      - *hrosten
+      - *fayad
   - path_regex: hosts/hetzci/release/secrets.yaml$
     key_groups:
     - age:
@@ -209,3 +217,22 @@ creation_rules:
       - *cazfi
       - *flokli
       - *ktu
+  - path_regex: services/nebula/ca.key.crypt$
+    key_groups:
+    - age:
+      - *fayad
+      - *vjuntunen
+      - *jrautiola
+      - *hrosten
+      - *cazfi
+  - path_regex: services/nebula/ca.crt.crypt$
+    key_groups:
+    - age:
+      - *fayad
+      - *vjuntunen
+      - *jrautiola
+      - *hrosten
+      - *cazfi
+      - *ghaf-lighthouse
+      - *testagent-dev
+      - *ghaf-monitoring

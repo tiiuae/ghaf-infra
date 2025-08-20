@@ -13,3 +13,4 @@ terraform.tfstate.backup
 .env
 .pre-commit-config.yaml
 /*.qcow2
+ca.key

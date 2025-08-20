@@ -12,6 +12,7 @@
       ./disk-config.nix
     ]
     ++ (with self.nixosModules; [
+      service-nebula
       team-devenv
       team-testers
       user-flokli
@@ -19,7 +20,11 @@
 
   sops = {
     defaultSopsFile = ./secrets.yaml;
-    secrets.metrics_password.owner = "root";
+    secrets = {
+      metrics_password.owner = "root";
+      nebula-cert.owner = config.nebula.user;
+      nebula-key.owner = config.nebula.user;
+    };
   };
 
   nixpkgs.hostPlatform = "x86_64-linux";
@@ -50,6 +55,12 @@
     "kvm-intel"
     "sg"
   ];
+
+  nebula = {
+    enable = true;
+    cert = config.sops.secrets.nebula-cert.path;
+    key = config.sops.secrets.nebula-key.path;
+  };
 
   # udev rules for test devices serial connections and SSD-drives
   services.udev.extraRules = ''

@@ -8,5 +8,6 @@
     service-openssh = import ./openssh;
     service-remote-build = import ./remote-build;
     service-rclone-http = import ./rclone-http;
+    service-nebula = import ./nebula;
   };
 }

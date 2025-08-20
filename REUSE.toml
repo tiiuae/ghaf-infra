@@ -21,5 +21,6 @@ path = [
   "**.json",
   "**.png",
   "**.groovy",
-  "**/go.sum"
+  "**/go.sum",
+  "**/ca.*.crypt",
 ]
