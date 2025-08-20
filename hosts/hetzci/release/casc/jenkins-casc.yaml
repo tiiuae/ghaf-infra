@@ -1,0 +1,256 @@
+appearance:
+  pipelineGraphView:
+    showGraphOnBuildPage: true
+  themeManager:
+    theme: "darkSystem" # follow system theme 
+
+jenkins:
+  authorizationStrategy:
+    globalMatrix:
+      entries:
+        - user:
+            name: api_user
+            permissions:
+              - Job/Build
+              - Job/Cancel
+              - Job/Read
+        - group:
+            name: authenticated
+            permissions:
+              - Overall/Read
+              - Job/Read
+        - group:
+            name: 'tiiuae:devenv-fi'
+            permissions:
+              - Overall/Administer
+        - group:
+            name: testagents
+            permissions:
+              - Agent/Connect
+  markupFormatter:
+    rawHtml:
+      disableSyntaxHighlighting: false
+  nodes:
+    - permanent:
+        labelString: lenovo-x1
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: dev-lenovo-x1
+        remoteFS: /var/lib/jenkins/agents/lenovo-x1
+        retentionStrategy: always
+    - permanent:
+        labelString: lenovo-x1
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: prod-lenovo-x1
+        remoteFS: /var/lib/jenkins/agents/lenovo-x1
+        retentionStrategy: always
+    - permanent:
+        labelString: lenovo-x1
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: release-lenovo-x1
+        remoteFS: /var/lib/jenkins/agents/lenovo-x1
+        retentionStrategy: always
+    - permanent:
+        labelString: orin-agx-64
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: dev-orin-agx-64
+        remoteFS: /var/lib/jenkins/agents/orin-agx-64
+        retentionStrategy: always
+    - permanent:
+        labelString: orin-agx-64
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: prod-orin-agx-64
+        remoteFS: /var/lib/jenkins/agents/orin-agx-64
+        retentionStrategy: always
+    - permanent:
+        labelString: orin-agx-64
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: release-orin-agx-64
+        remoteFS: /var/lib/jenkins/agents/orin-agx-64
+        retentionStrategy: always
+    - permanent:
+        labelString: orin-agx
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: dev-orin-agx
+        remoteFS: /var/lib/jenkins/agents/orin-agx
+        retentionStrategy: always
+    - permanent:
+        labelString: orin-agx
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: prod-orin-agx
+        remoteFS: /var/lib/jenkins/agents/orin-agx
+        retentionStrategy: always
+    - permanent:
+        labelString: orin-agx
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: release-orin-agx
+        remoteFS: /var/lib/jenkins/agents/orin-agx
+        retentionStrategy: always
+    - permanent:
+        labelString: orin-nx
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: dev-orin-nx
+        remoteFS: /var/lib/jenkins/agents/orin-nx
+        retentionStrategy: always
+    - permanent:
+        labelString: orin-nx
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: prod-orin-nx
+        remoteFS: /var/lib/jenkins/agents/orin-nx
+        retentionStrategy: always
+    - permanent:
+        labelString: orin-nx
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: release-orin-nx
+        remoteFS: /var/lib/jenkins/agents/orin-nx
+        retentionStrategy: always
+    - permanent:
+        labelString: dell-7330
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: dev-dell-7330
+        remoteFS: /var/lib/jenkins/agents/dell-7330
+        retentionStrategy: always
+    - permanent:
+        labelString: dell-7330
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: prod-dell-7330
+        remoteFS: /var/lib/jenkins/agents/dell-7330
+        retentionStrategy: always
+    - permanent:
+        labelString: dell-7330
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: release-dell-7330
+        remoteFS: /var/lib/jenkins/agents/dell-7330
+        retentionStrategy: always
+  numExecutors: 4
+  securityRealm:
+    reverseProxy:
+      customLogOutUrl: /oauth2/sign_out
+      disableLdapEmailResolver: true
+      forwardedDisplayName: X-Forwarded-DisplayName
+      forwardedEmail: X-Forwarded-Mail
+      forwardedUser: X-Forwarded-User
+      headerGroups: X-Forwarded-Groups
+      headerGroupsDelimiter: ','
+      inhibitInferRootDN: false
+  log:
+    recorders:
+    - loggers:
+      - name: "org.jenkinsci.plugins.github"
+        level: "ALL"
+      name: "Debug"
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - string:
+              scope: GLOBAL
+              id: "jenkins-github-webhook-secret"
+              secret: "${file:/run/secrets/jenkins_github_webhook_secret}"
+              description: "Github webhook secret"
+          - string:
+              scope: GLOBAL
+              id: "jenkins-github-commit-status-token"
+              secret: "${file:/run/secrets/jenkins_github_commit_status_token}"
+              description: "Github token used to set the commit statuses"
+          - string:
+              scope: GLOBAL
+              id: "cachix-auth-token"
+              secret: "${file:/run/secrets/cachix-auth-token}"
+              description: "Cachix token used to cachix pin store paths"
+
+unclassified:
+  location:
+    url: "https://ci-release.vedenemo.dev"
+  timestamper:
+    allPipelines: true
+  gitHubPluginConfig:
+    configs:
+    - credentialsId: "jenkins-github-commit-status-token"
+    hookSecretConfigs:
+    - credentialsId: "jenkins-github-webhook-secret"
+  lockableResourcesManager:
+    declaredResources:
+    - name: "evaluator"
+      description: "Nix evaluator lock"
+
+# https://plugins.jenkins.io/configuration-as-code-groovy/
+groovy:
+  # Setup jenkins api token:
+  - script: |
+      import jenkins.model.*
+      import hudson.model.*
+      import jenkins.security.ApiTokenProperty
+      def token = new File("/run/secrets/jenkins_api_token");
+      if (token.exists()) {
+        println("Setting up api token")
+        def user = User.get('api_user')
+        user.getProperty(ApiTokenProperty.class).tokenStore.addFixedNewToken("t1", token.text)
+        user.save()
+      }
+  # Casc does not support removing pipelines. To ensure possible earlier
+  # jenkins jobs will not be loaded in this boot cycle, we need to delete
+  # all old pipeline definitions.
+  # Below, we remove all job definitions in paths
+  # /var/lib/jenkins/jobs/PIPELINE_NAME/config.xml. For the pipelines
+  # that remain from earlier boot cycle, the config.xml will be re-created
+  # in the "Load pipelines" step below.
+  # Removing just the config.xml allows restoring an earlier deleted pipeline
+  # with its full build history in case of emergency. To completely remove a
+  # pipeline one would manually delete the job directory at
+  # /var/lib/jenkins/jobs/PIPELINE_NAME.
+  - script: |
+      import jenkins.model.*
+      import hudson.model.*
+      import org.jenkinsci.plugins.workflow.job.WorkflowJob
+      import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition
+      import groovy.io.FileType
+      def oldjobs = new File("/var/lib/jenkins/jobs/")
+      oldjobs.eachFile(FileType.DIRECTORIES) { dir ->
+        File config = new File(dir.absolutePath + "/config.xml")
+        if (config.exists()) {
+          println("Removing old pipeline definition: " + config)
+          config.delete()
+        }
+      }
+  # Load pipelines:
+  - script: |
+      import jenkins.model.*
+      import hudson.model.*
+      import org.jenkinsci.plugins.workflow.job.WorkflowJob
+      import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition
+      import groovy.io.FileType
+      println("Loading pipelines")
+      def pipelines = new File("/etc/jenkins/pipelines/")
+      pipelines.eachFile(FileType.FILES) { file ->
+        println("Loading pipeline from: " + file.name)
+        def pipeline_name = file.name.substring(0, file.name.lastIndexOf('.'))
+        def job = new WorkflowJob(Jenkins.getInstance(), pipeline_name)
+        job.definition = new CpsFlowDefinition(file.text, true)
+        job.save()
+      }
+      Jenkins.getInstance().reload()
+  # Trigger all pipelines on jenkins service (re)start:
+  - script: |
+      import jenkins.model.*
+      import hudson.model.*
+      def params = new ParametersAction([ new StringParameterValue("RELOAD_ONLY", "true")])
+      for (job in Jenkins.getInstance().getAllItems(Job)) {
+        println("Triggering job: " + job.getName())
+        job.scheduleBuild2(0, params);
+      }

@@ -130,6 +130,13 @@ in
             inherit grantTypes;
           }
           {
+            id = "hetzci-release";
+            name = "ci-release.vedenemo.dev";
+            redirectURIs = [ "https://ci-release.vedenemo.dev/oauth2/callback" ];
+            secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
+            inherit grantTypes;
+          }
+          {
             id = "hetzci-prod";
             name = "ci-prod.vedenemo.dev";
             redirectURIs = [ "https://ci-prod.vedenemo.dev/oauth2/callback" ];

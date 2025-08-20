@@ -355,6 +355,7 @@ in
                 ghaf-monitoring
                 hetzci-dev
                 hetzci-prod
+                hetzci-release
                 ;
             };
       }

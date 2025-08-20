@@ -17,38 +17,26 @@
             echo "WARNING: flake root not round; skipping helpers installation."
             return
           fi
-          prefetch-plugins-azure-controller () {
+          prefetch-plugins () {
+            conf_path="$1"
+            if [ -z "$conf_path" ]; then
+              echo "Error: missing first argument - expecting relative path to host configuration"
+              return
+            fi
             python "$FLAKE_ROOT"/scripts/resolve_plugins.py \
               --jenkins-version ${pkgs.jenkins.version} \
-              --plugins-file "$FLAKE_ROOT"/hosts/azure/jenkins-controller/plugins.txt \
-              --output "$FLAKE_ROOT"/hosts/azure/jenkins-controller/plugins.json
-          }
-          prefetch-plugins-hetzci-prod () {
-            python "$FLAKE_ROOT"/scripts/resolve_plugins.py \
-              --jenkins-version ${pkgs.jenkins.version} \
-              --plugins-file "$FLAKE_ROOT"/hosts/hetzci/prod/plugins.txt \
-              --output "$FLAKE_ROOT"/hosts/hetzci/prod/plugins.json
-          }
-          prefetch-plugins-hetzci-dev () {
-            python "$FLAKE_ROOT"/scripts/resolve_plugins.py \
-              --jenkins-version ${pkgs.jenkins.version} \
-              --plugins-file "$FLAKE_ROOT"/hosts/hetzci/dev/plugins.txt \
-              --output "$FLAKE_ROOT"/hosts/hetzci/dev/plugins.json
-          }
-          prefetch-plugins-hetzci-vm () {
-            python "$FLAKE_ROOT"/scripts/resolve_plugins.py \
-              --jenkins-version ${pkgs.jenkins.version} \
-              --plugins-file "$FLAKE_ROOT"/hosts/hetzci/vm/plugins.txt \
-              --output "$FLAKE_ROOT"/hosts/hetzci/vm/plugins.json
+              --plugins-file "$FLAKE_ROOT"/"$conf_path"/plugins.txt \
+              --output "$FLAKE_ROOT"/"$conf_path"/plugins.json
           }
           echo ""
           echo 1>&2 "Welcome to the development shell!"
           echo ""
           echo "This shell provides following helper commands:"
-          echo " - prefetch-plugins-azure-controller"
-          echo " - prefetch-plugins-hetzci-dev"
-          echo " - prefetch-plugins-hetzci-prod"
-          echo " - prefetch-plugins-hetzci-vm"
+          echo " - prefetch-plugins hosts/azure/jenkins-controller"
+          echo " - prefetch-plugins hosts/hetzci/release"
+          echo " - prefetch-plugins hosts/hetzci/prod"
+          echo " - prefetch-plugins hosts/hetzci/dev"
+          echo " - prefetch-plugins hosts/hetzci/vm"
           echo ""
         '';
 
