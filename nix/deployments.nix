@@ -40,6 +40,7 @@ let
     ghaf-webserver = mkDeployment "ghaf-webserver" machines.ghaf-webserver.ip;
     ghaf-auth = mkDeployment "ghaf-auth" machines.ghaf-auth.ip;
     ghaf-monitoring = mkDeployment "ghaf-monitoring" machines.ghaf-monitoring.ip;
+    ghaf-lighthouse = mkDeployment "ghaf-lighthouse" machines.ghaf-lighthouse.ip;
     hetzci-release = mkDeployment "hetzci-release" machines.hetzci-release.ip;
     hetzci-prod = mkDeployment "hetzci-prod" machines.hetzci-prod.ip;
     hetzci-dev = mkDeployment "hetzci-dev" machines.hetzci-dev.ip;
