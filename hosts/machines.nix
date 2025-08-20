@@ -57,6 +57,12 @@
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBdDmtt7At/xDNCF0aIDvXc2T9GTP0HWaAt4DEAejcE6";
   };
 
+  hetzci-release = {
+    ip = "95.217.210.252";
+    internal_ip = "10.0.0.9";
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILt+qbA7j8q+CjiAY2vX1rEhH3ow4xRKqyMszVI0zvmm";
+  };
+
   build1 = {
     ip = "172.18.20.102";
   };
