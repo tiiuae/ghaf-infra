@@ -31,4 +31,13 @@
       };
     };
   };
+  disko.devices.disk.nix = {
+    device = "/dev/disk/by-id/scsi-0HC_Volume_103180445";
+    type = "disk";
+    content = {
+      type = "filesystem";
+      format = "ext4";
+      mountpoint = "/nix";
+    };
+  };
 }
