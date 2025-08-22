@@ -85,7 +85,7 @@ class Targets:
                 )
                 for name, node in json.loads(
                     subprocess.check_output(
-                        ["nix", "eval", "--json", f"{ROOT}#deploy.targets"]
+                        ["nix", "eval", "--json", f"{ROOT}#installationTargets"]
                     )
                 ).items()
             }
@@ -103,7 +103,7 @@ class Targets:
 
         node = json.loads(
             subprocess.check_output(
-                ["nix", "eval", "--json", f"{ROOT}#deploy.targets.{alias}"]
+                ["nix", "eval", "--json", f"{ROOT}#installationTargets.{alias}"]
             )
         )
         return TargetHost(

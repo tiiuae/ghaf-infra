@@ -51,34 +51,32 @@ let
   aarch64-nodes = {
     hetzarm = mkDeployment "hetzarm" machines.hetzarm.ip;
   };
+
+  nodes = x86-nodes // aarch64-nodes;
 in
 {
   flake = {
-    deploy =
-      let
-        nodes = x86-nodes // aarch64-nodes;
-      in
-      {
-        inherit nodes;
-        targets = lib.attrsets.mapAttrs (
-          _: node:
-          let
-            cnf = self.nixosConfigurations.${node.config}.config;
-          in
-          {
-            inherit (node) hostname config;
-            secrets =
-              if (lib.attrsets.hasAttrByPath [ "sops" "defaultSopsFile" ] cnf) then
-                cnf.sops.defaultSopsFile
-              else
-                null;
-          }
-        ) nodes;
-      };
+    deploy = { inherit nodes; };
 
     checks = {
       x86_64-linux = deploy-rs.lib.x86_64-linux.deployChecks { nodes = x86-nodes; };
       aarch64-linux = deploy-rs.lib.aarch64-linux.deployChecks { nodes = aarch64-nodes; };
     };
+
+    # used by tasks.py
+    installationTargets = lib.attrsets.mapAttrs (
+      _: node:
+      let
+        cnf = self.nixosConfigurations.${node.config}.config;
+      in
+      {
+        inherit (node) hostname config;
+        secrets =
+          if (lib.attrsets.hasAttrByPath [ "sops" "defaultSopsFile" ] cnf) then
+            cnf.sops.defaultSopsFile
+          else
+            null;
+      }
+    ) nodes;
   };
 }
