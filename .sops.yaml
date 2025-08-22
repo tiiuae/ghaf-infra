@@ -234,5 +234,7 @@ creation_rules:
       - *hrosten
       - *cazfi
       - *ghaf-lighthouse
-      - *testagent-dev
       - *ghaf-monitoring
+      - *testagent-dev
+      - *testagent-prod
+      - *testagent-release

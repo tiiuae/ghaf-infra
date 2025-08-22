@@ -103,11 +103,13 @@
 
   testagent-prod = {
     ip = "172.18.16.60";
+    nebula_ip = "10.42.42.12";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILXYn8XEtZ/LoRBnM/GwNJMg0gcpFMEYEyQX3X9DTENx";
   };
 
   testagent-release = {
     ip = "172.18.16.32";
+    nebula_ip = "10.42.42.13";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPP2xRl4jtu1ARpyj9W3uEo+GACLywosKhal432CgK+H";
   };
 
