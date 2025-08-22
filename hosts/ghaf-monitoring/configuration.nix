@@ -212,6 +212,7 @@ in
           };
           replacements = {
             "\${DS_PROMETHEUS}" = "prometheus";
+            "Node Exporter for Prometheus Dashboard based on 11074" = "Node Exporter";
           };
         })
         (dashboard {
@@ -382,7 +383,7 @@ in
         }) sshMonitoredHosts;
       }
       {
-        job_name = "nebula";
+        job_name = "office";
         static_configs =
           map
             (name: {
@@ -393,6 +394,8 @@ in
             })
             [
               "testagent-dev"
+              "testagent-prod"
+              "testagent-release"
             ];
       }
       {

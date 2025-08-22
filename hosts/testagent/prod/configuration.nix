@@ -13,6 +13,7 @@
       ./hardware-configuration.nix
     ]
     ++ (with self.nixosModules; [
+      service-nebula
       team-devenv
       team-testers
       user-flokli
@@ -20,7 +21,11 @@
 
   sops = {
     defaultSopsFile = ./secrets.yaml;
-    secrets.metrics_password.owner = "root";
+    secrets = {
+      metrics_password.owner = "promtail";
+      nebula-cert.owner = config.nebula.user;
+      nebula-key.owner = config.nebula.user;
+    };
   };
 
   nixpkgs.hostPlatform = "x86_64-linux";
@@ -34,6 +39,12 @@
       "lenovo-x1"
       "dell-7330"
     ];
+  };
+
+  nebula = {
+    enable = true;
+    cert = config.sops.secrets.nebula-cert.path;
+    key = config.sops.secrets.nebula-key.path;
   };
 
   # udev rules for test devices serial connections

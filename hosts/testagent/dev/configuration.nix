@@ -21,7 +21,7 @@
   sops = {
     defaultSopsFile = ./secrets.yaml;
     secrets = {
-      metrics_password.owner = "root";
+      metrics_password.owner = "promtail";
       nebula-cert.owner = config.nebula.user;
       nebula-key.owner = config.nebula.user;
     };

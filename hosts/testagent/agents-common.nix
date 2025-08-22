@@ -51,6 +51,10 @@ let
         echo "Disconnected agents from the controller"
       '';
   };
+
+  push-relay-status = pkgs.writeShellScriptBin "push-relay-status" (
+    builtins.readFile ./push_relays_status.sh
+  );
 in
 {
   imports =
@@ -109,6 +113,7 @@ in
       brainstem
       connect-script
       disconnect-script
+      push-relay-status
       self.packages.${pkgs.system}.policy-checker
     ]
     ++ (with inputs.robot-framework.packages.${pkgs.system}; [
@@ -122,9 +127,6 @@ in
       curl
       grafana-loki
       (python3.withPackages (ps: with ps; [ pyserial ]))
-      (pkgs.writeShellScriptBin "push_relays_status" (
-        builtins.readFile "${self}/scripts/push_relays_status.sh"
-      ))
     ]);
 
   # This server is only exposed to the internal network
@@ -133,11 +135,15 @@ in
 
   services.monitoring = {
     metrics.enable = true;
-    logs.enable = false;
+    logs = {
+      enable = true;
+      lokiAddress = "https://monitoring.vedenemo.dev";
+      auth.password_file = config.sops.secrets.metrics_password.path;
+    };
   };
 
   systemd.services.push-testagent-metrics = {
-    description = "Push testagent metrics to Prometheus Pushgateway";
+    description = "Push relay statuses to Prometheus";
     serviceConfig = {
       Type = "oneshot";
     };
@@ -147,17 +153,12 @@ in
       coreutils
       gawk
       inputs.robot-framework.packages.${pkgs.system}.KMTronic
-      (pkgs.writeShellScriptBin "push_relays_status" (
-        builtins.readFile "${self}/scripts/push_relays_status.sh"
-      ))
     ];
-    script = ''
-      password=$(cat ${config.sops.secrets.metrics_password.path})
-      metrics=$(curl -s http://127.0.0.1:${toString config.services.prometheus.exporters.node.port}/metrics)
-      echo "$metrics" | curl -u logger:$password --data-binary @- https://monitoring.vedenemo.dev/push/metrics/job/${config.networking.hostName}
-
-      push_relays_status ${config.networking.hostName} "$password"
-    '';
+    script = # sh
+      ''
+        password="$(cat ${config.sops.secrets.metrics_password.path})"
+        ${push-relay-status} ${config.networking.hostName} "$password"
+      '';
   };
 
   systemd.timers.push-testagent-metrics = {
