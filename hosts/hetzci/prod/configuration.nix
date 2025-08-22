@@ -130,6 +130,8 @@ in
     substituters = https://ghaf-dev.cachix.org https://cache.nixos.org
     builders-use-substitutes = true
   '';
+  nix.settings.min-free = lib.mkForce (70 * 1024 * 1024 * 1024);
+  nix.settings.max-free = lib.mkForce (280 * 1024 * 1024 * 1024);
 
   programs.ssh = {
     # Known builder host public keys, these go to /root/.ssh/known_hosts
