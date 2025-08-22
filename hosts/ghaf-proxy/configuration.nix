@@ -38,5 +38,9 @@
   environment.systemPackages = with pkgs; [
     screen
     tmux
+    azure-cli
+    dnsutils
+    inetutils
+    openssl
   ];
 }
