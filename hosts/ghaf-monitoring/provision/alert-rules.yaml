@@ -17,13 +17,12 @@ groups:
               model:
                 editorMode: code
                 expr: |-
-                    floor(
-                      min by(device, machine_name) (
-                        (node_filesystem_free_bytes{fstype="ext4"})
-                        / 1024 / 1024 / 1024
-                        and ignoring(device, machine_name)
-                        node_filesystem_size_bytes{fstype="ext4"} > 1 * 1024 * 1024 * 1024
-                      )
+                    round(
+                      max by(device, machine_name) (
+                        100 - ((node_filesystem_avail_bytes{fstype="ext4"} * 100)
+                        / node_filesystem_size_bytes{fstype="ext4"}))
+                      ,
+                      0.01
                     )
                 instant: true
                 intervalMs: 1000
@@ -37,8 +36,8 @@ groups:
                 conditions:
                     - evaluator:
                         params:
-                            - 20
-                        type: lt
+                            - 98
+                        type: gt
                       operator:
                         type: and
                       query:
@@ -62,7 +61,7 @@ groups:
           execErrState: Error
           for: 1m
           annotations:
-            summary: '{{ $labels.device }} on {{ $labels.machine_name }} has {{ (index $values "A").Value }} GB of free space left'
+            summary: '{{ $labels.device }} on {{ $labels.machine_name }} disk usage is {{ (index $values "A").Value }}%'
           isPaused: false
         - uid: feuvsf9f7dla8c
           title: Low disk space /boot
