@@ -31,6 +31,16 @@ in
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "hetzci-release";
 
+  # Configure /var/lib/caddy in /etc/fstab.
+  fileSystems."/var/lib/caddy" = {
+    device = "/dev/disk/by-id/scsi-0HC_Volume_103219547";
+    fsType = "ext4";
+    options = [
+      "x-systemd.makefs"
+      "x-systemd.growfs"
+    ];
+  };
+
   environment.systemPackages = with pkgs; [
     screen
     tmux
