@@ -23,6 +23,7 @@ in
     ++ (with self.nixosModules; [
       common
       service-openssh
+      service-nebula
       team-devenv
       team-testers
     ]);
@@ -35,6 +36,12 @@ in
     screen
     tmux
   ];
+
+  nebula = {
+    enable = true;
+    cert = config.sops.secrets.nebula-cert.path;
+    key = config.sops.secrets.nebula-key.path;
+  };
 
   # Enable zramSwap: https://search.nixos.org/options?show=zramSwap.enable
   zramSwap = {
@@ -314,6 +321,8 @@ in
       jenkins_github_commit_status_token.owner = "jenkins";
       cachix-auth-token.owner = "jenkins";
       loki_password.owner = "promtail";
+      nebula-cert.owner = config.nebula.user;
+      nebula-key.owner = config.nebula.user;
     };
     templates.oauth2_proxy_env = {
       content = ''

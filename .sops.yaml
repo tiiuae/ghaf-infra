@@ -248,3 +248,6 @@ creation_rules:
       - *testagent-prod
       - *testagent-release
       - *nethsm-gateway
+      - *hetzci-dev
+      - *hetzci-prod
+      - *hetzci-release
