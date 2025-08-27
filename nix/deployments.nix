@@ -35,6 +35,7 @@ let
     testagent-dev = mkDeployment "testagent-dev" machines.testagent-dev.ip;
     testagent-release = mkDeployment "testagent-release" machines.testagent-release.ip;
     testagent-uae-dev = mkDeployment "testagent-uae-dev" machines.testagent-uae-dev.ip;
+    nethsm-gateway = mkDeployment "nethsm-gateway" machines.nethsm-gateway.ip;
     ghaf-log = mkDeployment "ghaf-log" machines.ghaf-log.ip;
     ghaf-proxy = mkDeployment "ghaf-proxy" machines.ghaf-proxy.ip;
     ghaf-webserver = mkDeployment "ghaf-webserver" machines.ghaf-webserver.ip;

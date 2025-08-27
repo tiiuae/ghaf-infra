@@ -12,6 +12,7 @@ let
 
   networkName = "vedenemo";
   lighthouseAddress = "10.42.42.1";
+  listenPort = 4242; # UDP port Nebula will use for sending/receiving traffic and for handshakes
   serviceUser = config.systemd.services."nebula@${networkName}".serviceConfig.User or "root";
 in
 {
@@ -65,8 +66,10 @@ in
         port = 53;
       };
 
+      listen.port = listenPort;
+
       staticHostMap = {
-        "${lighthouseAddress}" = [ "${machines.ghaf-lighthouse.ip}:4242" ];
+        "${lighthouseAddress}" = [ "${machines.ghaf-lighthouse.ip}:${toString listenPort}" ];
       };
 
       firewall = {

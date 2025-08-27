@@ -56,6 +56,7 @@ in
     nixos-testagent-prod = ./testagent/prod/configuration.nix;
     nixos-testagent-dev = ./testagent/dev/configuration.nix;
     nixos-testagent-release = ./testagent/release/configuration.nix;
+    nixos-nethsm-gateway = ./nethsm-gateway/configuration.nix;
     nixos-ghaf-log = ./ghaf-log/configuration.nix;
     nixos-ghaf-proxy = ./ghaf-proxy/configuration.nix;
     nixos-ghaf-webserver = ./ghaf-webserver/configuration.nix;
@@ -99,6 +100,7 @@ in
           "testagent-prod"
           "testagent-dev"
           "testagent-release"
+          "nethsm-gateway"
           "ghaf-log"
           "ghaf-proxy"
           "ghaf-webserver"

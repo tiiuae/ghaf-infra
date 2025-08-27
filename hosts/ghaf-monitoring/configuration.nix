@@ -396,6 +396,7 @@ in
               "testagent-dev"
               "testagent-prod"
               "testagent-release"
+              "nethsm-gateway"
             ];
       }
       {

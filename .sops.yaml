@@ -35,6 +35,7 @@ keys:
   - &ghaf-monitoring age1g2g220kp8p47al7w3jdqtpyw77u5pgc8ntz2zu50uez76vj7agtqqwwpyd
   - &ghaf-lighthouse age1wcs30q9l7c3vk3tgs3zmu86hcgjaaujckmt0fjm2w9xlvqnk4cyqndvx4n
   - &testagent-uae-dev age1sl8yrksst9aq2fhg8t8h7tysgzm6ks00n9hxsvj8x6frsnrskd4szerqez
+  - &nethsm-gateway age177v8xccs46774faav3tu36kfap0r04z0ukxh2t5293rwk5evrsaqd98j0p
 
 creation_rules:
   - path_regex: hosts/binarycache/secrets.yaml$
@@ -217,6 +218,14 @@ creation_rules:
       - *cazfi
       - *flokli
       - *ktu
+  - path_regex: hosts/nethsm-gateway/secrets.yaml$
+    key_groups:
+    - age:
+      - *nethsm-gateway
+      - *vjuntunen
+      - *jrautiola
+      - *hrosten
+      - *cazfi
   - path_regex: services/nebula/ca.key.crypt$
     key_groups:
     - age:
@@ -238,3 +247,4 @@ creation_rules:
       - *testagent-dev
       - *testagent-prod
       - *testagent-release
+      - *nethsm-gateway
