@@ -38,7 +38,7 @@ def create_pipeline(List<Map> targets) {
       // Build
       stage("Build ${shortname}") {
         build_beg = run_cmd('date +%s')
-        sh "nix build -v .#${it.target} --out-link ${it.target}"
+        sh "nix build --fallback -v .#${it.target} --out-link ${it.target}"
         build_end = run_cmd('date +%s')
       }
       // Provenance
