@@ -152,12 +152,13 @@ in
       curl
       coreutils
       gawk
+      push-relay-status
       inputs.robot-framework.packages.${pkgs.system}.KMTronic
     ];
     script = # sh
       ''
         password="$(cat ${config.sops.secrets.metrics_password.path})"
-        ${push-relay-status} ${config.networking.hostName} "$password"
+        push-relay-status ${config.networking.hostName} "$password"
       '';
   };
 
