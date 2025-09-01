@@ -33,6 +33,7 @@
     variant = "release";
     hardware = [
       "orin-agx"
+      "orin-agx-64"
       "orin-nx"
       "lenovo-x1"
     ];
@@ -68,8 +69,14 @@
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S6WXNS0W300212M", SYMLINK+="ssdORINNX1", MODE="0666", GROUP="dialout"
 
     # Orin agx
+    SUBSYSTEM=="tty", KERNEL=="ttyACM[0-9]*", ATTRS{serial}=="TOPO86B63C37", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="ttyAGX1", MODE="0666", GROUP="dialout"
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S6WYNS0W402363J", SYMLINK+="ssdORINAGX1", MODE="0666", GROUP="dialout"
+
+    # Orin AGX64
+    SUBSYSTEM=="tty", KERNEL=="ttyACM[0-9]*", ATTRS{serial}=="TOPO195F768E", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="ttyAGX64", MODE="0666", GROUP="dialout"
+    # SSD-drive
+    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S5T4NJ0NB10775R", SYMLINK+="ssdORINAGX64", MODE="0666", GROUP="dialout"
 
     # Lenovo X1
     # SSD-drive
@@ -101,6 +108,18 @@
           switch_bot = "NONE";
           usbhub_serial = "EBBBCDD4";
           ext_drive_by-id = "/dev/ssdORINAGX1";
+          threads = 12;
+        };
+        OrinAGX64 = {
+          inherit location;
+          serial_port = "/dev/ttyAGX64";
+          relay_number = 1;
+          device_ip_address = "172.18.16.4";
+          socket_ip_address = "NONE";
+          plug_type = "NONE";
+          switch_bot = "NONE";
+          usbhub_serial = "6B780E17";
+          ext_drive_by-id = "/dev/ssdORINAGX64";
           threads = 12;
         };
         LenovoX1-1 = {
