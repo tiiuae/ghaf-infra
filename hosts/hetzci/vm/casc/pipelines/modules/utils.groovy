@@ -14,6 +14,17 @@ def append_to_build_description(String text) {
   }
 }
 
+def runUEFISign(String diskPath, outDir) {
+  sh """
+    mkdir -p "${outDir}/keys"
+    uefikeygen
+    uefisign keys/db.crt keys/db.key "${diskPath}" "signed"
+    test -f keys/db.crt -a -f keys/db.key
+    cp -v keys/*.der "${outDir}/keys/"
+    cp -v signed/* "${outDir}"
+  """
+}
+
 def create_pipeline(List<Map> targets) {
   def pipeline = [:]
   def stamp = run_cmd('date +"%Y%m%d_%H%M%S%3N"')
@@ -77,13 +88,30 @@ def create_pipeline(List<Map> targets) {
           }
         }
       }
+      if (it.get('uefisign', false)) {
+        stage("UEFI Sign ${shortname}") {
+           def disk_path  = run_cmd("find -L ${it.target} -type f -name 'disk1.raw.zst' -print -quit")
+           if (!disk_path) { error("uefisign: no disk1.raw.zst found for '${it.target}'") }
+
+           def signed_dir = "${artifacts_local_dir}/${it.target}"  // where we put signed image & keys
+           echo "Signing disk: ${disk_path} -> ${signed_dir}"
+
+           sh "mkdir -p '${signed_dir}'"
+           runUEFISign(disk_path, signed_dir)
+        }
+      }
       // Archive
       stage("Archive ${shortname}") {
-        sh "mkdir -v -p ${artifacts_local_dir} && cp -P ${it.target} ${artifacts_local_dir}/"
+        if (it.get('uefisign', false)) {
+          echo "signed image + keys already placed in ${artifacts_local_dir}/${it.target}/..."
+        } else {
+          sh "mkdir -v -p ${artifacts_local_dir} && cp -P ${it.target} ${artifacts_local_dir}/"
+        }
         if (!currentBuild.description || !currentBuild.description.contains(artifacts_href)) {
           append_to_build_description(artifacts_href)
         }
       }
+
       // Test
       if (it.testset != null && !it.testset.isEmpty()) {
         stage("Test ${shortname}") {
