@@ -9,3 +9,8 @@ ignore=body-is-missing
 # Enable specific community contributed rules
 # https://jorisroovers.com/gitlint/latest/rules/contrib_rules/#available-contrib-rules
 contrib=contrib-body-requires-signed-off-by
+
+[ignore-by-author-name]
+# Match commits by author name (e.g. ignore dependabot commits)
+regex=dependabot
+ignore=all
