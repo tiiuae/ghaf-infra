@@ -1,228 +1,35 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
+{ lib, pkgs, ... }:
 {
-  self,
-  pkgs,
-  inputs,
-  lib,
-  config,
-  machines,
-  ...
-}:
-let
-  jenkins-casc = ./casc;
-in
-{
-  imports =
-    [
-      ./disk-config.nix
-      ../../hetzner-cloud.nix
-      inputs.sops-nix.nixosModules.sops
-      inputs.disko.nixosModules.disko
-    ]
-    ++ (with self.nixosModules; [
-      common
-      service-openssh
-      team-devenv
-      team-testers
-    ]);
+  imports = [
+    ./disk-config.nix
+    ../common.nix
+    ../jenkins.nix
+    ../remote-builders.nix
+  ];
 
-  system.stateVersion = lib.mkForce "24.11";
-  nixpkgs.hostPlatform = "x86_64-linux";
+  system.stateVersion = lib.mkForce "25.05";
   networking.hostName = "hetzci-vm";
+  sops.defaultSopsFile = ./secrets.yaml;
 
-  environment.systemPackages = with pkgs; [
-    screen
-    tmux
-  ];
-
-  # Enable zramSwap: https://search.nixos.org/options?show=zramSwap.enable
-  zramSwap = {
-    enable = true;
-    algorithm = "zstd";
-    memoryPercent = 100;
-  };
-  # https://wiki.archlinux.org/title/Zram#Optimizing_swap_on_zram:
-  boot.kernel.sysctl = {
-    "vm.swappiness" = 180;
-    "vm.watermark_boost_factor" = 0;
-    "vm.watermark_scale_factor" = 125;
-    "vm.page-cluster" = 0;
+  hetzci.jenkins = {
+    casc = ./casc;
+    pluginsFile = ./plugins.json;
   };
 
-  # Increase the maximum number of open files user limit, see ulimit -n
-  security.pam.loginLimits = [
-    {
-      domain = "*";
-      item = "nofile";
-      type = "-";
-      value = "8192";
-    }
-  ];
-  systemd.user.extraConfig = "DefaultLimitNOFILE=8192";
-
-  # Enable early out-of-memory killing.
-  # Make nix builds more likely to be killed over more important services.
-  services.earlyoom = {
-    enable = true;
-    # earlyoom sends SIGTERM once below 5% and SIGKILL when below half
-    # of freeMemThreshold
-    freeMemThreshold = 5;
-    extraArgs = [
-      "--prefer"
-      "^(nix-daemon)$"
-      "--avoid"
-      "^(java|jenkins-.*|sshd|systemd|systemd-.*)$"
-    ];
-  };
-  # Tell the Nix evaluator to garbage collect more aggressively
-  environment.variables.GC_INITIAL_HEAP_SIZE = "1M";
-  # Always overcommit: pretend there is always enough memory
-  # until it actually runs out
-  boot.kernel.sysctl."vm.overcommit_memory" = "1";
-
-  users.users = {
-    testagent-dev = {
-      isNormalUser = true;
-      openssh.authorizedKeys.keys = [ machines.testagent-dev.publicKey ];
-    };
-    testagent-prod = {
-      isNormalUser = true;
-      openssh.authorizedKeys.keys = [ machines.testagent-prod.publicKey ];
-    };
-    testagent-release = {
-      isNormalUser = true;
-      openssh.authorizedKeys.keys = [ machines.testagent-release.publicKey ];
-    };
-    testagent-uae-dev = {
-      isNormalUser = true;
-      openssh.authorizedKeys.keys = [ machines.testagent-uae-dev.publicKey ];
+  # VM specific configuration:
+  virtualisation.vmVariant = {
+    virtualisation.sharedDirectories.shr = {
+      source = "$HOME/.config/vmshared/hetzci-vm";
+      target = "/shared";
     };
   };
 
-  systemd.services.populate-builder-machines = {
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      Restart = "on-failure";
-    };
-    script = ''
-      mkdir -p /etc/nix
-      echo "ssh://hetz86-1.vedenemo.dev x86_64-linux - 20 10 kvm,nixos-test,benchmark,big-parallel" >/etc/nix/machines
-      echo "ssh://hetzarm.vedenemo.dev aarch64-linux - 20 10 kvm,nixos-test,benchmark,big-parallel" >>/etc/nix/machines
-    '';
-  };
-
-  nix.extraOptions = ''
-    connect-timeout = 5
-    system-features = nixos-test benchmark big-parallel kvm
-    builders = @/etc/nix/machines
-    max-jobs = 0
-    trusted-public-keys = ghaf-dev.cachix.org-1:S3M8x3no8LFQPBfHw1jl6nmP8A7cVWKntoMKN3IsEQY= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-    substituters = https://ghaf-dev.cachix.org https://cache.nixos.org
-    builders-use-substitutes = true
-  '';
-
-  programs.ssh = {
-    # Known builder host public keys, these go to /root/.ssh/known_hosts
-    knownHosts = {
-      "hetz86-1.vedenemo.dev".publicKey = machines.hetz86-1.publicKey;
-      "hetzarm.vedenemo.dev".publicKey = machines.hetzarm.publicKey;
-    };
-
-    # Custom options to /etc/ssh/ssh_config
-    extraConfig = lib.mkAfter ''
-      Host hetz86-1.vedenemo.dev
-      Hostname hetz86-1.vedenemo.dev
-      User remote-build
-      IdentityFile /run/secrets/vedenemo_builder_ssh_key
-
-      Host hetzarm.vedenemo.dev
-      Hostname hetzarm.vedenemo.dev
-      User remote-build
-      IdentityFile /run/secrets/vedenemo_builder_ssh_key
-    '';
-  };
-
-  services.jenkins = {
-    enable = true;
-    listenAddress = "localhost";
-    port = 8081;
-    withCLI = true;
-    packages =
-      with pkgs;
-      [
-        bashInteractive # 'sh' step in jenkins pipeline requires this
-        cachix
-        coreutils
-        colorized-logs
-        csvkit
-        curl
-        git
-        hostname
-        jq
-        nix
-        nixos-rebuild
-        openssh
-        wget
-        zstd
-      ]
-      ++ [
-        inputs.sbomnix.packages.${pkgs.system}.sbomnix # provenance
-      ];
-    extraJavaOptions = [
-      # Useful when the 'sh' step fails:
-      "-Dorg.jenkinsci.plugins.durabletask.BourneShellScript.LAUNCH_DIAGNOSTICS=true"
-      # If we want to allow robot framework reports, we need to adjust Jenkins CSP:
-      # https://plugins.jenkins.io/robot/#plugin-content-log-file-not-showing-properly
-      "-Dhudson.model.DirectoryBrowserSupport.CSP=\"sandbox allow-scripts; default-src 'none'; img-src 'self' data: ; style-src 'self' 'unsafe-inline' data: ; script-src 'self' 'unsafe-inline' 'unsafe-eval';\""
-      # Point to configuration-as-code config
-      "-Dcasc.jenkins.config=${jenkins-casc}"
-      # Disable the intitial setup wizard, and the creation of initialAdminPassword.
-      "-Djenkins.install.runSetupWizard=false"
-      # Allow setting the following possibly undefined parameters
-      "-Dhudson.model.ParametersAction.safeParameters=DESC,RELOAD_ONLY"
-    ];
-    plugins =
-      let
-        manifest = builtins.fromJSON (builtins.readFile ./plugins.json);
-
-        mkJenkinsPlugin =
-          {
-            name,
-            version,
-            url,
-            sha256,
-          }:
-          lib.nameValuePair name (
-            pkgs.stdenv.mkDerivation {
-              inherit name version;
-              src = pkgs.fetchurl {
-                inherit url sha256;
-              };
-              phases = "installPhase";
-              installPhase = "cp \$src \$out";
-            }
-          );
-      in
-      builtins.listToAttrs (map mkJenkinsPlugin manifest);
-  };
-  # Jenkins home dir (by default at /var/lib/jenkins) mode needs to be 755
-  users.users.jenkins.homeMode = "755";
-
-  systemd.services.jenkins = {
-    serviceConfig = {
-      Restart = "on-failure";
-    };
-  };
-  environment.etc."jenkins/pipelines".source = ./casc/pipelines;
-  environment.etc."jenkins/nix-fast-build.sh".source = "${self.outPath}/scripts/nix-fast-build.sh";
-
+  # Stub Caddy config for vm
   services.caddy = {
     enable = true;
     enableReload = false;
-    # Stub Caddy config for the hetzci-vm
     configFile = pkgs.writeText "Caddyfile" ''
       {
         admin off
@@ -246,88 +53,4 @@ in
       }
     '';
   };
-
-  sops = {
-    defaultSopsFile = ./secrets.yaml;
-    secrets = {
-      vedenemo_builder_ssh_key.owner = "root";
-      oauth2_proxy_client_secret.owner = "oauth2-proxy";
-      oauth2_proxy_cookie_secret.owner = "oauth2-proxy";
-      jenkins_api_token.owner = "jenkins";
-      jenkins_github_webhook_secret.owner = "jenkins";
-      jenkins_github_commit_status_token.owner = "jenkins";
-      cachix-auth-token.owner = "jenkins";
-    };
-    templates.oauth2_proxy_env = {
-      content = ''
-        OAUTH2_PROXY_COOKIE_SECRET=${config.sops.placeholder.oauth2_proxy_cookie_secret}
-      '';
-      owner = "oauth2-proxy";
-    };
-  };
-
-  services.oauth2-proxy = {
-    enable = true;
-    clientID = "hetzci-vm";
-    clientSecret = null;
-    cookie.secret = null;
-    provider = "oidc";
-    oidcIssuerUrl = "https://auth.vedenemo.dev";
-    setXauthrequest = true;
-    cookie.secure = false;
-    extraConfig = {
-      email-domain = "*";
-      auth-logging = true;
-      request-logging = true;
-      standard-logging = true;
-      reverse-proxy = true;
-      scope = "openid profile email groups offline_access";
-      cookie-expire = "168h";
-      cookie-refresh = "24h";
-      skip-provider-button = true;
-      client-secret-file = config.sops.secrets.oauth2_proxy_client_secret.path;
-    };
-    keyFile = config.sops.templates.oauth2_proxy_env.path;
-  };
-  systemd.services.oauth2-proxy.serviceConfig = {
-    # Try re-start at 10 seconds intervals.
-    # If there are more than 3 restart attempts in a 60 second interval,
-    # wait for the 60 second interval to pass before another re-try.
-    RestartSec = 10;
-    StartLimitBurst = 3;
-    StartLimitInterval = 60;
-  };
-
-  systemd.services.jenkins-purge-artifacts = {
-    after = [ "jenkins.service" ];
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      User = "jenkins";
-      WorkingDirectory = "/var/lib/jenkins";
-    };
-    script = builtins.readFile ./purge-jenkins-artifacts.sh;
-  };
-  systemd.timers.jenkins-purge-artifacts = {
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnCalendar = "hourly";
-    };
-  };
-
-  # Expose the HTTP[S] port. We still need HTTP for the HTTP-01 challenge.
-  # While TLS-ALPN-01 could be used, disabling HTTP-01 seems only possible from
-  # the JSON config, which won't work alongside Caddyfile.
-  networking.firewall.allowedTCPPorts = [
-    80
-  ];
-
-  # VM specific configuration:
-  virtualisation.vmVariant = {
-    virtualisation.sharedDirectories.shr = {
-      source = "$HOME/.config/vmshared/hetzci-vm";
-      target = "/shared";
-    };
-  };
-
 }
