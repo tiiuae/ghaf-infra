@@ -70,6 +70,7 @@ in
     nixos-hetzci-vm = ./hetzci/vm/configuration.nix;
     nixos-hetz86-1 = ./builders/hetz86-1/configuration.nix;
     nixos-hetz86-builder = ./builders/hetz86-builder/configuration.nix;
+    nixos-hetz86-rel-1 = ./builders/hetz86-rel-1/configuration.nix;
   };
 
   # Expose as flake.lib.mkNixOS.
@@ -113,6 +114,7 @@ in
           "hetzci-release"
           "hetz86-1"
           "hetz86-builder"
+          "hetz86-rel-1"
         ]
     ))
     // {
