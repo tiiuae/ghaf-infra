@@ -19,7 +19,6 @@
       common
       service-openssh
       team-devenv
-      user-remote-build
     ]);
 
   sops = {
@@ -48,4 +47,16 @@
     cacheName = "ghaf-dev";
     cachixTokenFile = config.sops.secrets.cachix-auth-token.path;
   };
+
+  # hetzci-release can use this as remote builder
+  users.users.hetzci-release = {
+    isNormalUser = true;
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIO9k4r3MqFXlatxzDwZash9U8R8dRhlxyHI050hsCFy"
+    ];
+  };
+  nix.settings.trusted-users = [
+    "@wheel"
+    "hetzci-release"
+  ];
 }
