@@ -14,6 +14,19 @@ def append_to_build_description(String text) {
   }
 }
 
+def runUEFISign(String diskPath, String target) {
+  def outdir = "${target}-signed"
+  sh """
+    mkdir -p "${outdir}/keys"
+    uefikeygen
+    test -f keys/db.crt -a -f keys/db.key
+    cp -v keys/*.der "${outdir}/keys/"
+ 
+    uefisign keys/db.crt keys/db.key "${diskPath}" "${outdir}"
+  """
+  return run_cmd("nix store add ${outdir}")
+}
+
 def create_pipeline(List<Map> targets) {
   def pipeline = [:]
   def stamp = run_cmd('date +"%Y%m%d_%H%M%S%3N"')
@@ -75,6 +88,16 @@ def create_pipeline(List<Map> targets) {
               cp ${it.target}.json ${artifacts_local_dir}/scs/${it.target}/provenance.json
             """
           }
+        }
+      }
+      if (it.get('uefisign', false)) {
+        stage("UEFI Sign ${shortname}") {
+           def disk_path  = run_cmd("find -L ${it.target} -type f -name 'disk1.raw.zst' -print -quit")
+           if (!disk_path) { error("uefisign: no disk1.raw.zst found for '${it.target}'") }
+ 
+           def store_path = runUEFISign(disk_path, it.target)
+           sh "mkdir -p ${artifacts_local_dir}/uefisigned"
+           sh "ln -s ${store_path} ${artifacts_local_dir}/uefisigned/${it.target}"
         }
       }
       // Archive
