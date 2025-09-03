@@ -57,7 +57,7 @@ groups:
                 type: threshold
           dashboardUid: ""
           panelId: 0
-          noDataState: Alerting
+          noDataState: KeepLast
           execErrState: Error
           for: 1m
           annotations:
@@ -108,7 +108,7 @@ groups:
                 type: threshold
           dashboardUid: ""
           panelId: 0
-          noDataState: Alerting
+          noDataState: KeepLast
           execErrState: Error
           for: 1m
           annotations:
@@ -164,7 +164,7 @@ groups:
                 type: threshold
           dashboardUid: ""
           panelId: 0
-          noDataState: Alerting
+          noDataState: KeepLast
           execErrState: Error
           for: 1m
           annotations:
@@ -176,30 +176,61 @@ groups:
       interval: 1m
       rules:
         - uid: fevr41z9q53pcd
-          title: Memory usage high
+          title: earlyoom SIGTERM
           condition: C
           data:
             - refId: A
+              queryType: range
               relativeTimeRange:
                 from: 600
                 to: 0
-              datasourceUid: prometheus
+              datasourceUid: loki
               model:
-                editorMode: code
-                expr: 100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))
+                datasource:
+                    type: loki
+                    uid: loki
+                editorMode: builder
+                expr: count_over_time({unit="earlyoom.service"} |= `low memory!` [$__auto])
                 instant: true
                 intervalMs: 1000
-                legendFormat: __auto
                 maxDataPoints: 43200
-                range: false
+                queryType: range
                 refId: A
+            - refId: reducer
+              queryType: expression
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: reducer
+                type: reduce
             - refId: C
               datasourceUid: __expr__
               model:
                 conditions:
                     - evaluator:
                         params:
-                            - 70
+                            - 0
                         type: gt
                       operator:
                         type: and
@@ -213,16 +244,13 @@ groups:
                 datasource:
                     type: __expr__
                     uid: __expr__
-                expression: A
+                expression: reducer
                 intervalMs: 1000
                 maxDataPoints: 43200
                 refId: C
                 type: threshold
-          noDataState: Alerting
+          noDataState: KeepLast
           execErrState: Error
-          for: 1m
           annotations:
-            summary: '{{ $labels.machine_name }} Memory usage is over 70%'
+            summary: '{{ $labels.host }} is low on memory! below SIGTERM limits'
           isPaused: false
-          notification_settings:
-            receiver: slack
