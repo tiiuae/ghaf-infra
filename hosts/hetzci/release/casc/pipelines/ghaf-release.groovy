@@ -29,6 +29,9 @@ def RELEASE_TARGETS = [
   [ target: "packages.x86_64-linux.nvidia-jetson-orin-nx-debug-from-x86_64",
     testset: '_relayboot_bat_',
   ],
+  [ target: "packages.x86_64-linux.system76-darp11-b-debug",
+    testset: '_relayboot_bat_',
+  ],
 ]
 
 def OTA_TARGETS = [

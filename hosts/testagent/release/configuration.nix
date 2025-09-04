@@ -36,6 +36,7 @@
       "orin-agx-64"
       "orin-nx"
       "lenovo-x1"
+      "darter-pro"
     ];
   };
 
@@ -81,6 +82,11 @@
     # Lenovo X1
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S6XNNS0W500889K", SYMLINK+="ssdX1", MODE="0666", GROUP="dialout"
+
+    # Darter Pro
+    # SSD-drive
+    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B72838C5558", SYMLINK+="ssdDARTER", MODE="0666", GROUP="dialout"
+
   '';
 
   # Trigger UDEV rules
@@ -144,6 +150,17 @@
           usbhub_serial = "8CC6B0A9";
           ext_drive_by-id = "/dev/ssdORINNX1";
           threads = 8;
+        };
+        DarterPRO = {
+          inherit location;
+          serial_port = "NONE";
+          device_ip_address = "172.18.16.42";
+          socket_ip_address = "NONE";
+          plug_type = "NONE";
+          switch_bot = "DarterPRO-rel";
+          usbhub_serial = "7F4E3821";
+          ext_drive_by-id = "/dev/ssdDARTER";
+          threads = 16;
         };
       };
     };

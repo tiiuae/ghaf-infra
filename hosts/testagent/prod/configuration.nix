@@ -38,6 +38,7 @@
       "orin-agx-64"
       "lenovo-x1"
       "dell-7330"
+      "darter-pro"
     ];
   };
 
@@ -71,6 +72,11 @@
     # Dell 7330
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B72836E78E0", SYMLINK+="ssdDELL7330", MODE="0666", GROUP="dialout"
+
+    # Darter Pro
+    # SSD-drive
+    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B72838C556F", SYMLINK+="ssdDARTER", MODE="0666", GROUP="dialout"
+
   '';
 
   # Trigger UDEV rules
@@ -145,6 +151,17 @@
           usbhub_serial = "FF62140D";
           ext_drive_by-id = "/dev/ssdDELL7330";
           threads = 8;
+        };
+        DarterPRO = {
+          inherit location;
+          serial_port = "NONE";
+          device_ip_address = "172.18.16.21";
+          socket_ip_address = "NONE";
+          plug_type = "NONE";
+          switch_bot = "DarterPRO-prod";
+          usbhub_serial = "2CA3D5CC";
+          ext_drive_by-id = "/dev/ssdDARTER";
+          threads = 16;
         };
         measurement_agent = {
           inherit location;
