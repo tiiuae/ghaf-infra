@@ -53,6 +53,9 @@ def init() {
   } else if(params.IMG_URL.contains("dell-latitude-7330-")) {
     env.DEVICE_NAME = 'Dell7330'
     env.DEVICE_TAG = 'dell-7330'
+  } else if(params.IMG_URL.contains("system76-darp11-b-")) {
+    env.DEVICE_NAME = 'DarterPRO'
+    env.DEVICE_TAG = 'darter-pro'
   } else {
     error("Unable to parse device config for image '${params.IMG_URL}'")
   }

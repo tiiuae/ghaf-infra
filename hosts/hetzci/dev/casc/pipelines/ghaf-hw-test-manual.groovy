@@ -34,7 +34,7 @@ properties([
         script: [
           classpath: [],
           sandbox: true,
-          script: "return ['orin-agx','orin-agx-64','orin-nx','lenovo-x1','dell-7330']"
+          script: "return ['orin-agx','orin-agx-64','orin-nx','lenovo-x1','dell-7330','darter-pro']"
         ]
       ]
     ],
@@ -56,7 +56,8 @@ def init() {
     "orin-agx-64"        : [name: 'OrinAGX64',  urlmatch: 'orin-agx64-'],
     "orin-nx"            : [name: 'OrinNX1',    urlmatch: 'orin-nx-'],
     "lenovo-x1"          : [name: 'LenovoX1-1', urlmatch: 'lenovo-x1-'],
-    "dell-7330"          : [name: 'Dell7330',   urlmatch: 'dell-latitude-7330-']
+    "dell-7330"          : [name: 'Dell7330',   urlmatch: 'dell-latitude-7330-'],
+    "darter-pro"         : [name: 'DarterPRO',  urlmatch: 'system76-darp11-b-']
   ]
   if (params.IMG_URL) {
     for (tag in deviceMap.keySet()) {

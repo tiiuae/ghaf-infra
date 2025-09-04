@@ -120,6 +120,7 @@ let
               "orin-agx"
               "orin-nx"
               "dell-7330"
+              "darter-pro"
             ];
           };
     };
