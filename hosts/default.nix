@@ -52,6 +52,7 @@ in
     nixos-build3 = ./builders/build3/configuration.nix;
     nixos-build4 = ./builders/build4/configuration.nix;
     nixos-hetzarm = ./builders/hetzarm/configuration.nix;
+    nixos-hetzarm-rel-1 = ./builders/hetzarm-rel-1/configuration.nix;
     nixos-monitoring = ./monitoring/configuration.nix;
     nixos-testagent-prod = ./testagent/prod/configuration.nix;
     nixos-testagent-dev = ./testagent/dev/configuration.nix;
@@ -97,6 +98,7 @@ in
           "build3"
           "build4"
           "hetzarm"
+          "hetzarm-rel-1"
           "monitoring"
           "testagent-prod"
           "testagent-dev"
