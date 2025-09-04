@@ -74,6 +74,13 @@
           }
           // commonOptions
         )
+        (
+          {
+            hostName = "hetzarm-rel-1";
+            system = "aarch64-linux";
+          }
+          // commonOptions
+        )
       ];
   };
 
@@ -82,12 +89,16 @@
     knownHosts = {
       "hetz86-rel-1".publicKey = machines.hetz86-rel-1.publicKey;
       "${machines.hetz86-rel-1.ip}".publicKey = machines.hetz86-rel-1.publicKey;
+      "hetzarm-rel-1".publicKey = machines.hetzarm-rel-1.publicKey;
+      "${machines.hetzarm-rel-1.ip}".publicKey = machines.hetzarm-rel-1.publicKey;
     };
 
     # Custom options to /etc/ssh/ssh_config
     extraConfig = lib.mkAfter ''
       Host hetz86-rel-1
       Hostname ${machines.hetz86-rel-1.ip}
+      Host hetzarm-rel-1
+      Hostname ${machines.hetzarm-rel-1.ip}
     '';
   };
 }
