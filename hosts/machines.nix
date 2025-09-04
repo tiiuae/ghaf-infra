@@ -43,6 +43,11 @@
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILx4zU4gIkTY/1oKEOkf9gTJChdx/jR3lDgZ7p/c7LEK";
   };
 
+  hetzarm-rel-1 = {
+    ip = "46.62.196.166";
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL/4rUvG9LPsYGuPFIwjJLoip/DOa6NTWUPGQ20fxXFy";
+  };
+
   hetz86-1 = {
     ip = "37.27.170.242";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG05U1SHacBIrp3dH7g5O1k8pct/QVwHfuW/TkBYxLnp";
