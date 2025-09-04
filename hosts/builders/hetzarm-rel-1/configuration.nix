@@ -38,6 +38,20 @@
     logs.enable = true;
   };
 
+  # Enable zramSwap: https://search.nixos.org/options?show=zramSwap.enable
+  zramSwap = {
+    enable = true;
+    algorithm = "zstd";
+    memoryPercent = 150;
+  };
+  # https://wiki.archlinux.org/title/Zram#Optimizing_swap_on_zram:
+  boot.kernel.sysctl = {
+    "vm.swappiness" = 180;
+    "vm.watermark_boost_factor" = 0;
+    "vm.watermark_scale_factor" = 125;
+    "vm.page-cluster" = 0;
+  };
+
   # Disable cachix push for now, until we setup an own
   # cache for release builds
   services.cachix-watch-store = {
