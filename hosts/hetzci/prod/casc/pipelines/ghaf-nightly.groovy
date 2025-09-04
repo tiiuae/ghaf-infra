@@ -60,7 +60,7 @@ def TARGETS = [
     testset: null,
   ],
   [ target: "packages.x86_64-linux.system76-darp11-b-debug",
-    testset: null,
+    testset: '_relayboot_gui_regression_',
   ],
 ]
 

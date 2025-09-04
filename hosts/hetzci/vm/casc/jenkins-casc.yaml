@@ -116,6 +116,27 @@ jenkins:
         name: release-dell-7330
         remoteFS: /var/lib/jenkins/agents/dell-7330
         retentionStrategy: always
+    - permanent:
+        labelString: darter-pro
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: dev-darter-pro
+        remoteFS: /var/lib/jenkins/agents/darter-pro
+        retentionStrategy: always
+    - permanent:
+        labelString: darter-pro
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: prod-darter-pro
+        remoteFS: /var/lib/jenkins/agents/darter-pro
+        retentionStrategy: always
+    - permanent:
+        labelString: darter-pro
+        launcher: inbound
+        mode: EXCLUSIVE
+        name: release-darter-pro
+        remoteFS: /var/lib/jenkins/agents/darter-pro
+        retentionStrategy: always
   numExecutors: 4
   securityRealm:
     reverseProxy:
