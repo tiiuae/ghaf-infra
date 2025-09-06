@@ -12,6 +12,7 @@
     [
       ./disk-config.nix
       ../builders-common.nix
+      ../cross-compilation.nix
       ../../hetzner-cloud.nix
       inputs.sops-nix.nixosModules.sops
       inputs.disko.nixosModules.disko
