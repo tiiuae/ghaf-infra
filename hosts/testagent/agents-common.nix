@@ -10,10 +10,6 @@
   ...
 }:
 let
-  # Vendored in, as brainstem isn't suitable for nixpkgs packaging upstream:
-  # https://github.com/NixOS/nixpkgs/pull/313643
-  brainstem = pkgs.callPackage ../../pkgs/brainstem { };
-
   connect-script = pkgs.writeShellApplication {
     name = "connect";
     text = # sh
@@ -103,19 +99,21 @@ in
   };
 
   services.udev.packages = [
-    brainstem
+    self.packages.${pkgs.system}.brainstem
     pkgs.usbsdmux
   ];
 
   # packages available in all user sessions
   environment.systemPackages =
     [
-      brainstem
       connect-script
       disconnect-script
       push-relay-status
-      self.packages.${pkgs.system}.policy-checker
     ]
+    ++ (with self.packages.${pkgs.system}; [
+      brainstem
+      policy-checker
+    ])
     ++ (with inputs.robot-framework.packages.${pkgs.system}; [
       ghaf-robot
       KMTronic

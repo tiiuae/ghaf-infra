@@ -6,6 +6,11 @@
     {
       packages = {
         policy-checker = pkgs.callPackage ../pkgs/policy-checker { };
+        sshified = pkgs.callPackage ../pkgs/sshified { };
+
+        # Vendored in, as brainstem isn't suitable for nixpkgs packaging upstream:
+        # https://github.com/NixOS/nixpkgs/pull/313643
+        brainstem = pkgs.callPackage ../pkgs/brainstem { };
       };
     };
 }

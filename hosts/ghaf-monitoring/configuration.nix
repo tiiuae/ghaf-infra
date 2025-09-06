@@ -11,7 +11,6 @@
   ...
 }:
 let
-  sshified = pkgs.callPackage ../../pkgs/sshified/default.nix { };
   domain = "monitoring.vedenemo.dev";
   volumeMount = config.disko.devices.disk.data.content.mountpoint;
 
@@ -74,10 +73,13 @@ in
     wantedBy = [ "multi-user.target" ];
     after = [ "network.target" ];
     description = "Run the sshified http-to-ssh proxy";
+    path = [
+      self.packages.${pkgs.system}.sshified
+    ];
     serviceConfig = {
       User = "sshified";
       ExecStart = ''
-        ${sshified}/bin/sshified \
+        sshified \
         --proxy.listen-addr 127.0.0.1:8888 \
         --ssh.user sshified \
         --ssh.key-file ${config.sops.secrets.sshified_private_key.path} \
