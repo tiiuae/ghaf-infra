@@ -82,7 +82,6 @@ stdenv.mkDerivation {
     '';
     homepage = "https://acroname.com/software/brainstem-development-kit";
     platforms = [ "x86_64-linux" ];
-    license = licenses.unfree;
     maintainers = with maintainers; [ flokli ];
     mainProgram = "AcronameHubCLI";
   };

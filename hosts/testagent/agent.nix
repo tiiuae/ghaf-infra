@@ -10,9 +10,7 @@
   ...
 }:
 let
-  # Vendored in, as brainstem isn't suitable for nixpkgs packaging upstream:
-  # https://github.com/NixOS/nixpkgs/pull/313643
-  brainstem = pkgs.callPackage ../../pkgs/brainstem { };
+  inherit (self.packages.${pkgs.system}) brainstem;
 
   mkAgent =
     device:
