@@ -388,7 +388,7 @@ def install(c: Any, alias) -> None:
     target = TARGETS.get(alias)
     with TemporaryDirectory() as tmpdir:
         decrypt_host_key(target, tmpdir)
-        command = f"nixos-anywhere {h.host} --extra-files {tmpdir} "
+        command = f"nixos-anywhere {h.host} --extra-files {tmpdir} --kexec-extra-flags '--kexec-syscall' "
         command += f"--flake .#{target.nixosconfig} --option accept-flake-config true"
         LOG.warning(command)
         c.run(command)
