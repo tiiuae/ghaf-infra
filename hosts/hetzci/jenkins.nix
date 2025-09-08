@@ -64,6 +64,8 @@ in
         ])
         ++ [
           inputs.sbomnix.packages.${pkgs.system}.sbomnix # provenance
+          inputs.ci-yubi.packages.${pkgs.system}.uefisign
+          inputs.ci-yubi.packages.${pkgs.system}.keygen
         ]
         ++ lib.optionals cfg.withCachix [
           pkgs.cachix

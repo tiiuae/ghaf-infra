@@ -40,6 +40,7 @@ def create_pipeline(List<Map> targets) {
         build_beg = run_cmd('date +%s')
         sh "nix build --fallback -v .#${it.target} --out-link ${it.target}"
         build_end = run_cmd('date +%s')
+        sh "mkdir -v -p ${artifacts_local_dir} && cp -P ${it.target} ${artifacts_local_dir}/"
       }
       // Provenance
       stage("Provenance ${shortname}") {
@@ -77,9 +78,8 @@ def create_pipeline(List<Map> targets) {
           }
         }
       }
-      // Archive
-      stage("Archive ${shortname}") {
-        sh "mkdir -v -p ${artifacts_local_dir} && cp -P ${it.target} ${artifacts_local_dir}/"
+      // Link artifacts
+      stage("Link artifacts ${shortname}") {
         if (!currentBuild.description || !currentBuild.description.contains(artifacts_href)) {
           append_to_build_description(artifacts_href)
         }
