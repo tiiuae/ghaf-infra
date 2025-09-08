@@ -40,7 +40,6 @@ Current ghaf-infra targets:
 ╒═══════════════════╤═══════════════════╤═════════════════╕
 │ alias             │ nixosconfig       │ hostname        │
 ╞═══════════════════╪═══════════════════╪═════════════════╡
-│ binarycache       │ binarycache       │ 172.18.20.109   │
 │ build1            │ build1            │ 172.18.20.102   │
 │ build2            │ build2            │ 172.18.20.103   │
 │ build3            │ build3            │ 172.18.20.104   │
@@ -59,7 +58,6 @@ Current ghaf-infra targets:
 │ hetzci-dev        │ hetzci-dev        │ 157.180.119.138 │
 │ hetzci-prod       │ hetzci-prod       │ 157.180.43.236  │
 │ hetzci-release    │ hetzci-release    │ 95.217.210.252  │
-│ monitoring        │ monitoring        │ 172.18.20.108   │
 │ nethsm-gateway    │ nethsm-gateway    │ 192.168.70.11   │
 │ testagent-dev     │ testagent-dev     │ 172.18.16.33    │
 │ testagent-prod    │ testagent-prod    │ 172.18.16.60    │

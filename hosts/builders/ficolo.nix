@@ -40,11 +40,6 @@
     };
   };
 
-  services.monitoring = {
-    metrics.enable = true;
-    logs.enable = true;
-  };
-
   nix.settings = {
     cores = 24;
     max-jobs = 16;

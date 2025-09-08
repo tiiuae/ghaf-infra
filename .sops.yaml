@@ -12,8 +12,6 @@ keys:
   - &ktu age1czt3ddm0wngf6h6aj0es8d4kh6y7tx7fflf2dfeafmy7apwyr59qw3rcza
 
   # hosts
-  - &binarycache age1s47a3y44j695gemcl0kqgjlxxvaa50de9s69jy2l6vc8xtmk5pcskhpknl
-  - &monitoring age17s9sc2cgt9t30cyl65zya8p4zmwnndrx2r896e7gzgl08sjn0qmq3t6shs
   - &testagent-prod age12nrv5a9rk9vqvx2tqvghn4kt9ps6gdszmmynhjegl2ewefkh03fsexuy9y
   - &testagent-dev age1qjhxuh80tg2vq32kmwu2ne4vqvd8q2up7css30x0yefkrhq9jd0sxju3fa
   - &testagent-release age1pkd7crz3c0axuy4nnesjjzmklmqptx9fq5v8ndjevfgr5lqg8cgskhfyt7
@@ -40,19 +38,6 @@ keys:
   - &nethsm-gateway age177v8xccs46774faav3tu36kfap0r04z0ukxh2t5293rwk5evrsaqd98j0p
 
 creation_rules:
-  - path_regex: hosts/binarycache/secrets.yaml$
-    key_groups:
-    - age:
-      - *binarycache
-      - *jrautiola
-      - *hrosten
-  - path_regex: hosts/monitoring/secrets.yaml$
-    key_groups:
-    - age:
-      - *monitoring
-      - *jrautiola
-      - *hrosten
-      - *fayad
   - path_regex: hosts/testagent/prod/secrets.yaml$
     key_groups:
     - age:
