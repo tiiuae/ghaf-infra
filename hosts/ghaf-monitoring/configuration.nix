@@ -19,8 +19,10 @@ let
   sshMonitoredHosts = {
     inherit (machines)
       hetzarm
+      hetzarm-rel-1
       hetz86-1
       hetz86-builder
+      hetz86-rel-1
       ;
   };
 in
