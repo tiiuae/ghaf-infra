@@ -46,14 +46,12 @@ in
     nixos-az-binary-cache = ./azure/binary-cache/configuration.nix;
     nixos-az-builder = ./azure/builder/configuration.nix;
     nixos-az-jenkins-controller = ./azure/jenkins-controller/configuration.nix;
-    nixos-binarycache = ./binarycache/configuration.nix;
     nixos-build1 = ./builders/build1/configuration.nix;
     nixos-build2 = ./builders/build2/configuration.nix;
     nixos-build3 = ./builders/build3/configuration.nix;
     nixos-build4 = ./builders/build4/configuration.nix;
     nixos-hetzarm = ./builders/hetzarm/configuration.nix;
     nixos-hetzarm-rel-1 = ./builders/hetzarm-rel-1/configuration.nix;
-    nixos-monitoring = ./monitoring/configuration.nix;
     nixos-testagent-prod = ./testagent/prod/configuration.nix;
     nixos-testagent-dev = ./testagent/dev/configuration.nix;
     nixos-testagent-release = ./testagent/release/configuration.nix;
@@ -92,14 +90,12 @@ in
           "az-binary-cache"
           "az-builder"
           "az-jenkins-controller"
-          "binarycache"
           "build1"
           "build2"
           "build3"
           "build4"
           "hetzarm"
           "hetzarm-rel-1"
-          "monitoring"
           "testagent-prod"
           "testagent-dev"
           "testagent-release"

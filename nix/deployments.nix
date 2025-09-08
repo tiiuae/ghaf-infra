@@ -29,8 +29,6 @@ let
     build2 = mkDeployment "build2" machines.build2.ip;
     build3 = mkDeployment "build3" machines.build3.ip;
     build4 = mkDeployment "build4" machines.build4.ip;
-    monitoring = mkDeployment "monitoring" machines.monitoring.ip;
-    binarycache = mkDeployment "binarycache" machines.binarycache.ip;
     testagent-prod = mkDeployment "testagent-prod" machines.testagent-prod.ip;
     testagent-dev = mkDeployment "testagent-dev" machines.testagent-dev.ip;
     testagent-release = mkDeployment "testagent-release" machines.testagent-release.ip;
