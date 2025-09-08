@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   lib,
+  pkgs,
   self,
   inputs,
   config,
@@ -51,6 +52,9 @@
     "vm.watermark_scale_factor" = 125;
     "vm.page-cluster" = 0;
   };
+
+  # Nixos-anywhere kexec switch fails on hetzner cloud arm VMs without this
+  boot.kernelPackages = pkgs.linuxPackages_latest;
 
   # Disable cachix push for now, until we setup an own
   # cache for release builds
