@@ -222,6 +222,13 @@ in
             "\${DS_LOKI}" = "loki";
           };
         })
+        (dashboard {
+          name = "Relay status";
+          src = ./provision/dashboards/relay-status.json;
+          replacements = {
+            "\${DS_PROMETHEUS}" = "prometheus";
+          };
+        })
       ];
 
     provision.alerting = {
@@ -255,10 +262,10 @@ in
         {
           name = "summary_only";
           template = ''
-            {{- range .Alerts.Firing }} 
+            {{- range .Alerts.Firing }}
             🚨 {{ .Annotations.summary }}
             {{ end }}
-            {{- range .Alerts.Resolved }} 
+            {{- range .Alerts.Resolved }}
             ✅ {{ .Annotations.summary }}
             {{ end }}
           '';
