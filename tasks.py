@@ -312,21 +312,23 @@ def decrypt_host_key(target: TargetHost, tmpdir: str) -> None:
 
 
 @task
-def install(c: Any, alias) -> None:
+def install(c: Any, alias: str, yes: bool = False) -> None:
     """
     Install `alias` configuration using nixos-anywhere, deploying host private key.
     Note: this will automatically partition and re-format the target hard drive,
     meaning all data on the target will be completely overwritten with no option
-    to rollback.
+    to rollback. Option `--yes` allows running the script non-interactively assuming
+    "yes" as answer to all prompts.
 
     Example usage:
-    inv install --alias ghafscan-dev
+    inv install --alias ghafscan-dev --yes
     """
     h = get_deploy_host(alias)
 
-    ask = input(f"Install configuration '{alias}'? [y/N] ")
-    if ask != "y":
-        return
+    if not yes:
+        ask = input(f"Install configuration '{alias}'? [y/N] ")
+        if ask != "y":
+            return
 
     # Check ssh and remote user
     try:
@@ -336,7 +338,7 @@ def install(c: Any, alias) -> None:
         # this is here to make the type checker happy
         assert cmd is not None
         local_user = cmd.stdout.strip()
-        if remote_user and local_user and remote_user != local_user:
+        if not yes and remote_user and local_user and remote_user != local_user:
             LOG.warning(
                 "Remote user '%s' is not your current local user. "
                 "You will likely not be able to login to the remote host '%s' "
@@ -365,9 +367,10 @@ def install(c: Any, alias) -> None:
         LOG.warning(
             "sudo on '%s' needs password: installation will likely fail", h.host
         )
-        ask = input("Still continue? [y/N] ")
-        if ask != "y":
-            sys.exit(1)
+        if not yes:
+            ask = input("Still continue? [y/N] ")
+            if ask != "y":
+                sys.exit(1)
     # Check dynamic ip
     try:
         h.run("ip a | grep dynamic")
@@ -381,9 +384,10 @@ def install(c: Any, alias) -> None:
             "If you do, consider making the address temporarily static "
             "before continuing."
         )
-        ask = input("Still continue? [y/N] ")
-        if ask != "y":
-            sys.exit(1)
+        if not yes:
+            ask = input("Still continue? [y/N] ")
+            if ask != "y":
+                sys.exit(1)
 
     target = TARGETS.get(alias)
     with TemporaryDirectory() as tmpdir:
