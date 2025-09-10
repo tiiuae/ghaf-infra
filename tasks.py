@@ -14,11 +14,11 @@
 # List tasks:
 # $ inv --list
 #
-# Get help (using 'deploy' task as an example):
-# $ inv --help deploy
+# Get help (using 'install' task as an example):
+# $ inv --help install
 #
-# Run a task (using build-local as an example):
-# $ inv build-local
+# Run a task (using alias-list as an example):
+# $ inv alias-list
 #
 # For more pyinvoke usage examples, see:
 # https://docs.pyinvoke.org/en/stable/getting-started.html
@@ -416,27 +416,6 @@ def install(c: Any, alias: str, yes: bool = False) -> None:
     reboot(c, alias)
 
 
-@task
-def build_local(_c: Any, alias: str = "") -> None:
-    """
-    Build NixOS configuration `alias` locally.
-    If `alias` is not specificied, builds all TARGETS.
-
-    Example usage:
-    inv build-local --alias binarycache-ficolo
-    """
-    if alias:
-        target_configs = [TARGETS.get(alias).nixosconfig]
-    else:
-        target_configs = [target.nixosconfig for _, target in TARGETS.all().items()]
-    for nixosconfig in target_configs:
-        cmd = (
-            "nixos-rebuild build --option accept-flake-config true "
-            f" -v --flake {ROOT}#{nixosconfig}"
-        )
-        exec_cmd(cmd, capture_output=False)
-
-
 def wait_for_port(host: str, port: int, shutdown: bool = False) -> None:
     """Wait for `host`:`port`"""
 
@@ -473,20 +452,3 @@ def reboot(_c: Any, alias: str) -> None:
     print(f"Wait for {h.host} to start", end="")
     sys.stdout.flush()
     wait_for_port(h.host, port)
-
-
-@task
-def pre_push(c: Any) -> None:
-    """
-    Run 'pre-push' checks.
-    Also, build all nixosConfiguration targets in this flake.
-
-    Example usage:
-    inv pre-push
-    """
-    cmd = "nix flake check -v"
-    ret = exec_cmd(cmd, raise_on_error=False)
-    if not ret:
-        sys.exit(1)
-    build_local(c)
-    LOG.info("All pre-push checks passed")
