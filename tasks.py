@@ -240,14 +240,27 @@ def decrypt_host_key(target: TargetHost, tmpdir: str) -> None:
 @task
 def install_release(c: Any) -> None:
     """
-    Install all hosts in the release environment
+    Initialize hetzner release environment
 
     Example usage:
     inv install-release
     """
+    # Install release hosts
     release_hosts = ["hetz86-rel-1", "hetzarm-rel-1", "hetzci-release"]
     for host in release_hosts:
         install(c, host, yes=True)
+    # Connect testagent-release to the installed release jenkins controller
+    h = get_deploy_host("testagent-release")
+    try:
+        h.run(cmd="connect https://ci-release.vedenemo.dev", timeout=10)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        logger.info(
+            "Failed connecting 'testagent-release' to the installed release environment. "
+            "The release environment is otherwise up, but you need to manually connect "
+            "the testagent to the release Jenkins instance. "
+            f"Hint: is the testagent at '{h.host}' accessible over SSH? "
+            "Perhaps you need to connect a VPN?"
+        )
 
 
 @task
