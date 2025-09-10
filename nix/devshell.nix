@@ -50,14 +50,13 @@
             nixfmt-rfc-style
             nixos-rebuild
             nixos-anywhere
-            python3.pkgs.black
-            python3.pkgs.colorlog
+            python3.pkgs.aiohttp
             python3.pkgs.deploykit
             python3.pkgs.invoke
+            python3.pkgs.loguru
             python3.pkgs.pycodestyle
             python3.pkgs.pylint
             python3.pkgs.tabulate
-            python3.pkgs.aiohttp
             reuse
             sops
             ssh-to-age
