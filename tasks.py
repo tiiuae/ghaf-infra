@@ -4,6 +4,8 @@
 # SPDX-FileCopyrightText: 2023 Nix community projects
 # SPDX-License-Identifier: MIT
 
+# pylint: disable=global-statement
+
 # This file originates from:
 # https://github.com/nix-community/infra/blob/c4c8c32b51/tasks.py
 
@@ -27,7 +29,6 @@
 """Misc dev and deployment helper tasks"""
 
 import json
-import logging
 import os
 import socket
 import subprocess
@@ -39,16 +40,15 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Optional
 
-from colorlog import ColoredFormatter, default_log_colors
 from deploykit import DeployHost, HostKeyCheck
 from invoke.tasks import task
+from loguru import logger
 from tabulate import tabulate
+
 
 ################################################################################
 
-ROOT = Path(__file__).parent.resolve()
-os.chdir(ROOT)
-LOG = logging.getLogger(os.path.abspath(__file__))
+ROOT, TARGETS = (None, None)
 
 ################################################################################
 
@@ -76,6 +76,7 @@ class Targets:
 
     def populate(self):
         """Populate the target dictionary from nix evaluation"""
+        logger.debug("Reading targets")
         self.target_dict = OrderedDict(
             {
                 name: TargetHost(
@@ -94,9 +95,10 @@ class Targets:
 
     def get(self, alias: str) -> TargetHost:
         """Get one host"""
+        logger.debug(f"Reading target '{alias}'")
         if self.populated:
             if alias not in self.target_dict:
-                LOG.fatal("Unknown alias '%s'", alias)
+                logger.error(f"Unknown alias '{alias}'")
                 sys.exit(1)
 
             return self.target_dict[alias]
@@ -111,81 +113,6 @@ class Targets:
             nixosconfig=node["config"],
             secretspath=node["secrets"],
         )
-
-
-TARGETS = Targets()
-
-
-################################################################################
-
-
-def set_log_verbosity(verbosity: int = 1) -> None:
-    """Set logging verbosity (0=NOTSET, 1=INFO, or 2=DEBUG)"""
-    log_levels = [logging.NOTSET, logging.INFO, logging.DEBUG]
-    verbosity = min(len(log_levels) - 1, max(verbosity, 0))
-    _init_logging(verbosity)
-
-
-def _init_logging(verbosity: int = 1) -> None:
-    """Initialize logging"""
-    if verbosity == 0:
-        level = logging.NOTSET
-    elif verbosity == 1:
-        level = logging.INFO
-    else:
-        level = logging.DEBUG
-    if level <= logging.DEBUG:
-        logformat = (
-            "%(log_color)s%(levelname)-8s%(reset)s "
-            "%(filename)s:%(funcName)s():%(lineno)d "
-            "%(message)s"
-        )
-    else:
-        logformat = "%(log_color)s%(levelname)-8s%(reset)s %(message)s"
-    default_log_colors["INFO"] = "fg_bold_white"
-    default_log_colors["DEBUG"] = "fg_bold_white"
-    default_log_colors["SPAM"] = "fg_bold_white"
-    formatter = ColoredFormatter(logformat, log_colors=default_log_colors)
-    if LOG.hasHandlers() and len(LOG.handlers) > 0:
-        stream = LOG.handlers[0]
-    else:
-        stream = logging.StreamHandler()
-    stream.setFormatter(formatter)
-    if not LOG.hasHandlers():
-        LOG.addHandler(stream)
-    LOG.setLevel(level)
-
-
-# Set logging verbosity (1=INFO, 2=DEBUG)
-set_log_verbosity(1)
-
-
-def exec_cmd(
-    cmd, raise_on_error=True, capture_output=True
-) -> subprocess.CompletedProcess | None:
-    """Run shell command cmd"""
-    LOG.info("Running: %s", cmd)
-    try:
-        if capture_output:
-            return subprocess.run(
-                cmd.split(), capture_output=True, text=True, check=True
-            )
-        return subprocess.run(
-            cmd.split(), text=True, check=True, stdout=subprocess.PIPE
-        )
-    except subprocess.CalledProcessError as error:
-        warn = [f"'{cmd}':"]
-        if error.stdout:
-            warn.append(f"{error.stdout}")
-        if error.stderr:
-            warn.append(f"{error.stderr}")
-        LOG.warning("\n".join(warn))
-        if raise_on_error:
-            raise error
-        return None
-
-
-################################################################################
 
 
 @task
@@ -292,9 +219,8 @@ def decrypt_host_key(target: TargetHost, tmpdir: str) -> None:
                 stdout=fh,
             )
         except subprocess.CalledProcessError:
-            LOG.warning(
-                "Failed reading secret 'ssh_host_ed25519_key' for '%s'",
-                target.nixosconfig,
+            logger.warning(
+                f"Failed reading secret 'ssh_host_ed25519_key' for '{target.nixosconfig}'"
             )
             ask = input("Still continue? [y/N] ")
             if ask != "y":
@@ -346,39 +272,35 @@ def install(c: Any, alias: str, yes: bool = False) -> None:
     # Check ssh and remote user
     try:
         remote_user = h.run(cmd="whoami", stdout=subprocess.PIPE).stdout.strip()
-        cmd = exec_cmd("whoami")
-        # error will be raised before the value is None
-        # this is here to make the type checker happy
-        assert cmd is not None
-        local_user = cmd.stdout.strip()
+        ret = subprocess.run(["whoami"], capture_output=True, text=True, check=True)
+        assert ret is not None
+        local_user = ret.stdout.strip()
         if not yes and remote_user and local_user and remote_user != local_user:
-            LOG.warning(
-                "Remote user '%s' is not your current local user. "
-                "You will likely not be able to login to the remote host '%s' "
+            logger.warning(
+                f"Remote user '{remote_user}' is not your current local user. "
+                "You will likely not be able to login to the remote host "
+                f"'{TARGETS.get(alias).hostname}' "
                 "after nixos-anywhere installation. Consider adding your local "
-                "user to the remote host and make sure user '%s' "
+                f"user to the remote host and make sure user '{local_user}' "
                 "also has access to remote host after nixos-anywhere installation "
-                "by adding your local user as a user to nixos configuration '%s'. "
+                "by adding your local user as a user to nixos configuration "
+                f"'{TARGETS.get(alias).nixosconfig}'. "
                 "Hint: you might want to try the helper script at "
                 "'scripts/add-remote-user.sh' to add your current local "
-                "user to the remote host.",
-                remote_user,
-                TARGETS.get(alias).hostname,
-                local_user,
-                TARGETS.get(alias).nixosconfig,
+                "user to the remote host."
             )
             ask = input("Still continue? [y/N] ")
             if ask != "y":
                 sys.exit(1)
     except subprocess.CalledProcessError:
-        LOG.fatal("No ssh access to the remote host")
+        logger.error("No ssh access to the remote host")
         sys.exit(1)
     # Check sudo nopasswd
     try:
         h.run("sudo -n true", become_root=True)
     except subprocess.CalledProcessError:
-        LOG.warning(
-            "sudo on '%s' needs password: installation will likely fail", h.host
+        logger.warning(
+            f"sudo on '{h.host}' needs password: installation will likely fail"
         )
         if not yes:
             ask = input("Still continue? [y/N] ")
@@ -390,8 +312,8 @@ def install(c: Any, alias: str, yes: bool = False) -> None:
     except subprocess.CalledProcessError:
         pass
     else:
-        LOG.warning("Above address(es) on '%s' use dynamic addressing.", h.host)
-        LOG.warning(
+        logger.warning(f"Above address(es) on '{h.host}' use dynamic addressing.")
+        logger.warning(
             "This might cause issues if you assume the target host is reachable "
             "from any such address also after kexec switch. "
             "If you do, consider making the address temporarily static "
@@ -407,7 +329,7 @@ def install(c: Any, alias: str, yes: bool = False) -> None:
         decrypt_host_key(target, tmpdir)
         command = f"nixos-anywhere {h.host} --extra-files {tmpdir} "
         command += f"--flake .#{target.nixosconfig} --option accept-flake-config true"
-        LOG.warning(command)
+        logger.warning(command)
         c.run(command)
 
     # Reboot
@@ -452,3 +374,23 @@ def reboot(_c: Any, alias: str) -> None:
     print(f"Wait for {h.host} to start", end="")
     sys.stdout.flush()
     wait_for_port(h.host, port)
+
+
+################################################################################
+
+
+def init() -> None:
+    """
+    Module initialization
+    """
+    # Set default logging level to DEBUG
+    logger.remove(0)
+    logger.add(sys.stderr, level="DEBUG")
+    # Init global variables
+    global ROOT, TARGETS
+    ROOT = Path(__file__).parent.resolve()
+    os.chdir(ROOT)
+    TARGETS = Targets()
+
+
+init()

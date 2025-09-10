@@ -23,11 +23,11 @@
             {
               nativeBuildInputs = with pkgs.python3.pkgs; [
                 pylint
-                colorlog
                 deploykit
                 invoke
                 tabulate
                 aiohttp
+                loguru
               ];
             }
             ''
