@@ -312,6 +312,19 @@ def decrypt_host_key(target: TargetHost, tmpdir: str) -> None:
 
 
 @task
+def install_release(c: Any) -> None:
+    """
+    Install all hosts in the release environment
+
+    Example usage:
+    inv install-release
+    """
+    release_hosts = ["hetz86-rel-1", "hetzarm-rel-1", "hetzci-release"]
+    for host in release_hosts:
+        install(c, host, yes=True)
+
+
+@task
 def install(c: Any, alias: str, yes: bool = False) -> None:
     """
     Install `alias` configuration using nixos-anywhere, deploying host private key.
