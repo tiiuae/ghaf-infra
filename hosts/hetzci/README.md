@@ -31,6 +31,8 @@ hosts/hetzci/
 |   └── ...
 ├── prod
 |   └── ...
+├── release
+|   └── ...
 └── vm
     ├── casc
     │   ├── jenkins-casc.yaml
@@ -49,12 +51,13 @@ Each subdirectory under [`hosts/hetzci`](https://github.com/tiiuae/ghaf-infra/tr
 - `configuration.nix` is the nixosConfiguration for the jenkins host
 - `secrets.yaml` encrypted sops secrets specific to given environment
 
-There are three independent hetzci environments: `dev`, `prod`, and `vm` each in its own subdirectory:
+There are four independent hetzci environments: `dev`, `prod`, `release`, and `vm` each in its own subdirectory:
+- `release`: release jenkins CI to support ghaf release builds. The `release` jenkins web interface is available at: https://ci-relese.vedenemo.dev/.
 - `prod`: production jenkins CI to support ghaf development activities. The `prod` jenkins web interface is available at: https://ci-prod.vedenemo.dev/
 - `dev`: development jenkins CI to support ghaf-infra and ghaf hw-test development activities. The `dev` jenkins web interface is available at: https://ci-dev.vedenemo.dev/
 - `vm`: configuration which can be run in Qemu VM locally to support testing hetzci changes in a local VM before deploying to `dev` or `prod`. The configuration is modified to allow local testing, as an example: `caddy` service configuration is simplified, `jenkins` configuration is modified to not require authentication, and `getty` automatically logs in as root.
 
-We want to keep the configurations fully independent in each environment to be able to test changes in non-prod environment(s) before promoting the change to `prod`. For this reason, many parts of the hetzci configuration need to be duplicated between the different configuration subdirectories. On developing a configuration change, we anticipate the change is first introduced in `vm` subdirectory, then moves forward to `dev`, and finally copied over to `prod` as explained below.
+We want to keep the configurations fully independent in each environment to be able to test changes in non-prod environment(s) before promoting the change to `prod` or `release`. For this reason, many parts of the hetzci configuration need to be duplicated between the different configuration subdirectories. On developing a configuration change, we anticipate the change is first introduced in `vm` subdirectory, then moves forward to `dev`, and finally copied over to `prod` and `release` as explained below. Both the `prod` and `release` should only be deployed from the ghaf-infra main branch, thus never running configurations that would not have gone through the review process and preferrably some testing in `dev` first.
 
 ## Usage
 
@@ -140,7 +143,12 @@ CONTROLLER=https://ci-dev.vedenemo.dev
 Connected agents to the controller
 ```
 
-## Jenkins Pipelines
+## Release Environment Setup
+
+The release environment is completely re-installed for each Ghaf release to support ephemeral release builds.
+See the [`install-release` task](https://github.com/tiiuae/ghaf-infra/blob/main/docs/tasks.md#install-release) that helps automate the release environment setup.
+
+## Jenkins Pipeline Overview
 
 All pipelines can be tested locally in the `vm` environment, but obviously no testagents can connect to your localhost, so HW tests would not run for pipelines triggered in a VM.
 
@@ -168,3 +176,5 @@ Runs on all changes to Ghaf PRs authored by tiiuae organization members. Trigger
 #### ghaf-pre-merge-manual
 Allows manually triggering a pre-merge check given a Ghaf PR number. Optionally writes the check status to GitHub PR.
 
+#### ghaf-release
+Manually triggered pipeline to build and test ghaf releases.

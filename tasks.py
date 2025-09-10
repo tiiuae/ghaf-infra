@@ -156,7 +156,7 @@ def print_keys(_c: Any, alias: str) -> None:
     Decrypt host private key, print ssh and age public keys for `alias` config.
 
     Example usage:
-    inv print-keys --target binarycache-ficolo
+    inv print-keys hetzci-release
     """
     target = TARGETS.get(alias)
     with TemporaryDirectory() as tmpdir:
@@ -273,7 +273,7 @@ def install(c: Any, alias: str, yes: bool = False) -> None:
     "yes" as answer to all prompts.
 
     Example usage:
-    inv install --alias ghafscan-dev --yes
+    inv install hetzci-release --yes
     """
     h = get_deploy_host(alias)
 
@@ -374,7 +374,7 @@ def reboot(_c: Any, alias: str) -> None:
     Reboot host identified as `alias`.
 
     Example usage:
-    inv reboot --alias binarycache-ficolo
+    inv reboot hetzci-release
     """
     h = get_deploy_host(alias)
     h.run("sudo reboot &")
