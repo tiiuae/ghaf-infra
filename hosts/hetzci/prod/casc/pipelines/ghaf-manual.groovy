@@ -89,7 +89,7 @@ pipeline {
             }
             if (params.system76_darp11_b_debug) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.system76-darp11-b-debug", testset: null ])
+                [ target: "packages.x86_64-linux.system76-darp11-b-debug", testset: params.TESTSET  ])
             }
             MODULES.utils = load "/etc/jenkins/pipelines/modules/utils.groovy"
             PIPELINE = MODULES.utils.create_pipeline(TARGETS)
