@@ -52,7 +52,7 @@ Each subdirectory under [`hosts/hetzci`](https://github.com/tiiuae/ghaf-infra/tr
 - `secrets.yaml` encrypted sops secrets specific to given environment
 
 There are four independent hetzci environments: `dev`, `prod`, `release`, and `vm` each in its own subdirectory:
-- `release`: release jenkins CI to support ghaf release builds. The `release` jenkins web interface is available at: https://ci-relese.vedenemo.dev/.
+- `release`: release jenkins CI to support ghaf release builds. The `release` jenkins web interface is available at: https://ci-release.vedenemo.dev/.
 - `prod`: production jenkins CI to support ghaf development activities. The `prod` jenkins web interface is available at: https://ci-prod.vedenemo.dev/
 - `dev`: development jenkins CI to support ghaf-infra and ghaf hw-test development activities. The `dev` jenkins web interface is available at: https://ci-dev.vedenemo.dev/
 - `vm`: configuration which can be run in Qemu VM locally to support testing hetzci changes in a local VM before deploying to `dev` or `prod`. The configuration is modified to allow local testing, as an example: `caddy` service configuration is simplified, `jenkins` configuration is modified to not require authentication, and `getty` automatically logs in as root.
@@ -150,7 +150,7 @@ See the [`install-release` task](https://github.com/tiiuae/ghaf-infra/blob/main/
 
 ## Jenkins Pipeline Overview
 
-All pipelines can be tested locally in the `vm` environment, but obviously no testagents can connect to your localhost, so HW tests would not run for pipelines triggered in a VM.
+All pipelines can be tested locally in the `vm` environment, but obviously no testagents can connect to your localhost, so HW tests would not run for pipelines triggered in a VM. Also, only the ci-release environment is authorized to push to the [release cache](https://app.cachix.org/organization/tiiuae/cache/ghaf-release), so cachix push is expected to fail on running the `ghaf-release` pipeline in the VM environment.
 
 #### ghaf-hw-test
 Runs Ghaf hw-tests given a ghaf image and a testset. Can be triggered manually to run a hw-test ad-hoc.

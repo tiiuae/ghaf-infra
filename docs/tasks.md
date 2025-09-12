@@ -114,7 +114,7 @@ inv update-sops-files
 ## install-release
 
 The `install-release` task installs all the hosts in ci-release environment to allow ephemeral release builds.
-It runs the `install` task non-interactively on all the release environment hosts (Jenkins controller, nix remote builders), as well as [connects the relevant testagent](https://github.com/tiiuae/ghaf-infra/tree/main/hosts/hetzci#connect-test-agents) to the release Jenkins controller to fully automating the release environment setup.
+It runs the `install` task non-interactively on all the release environment hosts (Jenkins controller, nix remote builders), as well as [connects the relevant testagent](https://github.com/tiiuae/ghaf-infra/tree/main/hosts/hetzci#connect-test-agents) to the release Jenkins controller to fully automate the release environment setup.
 
 ```bash
 ❯ inv install-release
