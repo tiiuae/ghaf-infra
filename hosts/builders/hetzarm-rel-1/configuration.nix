@@ -12,6 +12,7 @@
     [
       ./disk-config.nix
       ../builders-common.nix
+      ../cachix-push.nix
       ../../hetzner-cloud.nix
       inputs.sops-nix.nixosModules.sops
       inputs.disko.nixosModules.disko
@@ -26,11 +27,16 @@
     defaultSopsFile = ./secrets.yaml;
     secrets = {
       loki_password.owner = "promtail";
+      cachix-auth-token.owner = "root";
     };
   };
 
   nixpkgs.hostPlatform = "aarch64-linux";
   networking.hostName = "hetzarm-rel-1";
+
+  cachix-push = {
+    cacheName = "ghaf-release";
+  };
 
   services.monitoring = {
     metrics.enable = true;
