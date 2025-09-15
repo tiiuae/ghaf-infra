@@ -38,6 +38,22 @@ properties([
         ]
       ]
     ],
+    [
+      $class: 'ChoiceParameter',
+      name: 'TESTAGENT_HOST',
+      choiceType: 'PT_RADIO',
+      description: '''
+        Select the testagent-host. This parameter allows specifying the exact testagent in case Jenkins controller is
+        connected with multiple agents. Can be used together with both IMG_URL and DEVICE_TAG parameters.'''.stripIndent(),
+      script: [
+        $class: 'GroovyScript',
+        script: [
+          classpath: [],
+          sandbox: true,
+          script: "return ['dev','prod','release']"
+        ]
+      ]
+    ],
     booleanParam(name: 'BOOT', defaultValue: true, description: 'Run boot test before any other tests (if any).'),
     booleanParam(name: 'TURN_OFF', defaultValue: false, description: 'Turn off the device after other tests (if any).'),
     booleanParam(name: 'USE_RELAY', defaultValue: true, description: 'Use relay board to cut power from the target device.')
@@ -70,21 +86,25 @@ def init() {
   if (!env.DEVICE_TAG || env.DEVICE_TAG == null) {
     error("DEVICE_TAG is not defined and could not be derived from IMG_URL ${env.IMG_URL}")
   }
+  def label = env.DEVICE_TAG
+  if (params.TESTAGENT_HOST) {
+    label = "${params.TESTAGENT_HOST}-${env.DEVICE_TAG}"
+  }
   env.DEVICE_NAME = deviceMap[env.DEVICE_TAG].name
   println("Using DEVICE_NAME: ${env.DEVICE_NAME}")
   println("Using DEVICE_TAG: ${env.DEVICE_TAG}")
-  currentBuild.description = "${env.DEVICE_TAG}"
+  currentBuild.description = "${label}"
   env.BOOT_TAG = "boot"
   env.POWEROFF_TAG = "turnoff"
   if (params.USE_RELAY) {
     env.BOOT_TAG = "relayboot"
     env.POWEROFF_TAG = "relay-turnoff"
   }
-  def testagent_nodes = nodesByLabel(label: env.DEVICE_TAG, offline: false)
+  def testagent_nodes = nodesByLabel(label: label, offline: false)
   if (!testagent_nodes) {
     error("No test agents online")
   }
-  return env.DEVICE_TAG
+  return label
 }
 
 def sh_ret_out(String cmd) {
