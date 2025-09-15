@@ -12,6 +12,7 @@
       ./disk-config.nix
       ../builders-common.nix
       ../cross-compilation.nix
+      ../cachix-push.nix
       ../../hetzner-cloud.nix
       inputs.sops-nix.nixosModules.sops
       inputs.disko.nixosModules.disko
@@ -26,13 +27,17 @@
     defaultSopsFile = ./secrets.yaml;
     secrets = {
       loki_password.owner = "promtail";
+      cachix-auth-token.owner = "root";
     };
   };
 
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "hetz86-rel-1";
-
   boot.kernelModules = [ "kvm-amd" ];
+
+  cachix-push = {
+    cacheName = "ghaf-release";
+  };
 
   services.monitoring = {
     metrics.enable = true;
