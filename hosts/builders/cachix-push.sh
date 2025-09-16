@@ -62,26 +62,41 @@ echo "[+] Start (TMPDIR=$TMPDIR)"
 # Set cachix authentication token
 cachix authtoken --stdin <"$CACHIX_AUTH_TOKEN_FILE"
 
-# Snapshot nix store paths as reference
+# Snapshot current nix store paths as first reference
 list_nix_store_paths "$TMPDIR/ref"
 echo "[+] Initialized reference"
 
 # Poll new store paths every 30 seconds
 while sleep 30; do
-    # Snapshot nix store paths at the start of poll
-    list_nix_store_paths "$TMPDIR/snap"
+    echo -n "" >"$TMPDIR/push"
+    # Snapshot nix store paths for the current poll iteration
+    list_nix_store_paths "$TMPDIR/snapshot"
     # Diff the ref and current snapshot to find new store paths since the last
     # diff. Use line group formats to output only new and changed lines.
     # For detailed description, see diff option --GTYPE-group-formats manual:
     diff \
         --unchanged-group-format='' --changed-group-format='%>' \
         --old-group-format='' --new-group-format='%>' \
-        "$TMPDIR/ref" "$TMPDIR/snap" >"$TMPDIR/new" || true
-    # Filter out paths that match the following regexp
-    filter='(\.img$|\.raw$|\.zst$|\.iso$|-disko-image)'
-    grep -vP "$filter" "$TMPDIR/new" >"$TMPDIR/new_filtered" || true
-    # Cachix push new store paths (if any)
-    cachix push -j4 -l16 "$CACHIX_CACHE_NAME" <"$TMPDIR/new_filtered"
-    # Current snapshot becomes the reference for the next iteration
-    cp -f "$TMPDIR/snap" "$TMPDIR/ref"
+        "$TMPDIR/ref" "$TMPDIR/snapshot" >"$TMPDIR/new" || true
+    # Filter paths that match the following regexp
+    filter='(nixos\.img$|\.iso$|\.raw\.zst|\.img\.zst|\-disko-images)'
+    while read -r storepath; do
+        # Also skip if the store path is a (symlink to) directory and any
+        # directory contents matches the filter
+        if find -L "$storepath" 2>/dev/null | grep -qP "$filter"; then
+            continue
+        fi
+        # This store path will be pushed
+        echo "$storepath" >>"$TMPDIR/push"
+    done < <(grep -vP "$filter" "$TMPDIR/new")
+    # Skip if all new store paths were filtered out
+    if [ ! -s "$TMPDIR/push" ]; then
+        continue;
+    fi
+    # Cachix push new store paths
+    if ! cachix push -j4 -l16 "$CACHIX_CACHE_NAME" <"$TMPDIR/push"; then
+        continue
+    fi
+    # Cachix push was successful: update the reference for next iteration
+    cp -f "$TMPDIR/snapshot" "$TMPDIR/ref"
 done
