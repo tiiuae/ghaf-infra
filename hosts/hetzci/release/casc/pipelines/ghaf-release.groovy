@@ -37,8 +37,6 @@ def RELEASE_TARGETS = [
 def OTA_TARGETS = [
   [ target: "lenovo-x1-carbon-gen11-debug" ],
   [ target: "system76-darp11-b-debug" ],
-  [ target: "nvidia-jetson-orin-nx-debug-from-x86_64" ],
-  [ target: "nvidia-jetson-orin-nx-debug" ],
 ]
 
 properties([
