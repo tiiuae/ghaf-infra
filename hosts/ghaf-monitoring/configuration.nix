@@ -409,6 +409,17 @@ in
             ];
       }
       {
+        job_name = "nethsm";
+        # let's not hammer the nethsm api so frequently
+        scrape_interval = "60s";
+        static_configs = [
+          {
+            # nethsm-exporter is running on the gateway, on port 8000
+            targets = [ "nethsm-gateway.sumu.vedenemo.dev:8000" ];
+          }
+        ];
+      }
+      {
         job_name = "pushgateway";
         metrics_path = "/push/metrics";
         honor_labels = true;

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   self,
+  pkgs,
   inputs,
   lib,
   config,
@@ -32,8 +33,11 @@ in
       loki_password.owner = "promtail";
       nebula-cert.owner = config.nebula.user;
       nebula-key.owner = config.nebula.user;
+      nethsm-credentials.owner = "root";
     };
   };
+
+  environment.systemPackages = with pkgs; [ pynitrokey ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "nethsm-gateway";
@@ -61,6 +65,20 @@ in
       "sd_mod"
     ];
   };
+
+  systemd.services.nethsm-exporter =
+    let
+      package = self.packages.${pkgs.system}.nethsm-exporter;
+      host = "192.168.70.10";
+      port = 8000;
+    in
+    {
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        ExecStart = "${lib.getExe package} --hsm-host ${host} --port ${toString port}";
+        EnvironmentFile = config.sops.secrets.nethsm-credentials.path;
+      };
+    };
 
   services.syslog-ng = {
     enable = true;
@@ -129,6 +147,14 @@ in
         port = "any";
         proto = "icmp";
         host = "any";
+      }
+    ];
+    inbound = [
+      # allow monitoring server to scrape nethsm metrics
+      {
+        port = 8000;
+        proto = "tcp";
+        groups = [ "scraper" ];
       }
     ];
   };
