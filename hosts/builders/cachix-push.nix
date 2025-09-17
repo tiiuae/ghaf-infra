@@ -26,6 +26,13 @@ in
       ];
       serviceConfig = {
         Type = "simple";
+        Restart = "always";
+        # Try re-start at 30 seconds intervals.
+        # If there are more than 3 restart attempts in a 240 second interval,
+        # wait for the 240 second interval to pass before another re-try.
+        RestartSec = 30;
+        StartLimitBurst = 3;
+        StartLimitInterval = 240;
       };
       script = builtins.readFile ./cachix-push.sh;
       environment = {
