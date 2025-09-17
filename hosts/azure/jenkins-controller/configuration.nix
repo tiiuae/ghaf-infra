@@ -173,6 +173,7 @@ let
           "Ghaf pre-merge pipeline" = "ghaf-pre-merge-pipeline";
           "Ghaf nightly pipeline" = "ghaf-nightly-pipeline";
           "Ghaf release pipeline" = "ghaf-release-pipeline";
+          "Ghaf release laptop pipeline" = "ghaf-release-laptop-pipeline";
           "Ghaf performance tests" = "ghaf-perftest-pipeline";
           "Ghaf HW test" = "ghaf-hw-test";
         };
