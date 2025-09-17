@@ -7,6 +7,7 @@
       packages = {
         policy-checker = pkgs.callPackage ../pkgs/policy-checker { };
         sshified = pkgs.callPackage ../pkgs/sshified { };
+        nethsm-exporter = pkgs.callPackage ../pkgs/nethsm-exporter { };
 
         # Vendored in, as brainstem isn't suitable for nixpkgs packaging upstream:
         # https://github.com/NixOS/nixpkgs/pull/313643
