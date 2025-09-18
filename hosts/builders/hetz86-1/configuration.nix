@@ -3,7 +3,6 @@
 {
   self,
   inputs,
-  config,
   ...
 }:
 {
@@ -12,6 +11,7 @@
       ./disk-config.nix
       ../developers.nix
       ../builders-common.nix
+      ../cachix-push.nix
       ../../hetzner-robot.nix
       inputs.disko.nixosModules.disko
     ]
@@ -33,6 +33,10 @@
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "hetz86-1";
 
+  cachix-push = {
+    cacheName = "ghaf-dev";
+  };
+
   boot.kernelModules = [ "kvm-amd" ];
 
   services.monitoring = {
@@ -41,12 +45,5 @@
       ssh = true;
     };
     logs.enable = true;
-  };
-
-  services.cachix-watch-store = {
-    enable = true;
-    verbose = true;
-    cacheName = "ghaf-dev";
-    cachixTokenFile = config.sops.secrets.cachix-auth-token.path;
   };
 }
