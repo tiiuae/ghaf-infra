@@ -14,14 +14,13 @@ let
   domain = "monitoring.vedenemo.dev";
   volumeMount = config.disko.devices.disk.data.content.mountpoint;
 
+  # these hosts will be monitored through ssh tunnel
   # populates known hosts as well as grafana scrape targets
-  sshMonitoredHosts = {
+  hetznerRobotHosts = {
     inherit (machines)
       hetzarm
-      hetzarm-rel-1
       hetz86-1
       hetz86-builder
-      hetz86-rel-1
       ;
   };
 in
@@ -97,7 +96,7 @@ in
   services.openssh.knownHosts = lib.mapAttrs (_: host: {
     hostNames = [ host.ip ];
     inherit (host) publicKey;
-  }) sshMonitoredHosts;
+  }) hetznerRobotHosts;
 
   # monitors also itself
   services.monitoring = {
@@ -379,6 +378,8 @@ in
                 hetzci-dev
                 hetzci-prod
                 hetzci-release
+                hetz86-rel-1
+                hetzarm-rel-1
                 ;
             };
       }
@@ -391,7 +392,7 @@ in
           labels = {
             machine_name = name;
           };
-        }) sshMonitoredHosts;
+        }) hetznerRobotHosts;
       }
       {
         job_name = "office";
