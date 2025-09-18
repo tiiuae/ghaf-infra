@@ -3,7 +3,6 @@
 {
   self,
   inputs,
-  config,
   ...
 }:
 {
@@ -12,6 +11,7 @@
       ./disk-config.nix
       ../developers.nix
       ../builders-common.nix
+      ../cachix-push.nix
       ../../hetzner-robot.nix
       inputs.disko.nixosModules.disko
     ]
@@ -33,19 +33,16 @@
   nixpkgs.hostPlatform = "aarch64-linux";
   networking.hostName = "hetzarm";
 
+  cachix-push = {
+    cacheName = "ghaf-dev";
+  };
+
   services.monitoring = {
     metrics = {
       enable = true;
       ssh = true;
     };
     logs.enable = true;
-  };
-
-  services.cachix-watch-store = {
-    enable = true;
-    verbose = true;
-    cacheName = "ghaf-dev";
-    cachixTokenFile = config.sops.secrets.cachix-auth-token.path;
   };
 
   # build3 can use this as remote builder
