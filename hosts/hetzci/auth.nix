@@ -59,13 +59,11 @@ in
       keyFile = config.sops.templates.oauth2_proxy_env.path;
     };
 
-    systemd.services.oauth2-proxy.serviceConfig = {
-      # Try re-start at 10 seconds intervals.
-      # If there are more than 3 restart attempts in a 60 second interval,
-      # wait for the 60 second interval to pass before another re-try.
-      RestartSec = 10;
-      StartLimitBurst = 3;
-      StartLimitInterval = 60;
+    systemd.services.oauth2-proxy = {
+      # Try re-start at 10 second intervals
+      serviceConfig.RestartSec = 10;
+      # Allow unlimited restart attempts
+      unitConfig.StartLimitBurst = 0;
     };
 
     services.caddy = {
