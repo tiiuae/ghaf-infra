@@ -3,7 +3,6 @@
 {
   self,
   inputs,
-  config,
   ...
 }:
 {
@@ -32,15 +31,7 @@
 
   sops = {
     defaultSopsFile = ./secrets.yaml;
-    secrets.cachix-auth-token.owner = "root";
   };
 
   networking.hostName = "build1";
-
-  services.cachix-watch-store = {
-    enable = true;
-    verbose = true;
-    cacheName = "ghaf-dev";
-    cachixTokenFile = config.sops.secrets.cachix-auth-token.path;
-  };
 }
