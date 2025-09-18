@@ -21,4 +21,6 @@ buildGoModule rec {
   ];
 
   subPackages = [ "." ];
+
+  meta.mainProgram = pname;
 }
