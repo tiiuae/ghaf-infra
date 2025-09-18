@@ -110,6 +110,15 @@ in
   # Shell
   programs.bash.completion.enable = true;
 
+  systemd.services.trim-profiles = {
+    description = "Delete older profiles";
+    serviceConfig.Type = "oneshot";
+    script = ''
+      ${pkgs.nix}/bin/nix-env --delete-generations +3 --profile /nix/var/nix/profiles/system
+    '';
+    startAt = "03:00";
+  };
+
   # https://nixos.wiki/wiki/FAQ/When_do_I_update_stateVersion
   system.stateVersion = "23.11";
 }
