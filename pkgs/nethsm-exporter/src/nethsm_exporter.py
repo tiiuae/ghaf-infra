@@ -3,32 +3,36 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import final, override
-from prometheus_client.registry import Collector
+"""NetHSM Exporter"""
+
+import argparse
+import os
+import re
+import sys
+import time
+from dataclasses import dataclass
+from typing import cast, final, override
+
 import requests
-from requests.auth import HTTPBasicAuth
 import urllib3
 from loguru import logger
 from prometheus_client import (
     GC_COLLECTOR,
     PLATFORM_COLLECTOR,
     PROCESS_COLLECTOR,
-    start_http_server,
     REGISTRY,
+    start_http_server,
 )
 from prometheus_client.core import GaugeMetricFamily
-import re
-import time
-import sys
-import os
-import argparse
-from typing import cast
+from prometheus_client.registry import Collector
+from requests.auth import HTTPBasicAuth
 
 # Suppress SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def sanitize_metric_name(name: str) -> str:
+    """Turn metric name into format that prometheus excepts"""
     name = name.lower()
     name = re.sub(r"[ .]", "_", name)
     name = re.sub(r"[^a-z0-9_]", "", name)
@@ -36,7 +40,9 @@ def sanitize_metric_name(name: str) -> str:
 
 
 @final
-class HSMCollector(Collector):
+class HSMCollector(Collector):  # pylint: disable=too-few-public-methods
+    """Custom prometheus collector"""
+
     def __init__(self, host: str, username: str, password: str):
         self.host = host
         self.username = username
@@ -44,6 +50,7 @@ class HSMCollector(Collector):
 
     @override
     def collect(self):
+        """This gets run on GET /metrics"""
         try:
             logger.info(f"Collecting metrics from {self.host}...")
             response = requests.get(
@@ -91,7 +98,10 @@ class HSMCollector(Collector):
             if http_response_family.samples:
                 yield http_response_family
 
-        except Exception as e:
+        except (
+            requests.exceptions.HTTPError,
+            requests.exceptions.ConnectionError,
+        ) as e:
             logger.error(f"Error collecting metrics: {e}")
 
             yield GaugeMetricFamily(
@@ -101,7 +111,10 @@ class HSMCollector(Collector):
             )
 
 
+@dataclass
 class Args(argparse.Namespace):
+    """Argument namespace for type checking"""
+
     hsm_host: str = ""
     port: int = 8000
 
@@ -121,10 +134,10 @@ if __name__ == "__main__":
     )
     args = parser.parse_args(namespace=Args)
 
-    username: str | None = os.getenv("NETHSM_USER")
-    password: str | None = os.getenv("NETHSM_PASSWORD")
+    nethsm_username: str | None = os.getenv("NETHSM_USER")
+    nethsm_password: str | None = os.getenv("NETHSM_PASSWORD")
 
-    if not username or not password:
+    if not nethsm_username or not nethsm_password:
         logger.error(
             "Environment variables NETHSM_USER and NETHSM_PASSWORD must be set"
         )
@@ -136,7 +149,7 @@ if __name__ == "__main__":
     REGISTRY.unregister(PROCESS_COLLECTOR)
 
     # add our custom collector
-    REGISTRY.register(HSMCollector(args.hsm_host, username, password))
+    REGISTRY.register(HSMCollector(args.hsm_host, nethsm_username, nethsm_password))
 
     _ = start_http_server(args.port)
     logger.info("Prometheus exporter running on :8000/metrics")

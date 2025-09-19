@@ -28,6 +28,9 @@
                 tabulate
                 aiohttp
                 loguru
+                prometheus-client
+                urllib3
+                requests
               ];
             }
             ''
