@@ -1,0 +1,77 @@
+{
+  "uid": "feuvsf9f7dla8c",
+  "title": "Low disk space /boot",
+  "condition": "C",
+  "data": [
+    {
+      "refId": "A",
+      "relativeTimeRange": {
+        "from": 600,
+        "to": 0
+      },
+      "datasourceUid": "prometheus",
+      "model": {
+        "editorMode": "code",
+        "expr": "floor(min by(mountpoint, machine_name) (node_filesystem_free_bytes{mountpoint=\"/boot\"} / 1024 / 1024))",
+        "instant": true,
+        "intervalMs": 1000,
+        "legendFormat": "__auto",
+        "maxDataPoints": 43200,
+        "range": false,
+        "refId": "A"
+      }
+    },
+    {
+      "refId": "C",
+      "relativeTimeRange": {
+        "from": 0,
+        "to": 0
+      },
+      "datasourceUid": "__expr__",
+      "model": {
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [
+                100
+              ],
+              "type": "lt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "C"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "last"
+            },
+            "type": "query"
+          }
+        ],
+        "datasource": {
+          "type": "__expr__",
+          "uid": "__expr__"
+        },
+        "expression": "A",
+        "intervalMs": 1000,
+        "maxDataPoints": 43200,
+        "refId": "C",
+        "type": "threshold"
+      }
+    }
+  ],
+  "dashboardUid": "",
+  "panelId": 0,
+  "noDataState": "KeepLast",
+  "execErrState": "Error",
+  "for": "1m",
+  "annotations": {
+    "summary": "{{ $labels.machine_name }} /boot partition has {{ (index $values \"A\").Value }} MB of free space left"
+  },
+  "isPaused": false
+}
+

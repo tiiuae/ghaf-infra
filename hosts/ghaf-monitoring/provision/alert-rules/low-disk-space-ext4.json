@@ -1,0 +1,76 @@
+{
+  "uid": "beuvsalzfeigwe",
+  "title": "Low disk space (ext4)",
+  "condition": "C",
+  "data": [
+    {
+      "refId": "A",
+      "relativeTimeRange": {
+        "from": 600,
+        "to": 0
+      },
+      "datasourceUid": "prometheus",
+      "model": {
+        "editorMode": "code",
+        "expr": "round(\n  max by(device, machine_name) (\n    100 - ((node_filesystem_avail_bytes{fstype=\"ext4\"} * 100)\n    / node_filesystem_size_bytes{fstype=\"ext4\"}))\n  ,\n  0.01\n)",
+        "instant": true,
+        "intervalMs": 1000,
+        "legendFormat": "__auto",
+        "maxDataPoints": 43200,
+        "range": false,
+        "refId": "A"
+      }
+    },
+    {
+      "refId": "C",
+      "relativeTimeRange": {
+        "from": 0,
+        "to": 0
+      },
+      "datasourceUid": "__expr__",
+      "model": {
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [
+                98
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "C"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "last"
+            },
+            "type": "query"
+          }
+        ],
+        "datasource": {
+          "type": "__expr__",
+          "uid": "__expr__"
+        },
+        "expression": "A",
+        "intervalMs": 1000,
+        "maxDataPoints": 43200,
+        "refId": "C",
+        "type": "threshold"
+      }
+    }
+  ],
+  "dashboardUid": "",
+  "panelId": 0,
+  "noDataState": "KeepLast",
+  "execErrState": "Error",
+  "for": "1m",
+  "annotations": {
+    "summary": "{{ $labels.device }} on {{ $labels.machine_name }} disk usage is {{ (index $values \"A\").Value }}%"
+  },
+  "isPaused": false
+}

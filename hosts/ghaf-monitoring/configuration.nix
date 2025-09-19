@@ -271,8 +271,34 @@ in
           '';
         }
       ];
-
-      rules.path = ./provision/alert-rules.yaml;
+      rules.settings.groups = [
+        {
+          name = "Health checks";
+          folder = "Alerts";
+          interval = "60s";
+          rules = [
+            (builtins.fromJSON (builtins.readFile ./provision/alert-rules/up.json))
+            (builtins.fromJSON (builtins.readFile ./provision/alert-rules/nethsm_up.json))
+          ];
+        }
+        {
+          name = "Disk space";
+          folder = "Alerts";
+          interval = "60s";
+          rules = [
+            (builtins.fromJSON (builtins.readFile ./provision/alert-rules/low-disk-space-ext4.json))
+            (builtins.fromJSON (builtins.readFile ./provision/alert-rules/low-disk-space-boot.json))
+          ];
+        }
+        {
+          name = "RAM";
+          folder = "Alerts";
+          interval = "60s";
+          rules = [
+            (builtins.fromJSON (builtins.readFile ./provision/alert-rules/earlyoom.json))
+          ];
+        }
+      ];
     };
   };
 
