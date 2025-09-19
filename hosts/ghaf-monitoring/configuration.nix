@@ -1,6 +1,5 @@
 # SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
-#
 {
   pkgs,
   self,
@@ -271,8 +270,34 @@ in
           '';
         }
       ];
-
-      rules.path = ./provision/alert-rules.yaml;
+      rules.settings.groups = [
+        {
+          name = "Health checks";
+          folder = "Alerts";
+          interval = "60s";
+          rules = [
+            (builtins.fromJSON (builtins.readFile ./provision/alert-rules/up.json))
+            (builtins.fromJSON (builtins.readFile ./provision/alert-rules/nethsm_up.json))
+          ];
+        }
+        {
+          name = "Disk space";
+          folder = "Alerts";
+          interval = "60s";
+          rules = [
+            (builtins.fromJSON (builtins.readFile ./provision/alert-rules/low-disk-space-ext4.json))
+            (builtins.fromJSON (builtins.readFile ./provision/alert-rules/low-disk-space-boot.json))
+          ];
+        }
+        {
+          name = "RAM";
+          folder = "Alerts";
+          interval = "60s";
+          rules = [
+            (builtins.fromJSON (builtins.readFile ./provision/alert-rules/earlyoom.json))
+          ];
+        }
+      ];
     };
   };
 
@@ -407,6 +432,17 @@ in
               "testagent-release"
               "nethsm-gateway"
             ];
+      }
+      {
+        job_name = "nethsm";
+        # let's not hammer the nethsm api so frequently
+        scrape_interval = "60s";
+        static_configs = [
+          {
+            # nethsm-exporter is running on the gateway, on port 8000
+            targets = [ "nethsm-gateway.sumu.vedenemo.dev:8000" ];
+          }
+        ];
       }
       {
         job_name = "pushgateway";
