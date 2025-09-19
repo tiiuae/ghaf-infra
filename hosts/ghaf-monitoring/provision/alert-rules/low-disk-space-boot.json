@@ -68,7 +68,6 @@
   "panelId": 0,
   "noDataState": "KeepLast",
   "execErrState": "Error",
-  "for": "1m",
   "annotations": {
     "summary": "{{ $labels.machine_name }} /boot partition has {{ (index $values \"A\").Value }} MB of free space left"
   },

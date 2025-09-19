@@ -68,7 +68,6 @@
   "panelId": 0,
   "noDataState": "KeepLast",
   "execErrState": "Error",
-  "for": "1m",
   "annotations": {
     "summary": "{{ $labels.device }} on {{ $labels.machine_name }} disk usage is {{ (index $values \"A\").Value }}%"
   },

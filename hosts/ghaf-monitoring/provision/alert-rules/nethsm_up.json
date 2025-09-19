@@ -68,7 +68,8 @@
   "panelId": 0,
   "noDataState": "KeepLast",
   "execErrState": "Error",
-  "for": "1m",
+  "for": "2m",
+  "keepFiringFor": "2m",
   "annotations": {
     "summary": "NetHSM is unresponsive!"
   },
