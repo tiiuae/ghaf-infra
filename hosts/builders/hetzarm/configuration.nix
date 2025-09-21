@@ -45,14 +45,6 @@
     logs.enable = true;
   };
 
-  # build3 can use this as remote builder
-  users.users.build3 = {
-    isNormalUser = true;
-    openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPf56a3ISY64w0Y0BmoLu+RyTIWQrXG6ugla6if9RteT build3"
-    ];
-  };
-
   # hetz86-builder can use this as remote builder
   users.users.hetz86-builder = {
     isNormalUser = true;
@@ -63,7 +55,6 @@
 
   nix.settings.trusted-users = [
     "@wheel"
-    "build3"
     "hetz86-builder"
   ];
 }
