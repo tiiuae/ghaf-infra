@@ -36,10 +36,6 @@ ghaf-infra
 │   │   ├── builder
 │   │   └── jenkins-controller
 │   ├── builders # Stand-alone builder configurations
-│   │   ├── build1
-│   │   ├── build2
-│   │   ├── build3
-│   │   ├── build4
 │   │   ├── hetz86-1
 │   │   ├── hetz86-builder
 │   │   ├── hetzarm
@@ -73,10 +69,6 @@ The configuration in this repository is split in two parts:
 - `terraform/` directory contains the terraform configuration describing the image-based CI setup in Azure infra. The host configuration files in `hosts/azure` describe the NixOS configuration for the `binary-cache`, `builder`, and `jenkins-controller` hosts as outlined in [README-azure.md](https://github.com/tiiuae/ghaf-infra/blob/main/terraform/README-azure.md#image-based-builds). The `terraform/` configuration will soon be retired and replaced with the configuraiton under `hosts/hetzci/`.
 - In addition to the terraform Azure infra, this repository contains NixOS configurations for various other stand-alone hosts in Ghaf CI/CD infra.
   Following are examples of some of the stand-alone configurations and their current usage in the CI/CD infrastructure:
-  - `hosts/builders/build1` x86_64 remote builder in Ficolo cloud (build1.vedenemo.dev). Currently, `build1` is used as a remote builder for Ghaf github actions (to be retired).
-  - `hosts/builders/build2` x86_64 remote builder in Ficolo cloud (build2.vedenemo.dev). Currently, `build2` is not assigned to any specific task (to be retired).
-  - `hosts/builders/build3` x86_64 remote builder in Ficolo cloud. Currently, `build3` is not assigned to any specific task (to be retired).
-  - `hosts/builders/build4` x86_64 remote builder in Ficolo cloud (build4.vedenemo.dev). Currently, `build4` is not assigned to any specific task (to be retired).
   - `hosts/builders/hetz86-1` x86_64 remote builder in Hetzner cloud (hetz86-1.vedenemo.dev). Currently, `hetz86-1` is used as a remote builder for non-release Jenkins builds (both hetzci and azure).
   - `hosts/builders/hetz86-builder` x86_64 remote builder in Hetzner cloud (builder.vedenemo.dev). Developers can use the builder.vedenemo.dev as a remote builder for Ghaf x86 builds.
   - `hosts/builders/hetzarm` aarch64 remote builder in Hetzner cloud (hetzarm.vedenemo.dev). Developers can use `hetzarm.vedenemo.dev` as a remote builder for Ghaf aarch builds. Additionally, `hetzarm` is used both from Ghaf github actions and non-release Jenkins builds as a remote builder.
@@ -116,7 +108,7 @@ Onboarding new admins require the following manual steps:
 
 - Add their user and ssh key to [users](./users/) and import the user on the hosts they need access to.
 - If they need to manage sops secrets, add their [age key](./docs/adapting-to-new-environments.md#add-your-admin-sops-key) to [.sops.yaml](.sops.yaml), update the `creation_rules`, and run the [`update-sops-files`](./docs/tasks.md#update-sops-files) task.
-- [Deploy](./docs/deploy-rs.md) the new configuration to changed hosts (build3, hetzarm).
+- [Deploy](./docs/deploy-rs.md) the new configuration to changed hosts (hetz86-builder, hetzarm).
 
 ### Hetzci development
 

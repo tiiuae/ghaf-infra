@@ -22,19 +22,19 @@ If deploying on weak machine, or on a different arch than the target configurati
 To deploy a single host, simply use the deploy command with the name of the node:
 
 ```sh
-deploy .#monitoring
+deploy .#ghaf-monitoring
 ```
 
 You can give as many hosts as you want and they will all be deployed:
 
 ```sh
-deploy .#monitoring .#build3 .#hetzarm
+deploy .#ghaf-monitoring .#hetzarm
 ```
 
 Example assuming the checks have passed beforehand, and using different username for ssh:
 
 ```sh
-deploy -si --ssh-user myuser .#monitoring
+deploy -si --ssh-user myuser .#ghaf-monitoring
 ```
 
 Running just `deploy` without any arguments will deploy every host defined in the configuration, even if they have no changes. This is usually not something you want to do.

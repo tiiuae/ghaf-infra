@@ -40,10 +40,6 @@ Current ghaf-infra targets:
 ╒═══════════════════╤═══════════════════╤═════════════════╕
 │ alias             │ nixosconfig       │ hostname        │
 ╞═══════════════════╪═══════════════════╪═════════════════╡
-│ build1            │ build1            │ 172.18.20.102   │
-│ build2            │ build2            │ 172.18.20.103   │
-│ build3            │ build3            │ 172.18.20.104   │
-│ build4            │ build4            │ 172.18.20.105   │
 │ ghaf-auth         │ ghaf-auth         │ 37.27.190.109   │
 │ ghaf-lighthouse   │ ghaf-lighthouse   │ 65.109.141.136  │
 │ ghaf-log          │ ghaf-log          │ 95.217.177.197  │

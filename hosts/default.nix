@@ -34,7 +34,6 @@ in
   flake.nixosModules = {
     # shared modules
     qemu-common = import ./qemu-common.nix;
-    ficolo-common = import ./ficolo-common.nix;
     common = import ./common.nix;
     generic-disk-config = import ./generic-disk-config.nix;
 
@@ -46,10 +45,6 @@ in
     nixos-az-binary-cache = ./azure/binary-cache/configuration.nix;
     nixos-az-builder = ./azure/builder/configuration.nix;
     nixos-az-jenkins-controller = ./azure/jenkins-controller/configuration.nix;
-    nixos-build1 = ./builders/build1/configuration.nix;
-    nixos-build2 = ./builders/build2/configuration.nix;
-    nixos-build3 = ./builders/build3/configuration.nix;
-    nixos-build4 = ./builders/build4/configuration.nix;
     nixos-hetzarm = ./builders/hetzarm/configuration.nix;
     nixos-hetzarm-rel-1 = ./builders/hetzarm-rel-1/configuration.nix;
     nixos-testagent-prod = ./testagent/prod/configuration.nix;
@@ -90,10 +85,6 @@ in
           "az-binary-cache"
           "az-builder"
           "az-jenkins-controller"
-          "build1"
-          "build2"
-          "build3"
-          "build4"
           "hetzarm"
           "hetzarm-rel-1"
           "testagent-prod"

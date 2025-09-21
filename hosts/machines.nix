@@ -86,22 +86,6 @@
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILt+qbA7j8q+CjiAY2vX1rEhH3ow4xRKqyMszVI0zvmm";
   };
 
-  build1 = {
-    ip = "172.18.20.102";
-  };
-
-  build2 = {
-    ip = "172.18.20.103";
-  };
-
-  build3 = {
-    ip = "172.18.20.104";
-  };
-
-  build4 = {
-    ip = "172.18.20.105";
-  };
-
   testagent-dev = {
     ip = "172.18.16.33";
     nebula_ip = "10.42.42.11";
