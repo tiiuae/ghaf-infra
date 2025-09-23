@@ -18,7 +18,7 @@ def TARGETS = [
     testset: '_relayboot_gui_regression_',
   ],
   [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-release",
-    testset: null, uefisign: true
+    testset: null, uefisign: true,
   ],
   [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-release-installer",
     testset: null,
@@ -60,7 +60,7 @@ def TARGETS = [
     testset: null,
   ],
   [ target: "packages.x86_64-linux.system76-darp11-b-debug",
-    testset: '_relayboot_gui_regression_',
+    testset: '_relayboot_gui_regression_', uefisign: true,
   ],
 ]
 
