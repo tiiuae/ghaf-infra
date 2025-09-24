@@ -83,7 +83,7 @@ def create_pipeline(List<Map> targets) {
         ]) {
           catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
             sh """
-              provenance .#${it.target} --recursive --out ${it.target}.json
+              provenance ${it.target}/ --recursive --out ${it.target}.json
               mkdir -v -p ${artifacts_local_dir}/scs/${it.target}
               cp ${it.target}.json ${artifacts_local_dir}/scs/${it.target}/provenance.json
             """
