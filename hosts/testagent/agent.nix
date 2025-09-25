@@ -60,10 +60,8 @@ let
         ExecStart = toString (
           pkgs.writeShellScript "jenkins-connect.sh" # sh
             ''
-              set -x
-
               if [[ -z "$CONTROLLER" ]]; then
-                echo "ERROR: Variable CONTROLLER not configured in $(pwd)/jenkins.env"
+                echo "ERROR: Variable CONTROLLER not configured in /var/lib/jenkins/jenkins.env"
                 exit 6
               fi
 
@@ -123,15 +121,19 @@ in
           serviceConfig = {
             Type = "oneshot";
             User = "jenkins";
-            RemainAfterExit = "yes";
+            EnvironmentFile = "/var/lib/jenkins/jenkins.env";
             WorkingDirectory = "/var/lib/jenkins";
+            RemainAfterExit = "yes";
             ExecStart = toString (
               pkgs.writeShellScript "start-agents.sh" # sh
                 ''
-                  if [[ ! -f agent.jar ]]; then
-                    echo "Downloading agent.jar"
-                    wget -O "$CONTROLLER/jnlpJars/agent.jar"
+                  if [[ -z "$CONTROLLER" ]]; then
+                    echo "ERROR: Variable CONTROLLER not configured in /var/lib/jenkins/jenkins.env"
+                    exit 6
                   fi
+
+                  echo "Downloading agent.jar from $CONTROLLER"
+                  wget "$CONTROLLER/jnlpJars/agent.jar" -O agent.jar
                 ''
             );
           };
