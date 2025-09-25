@@ -36,6 +36,7 @@ def create_pipeline(List<Map> targets) {
   def artifacts = "artifacts/${env.JOB_BASE_NAME}/${stamp}-commit_${target_commit}"
   def artifacts_local_dir = "/var/lib/jenkins/${artifacts}"
   def artifacts_href = "<a href=\"/${artifacts}\">📦 Artifacts</a>"
+  def jenkins_build_dir = "/var/lib/jenkins/jobs/${env.JOB_NAME}/builds/${env.BUILD_NUMBER}"
   // Evaluate
   stage("Eval") {
     lock('evaluator') {
@@ -53,6 +54,8 @@ def create_pipeline(List<Map> targets) {
         sh "nix build --fallback -v .#${it.target} --out-link ${it.target}"
         build_end = run_cmd('date +%s')
         sh "mkdir -v -p ${artifacts_local_dir} && cp -P ${it.target} ${artifacts_local_dir}/"
+        sh "cp -P ${it.target} ${jenkins_build_dir}/"
+        sh "nix-store --add-root ${jenkins_build_dir}/${it.target} -r ${jenkins_build_dir}/${it.target}"
       }
       // Provenance
       stage("Provenance ${shortname}") {
