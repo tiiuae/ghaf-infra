@@ -49,6 +49,7 @@ in
     nixos-hetzarm-rel-1 = ./builders/hetzarm-rel-1/configuration.nix;
     nixos-testagent-prod = ./testagent/prod/configuration.nix;
     nixos-testagent-dev = ./testagent/dev/configuration.nix;
+    nixos-testagent2-prod = ./testagent/prod2/configuration.nix;
     nixos-testagent-release = ./testagent/release/configuration.nix;
     nixos-nethsm-gateway = ./nethsm-gateway/configuration.nix;
     nixos-ghaf-log = ./ghaf-log/configuration.nix;
@@ -89,6 +90,7 @@ in
           "hetzarm-rel-1"
           "testagent-prod"
           "testagent-dev"
+          "testagent2-prod"
           "testagent-release"
           "nethsm-gateway"
           "ghaf-log"

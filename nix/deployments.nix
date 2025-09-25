@@ -27,6 +27,7 @@ let
   x86-nodes = {
     testagent-prod = mkDeployment "testagent-prod" machines.testagent-prod.ip;
     testagent-dev = mkDeployment "testagent-dev" machines.testagent-dev.ip;
+    testagent2-prod = mkDeployment "testagent2-prod" machines.testagent2-prod.ip;
     testagent-release = mkDeployment "testagent-release" machines.testagent-release.ip;
     testagent-uae-dev = mkDeployment "testagent-uae-dev" machines.testagent-uae-dev.ip;
     nethsm-gateway = mkDeployment "nethsm-gateway" machines.nethsm-gateway.ip;

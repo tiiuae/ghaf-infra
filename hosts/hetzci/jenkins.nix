@@ -146,6 +146,10 @@ in
         isNormalUser = true;
         openssh.authorizedKeys.keys = [ machines.testagent-dev.publicKey ];
       };
+      testagent2-prod = {
+        isNormalUser = true;
+        openssh.authorizedKeys.keys = [ machines.testagent2-prod.publicKey ];
+      };
       testagent-prod = {
         isNormalUser = true;
         openssh.authorizedKeys.keys = [ machines.testagent-prod.publicKey ];
