@@ -73,7 +73,7 @@ pipeline {
     cron('0 20 * * *')
   }
   options {
-    buildDiscarder(logRotator(numToKeepStr: '3'))
+    buildDiscarder(logRotator(numToKeepStr: '30'))
   }
   stages {
     stage('Reload only') {

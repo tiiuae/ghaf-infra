@@ -52,7 +52,7 @@ pipeline {
     githubPush()
   }
   options {
-    buildDiscarder(logRotator(numToKeepStr: '3'))
+    buildDiscarder(logRotator(numToKeepStr: '30'))
   }
   stages {
     // githubPush() trigger requires checkout to be done at least once to
