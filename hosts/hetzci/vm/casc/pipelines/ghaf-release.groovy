@@ -51,7 +51,7 @@ pipeline {
     githubPush()
   }
   options {
-    buildDiscarder(logRotator(numToKeepStr: '5'))
+    buildDiscarder(logRotator(numToKeepStr: '30'))
   }
   stages {
     stage('Reload only') {
