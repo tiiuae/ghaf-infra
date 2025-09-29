@@ -136,7 +136,7 @@ in
     systemd.timers.jenkins-purge-artifacts = {
       wantedBy = [ "timers.target" ];
       timerConfig = {
-        OnCalendar = "hourly";
+        OnCalendar = "minutely";
       };
     };
 
