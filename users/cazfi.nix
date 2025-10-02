@@ -12,6 +12,7 @@
         "wheel"
         "networkmanager"
         "docker"
+        "softhsm"
       ];
     };
   };

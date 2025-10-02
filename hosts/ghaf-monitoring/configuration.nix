@@ -342,7 +342,7 @@ in
   # Workaround for prometheus to store data outside of /var/lib
   # https://discourse.nixos.org/t/custom-prometheus-data-directory/50741/5
   systemd.tmpfiles.rules = [
-    "D ${volumeMount}/prometheus 0751 prometheus prometheus - -"
+    "d ${volumeMount}/prometheus 0751 prometheus prometheus - -"
     "L+ /var/lib/${config.services.prometheus.stateDir}/data - - - - ${volumeMount}/prometheus"
   ];
 
