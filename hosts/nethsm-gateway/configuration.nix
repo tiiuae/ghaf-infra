@@ -18,6 +18,7 @@ in
       ./disk-config.nix
       inputs.sops-nix.nixosModules.sops
       inputs.disko.nixosModules.disko
+      ./softhsm.nix
     ]
     ++ (with self.nixosModules; [
       common
@@ -36,8 +37,6 @@ in
       nethsm-credentials.owner = "root";
     };
   };
-
-  environment.systemPackages = with pkgs; [ pynitrokey ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "nethsm-gateway";
