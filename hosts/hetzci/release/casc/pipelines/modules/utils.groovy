@@ -72,15 +72,16 @@ def create_pipeline(List<Map> targets) {
         ]) {
           catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
             sh """
-              for i in {1..3}; do
-                if provenance ${it.target}/ --recursive --out ${it.target}.json; then
-                  echo "provenance attempt=\$i passed"
-                  break
-                else
-                  echo "provenance attempt=\$i failed"
-                  sleep 5
+              attempt=1; max_attempts=3;
+              while ! provenance ${it.target}/ --recursive --out ${it.target}.json; do
+                echo "provenance attempt=\$attempt failed"
+                if (( \$attempt >= \$max_attempts )); then
+                  exit 1
                 fi
+                attempt=\$(( \$attempt + 1 ))
+                sleep 30
               done
+              echo "provenance attempt=\$attempt passed"
               mkdir -v -p ${artifacts_local_dir}/scs/${it.target}
               cp ${it.target}.json ${artifacts_local_dir}/scs/${it.target}/provenance.json
             """
