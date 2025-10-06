@@ -76,7 +76,7 @@ in
     serviceConfig = {
       User = "sshified";
       ExecStart = ''
-        ${lib.getExe self.packages.${pkgs.system}.sshified} \
+        ${lib.getExe pkgs.sshified} \
         --proxy.listen-addr 127.0.0.1:8888 \
         --ssh.user sshified \
         --ssh.key-file ${config.sops.secrets.sshified_private_key.path} \
