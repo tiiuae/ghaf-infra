@@ -108,7 +108,9 @@ pkcs11-tool --module $SOFTHSM2_MODULE -p $PIN --slot $SLOT \
             --read-object --type pubkey --label DB-key -o $KEYDIR/db.der
 ```
 
-### Signing EFI file using sbsign
+## Signing EFI file using sbsign
+
+> Locally on the nethsm-gateway
 
 Sign your EFI bootloader using private key and certificate stored on the
 softhsm. `systemd-sbsign` can use the openssl pkcs11 provider to pull those
@@ -123,3 +125,39 @@ systemd-sbsign sign \
     --output SIGNED_BOOT.EFI \
     YOUR_BOOT.EFI
 ```
+
+## PKCS11 proxy
+
+`nethsm-gateway` runs a daemon provided by
+[pkcs11-proxy](https://github.com/scobiej/pkcs11-proxy/tree/osx-openssl1-1).
+
+This daemon is listening on tls port 2345, accessible through the nebula tunnel
+from our hetzner CI. A library provided by the same project should be used as
+the pkcs11 module, and requests encrypted with a tls identity.
+
+### Signing and verifying using cosign
+
+> This happens on hetzner through pkcs11-proxy.
+
+Given an arbitrary file `hello`, and signing key `SLSA-key` with both private
+and public keys on the HSM (creation left as exercise for the reader):
+
+```sh
+cosign sign-blob --yes \
+    --key "pkcs11:token=$TOKEN;slot-id=$SLOT;object=SLSA-key?module-path=$PKCS11_PROXY_MODULE&pin-value=$PIN" \
+    --output-file hello.sig \
+    hello
+```
+
+Now you have hello and hello.sig files. Verify the signature like so:
+
+```sh
+cosign verify-blob \
+    --key "pkcs11:token=$TOKEN;slot-id=$SLOT;object=SLSA-key;type=pubkey?module-path=$PKCS11_PROXY_MODULE&pin-value=$PIN" \
+    --signature hello.sig \
+    hello
+```
+
+### UEFI Signing through proxy
+
+TODO

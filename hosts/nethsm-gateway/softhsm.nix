@@ -2,15 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   pkgs,
+  config,
   inputs,
   lib,
+  self,
   ...
 }:
 let
   stateDir = "/var/lib/softhsm";
   keyDir = stateDir + "/keys";
   tokenDir = stateDir + "/tokens";
-  softhsmModule = "${softhsm2}/lib/softhsm/libsofthsm2.so";
 
   # patch in the 1.1 update.
   # can be removed when we update from 25.05
@@ -61,30 +62,41 @@ let
     postInstall = "rm -rf $out/var";
   };
 
-  # systemd-sbsign is in the package but not exposed in PATH
-  # https://github.com/NixOS/nixpkgs/issues/447999
-  # Create a wrapper derivation that just adds it to $out/bin
-  systemd-sbsign = pkgs.stdenv.mkDerivation {
-    name = "systemd-sbsign";
-    # noop unpackPhase as there is no $src
-    unpackPhase = "true";
-    buildInputs = [ pkgs.systemd ];
-    installPhase = ''
-      mkdir -p $out/bin
-      ln -s ${pkgs.systemd}/lib/systemd/systemd-sbsign $out/bin/systemd-sbsign
-    '';
-  };
+  softhsmModule = "${softhsm2}/lib/softhsm/libsofthsm2.so";
+
+  softhsmConf = pkgs.writeText "softhsm2.conf" ''
+    directories.tokendir = ${tokenDir}
+    objectstore.backend = file
+    log.level = INFO
+    slots.removable = false
+    slots.mechanisms = ALL
+    library.reset_on_fork = false
+  '';
+
+  inherit (self.packages.${pkgs.system}) pkcs11-proxy;
+  inherit (self.packages.${pkgs.system}) systemd-sbsign;
 in
 {
+  sops = {
+    defaultSopsFile = ./secrets.yaml;
+    secrets = {
+      tls-pks-file = {
+        owner = "root";
+        group = "softhsm";
+      };
+    };
+  };
   environment.systemPackages =
     (with pkgs; [
       openssl
       pynitrokey # nitropy
       opensc # pkcs11-tool
+      gnutls # psktool
     ])
     ++ [
       systemd-sbsign
       softhsm2
+      pkcs11-proxy
     ];
 
   users.groups.softhsm = { };
@@ -97,17 +109,7 @@ in
   environment.variables = {
     KEYDIR = keyDir;
     SOFTHSM2_MODULE = softhsmModule;
-
-    SOFTHSM2_CONF = toString (
-      pkgs.writeText "softhsm2.conf" ''
-        directories.tokendir = ${tokenDir}
-        objectstore.backend = file
-        log.level = INFO
-        slots.removable = false
-        slots.mechanisms = ALL
-        library.reset_on_fork = false
-      ''
-    );
+    SOFTHSM2_CONF = toString softhsmConf; # toString will get the path to the file
 
     # Using a modern OpenSSL 3 provider for pkcs11 instead of legacy engine
     # https://github.com/latchset/pkcs11-provider/blob/main/HOWTO.md
@@ -120,7 +122,12 @@ in
           providers = provider_sect
 
           [provider_sect]
+          default = default_sect
           pkcs11 = pkcs11_sect
+
+          # basic openssl functionality such as tls breaks when default provider is not present
+          [default_sect]
+          activate = 1
 
           [pkcs11_sect]
           activate = 1
@@ -135,5 +142,21 @@ in
 
     # Extra cert creation config can be loaded from ci-yubi repo
     OPENSSL_EXTRA_CONF = "${inputs.ci-yubi}/secboot/conf";
+
+    PKCS11_PROXY_SOCKET = "tcp://127.0.0.1:2345";
+    PKCS11_PROXY_MODULE = "${pkcs11-proxy}/lib/libpkcs11-proxy.so";
+  };
+
+  systemd.services.pkcs11-daemon = {
+    wantedBy = [ "multi-user.target" ];
+    environment = {
+      SOFTHSM2_CONF = toString softhsmConf;
+      # listen on all interfaces using tls
+      PKCS11_DAEMON_SOCKET = "tls://0.0.0.0:2345";
+      PKCS11_PROXY_TLS_PSK_FILE = config.sops.secrets.tls-pks-file.path;
+    };
+    serviceConfig = {
+      ExecStart = "${lib.getExe pkcs11-proxy} ${softhsmModule}";
+    };
   };
 }

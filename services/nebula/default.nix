@@ -72,6 +72,12 @@ in
         "${lighthouseAddress}" = [ "${machines.ghaf-lighthouse.ip}:${toString listenPort}" ];
       };
 
+      # https://nebula.defined.net/docs/config/punchy
+      settings.punchy = {
+        punch = true;
+        respond = true;
+      };
+
       firewall = {
         outbound = [
           # allow any outbound connections

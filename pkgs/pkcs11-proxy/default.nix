@@ -27,4 +27,6 @@ stdenv.mkDerivation rec {
   postPatch = ''
     patchShebangs mksyscalls.sh
   '';
+
+  meta.mainProgram = "pkcs11-daemon";
 }
