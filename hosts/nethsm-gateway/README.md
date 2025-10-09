@@ -108,24 +108,6 @@ pkcs11-tool --module $SOFTHSM2_MODULE -p $PIN --slot $SLOT \
             --read-object --type pubkey --label DB-key -o $KEYDIR/db.der
 ```
 
-## Signing EFI file using sbsign
-
-> Locally on the nethsm-gateway
-
-Sign your EFI bootloader using private key and certificate stored on the
-softhsm. `systemd-sbsign` can use the openssl pkcs11 provider to pull those
-objects.
-
-```sh
-systemd-sbsign sign \
-    --private-key-source provider:pkcs11 \
-    --private-key "pkcs11:token=$TOKEN;object=DB-key;type=private;pin-value=$PIN" \
-    --certificate-source provider:pkcs11 \
-    --certificate "pkcs11:token=$TOKEN;object=DB-cert;type=cert;pin-value=$PIN" \
-    --output SIGNED_BOOT.EFI \
-    YOUR_BOOT.EFI
-```
-
 ## PKCS11 proxy
 
 `nethsm-gateway` runs a daemon provided by
@@ -144,7 +126,7 @@ and public keys on the HSM (creation left as exercise for the reader):
 
 ```sh
 cosign sign-blob --yes \
-    --key "pkcs11:token=$TOKEN;slot-id=$SLOT;object=SLSA-key?module-path=$PKCS11_PROXY_MODULE&pin-value=$PIN" \
+    --key "pkcs11:token=$TOKEN;slot-id=$SLOT;object=SLSA-key;pin-value=$PIN?module-path=$PKCS11_PROXY_MODULE" \
     --output-file hello.sig \
     hello
 ```
@@ -153,11 +135,24 @@ Now you have hello and hello.sig files. Verify the signature like so:
 
 ```sh
 cosign verify-blob \
-    --key "pkcs11:token=$TOKEN;slot-id=$SLOT;object=SLSA-key;type=pubkey?module-path=$PKCS11_PROXY_MODULE&pin-value=$PIN" \
+    --key "pkcs11:token=$TOKEN;slot-id=$SLOT;object=SLSA-key;type=pubkey;pin-value=$PIN?module-path=$PKCS11_PROXY_MODULE" \
     --signature hello.sig \
     hello
 ```
 
-### UEFI Signing through proxy
+### UEFI Signing
 
-TODO
+Sign your EFI bootloader using private key and certificate stored on the
+softhsm. `systemd-sbsign` can use the openssl pkcs11 provider to pull those
+objects. When the pkcs11-provider is configured to use the pkcs11-proxy module,
+this integration is seamless.
+
+```sh
+systemd-sbsign sign \
+    --private-key-source provider:pkcs11 \
+    --private-key "pkcs11:token=$TOKEN;object=DB-key;type=private;pin-value=$PIN" \
+    --certificate-source provider:pkcs11 \
+    --certificate "pkcs11:token=$TOKEN;object=DB-cert;type=cert;pin-value=$PIN" \
+    --output SIGNED_BOOT.EFI \
+    YOUR_BOOT.EFI
+```
