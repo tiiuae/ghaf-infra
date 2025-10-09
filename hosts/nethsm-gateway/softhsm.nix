@@ -14,7 +14,7 @@ let
   tokenDir = stateDir + "/tokens";
 
   # patch in the 1.1 update.
-  # can be removed when we update from 25.05
+  # can be removed when we update to 25.11
   # https://github.com/NixOS/nixpkgs/pull/444707
   pkcs11-provider = pkgs.pkcs11-provider.overrideAttrs rec {
     version = "1.1";
@@ -73,19 +73,17 @@ let
     library.reset_on_fork = false
   '';
 
-  inherit (self.packages.${pkgs.system}) pkcs11-proxy;
-  inherit (self.packages.${pkgs.system}) systemd-sbsign;
+  inherit (self.packages.${pkgs.system}) pkcs11-proxy systemd-sbsign;
 in
 {
-  sops = {
-    defaultSopsFile = ./secrets.yaml;
-    secrets = {
-      tls-pks-file = {
-        owner = "root";
-        group = "softhsm";
-      };
+  sops.secrets = {
+    tls-pks-file = {
+      owner = "root";
+      group = "softhsm";
+      mode = "0440";
     };
   };
+
   environment.systemPackages =
     (with pkgs; [
       openssl
