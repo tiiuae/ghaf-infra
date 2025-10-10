@@ -121,3 +121,63 @@ It runs the `install` task non-interactively on all the release environment host
 # Connect testagent
 ...
 ```
+
+## print-revision
+
+The `print-revision` task prints currently deployed ghaf-infra git revision for the given `alias` host:
+
+```bash
+❯ inv print-revision --alias=hetzarm
+...
+
+Currently deployed revision(s):
+
+╒═════════╤══════════════════════════════════════════╤═════════════════╤══════════════════════════════════╕
+│ alias   │ revision                                 │ revision date   │ revision subject                 │
+╞═════════╪══════════════════════════════════════════╪═════════════════╪══════════════════════════════════╡
+│ hetzarm │ 34415d537396d2ec39d4403a9a8f48150cf1ee40 │ 2025-09-18      │ Remove older profile generations │
+╘═════════╧══════════════════════════════════════════╧═════════════════╧══════════════════════════════════╛
+```
+
+The output table includes the following details:
+- `alias`: Target ghaf-infra host `alias` name
+- `revision`: Ghaf-infra git commit revision currently deployed on the target host. This detail is read from the remote host with command `nixos-version --configuration-revision`. On [OSC 8 compatible](https://github.com/Alhadis/OSC8-Adoption/) terminals, `revision` is a hyperlink to ghaf-infra github
+- `revision date`: Git log [committer date](https://git-scm.com/docs/git-log#Documentation/git-log.txt-cs) in short format
+- `revision subject`: Git log [commit subject](https://git-scm.com/docs/git-log#Documentation/git-log.txt-s)
+
+If `alias` is not specified, `print-revision` lists the deployed git revisions for all ghaf-infra hosts sorted by the git revision date:
+
+```bash
+❯ inv print-revision
+...
+
+Currently deployed revision(s):
+
+╒═══════════════════╤════════════════════════════════════════════════╤═════════════════╤═══════════════════════════════════════════════════════════╕
+│ alias             │ revision                                       │ revision date   │ revision subject                                          │
+╞═══════════════════╪════════════════════════════════════════════════╪═════════════════╪═══════════════════════════════════════════════════════════╡
+│ hetz86-rel-1      │ 86a1b0c2148e63ff2f01ea9d69b50b8710240b68       │ 2025-10-06      │ Increase retry timeout on provenance failure              │
+│ hetzarm-rel-1     │ 86a1b0c2148e63ff2f01ea9d69b50b8710240b68       │ 2025-10-06      │ Increase retry timeout on provenance failure              │
+│ hetzci-prod       │ 86a1b0c2148e63ff2f01ea9d69b50b8710240b68       │ 2025-10-06      │ Increase retry timeout on provenance failure              │
+│ hetzci-release    │ 86a1b0c2148e63ff2f01ea9d69b50b8710240b68       │ 2025-10-06      │ Increase retry timeout on provenance failure              │
+│ ghaf-log          │ 0162221a15159e6053db6b85697ff2e91865f8e5       │ 2025-09-22      │ Start using zramswap module on hosts that enable zramSwap │
+│ ghaf-proxy        │ 0162221a15159e6053db6b85697ff2e91865f8e5       │ 2025-09-22      │ Start using zramswap module on hosts that enable zramSwap │
+│ ghaf-webserver    │ 0162221a15159e6053db6b85697ff2e91865f8e5       │ 2025-09-22      │ Start using zramswap module on hosts that enable zramSwap │
+│ hetz86-1          │ 34415d537396d2ec39d4403a9a8f48150cf1ee40       │ 2025-09-18      │ Remove older profile generations                          │
+│ hetzarm           │ 34415d537396d2ec39d4403a9a8f48150cf1ee40       │ 2025-09-18      │ Remove older profile generations                          │
+│ hetz86-builder    │ f92334fe58d657712627bd317349920251c50785       │ 2025-08-07      │ developers: Add Gayathri                                  │
+│ ghaf-auth         │ 5e579ac4eae173ad3e36ea5267a6b9f2a19729b1       │                 │                                                           │
+│ ghaf-lighthouse   │ 268bc910409fd8579747a78526ec8ffac4bb3813-dirty │                 │                                                           │
+│ ghaf-monitoring   │ 86a1b0c2148e63ff2f01ea9d69b50b8710240b68-dirty │                 │                                                           │
+│ hetzci-dev        │ d7ae303867280371259f018bf4e0f5ed13f73552-dirty │                 │                                                           │
+│ nethsm-gateway    │ d7ae303867280371259f018bf4e0f5ed13f73552-dirty │                 │                                                           │
+│ testagent-dev     │ 45b4da02c49f23f5619590d286252a5de28a34e4-dirty │                 │                                                           │
+│ testagent-prod    │ 9066891fe09531a6cea9aadb3412bca595c93fe4       │                 │                                                           │
+│ testagent-release │ 05335d38fc73964286cc5faca486f5b1f9b7953e-dirty │                 │                                                           │
+│ testagent-uae-dev │ (unknown)                                      │                 │                                                           │
+│ testagent2-prod   │ fa149ab5230c099e6f1813ea966b19ca66dc1ec6-dirty │                 │                                                           │
+╘═══════════════════╧════════════════════════════════════════════════╧═════════════════╧═══════════════════════════════════════════════════════════╛
+```
+
+Revision '`(unknown)`' indicates running `nixos-version --configuration-revision` on the remote host failed.
+This may happen, for instance, if you don't have access to the given host on the current network.
