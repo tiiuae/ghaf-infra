@@ -4,7 +4,7 @@
 # SPDX-FileCopyrightText: 2023 Nix community projects
 # SPDX-License-Identifier: MIT
 
-# pylint: disable=global-statement
+# pylint: disable=global-statement, too-many-locals
 
 # This file originates from:
 # https://github.com/nix-community/infra/blob/c4c8c32b51/tasks.py
@@ -179,7 +179,7 @@ def print_keys(_c: Any, alias: str) -> None:
         )
 
 
-def get_deploy_host(alias: str = "") -> DeployHost:
+def get_deploy_host(alias: str) -> DeployHost:
     """
     Return DeployHost object, given `alias`
     """
@@ -387,6 +387,62 @@ def reboot(_c: Any, alias: str) -> None:
     print(f"Wait for {h.host} to start", end="")
     sys.stdout.flush()
     wait_for_port(h.host, port)
+
+
+@task
+def print_revision(_c: Any, alias: str = "") -> None:
+    """
+    Print the currently deployed git revision on the 'alias' host.
+    If 'alias' is not specified, prints deployed revisions on all TARGETS.
+
+    Example usage:
+    inv print-revision
+    inv print-revision --alias=hetzci-release
+    """
+    header_row = ["alias", "revision", "revision date", "revision subject"]
+    table_rows = []
+    target_aliases = [alias]
+    git_info = {}
+    git_info_map = {"hash": 0, "date": 1, "subj": 2}
+    git_info_def = [""] * len(git_info_map)
+    delim = "_;_;_;_"
+    # Read the following git log info:
+    #   %H    - commit hash
+    #   %cs   - committer date, short format (YYYY-MM-DD)
+    #   %s    - commit subject line
+    # Note: We don't fetch remote so the git info might not be fully up-to-date
+    cmd = f"git log --pretty=format:'%H{delim}%cs{delim}%s'"
+    proc = subprocess.run(cmd, capture_output=True, shell=True, text=True, check=True)
+    for line in proc.stdout.splitlines():
+        split_line = line.split(delim)
+        githash = split_line[git_info_map["hash"]]
+        git_info.setdefault(githash, split_line)
+    if not alias:
+        target_aliases = list(TARGETS.all().keys())
+    for target in target_aliases:
+        h = get_deploy_host(target)
+        try:
+            rev = h.run(
+                cmd="nixos-version --configuration-revision",
+                stdout=subprocess.PIPE,
+                timeout=5,
+            ).stdout.strip()
+            if "-dirty" not in rev:
+                # Format as terminal link: https://github.com/Alhadis/OSC8-Adoption/
+                url = f"https://github.com/tiiuae/ghaf-infra/commit/{rev}"
+                rev_link = f"\033]8;;{url}\033\\{rev}\033]8;;\033\\"
+            else:
+                rev_link = rev
+        except subprocess.TimeoutExpired:
+            rev = "(unknown)"
+            rev_link = rev
+        git_date = git_info.get(rev, git_info_def)[git_info_map["date"]]
+        git_subj = git_info.get(rev, git_info_def)[git_info_map["subj"]]
+        row = [target, rev_link, git_date, git_subj]
+        table_rows.append(row)
+    table_rows.sort(reverse=True, key=lambda x: x[2])  # sort by git_date
+    table = tabulate(table_rows, headers=header_row, tablefmt="fancy_outline")
+    print(f"\nCurrently deployed revision(s):\n\n{table}")
 
 
 ################################################################################
