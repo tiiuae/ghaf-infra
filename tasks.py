@@ -179,7 +179,7 @@ def print_keys(_c: Any, alias: str) -> None:
         )
 
 
-def get_deploy_host(alias: str = "") -> DeployHost:
+def get_deploy_host(alias: str) -> DeployHost:
     """
     Return DeployHost object, given `alias`
     """
@@ -387,6 +387,37 @@ def reboot(_c: Any, alias: str) -> None:
     print(f"Wait for {h.host} to start", end="")
     sys.stdout.flush()
     wait_for_port(h.host, port)
+
+
+@task
+def print_revision(_c: Any, alias: str = "") -> None:
+    """
+    Print the currently deployed revision on host identified as `alias`.
+    If 'alias' is not specified, prints deployed revisions on all TARGETS.
+
+    Example usage:
+    inv print-revision
+    inv print-revision --alias=hetzci-release
+    """
+    table_rows = []
+    table_rows.append(["alias", "revision"])
+    target_aliases = [alias]
+    if not alias:
+        target_aliases = list(TARGETS.all().keys())
+    for target in target_aliases:
+        h = get_deploy_host(target)
+        try:
+            deployed_revision = h.run(
+                cmd="nixos-version --configuration-revision",
+                stdout=subprocess.PIPE,
+                timeout=5,
+            ).stdout.strip()
+        except subprocess.TimeoutExpired:
+            deployed_revision = "(unknown)"
+        row = [target, deployed_revision]
+        table_rows.append(row)
+    table = tabulate(table_rows, headers="firstrow", tablefmt="fancy_outline")
+    print(f"\nCurrently deployed revision(s):\n\n{table}")
 
 
 ################################################################################
