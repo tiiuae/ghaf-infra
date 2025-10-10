@@ -136,6 +136,12 @@ in
         proto = "udp";
         groups = [ "hetzner" ];
       }
+      # allow dns requests
+      {
+        port = 53;
+        proto = "udp";
+        host = "any";
+      }
       # allow any tcp or icmp outbound (between nebula hosts)
       {
         port = "any";
@@ -154,6 +160,12 @@ in
         port = 8000;
         proto = "tcp";
         groups = [ "scraper" ];
+      }
+      # pkcs11-daemon
+      {
+        port = 2345;
+        proto = "tcp";
+        host = "any";
       }
     ];
   };
