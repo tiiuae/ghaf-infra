@@ -3,12 +3,16 @@ SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
 SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 
-# Nethsm Gateway
+# Signing
+
+![diagram](./signing-setup.png)
 
 ## Softhsm usage
 
 Manual steps of how the softhsm is used. This can be automated with scripts in
 the future.
+
+All commands should be ran on the nethsm-gateway server.
 
 ### Creating softhsm signing keys
 
@@ -114,12 +118,17 @@ pkcs11-tool --module $SOFTHSM2_MODULE -p $PIN --slot $SLOT \
 [pkcs11-proxy](https://github.com/scobiej/pkcs11-proxy/tree/osx-openssl1-1).
 
 This daemon is listening on tls port 2345, accessible through the nebula tunnel
-from our hetzner CI. A library provided by the same project should be used as
-the pkcs11 module, and requests encrypted with a tls identity.
+from the hetzner CI. A library provided by the same project can be used as the
+pkcs11 module, which will proxy the requests to the correct place (configured
+through environment variables).
+
+The requests are encrypted with a PKS key which comes from the host secrets.
+
+Substitute the variables in the following commands (except
+`PKCS11_PROXY_MODULE`, that one is populated on the system) with values from the
+softhsm setup earlier.
 
 ### Signing and verifying using cosign
-
-> This happens on hetzner through pkcs11-proxy.
 
 Given an arbitrary file `hello`, and signing key `SLSA-key` with both private
 and public keys on the HSM (creation left as exercise for the reader):
