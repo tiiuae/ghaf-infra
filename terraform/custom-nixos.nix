@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
+# SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: MIT
 # Nix trampoline calling the flake, and instantiating a
 # flake.nixosModules.nixos-${systemName} as a NixOS system,
