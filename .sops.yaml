@@ -33,6 +33,7 @@ keys:
   - &ghaf-lighthouse age1wcs30q9l7c3vk3tgs3zmu86hcgjaaujckmt0fjm2w9xlvqnk4cyqndvx4n
   - &testagent-uae-dev age1sl8yrksst9aq2fhg8t8h7tysgzm6ks00n9hxsvj8x6frsnrskd4szerqez
   - &nethsm-gateway age177v8xccs46774faav3tu36kfap0r04z0ukxh2t5293rwk5evrsaqd98j0p
+  - &uae-lab-node1 age1ugtdwk3vgnug0xjcme3ft8a5rk2htd207z83dgp5gzk52ajf94dqerju4w
 
 creation_rules:
   - path_regex: hosts/testagent/prod/secrets.yaml$
@@ -229,3 +230,10 @@ creation_rules:
       - *hetzci-dev
       - *hetzci-prod
       - *hetzci-release
+      - *uae-lab-node1
+  - path_regex: hosts/uae/lab/node1/secrets.yaml$
+    key_groups:
+    - age:
+      - *fayad
+      - *jrautiola
+      - *uae-lab-node1
