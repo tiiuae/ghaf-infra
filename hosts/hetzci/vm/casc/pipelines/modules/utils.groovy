@@ -26,6 +26,18 @@ def run_uefi_sign(String diskPath, String target) {
   return run_cmd("realpath ${outdir}")
 }
 
+def run_uefi_sign_iso(String diskPath, String target) {
+  def outdir = "${target}-signed"
+  sh """
+    mkdir -p "${outdir}/keys"
+    uefikeygen
+    test -f keys/db.crt -a -f keys/db.key
+    cp -v keys/*.der "${outdir}/keys/"
+    uefisigniso keys/db.crt keys/db.key "${diskPath}" "${outdir}"
+  """
+  return run_cmd("realpath ${outdir}")
+}
+
 def create_pipeline(List<Map> targets) {
   def pipeline = [:]
   def stamp = run_cmd('date +"%Y%m%d_%H%M%S%3N"')
@@ -106,6 +118,18 @@ def create_pipeline(List<Map> targets) {
           def disk_path  = run_cmd("find -L ${it.target} -type f -name 'disk1.raw.zst' -print -quit")
           if (!disk_path) { error("uefisign: no disk1.raw.zst found for '${it.target}'") }
           def uefisigned_dir = run_uefi_sign(disk_path, it.target)
+          sh """
+            mkdir -v -p ${artifacts_local_dir}/uefisigned
+            mv ${uefisigned_dir} ${artifacts_local_dir}/uefisigned
+          """
+        }
+      }
+      // UEFI sign ISO
+      if (it.get('uefisigniso', false)) {
+        stage("UEFI Sign ${shortname}") {
+          def disk_path  = run_cmd("find -L ${it.target} -type f -name 'ghaf.iso' -print -quit")
+          if (!disk_path) { error("uefisign: no ghaf.iso found for '${it.target}'") }
+          def uefisigned_dir = run_uefi_sign_iso(disk_path, it.target)
           sh """
             mkdir -v -p ${artifacts_local_dir}/uefisigned
             mv ${uefisigned_dir} ${artifacts_local_dir}/uefisigned
