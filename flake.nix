@@ -85,7 +85,7 @@
     };
 
     sbomnix = {
-      url = "github:tiiuae/sbomnix/fix-provenance";
+      url = "github:tiiuae/sbomnix";
       inputs = {
         flake-parts.follows = "flake-parts";
         flake-compat.follows = "flake-compat";

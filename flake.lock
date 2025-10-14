@@ -482,16 +482,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1758692892,
-        "narHash": "sha256-0Z7kEE5LjAGA1082wcwt6XYdfDxVWRmkCPjTdTwAgsQ=",
+        "lastModified": 1760339225,
+        "narHash": "sha256-pYZax5cxBHa+jcxTsQKEVHhXMtmvLGD1ISUyli2ZreU=",
         "owner": "tiiuae",
         "repo": "sbomnix",
-        "rev": "7b3ac01558a122300d222e5bd01f4f81d2306d80",
+        "rev": "fe2a608c000127092b3d27c9cfd65c26f325bb28",
         "type": "github"
       },
       "original": {
         "owner": "tiiuae",
-        "ref": "fix-provenance",
         "repo": "sbomnix",
         "type": "github"
       }
