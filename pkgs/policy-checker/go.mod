@@ -7,7 +7,7 @@ go 1.24.0
 toolchain go1.24.4
 
 require (
-	github.com/google/cel-go v0.26.0
+	github.com/google/cel-go v0.26.1
 	github.com/urfave/cli/v3 v3.4.1
 )
 
