@@ -32,7 +32,25 @@ def TARGETS = [
 ]
 
 properties([
-  githubProjectProperty(displayName: '', projectUrlStr: REPO_URL)
+  githubProjectProperty(displayName: '', projectUrlStr: REPO_URL),
+  parameters([
+    [
+      $class: 'ChoiceParameter',
+      name: 'TESTAGENT_HOST',
+      choiceType: 'PT_RADIO',
+      description: '''
+        Select the testagent-host. This parameter allows specifying the exact testagent in case Jenkins controller is
+        connected with multiple agents.'''.stripIndent(),
+      script: [
+        $class: 'GroovyScript',
+        script: [
+          classpath: [],
+          sandbox: true,
+          script: "return ['dev','prod','release']"
+        ]
+      ]
+    ]
+  ])
 ])
 pipeline {
   agent { label 'built-in' }
@@ -69,7 +87,11 @@ pipeline {
         dir(WORKDIR) {
           script {
             MODULES.utils = load "/etc/jenkins/pipelines/modules/utils.groovy"
-            PIPELINE = MODULES.utils.create_pipeline(TARGETS)
+            if (params.TESTAGENT_HOST) {
+              PIPELINE = MODULES.utils.create_pipeline(TARGETS, params.TESTAGENT_HOST)
+            } else {
+              PIPELINE = MODULES.utils.create_pipeline(TARGETS, 'prod')
+            }
           }
         }
       }
