@@ -71,11 +71,12 @@ def init() {
   if (!testagent_nodes) {
     error("No test agents online")
   }
+  def label = env.DEVICE_TAG
   if (params.TESTAGENT_HOST) {
     println("Using specific TESTAGENT_HOST: ${TESTAGENT_HOST}")
-    env.DEVICE_TAG = "${params.TESTAGENT_HOST}-${env.DEVICE_TAG}"
+    label = "${params.TESTAGENT_HOST}-${env.DEVICE_TAG}"
   }
-  return env.DEVICE_TAG
+  return label
 }
 
 def sh_ret_out(String cmd) {

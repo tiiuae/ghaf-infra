@@ -46,7 +46,7 @@ properties([
         script: [
           classpath: [],
           sandbox: true,
-          script: "return ['dev','prod','release']"
+          script: "return ['prod','dev','release']"
         ]
       ]
     ]
