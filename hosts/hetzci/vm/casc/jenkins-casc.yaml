@@ -192,18 +192,6 @@ unclassified:
 
 # https://plugins.jenkins.io/configuration-as-code-groovy/
 groovy:
-  # Setup jenkins api token:
-  - script: |
-      import jenkins.model.*
-      import hudson.model.*
-      import jenkins.security.ApiTokenProperty
-      def token = new File("/run/secrets/jenkins_api_token");
-      if (token.exists()) {
-        println("Setting up api token")
-        def user = User.get('api_user')
-        user.getProperty(ApiTokenProperty.class).tokenStore.addFixedNewToken("t1", token.text)
-        user.save()
-      }
   # Casc does not support removing pipelines. To ensure possible earlier
   # jenkins jobs will not be loaded in this boot cycle, we need to delete
   # all old pipeline definitions.
