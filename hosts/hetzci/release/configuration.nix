@@ -36,8 +36,6 @@
     };
   };
 
-  nebula.enable = false;
-
   # Configure /var/lib/caddy in /etc/fstab.
   fileSystems."/var/lib/caddy" = {
     device = "/dev/disk/by-id/scsi-0HC_Volume_103219547";
