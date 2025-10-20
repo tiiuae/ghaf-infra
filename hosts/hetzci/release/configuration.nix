@@ -29,6 +29,8 @@
     jenkins = {
       casc = ./casc;
       pluginsFile = ./plugins.json;
+      withGithubStatus = false;
+      withGithubWebhook = false;
     };
     auth = {
       clientID = "hetzci-release";
