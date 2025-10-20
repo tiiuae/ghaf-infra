@@ -41,9 +41,6 @@ in
   config = {
     sops = {
       secrets = lib.mkMerge [
-        {
-          jenkins_api_token.owner = "jenkins";
-        }
         (lib.mkIf cfg.withCachix {
           cachix-auth-token.owner = "jenkins";
         })
