@@ -181,16 +181,6 @@ credentials:
       - credentials:
           - string:
               scope: GLOBAL
-              id: "jenkins-github-webhook-secret"
-              secret: "${file:/run/secrets/jenkins_github_webhook_secret}"
-              description: "Github webhook secret"
-          - string:
-              scope: GLOBAL
-              id: "jenkins-github-commit-status-token"
-              secret: "${file:/run/secrets/jenkins_github_commit_status_token}"
-              description: "Github token used to set the commit statuses"
-          - string:
-              scope: GLOBAL
               id: "cachix-auth-token"
               secret: "${file:/run/secrets/cachix-auth-token}"
               description: "Cachix token used to cachix pin store paths"
@@ -200,11 +190,6 @@ unclassified:
     url: "https://ci-release.vedenemo.dev"
   timestamper:
     allPipelines: true
-  gitHubPluginConfig:
-    configs:
-    - credentialsId: "jenkins-github-commit-status-token"
-    hookSecretConfigs:
-    - credentialsId: "jenkins-github-webhook-secret"
   lockableResourcesManager:
     declaredResources:
     - name: "evaluator"
