@@ -61,10 +61,19 @@ in
           openssh
           wget
           zstd
+          xorriso
+          mtools
+          dosfstools
+          gawk
+          gnused
+          systemdUkify
+          squashfsTools
+          binutils
         ])
         ++ [
           inputs.sbomnix.packages.${pkgs.system}.sbomnix # provenance
           inputs.ci-yubi.packages.${pkgs.system}.uefisign
+          inputs.ci-yubi.packages.${pkgs.system}.uefisigniso
           inputs.ci-yubi.packages.${pkgs.system}.keygen
         ]
         ++ lib.optionals cfg.withCachix [

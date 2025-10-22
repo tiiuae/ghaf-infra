@@ -30,10 +30,11 @@ def run_uefi_sign_iso(String diskPath, String target) {
   def outdir = "${target}-signed"
   sh """
     mkdir -p "${outdir}/keys"
-    uefikeygen
-    test -f keys/db.crt -a -f keys/db.key
-    cp -v keys/*.der "${outdir}/keys/"
-    uefisigniso keys/db.crt keys/db.key "${diskPath}" "${outdir}"
+    uefikeygen "${target}-tmp"
+    test -f "${target}-tmp/keys/db.crt" -a -f "${target}-tmp/keys/db.key"
+    echo "$PWD"
+    cp -v "${target}-tmp"/keys/*.der "${outdir}/keys/"
+    uefisigniso "${target}-tmp/keys/db.crt" "${target}-tmp/keys/db.key" "${diskPath}" "${outdir}"
   """
   return run_cmd("realpath ${outdir}")
 }
