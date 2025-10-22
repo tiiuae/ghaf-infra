@@ -79,7 +79,7 @@ resource "azurerm_managed_disk" "jenkins_controller_caddy_state" {
 
 # Jenkins artifacts storage account and container
 resource "azurerm_storage_account" "jenkins_artifacts" {
-  name                            = "artifact${local.ws}"
+  name                            = "artifactuae${local.ws}"
   resource_group_name             = data.azurerm_resource_group.persistent.name
   location                        = data.azurerm_resource_group.persistent.location
   account_tier                    = "Standard"

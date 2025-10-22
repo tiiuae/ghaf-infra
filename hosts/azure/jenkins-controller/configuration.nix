@@ -157,7 +157,7 @@ let
                       remote {
                         url('https://github.com/tiiuae/ghaf-jenkins-pipeline.git')
                       }
-                      branch('*/main')
+                      branch('*/produaen')
                     }
                   }
                   scriptPath('${script}.groovy')
@@ -609,9 +609,11 @@ in
       request-logging = true;
       standard-logging = true;
       reverse-proxy = true; # Needed according to https://oauth2-proxy.github.io/oauth2-proxy/configuration/integration#configuring-for-use-with-the-caddy-v2-forward_auth-directive
-      scope = "openid profile email groups"; # pass github teams as jenkins groups
-      provider-display-name = "Vedenemo Auth";
-      custom-sign-in-logo = "-";
+      scope = "openid profile email groups offline_access";
+      cookie-expire = "168h";
+      cookie-refresh = "24h";
+      skip-provider-button = true;
+      whitelist-domain = "ghaf-jenkins-controller-prod.uaenorth.cloudapp.azure.com";
     };
   };
 

@@ -6,7 +6,7 @@ resource "azurerm_storage_blob" "default" {
   storage_account_name   = var.storage_account_name
   storage_container_name = var.storage_container_name
   type                   = "Page" # necessary to be able to create an image out of it
-  source                 = "${data.external.nix_build.result.outPath}/nixos-image-azure-25.05.20250629.b43c397-x86_64-linux.vhd"
+  source                 = "${data.external.nix_build.result.outPath}/nixos-image-azure-25.05.20250718.f01fe91-x86_64-linux.vhd"
   timeouts {
     create = "1h"
     update = "1h"

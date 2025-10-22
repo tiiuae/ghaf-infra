@@ -68,7 +68,7 @@ resource "azurerm_subnet" "binary_cache" {
   name                 = "ghaf-infra-binary-cache"
   resource_group_name  = azurerm_resource_group.infra.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.3.0/28"]
+  address_prefixes     = ["10.51.18.0/24"]
 }
 
 # Allow inbound HTTP(S)

@@ -37,7 +37,7 @@ type TrustPolicy struct {
 func VerifySignature(provenance_file string, provenance_signature string, policy SignaturePolicy) {
 	fmt.Println("Verifying signature...")
 	cmd := exec.Command(
-		"nix", "run", fmt.Sprintf("github:tiiuae/ci-yubi/%s#verify", policy.Verifier_rev), "--",
+		"nix", "run", fmt.Sprintf("github:tiiuae/ci-yubi/produaen/%s#verify", policy.Verifier_rev), "--",
 		"--cert", policy.Certificate,
 		"--path", provenance_file,
 		"--sigfile", provenance_signature,

@@ -108,10 +108,10 @@ locals {
       osdisk_size_builder     = "150"
       vm_size_controller      = "Standard_E4_v5"
       osdisk_size_controller  = "150"
-      num_builders_x86        = 0
-      num_builders_aarch64    = 0
-      ext_builder_machines    = local.ext_builder_machines
-      ext_builder_keyscan     = local.ext_builder_keyscan
+      num_builders_x86        = 1
+      num_builders_aarch64    = 1
+      ext_builder_machines    = []
+      ext_builder_keyscan     = []
     }
     dev = {
       persistent_id           = "prod"
@@ -136,10 +136,10 @@ locals {
       osdisk_size_builder     = "250"
       vm_size_controller      = "Standard_E16_v5"
       osdisk_size_controller  = "1000"
-      num_builders_x86        = 0
-      num_builders_aarch64    = 0
-      ext_builder_machines    = local.ext_builder_machines
-      ext_builder_keyscan     = local.ext_builder_keyscan
+      num_builders_x86        = 1
+      num_builders_aarch64    = 1
+      ext_builder_machines    = []
+      ext_builder_keyscan     = []
     }
     release = {
       persistent_id           = "release"
@@ -198,7 +198,7 @@ resource "azurerm_resource_group" "infra" {
 # Virtual network
 resource "azurerm_virtual_network" "vnet" {
   name                = "ghaf-infra-vnet"
-  address_space       = ["10.0.0.0/16"]
+  address_space       = ["10.51.16.0/22"]
   location            = azurerm_resource_group.infra.location
   resource_group_name = azurerm_resource_group.infra.name
 }
@@ -208,7 +208,7 @@ resource "azurerm_subnet" "jenkins" {
   name                 = "ghaf-infra-jenkins"
   resource_group_name  = azurerm_resource_group.infra.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.2.0/24"]
+  address_prefixes     = ["10.51.16.0/24"]
 }
 
 # Slice out a subnet for the builders
@@ -216,7 +216,7 @@ resource "azurerm_subnet" "builders" {
   name                 = "ghaf-infra-builders"
   resource_group_name  = azurerm_resource_group.infra.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.4.0/28"]
+  address_prefixes     = ["10.51.17.0/25"]
 }
 
 # https://github.com/hashicorp/terraform-provider-azurerm/issues/15609
@@ -323,9 +323,9 @@ data "azurerm_key_vault_secret" "binary_cache_signing_key_pub" {
 }
 
 # Reference the existing Key Vault
-data "azurerm_key_vault" "ghaf_devenv_ca" {
-  name                = "ghaf-devenv-ca"
-  resource_group_name = "ghaf-devenev-pki"
+data "azurerm_key_vault" "ghaf_prodenv_ca" {
+  name                = "ghaf-prodenv-ca"
+  resource_group_name = "ghaf-prodenv-pki"
 }
 
 # Data sources to access 'workspace-specific persistent' data
@@ -345,7 +345,7 @@ data "azurerm_managed_disk" "jenkins_controller_caddy_state" {
 
 # Jenkins artifacts storage
 data "azurerm_storage_account" "jenkins_artifacts" {
-  name                = "artifact${local.ws}"
+  name                = "artifactuae${local.ws}"
   resource_group_name = local.persistent_rg
 }
 
