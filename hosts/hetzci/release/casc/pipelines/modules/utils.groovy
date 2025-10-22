@@ -132,31 +132,4 @@ def create_pipeline(List<Map> targets) {
   return pipeline
 }
 
-def set_github_commit_status(
-  String message,
-  String state,
-  String commit,
-  String project = "tiiuae/ghaf",
-  String context = "jenkins-pre-merge") {
-  if (!commit) {
-    println "Skip setting GitHub commit status"
-    return
-  }
-  println "Setting GitHub commit status"
-  withCredentials([string(credentialsId: 'jenkins-github-commit-status-token', variable: 'TOKEN')]) {
-    env.TOKEN = "$TOKEN"
-    String status_url = "https://api.github.com/repos/$project/statuses/$commit"
-    sh """
-      # set -x
-      curl -H \"Authorization: token \$TOKEN\" \
-        -X POST \
-        -d '{\"description\": \"$message\", \
-             \"state\": \"$state\", \
-             \"context\": "$context", \
-             \"target_url\" : \"$BUILD_URL\" }' \
-        ${status_url}
-    """
-  }
-}
-
 return this

@@ -26,7 +26,7 @@ def run_uefi_sign(String diskPath, String target) {
   return run_cmd("realpath ${outdir}")
 }
 
-def create_pipeline(List<Map> targets) {
+def create_pipeline(List<Map> targets, String testagent_host = null) {
   def pipeline = [:]
   def stamp = run_cmd('date +"%Y%m%d_%H%M%S%3N"')
   def target_commit = run_cmd('git rev-parse HEAD')
@@ -133,6 +133,7 @@ def create_pipeline(List<Map> targets) {
               string(name: "IMG_URL", value: img_url),
               string(name: "TESTSET", value: it.testset),
               string(name: "DESC", value: desc),
+              string(name: "TESTAGENT_HOST", value: testagent_host),
               booleanParam(name: "RELOAD_ONLY", value: false),
             ],
           )

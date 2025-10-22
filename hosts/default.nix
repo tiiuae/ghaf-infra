@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
+# SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 {
@@ -66,6 +66,7 @@ in
     nixos-hetz86-1 = ./builders/hetz86-1/configuration.nix;
     nixos-hetz86-builder = ./builders/hetz86-builder/configuration.nix;
     nixos-hetz86-rel-1 = ./builders/hetz86-rel-1/configuration.nix;
+    nixos-uae-lab-node1 = ./uae/lab/node1/configuration.nix;
   };
 
   # Expose as flake.lib.mkNixOS.
@@ -106,6 +107,7 @@ in
           "hetz86-1"
           "hetz86-builder"
           "hetz86-rel-1"
+          "uae-lab-node1"
         ]
     ))
     // {

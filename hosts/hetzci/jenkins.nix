@@ -27,17 +27,28 @@ in
       description = "Add cachix pinning capability";
       default = true;
     };
+    withGithubStatus = lib.mkOption {
+      type = lib.types.bool;
+      description = "Configure a token to set Ghaf GitHub commit satuses";
+      default = true;
+    };
+    withGithubWebhook = lib.mkOption {
+      type = lib.types.bool;
+      description = "Expected Ghaf GitHub webhook secret";
+      default = true;
+    };
   };
   config = {
     sops = {
       secrets = lib.mkMerge [
-        {
-          jenkins_api_token.owner = "jenkins";
-          jenkins_github_webhook_secret.owner = "jenkins";
-          jenkins_github_commit_status_token.owner = "jenkins";
-        }
         (lib.mkIf cfg.withCachix {
           cachix-auth-token.owner = "jenkins";
+        })
+        (lib.mkIf cfg.withGithubStatus {
+          jenkins_github_commit_status_token.owner = "jenkins";
+        })
+        (lib.mkIf cfg.withGithubWebhook {
+          jenkins_github_webhook_secret.owner = "jenkins";
         })
       ];
     };

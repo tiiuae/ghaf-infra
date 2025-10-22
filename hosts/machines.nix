@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
+# SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 {
   ghaf-log = {
@@ -119,4 +119,11 @@
     nebula_ip = "10.42.42.20";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGShuT9oEIq5SQ3lo6n/gT1/OQ3TeJ2r53UUAlWYPJoB";
   };
+
+  uae-lab-node1 = {
+    ip = "172.19.16.37";
+    nebula_ip = "10.42.42.33";
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGKZYL60TIQDoLwUwuZvzOdw/yikC181su5Cm1LAplcj";
+  };
+
 }

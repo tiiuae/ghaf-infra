@@ -15,7 +15,8 @@ properties([
     string(name: 'CI_TEST_REPO_URL', defaultValue: 'https://github.com/tiiuae/ci-test-automation.git', description: 'Select ci-test-automation repository.'),
     string(name: 'CI_TEST_REPO_BRANCH', defaultValue: 'main', description: 'Select ci-test-automation branch to checkout.'),
     string(name: 'IMG_URL', defaultValue: '', description: 'Target image url.'),
-    string(name: 'TESTSET', defaultValue: '_relayboot_', description: 'Target testset, e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.)')
+    string(name: 'TESTSET', defaultValue: '_relayboot_', description: 'Target testset, e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.'),
+    string(name: 'TESTAGENT_HOST', defaultValue: null, description: 'Target testagent host, e.g.: dev, prod, release')
   ])
 ])
 
@@ -70,7 +71,12 @@ def init() {
   if (!testagent_nodes) {
     error("No test agents online")
   }
-  return env.DEVICE_TAG
+  def label = env.DEVICE_TAG
+  if (params.TESTAGENT_HOST) {
+    println("Using specific TESTAGENT_HOST: ${TESTAGENT_HOST}")
+    label = "${params.TESTAGENT_HOST}-${env.DEVICE_TAG}"
+  }
+  return label
 }
 
 def sh_ret_out(String cmd) {

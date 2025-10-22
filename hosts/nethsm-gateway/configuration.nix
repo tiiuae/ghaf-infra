@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
+# SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 {
   self,
@@ -11,6 +11,7 @@
 let
   nethsmLogsPort = 514;
   nethsmLogsDestination = "/var/log/nethsm.log";
+  nethsmHost = "192.168.70.10";
 in
 {
   imports =
@@ -34,7 +35,7 @@ in
       loki_password.owner = "promtail";
       nebula-cert.owner = config.nebula.user;
       nebula-key.owner = config.nebula.user;
-      nethsm-credentials.owner = "root";
+      nethsm-metrics-credentials.owner = "root";
     };
   };
 
@@ -68,14 +69,13 @@ in
   systemd.services.nethsm-exporter =
     let
       package = self.packages.${pkgs.system}.nethsm-exporter;
-      host = "192.168.70.10";
-      port = 8000;
+      listenPort = 8000;
     in
     {
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
-        ExecStart = "${lib.getExe package} --hsm-host ${host} --port ${toString port}";
-        EnvironmentFile = config.sops.secrets.nethsm-credentials.path;
+        ExecStart = "${lib.getExe package} --hsm-host ${nethsmHost} --port ${toString listenPort}";
+        EnvironmentFile = config.sops.secrets.nethsm-metrics-credentials.path;
       };
     };
 

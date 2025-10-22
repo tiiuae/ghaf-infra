@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
+SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 # Using deploy-rs
@@ -25,10 +25,10 @@ To deploy a single host, simply use the deploy command with the name of the node
 deploy .#ghaf-monitoring
 ```
 
-You can give as many hosts as you want and they will all be deployed:
+You can specify a list of hosts to deploy by using the `--targets` option:
 
 ```sh
-deploy .#ghaf-monitoring .#hetzarm
+deploy --targets .#ghaf-monitoring .#hetzarm
 ```
 
 Example assuming the checks have passed beforehand, and using different username for ssh:

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
+# SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 {
   description = "NixOS configurations for Ghaf Infra";
@@ -85,7 +85,7 @@
     };
 
     sbomnix = {
-      url = "github:tiiuae/sbomnix/fix-provenance";
+      url = "github:tiiuae/sbomnix";
       inputs = {
         flake-parts.follows = "flake-parts";
         flake-compat.follows = "flake-compat";

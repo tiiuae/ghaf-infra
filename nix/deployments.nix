@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
+# SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 {
   self,
@@ -43,6 +43,7 @@ let
     hetz86-1 = mkDeployment "hetz86-1" machines.hetz86-1.ip;
     hetz86-builder = mkDeployment "hetz86-builder" machines.hetz86-builder.ip;
     hetz86-rel-1 = mkDeployment "hetz86-rel-1" machines.hetz86-rel-1.ip;
+    uae-lab-node1 = mkDeployment "uae-lab-node1" machines.uae-lab-node1.ip;
   };
 
   aarch64-nodes = {

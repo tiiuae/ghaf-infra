@@ -29,14 +29,14 @@
     jenkins = {
       casc = ./casc;
       pluginsFile = ./plugins.json;
+      withGithubStatus = false;
+      withGithubWebhook = false;
     };
     auth = {
       clientID = "hetzci-release";
       domain = "ci-release.vedenemo.dev";
     };
   };
-
-  nebula.enable = false;
 
   # Configure /var/lib/caddy in /etc/fstab.
   fileSystems."/var/lib/caddy" = {

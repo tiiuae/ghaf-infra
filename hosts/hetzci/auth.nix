@@ -77,14 +77,6 @@ in
 
         https://${cfg.domain} {
 
-          # Introduce /trigger/* api mapping requests directly to jenkins /job/*
-          # letting jenkins handle the authentication for /trigger/* paths.
-          # This makes it possible to authenticate with jenkins api token for
-          # requests on /trigger/* endpoints.
-          handle_path /trigger/* {
-            rewrite * /job{uri}
-            reverse_proxy localhost:8081
-          }
           handle /login {
             redir * /
           }

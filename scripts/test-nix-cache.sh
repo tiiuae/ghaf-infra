@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2181,SC2059
 
-# SPDX-FileCopyrightText: 2022-2024 TII (SSRC) and the Ghaf contributors
+# SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 
 set -e # exit immediately if a command fails
