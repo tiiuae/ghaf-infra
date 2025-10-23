@@ -72,7 +72,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
         ]) {
           catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
             sh """
-              attempt=1; max_attempts=3;
+              attempt=1; max_attempts=5;
               while ! provenance ${it.target}/ --recursive --out ${it.target}.json; do
                 echo "provenance attempt=\$attempt failed"
                 if (( \$attempt >= \$max_attempts )); then
