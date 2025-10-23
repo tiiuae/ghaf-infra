@@ -304,7 +304,7 @@ pipeline {
       }
     }
     stage('Turn off') {
-      when { expression { params && params.TURN_OFF && !params.WIPE_ONLY } }
+      when { expression { params && params.TURN_OFF } }
       steps {
         script {
           ghaf_robot_test("${env.POWEROFF_TAG}")
