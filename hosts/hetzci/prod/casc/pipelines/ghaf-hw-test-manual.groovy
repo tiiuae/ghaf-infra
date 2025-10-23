@@ -20,7 +20,7 @@ properties([
       defaultValue: '',
       description: '''
         Target image url. If specified, the target device is flashed with the given image before running the tests.
-        Can be left empty, in which case DEVICE_TAG must be specified.'''.stripIndent()),
+        Can be left empty, in which case DEVICE_TAG must be specified. With installer image this is mantadory to give!'''.stripIndent()),
     [
       $class: 'ChoiceParameter',
       name: 'DEVICE_TAG',
@@ -55,6 +55,7 @@ properties([
       ]
     ],
     booleanParam(name: 'BOOT', defaultValue: true, description: 'Run boot test before any other tests (if any).'),
+    booleanParam(name: 'WIPE_ONLY', defaultValue: false, description: 'Run just internal memory wiping stage! Use this option ONLY with installer image!.'),
     booleanParam(name: 'TURN_OFF', defaultValue: false, description: 'Turn off the device after other tests (if any).'),
     booleanParam(name: 'USE_RELAY', defaultValue: true, description: 'Use relay board to cut power from the target device.')
   ])
@@ -226,18 +227,17 @@ pipeline {
         // We don't want to maintain these flashing details here:
         script {
           // Determine mount commands
-          def mount_cmd, unmount_cmd
           if(params.IMG_URL.contains("microchip-icicle-")) {
             def muxport = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'usb_sd_mux_port')
-            mount_cmd = "/run/wrappers/bin/sudo usbsdmux ${muxport} host; sleep 10"
-            unmount_cmd = "/run/wrappers/bin/sudo usbsdmux ${muxport} dut"
+            env.MOUNT_CMD = "/run/wrappers/bin/sudo usbsdmux ${muxport} host; sleep 10"
+            env.UNMOUNT_CMD = "/run/wrappers/bin/sudo usbsdmux ${muxport} dut"
           } else {
             def serial = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'usbhub_serial')
-            mount_cmd = "/run/wrappers/bin/sudo AcronameHubCLI -u 0 -s ${serial}; sleep 10"
-            unmount_cmd = "/run/wrappers/bin/sudo AcronameHubCLI -u 1 -s ${serial}"
+            env.MOUNT_CMD = "/run/wrappers/bin/sudo AcronameHubCLI -u 0 -s ${serial}; sleep 10"
+            env.UNMOUNT_CMD = "/run/wrappers/bin/sudo AcronameHubCLI -u 1 -s ${serial}"
           }
           // Mount the target disk
-          sh "${mount_cmd}"
+          sh "${env.MOUNT_CMD}"
           // Read the device name
           def dev = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'ext_drive_by-id')
           println "Using device '$dev'"
@@ -259,13 +259,24 @@ pipeline {
           // Write the image
           sh "/run/wrappers/bin/sudo dd if=${env.IMG_PATH} of=${dev} bs=1M status=progress conv=fsync"
           // Unmount
-          sh "${unmount_cmd}"
+          sh "${env.UNMOUNT_CMD}"
           currentBuild.description = "${currentBuild.description}<br>✅ Device flashed"
         }
       }
     }
+    stage('Run Ghaf-installer') {
+      when { expression { env.IMG_URL.contains("lenovo-x1-carbon-gen11-debug-installer") && !params.WIPE_ONLY } }
+      steps {
+        script {
+          println "Run ghaf-installer"
+          ghaf_robot_test('installer')
+          println "Disconnect SSD from the laptop"
+          sh "${env.MOUNT_CMD}"
+        }
+      }
+    }
     stage('Boot test') {
-      when { expression { params && params.BOOT } }
+      when { expression { params && params.BOOT && !params.WIPE_ONLY } }
       steps {
         script {
           ghaf_robot_test("${env.BOOT_TAG}AND${env.DEVICE_TAG}")
@@ -273,15 +284,27 @@ pipeline {
       }
     }
     stage('HW test') {
-      when { expression { params.TEST_TAGS } }
+      when { expression { params.TEST_TAGS && !params.WIPE_ONLY } }
       steps {
         script {
           ghaf_robot_test("${params.TEST_TAGS}")
         }
       }
     }
+    stage('Wipe system') {
+      when { expression { env.IMG_URL.contains("lenovo-x1-carbon-gen11-debug-installer") } }
+      steps {
+        script {
+          ghaf_robot_test('turnoff')
+          println "Connect SSD to the laptop"
+          sh "${env.UNMOUNT_CMD}; sleep 10"
+          println "Wipe the internal memory of the laptop"
+          ghaf_robot_test('wiping')
+        }
+      }
+    }
     stage('Turn off') {
-      when { expression { params && params.TURN_OFF } }
+      when { expression { params && params.TURN_OFF && !params.WIPE_ONLY } }
       steps {
         script {
           ghaf_robot_test("${env.POWEROFF_TAG}")
