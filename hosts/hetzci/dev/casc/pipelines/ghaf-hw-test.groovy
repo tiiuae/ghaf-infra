@@ -245,7 +245,24 @@ pipeline {
           sh "${env.MOUNT_CMD}"
           // Read the device name
           def dev = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'ext_drive_by-id')
-          println "Using device '$dev'"
+          println "Checking that flash target '$dev' is connected..."
+          // Check if the target disk is actually visible as block device before attempting flash
+          for (int i = 0; i < 2; i++) {
+            def disk_details = sh(script: "/run/wrappers/bin/sudo ls -la ${dev}", returnStdout: true).trim()
+            def first_char = sh(script: "echo ${disk_details} | cut -c1", returnStdout: true).trim()
+            if(disk_details.contains("${dev} ->")) {
+              println "'$dev' found and ready for flash"
+              break
+            } else if(first_char.contains("-")) {
+              println "'$dev' found as a regular file, not as a block device."
+              println "Deleting the file."
+              sh "${env.UNMOUNT_CMD}"
+              sh "/run/wrappers/bin/sudo rm ${dev}"
+              sh "${env.MOUNT_CMD}"
+            } else {
+              error("'$dev' not showing up correctly on the test agent")
+            }
+          }
           // Wipe possible ZFS leftovers, more details here:
           // https://github.com/tiiuae/ghaf/blob/454b18bc/packages/installer/ghaf-installer.sh#L75
           if(params.IMG_URL.contains("lenovo-x1-")) {
