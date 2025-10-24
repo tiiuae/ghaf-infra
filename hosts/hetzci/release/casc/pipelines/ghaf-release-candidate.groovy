@@ -96,20 +96,16 @@ pipeline {
         }
       }
     }
-    stage('OTA pin') {
+    stage('Build OTA pin') {
       steps {
         dir(WORKDIR) {
           script {
-            withCredentials([string(credentialsId: 'cachix-auth-token', variable: 'TOKEN')]) {
-              env.CACHIX_AUTH_TOKEN="$TOKEN".trim()
-              OTA_TARGETS.each {
-                stage("Pin ${it.target}") {
-                  sh """
-                    nixos-rebuild build --fallback --flake .#${it.target}
-                    cachix push ghaf-release \$(readlink -f result)
-                    cachix pin -v ghaf-release ${it.target} \$(readlink -f result) --keep-revisions 2
-                  """
-                }
+            OTA_TARGETS.each {
+              stage("Build ${it.target}") {
+                sh """
+                  nixos-rebuild build --fallback --flake .#${it.target}
+                  mv result otapin.${it.target}
+                """
               }
             }
           }
