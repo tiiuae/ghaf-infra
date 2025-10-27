@@ -32,7 +32,6 @@ def run_uefi_sign_iso(String diskPath, String target) {
     mkdir -p "${outdir}/keys"
     uefikeygen "${target}-tmp"
     test -f "${target}-tmp/keys/db.crt" -a -f "${target}-tmp/keys/db.key"
-    echo "$PWD"
     cp -v "${target}-tmp"/keys/*.der "${outdir}/keys/"
     uefisigniso "${target}-tmp/keys/db.crt" "${target}-tmp/keys/db.key" "${diskPath}" "${outdir}"
   """

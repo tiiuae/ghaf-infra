@@ -72,14 +72,6 @@ in
           openssh
           wget
           zstd
-          xorriso
-          mtools
-          dosfstools
-          gawk
-          gnused
-          systemdUkify
-          squashfsTools
-          binutils
         ])
         ++ [
           inputs.sbomnix.packages.${pkgs.system}.sbomnix # provenance
