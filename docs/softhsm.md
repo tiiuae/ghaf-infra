@@ -5,7 +5,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 # Signing
 
-![diagram](./signing-setup.png)
+![diagram](./signing-setup-softhsm.png)
 
 ## Softhsm usage
 
@@ -16,7 +16,7 @@ All commands should be ran on the nethsm-gateway server.
 
 ### Creating softhsm signing keys
 
-> Prerequisite of key creation is that you are in the `softhsm` group.
+> Prerequisite of key creation is that you are in the `nethsm` group.
 
 First define the pins as variables:
 
@@ -46,25 +46,25 @@ export SLOT=391264627 # replace with the randomly assigned slot you got back
 ```
 
 ```sh
-pkcs11-tool --module $SOFTHSM2_MODULE -p $PIN --slot $SLOT \
+pkcs11-tool --module $HSM_MODULE -p $PIN --slot $SLOT \
             --keypairgen --key-type rsa:4096 --label "PK-key" --id 01
 
-pkcs11-tool --module $SOFTHSM2_MODULE -p $PIN --slot $SLOT \
+pkcs11-tool --module $HSM_MODULE -p $PIN --slot $SLOT \
             --keypairgen --key-type rsa:4096 --label "KEK-key" --id 02
 
-pkcs11-tool --module $SOFTHSM2_MODULE -p $PIN --slot $SLOT \
+pkcs11-tool --module $HSM_MODULE -p $PIN --slot $SLOT \
             --keypairgen --key-type rsa:4096 --label "DB-key" --id 03
 ```
 
 Verify keys are there. You should see 3 public keys and 3 private keys.
 
 ```sh
-pkcs11-tool --module $SOFTHSM2_MODULE -p $PIN --slot $SLOT --list-objects
+pkcs11-tool --module $HSM_MODULE -p $PIN --slot $SLOT --list-objects
 ```
 
 ### Creating certificates
 
-> `$KEYDIR` is defined in the system configuration.
+> `$CERTSDIR` is defined in the system configuration.
 
 Now you can use the created private keys to generate x509 certificates:
 
@@ -73,30 +73,30 @@ Now you can use the created private keys to generate x509 certificates:
 openssl req -new -x509 -sha256 -days 365 \
         -key "pkcs11:token=$TOKEN;object=PK-key;type=private;pin-value=$PIN" \
         -config $OPENSSL_EXTRA_CONF/create_PK_cert.ini \
-        -out $KEYDIR/pk.crt
+        -out $CERTSDIR/pk.crt
 # KEK
 openssl req -new -x509 -sha256 -days 365 \
         -key "pkcs11:token=$TOKEN;object=KEK-key;type=private;pin-value=$PIN" \
         -config $OPENSSL_EXTRA_CONF/create_KEK_cert.ini \
-        -out $KEYDIR/kek.crt
+        -out $CERTSDIR/kek.crt
 # DB
 openssl req -new -x509 -sha256 -days 365 \
         -key "pkcs11:token=$TOKEN;object=DB-key;type=private;pin-value=$PIN" \
         -config $OPENSSL_EXTRA_CONF/create_DB_cert.ini \
-        -out $KEYDIR/db.crt
+        -out $CERTSDIR/db.crt
 ```
 
 You can import these certificates into the softhsm:
 
 ```sh
-pkcs11-tool --module $SOFTHSM2_MODULE -p 1234 --slot $SLOT \
-            --write-object $KEYDIR/pk.crt --type cert --label PK-cert
+pkcs11-tool --module $HSM_MODULE -p 1234 --slot $SLOT \
+            --write-object $CERTSDIR/pk.crt --type cert --label PK-cert
 
-pkcs11-tool --module $SOFTHSM2_MODULE -p 1234 --slot $SLOT \
-            --write-object $KEYDIR/kek.crt --type cert --label KEK-cert
+pkcs11-tool --module $HSM_MODULE -p 1234 --slot $SLOT \
+            --write-object $CERTSDIR/kek.crt --type cert --label KEK-cert
 
-pkcs11-tool --module $SOFTHSM2_MODULE -p 1234 --slot $SLOT \
-            --write-object $KEYDIR/db.crt --type cert --label DB-cert
+pkcs11-tool --module $HSM_MODULE -p 1234 --slot $SLOT \
+            --write-object $CERTSDIR/db.crt --type cert --label DB-cert
 ```
 
 ### Exporting public keys
@@ -104,12 +104,12 @@ pkcs11-tool --module $SOFTHSM2_MODULE -p 1234 --slot $SLOT \
 The public keys can be exported for enrollment to UEFI if needed.
 
 ```sh
-pkcs11-tool --module $SOFTHSM2_MODULE -p $PIN --slot $SLOT \
-            --read-object --type pubkey --label PK-key -o $KEYDIR/pk.der
-pkcs11-tool --module $SOFTHSM2_MODULE -p $PIN --slot $SLOT \
-            --read-object --type pubkey --label KEK-key -o $KEYDIR/kek.der
-pkcs11-tool --module $SOFTHSM2_MODULE -p $PIN --slot $SLOT \
-            --read-object --type pubkey --label DB-key -o $KEYDIR/db.der
+pkcs11-tool --module $HSM_MODULE -p $PIN --slot $SLOT \
+            --read-object --type pubkey --label PK-key -o $CERTSDIR/pk.der
+pkcs11-tool --module $HSM_MODULE -p $PIN --slot $SLOT \
+            --read-object --type pubkey --label KEK-key -o $CERTSDIR/kek.der
+pkcs11-tool --module $HSM_MODULE -p $PIN --slot $SLOT \
+            --read-object --type pubkey --label DB-key -o $CERTSDIR/db.der
 ```
 
 ## PKCS11 proxy
