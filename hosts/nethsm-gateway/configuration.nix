@@ -2,24 +2,19 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   self,
-  pkgs,
   inputs,
   lib,
   config,
+  machines,
   ...
 }:
-let
-  nethsmLogsPort = 514;
-  nethsmLogsDestination = "/var/log/nethsm.log";
-  nethsmHost = "192.168.70.10";
-in
 {
   imports =
     [
       ./disk-config.nix
       inputs.sops-nix.nixosModules.sops
       inputs.disko.nixosModules.disko
-      ./softhsm.nix
+      ./nethsm.nix
     ]
     ++ (with self.nixosModules; [
       common
@@ -35,7 +30,6 @@ in
       loki_password.owner = "promtail";
       nebula-cert.owner = config.nebula.user;
       nebula-key.owner = config.nebula.user;
-      nethsm-metrics-credentials.owner = "root";
     };
   };
 
@@ -66,36 +60,9 @@ in
     ];
   };
 
-  systemd.services.nethsm-exporter =
-    let
-      package = self.packages.${pkgs.system}.nethsm-exporter;
-      listenPort = 8000;
-    in
-    {
-      wantedBy = [ "multi-user.target" ];
-      serviceConfig = {
-        ExecStart = "${lib.getExe package} --hsm-host ${nethsmHost} --port ${toString listenPort}";
-        EnvironmentFile = config.sops.secrets.nethsm-metrics-credentials.path;
-      };
-    };
-
-  services.syslog-ng = {
-    enable = true;
-    extraConfig = ''
-      source s_network_udp { network(ip("0.0.0.0") port(${toString nethsmLogsPort}) transport("udp")); };
-      source s_network_tcp { network(ip("0.0.0.0") port(${toString nethsmLogsPort}) transport("tcp")); };
-
-      destination d_nethsm { file("${nethsmLogsDestination}" perm(0644)); };
-
-      log { source(s_network_udp); destination(d_nethsm); };
-      log { source(s_network_tcp); destination(d_nethsm); };
-    '';
-  };
-
-  networking.firewall = {
-    allowedUDPPorts = [ nethsmLogsPort ];
-    allowedTCPPorts = [ nethsmLogsPort ];
-  };
+  nethsm.host = "192.168.70.10";
+  pkcs11.module = "nethsm";
+  pkcs11.proxy.listenAddr = machines.nethsm-gateway.nebula_ip;
 
   services.monitoring = {
     metrics.enable = true;
@@ -115,7 +82,7 @@ in
           labels = {
             job = "nethsm-log";
             host = config.networking.hostName;
-            __path__ = nethsmLogsDestination;
+            __path__ = config.nethsm.logging.file;
           };
         }
       ];
@@ -157,13 +124,13 @@ in
     inbound = [
       # allow monitoring server to scrape nethsm metrics
       {
-        port = 8000;
+        inherit (config.nethsm.exporter) port;
         proto = "tcp";
         groups = [ "scraper" ];
       }
       # pkcs11-daemon
       {
-        port = 2345;
+        port = config.pkcs11.proxy.listenPort;
         proto = "tcp";
         host = "any";
       }
