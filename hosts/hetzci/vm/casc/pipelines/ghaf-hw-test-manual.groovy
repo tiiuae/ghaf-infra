@@ -7,6 +7,7 @@
 
 def TMP_IMG_DIR = './image'
 def CONF_FILE_PATH = '/etc/jenkins/test_config.json'
+env.BOOT_PASSED = 'true'
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -151,6 +152,10 @@ def ghaf_robot_test(String tags) {
       currentBuild.result = "FAILURE"
       unstable("FAILED '${tags}': ${e.toString()}")
       currentBuild.description = "${currentBuild.description}<br>⛔ ${tags}"
+      if (tags.contains('boot')) {
+        // Set an environment variable to indicate boot test failed
+        env.BOOT_PASSED = 'false'
+      }
     } finally {
       // Move the test output (if any) to a subdirectory
       sh """
@@ -294,7 +299,7 @@ pipeline {
       }
     }
     stage('HW test') {
-      when { expression { params.TEST_TAGS && !params.WIPE_ONLY } }
+      when { expression { env.BOOT_PASSED == 'true' && params.TEST_TAGS && !params.WIPE_ONLY } }
       steps {
         script {
           ghaf_robot_test("${params.TEST_TAGS}")
