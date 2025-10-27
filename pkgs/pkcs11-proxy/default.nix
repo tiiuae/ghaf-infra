@@ -6,16 +6,24 @@
   fetchFromGitHub,
   ...
 }:
+let
+  pythonEnv = pkgs.python3.withPackages (ps: [ ps.pykcs11 ]);
+in
 stdenv.mkDerivation rec {
   pname = "pkcs11-proxy";
   version = "git";
 
   src = fetchFromGitHub {
-    owner = "scobiej";
+    owner = "joinemm";
     repo = pname;
-    rev = "f9329e16cca1de3b0337a21e9cdab5be9e27a471";
-    hash = "sha256-zFPjAvm7O3gPvlCSPXn/QnCIzaWAdtKa6ISFsEfhjLs=";
+    rev = "26f7d4665b727d63f2bfdc9560eadff0a2866701";
+    hash = "sha256-qFvLmfiYCK6yw+dNPcZtK1RySfJLr0Jhfkn0lEx74MU=";
   };
+
+  buildInputs = [
+    pkgs.makeWrapper
+    pythonEnv
+  ];
 
   nativeBuildInputs = with pkgs; [
     cmake
@@ -23,6 +31,14 @@ stdenv.mkDerivation rec {
     openssl
     libseccomp
   ];
+
+  postInstall = ''
+    cp ../p11proxy-mitm $out/bin/
+    patchShebangs $out/bin/p11proxy-mitm
+    wrapProgram $out/bin/p11proxy-mitm \
+      --set PATH "${pythonEnv}/bin" \
+      --prefix PYTHONPATH : "${pythonEnv}/${pkgs.python3.sitePackages}"
+  '';
 
   postPatch = ''
     patchShebangs mksyscalls.sh
