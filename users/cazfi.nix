@@ -12,7 +12,7 @@
         "wheel"
         "networkmanager"
         "docker"
-        "softhsm"
+        "nethsm"
       ];
     };
   };

@@ -7,7 +7,7 @@
   ...
 }:
 let
-  selfPackages = self.packages.${pkgs.system};
+  inherit (self.packages.${pkgs.system}) pkcs11-proxy systemd-sbsign;
 
   # patch in the 1.1 update.
   # can be removed when we update to 25.11
@@ -25,7 +25,7 @@ let
   };
 
   proxyConfig = {
-    PKCS11_PROXY_MODULE = "${selfPackages.pkcs11-proxy}/lib/libpkcs11-proxy.so";
+    PKCS11_PROXY_MODULE = "${pkcs11-proxy}/lib/libpkcs11-proxy.so";
     PKCS11_PROXY_TLS_PSK_FILE = config.sops.secrets.tls-pks-file.path;
     PKCS11_PROXY_SOCKET = "tls://nethsm-gateway.sumu.vedenemo.dev:2345";
     OPENSSL_CONF = toString (
@@ -47,7 +47,9 @@ let
           [pkcs11_sect]
           activate = 1
           module = "${pkcs11-provider}/lib/ossl-modules/pkcs11.so"
-          pkcs11-module-path = "${selfPackages.pkcs11-proxy}/lib/libpkcs11-proxy.so"
+          pkcs11-module-path = "${pkcs11-proxy}/lib/libpkcs11-proxy.so"
+          # fixes segfault in openssl commands
+          pkcs11-module-quirks = no-deinit
         ''
     );
 
@@ -65,17 +67,16 @@ in
   environment.systemPackages =
     (with pkgs; [
       opensc # pkcs11-tool
-      cosign
       openssl
     ])
-    ++ [ selfPackages.systemd-sbsign ];
+    ++ [ systemd-sbsign ];
 
   environment.variables = proxyConfig;
 
   services.jenkins = {
     environment = proxyConfig;
     packages = with pkgs; [
-      cosign
+      openssl
     ];
   };
 }

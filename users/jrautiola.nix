@@ -13,7 +13,7 @@
       extraGroups = [
         "wheel"
         "networkmanager"
-        "softhsm"
+        "nethsm"
       ];
     };
   };
