@@ -240,7 +240,17 @@ pipeline {
           sh "${env.MOUNT_CMD}"
           // Read the device name
           def dev = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'ext_drive_by-id')
-          println "Using device '$dev'"
+          println "Checking that flash target '$dev' is connected..."
+          sh """
+            if /run/wrappers/bin/sudo test -f ${dev}; then
+              echo "dev ${dev} found as regular file, removing the file and trying re-mount"
+              ${env.UNMOUNT_CMD}; /run/wrappers/bin/sudo rm ${dev}; ${env.MOUNT_CMD}
+            fi
+            if ! /run/wrappers/bin/sudo test -L ${dev}; then
+              echo "dev ${dev} is not a symlink, aborting"
+              exit 1
+            fi
+          """
           // Wipe possible ZFS leftovers, more details here:
           // https://github.com/tiiuae/ghaf/blob/454b18bc/packages/installer/ghaf-installer.sh#L75
           if(params.IMG_URL.contains("lenovo-x1-")) {
