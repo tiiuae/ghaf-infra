@@ -95,6 +95,8 @@ in
         "-Djenkins.install.runSetupWizard=false"
         # Allow setting the following possibly undefined parameters
         "-Dhudson.model.ParametersAction.safeParameters=DESC,RELOAD_ONLY"
+        # Ensure workspace root dir is what we expect
+        ''-Djenkins.model.Jenkins.workspacesDir=$JENKINS_HOME/workspace/\$ITEM_FULL_NAME''
       ];
       plugins =
         let
