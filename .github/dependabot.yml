@@ -3,9 +3,13 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: daily
+      interval: weekly
+    cooldown:
+      default-days: 4
 
   - package-ecosystem: gomod
     directory: /pkgs/policy-checker
     schedule:
-      interval: daily
+      interval: weekly
+    cooldown:
+      default-days: 4
