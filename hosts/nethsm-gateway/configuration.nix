@@ -61,7 +61,6 @@
   };
 
   nethsm.host = "192.168.70.10";
-  pkcs11.module = "nethsm";
   pkcs11.proxy.listenAddr = machines.nethsm-gateway.nebula_ip;
 
   services.monitoring = {
