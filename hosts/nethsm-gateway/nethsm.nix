@@ -42,7 +42,7 @@ let
   softhsmEnv = {
     SOFTHSM2_CONF = toString (
       pkgs.writeText "softhsm2.conf" ''
-        directories.tokendir = /var/lib/softhsm/tokens 
+        directories.tokendir = /var/lib/softhsm/tokens
         objectstore.backend = file
         log.level = INFO
         slots.removable = false
@@ -140,7 +140,7 @@ in
 
           slots:
             - label: NetHSM
-              description: Tampere Office NetHSM 
+              description: Tampere Office NetHSM
 
               operator:
                 username: ghafinfrasign~ghafsigner
@@ -175,6 +175,8 @@ in
     environment.systemPackages =
       (with pkgs; [
         openssl
+        screen
+        minicom
         pynitrokey # nitropy
         opensc # pkcs11-tool
         gnutls # psktool
