@@ -14,10 +14,10 @@ stdenv.mkDerivation rec {
   version = "git";
 
   src = fetchFromGitHub {
-    owner = "joinemm";
+    owner = "tiiuae";
     repo = pname;
-    rev = "26f7d4665b727d63f2bfdc9560eadff0a2866701";
-    hash = "sha256-qFvLmfiYCK6yw+dNPcZtK1RySfJLr0Jhfkn0lEx74MU=";
+    rev = "0d4c5dd3f92445ff106ddf1cd0e6f7e5e0c8f6f9";
+    hash = "sha256-yHi0oXRYIzKlu9utATdBAJlP1m3TU49OcUggOjIgELE=";
   };
 
   buildInputs = [

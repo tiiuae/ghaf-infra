@@ -8,7 +8,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 ![diagram](./nethsm-setup.png)
 
 `nethsm-gateway` runs a daemon provided by
-[pkcs11-proxy](https://github.com/joinemm/pkcs11-proxy).
+[pkcs11-proxy](https://github.com/tiiuae/pkcs11-proxy).
 
 This daemon is listening on tls port 2345, accessible through the nebula tunnel
 from the hetzner CI. A library provided by the same project can be used as the
