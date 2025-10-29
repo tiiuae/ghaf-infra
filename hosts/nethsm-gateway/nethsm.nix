@@ -29,38 +29,12 @@ let
     systemd-sbsign
     nethsm-pkcs11
     nethsm-exporter
-    softhsm2
     ;
 
   pkcs11Modules = {
     nethsm = "${nethsm-pkcs11}/lib/libnethsm_pkcs11.so";
-    softhsm = "${softhsm2}/lib/softhsm/libsofthsm2.so";
     yubihsm = "${pkgs.yubihsm-shell}/lib/pkcs11/yubihsm_pkcs11.so";
     p11-kit = "${pkgs.p11-kit}/lib/p11-kit-proxy.so";
-  };
-
-  softhsmEnv = {
-    # https://man.archlinux.org/man/softhsm2.conf.5.en
-    SOFTHSM2_CONF = toString (
-      pkgs.writeText "softhsm2.conf" ''
-        directories.tokendir = /var/lib/softhsm/tokens
-        objectstore.backend = file
-        log.level = INFO
-        slots.removable = false
-        slots.mechanisms = ALL
-        library.reset_on_fork = false
-      ''
-    );
-    CERTSDIR = "/var/lib/softhsm/certs";
-  };
-
-  yubihsmEnv = {
-    # https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-sdk-tools-libraries.html#hsm2-pkcs11-configuration-sample-label
-    YUBIHSM_PKCS11_CONF = toString (
-      pkgs.writeText "yubihsm_pkcs11.conf" ''
-        connector=http://127.0.0.1:12345
-      ''
-    );
   };
 in
 {
@@ -132,8 +106,6 @@ in
 
     systemd.tmpfiles.rules = [
       "f /var/log/libnethsm.log 0770 root nethsm - -"
-      "d /var/lib/softhsm/tokens 0770 root nethsm - -"
-      "d /var/lib/softhsm/certs 0770 root nethsm - -"
     ];
 
     # https://docs.nitrokey.com/nethsm/pkcs11-setup#configuration-file-format
@@ -191,64 +163,65 @@ in
       ])
       ++ [
         systemd-sbsign
-        softhsm2 # softhsm2-util
         pkcs11-proxy
       ];
 
     # PKCS#11 modules that p11-kit will load
     # https://p11-glue.github.io/p11-glue/p11-kit/manual/pkcs11-conf.html
     environment.etc = {
+      # NetHSM module, used by the proxy
       "pkcs11/modules/nethsm.module".text = ''
         module: ${pkcs11Modules.nethsm}
-        priority: 4
+        priority: 3
       '';
+      # YubiHSM module, disabled in the proxy
+      # Can be used as backup if NetHSM is not functional, by enabling it
       "pkcs11/modules/yubihsm.module".text = ''
         module: ${pkcs11Modules.yubihsm}
-        priority: 3
-        disable-in: pkcs11-daemon
-      '';
-      "pkcs11/modules/softhsm.module".text = ''
-        module: ${pkcs11Modules.softhsm}
         priority: 2
         disable-in: pkcs11-daemon
       '';
     };
 
-    environment.variables =
-      {
-        # can be used with pkcs11-tool --module
-        P11MODULE = pkcs11Modules.p11-kit;
+    environment.variables = {
+      # can be used with pkcs11-tool --module
+      P11MODULE = pkcs11Modules.p11-kit;
 
-        # https://github.com/latchset/pkcs11-provider/blob/main/HOWTO.md
-        OPENSSL_CONF = toString (
-          pkgs.writeText "openssl.cnf" # toml
-            ''
-              openssl_conf = openssl_init
+      # https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-sdk-tools-libraries.html#hsm2-pkcs11-configuration-sample-label
+      YUBIHSM_PKCS11_CONF = toString (
+        pkgs.writeText "yubihsm_pkcs11.conf" ''
+          connector=http://127.0.0.1:12345
+        ''
+      );
 
-              [openssl_init]
-              providers = provider_sect
+      # https://github.com/latchset/pkcs11-provider/blob/main/HOWTO.md
+      OPENSSL_CONF = toString (
+        pkgs.writeText "openssl.cnf" # toml
+          ''
+            openssl_conf = openssl_init
 
-              [provider_sect]
-              default = default_sect
-              pkcs11 = pkcs11_sect
+            [openssl_init]
+            providers = provider_sect
 
-              # basic openssl functionality such as tls breaks when default provider is not present
-              [default_sect]
-              activate = 1
+            [provider_sect]
+            default = default_sect
+            pkcs11 = pkcs11_sect
 
-              [pkcs11_sect]
-              activate = 1
-              module = "${pkcs11-provider}/lib/ossl-modules/pkcs11.so"
-              pkcs11-module-path = ${pkcs11Modules.p11-kit} 
-              pkcs11-module-quirks = no-deinit
-            ''
-        );
+            # basic openssl functionality such as tls breaks when default provider is not present
+            [default_sect]
+            activate = 1
 
-        # Extra cert creation config can be loaded from ci-yubi repo
-        OPENSSL_EXTRA_CONF = "${inputs.ci-yubi}/secboot/conf";
-      }
-      // softhsmEnv
-      // yubihsmEnv;
+            [pkcs11_sect]
+            activate = 1
+            module = "${pkcs11-provider}/lib/ossl-modules/pkcs11.so"
+            pkcs11-module-path = ${pkcs11Modules.p11-kit} 
+            pkcs11-module-quirks = no-deinit
+          ''
+      );
+
+      # Extra cert creation config can be loaded from ci-yubi repo
+      OPENSSL_EXTRA_CONF = "${inputs.ci-yubi}/secboot/conf";
+    };
 
     systemd.services.yubihsm-connector = {
       wantedBy = [ "multi-user.target" ];
