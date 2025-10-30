@@ -52,7 +52,6 @@ let
           pkcs11-module-quirks = no-deinit
         ''
     );
-
   };
 in
 {
