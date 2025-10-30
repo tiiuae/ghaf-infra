@@ -7,10 +7,12 @@ def run_cmd(String cmd) {
 }
 
 def append_to_build_description(String text) {
-  if(!currentBuild.description) {
-    currentBuild.description = text
-  } else {
-    currentBuild.description = "${currentBuild.description}<br>${text}"
+  lock('build-description') {
+    if(!currentBuild.description) {
+      currentBuild.description = text
+    } else {
+      currentBuild.description = "${currentBuild.description}<br>${text}"
+    }
   }
 }
 

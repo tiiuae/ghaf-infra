@@ -188,6 +188,8 @@ unclassified:
     declaredResources:
     - name: "evaluator"
       description: "Nix evaluator lock"
+    - name: "build-description"
+      description: "Prevent parallel build description modifications"
 
 # https://plugins.jenkins.io/configuration-as-code-groovy/
 groovy:
