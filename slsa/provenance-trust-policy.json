@@ -1,9 +1,8 @@
 {
   "version": "1.0",
   "signature": {
-    "certificate": "INT-Ghaf-Devenv-Provenance",
-    "verifier_rev": "bdb2dbf",
-    "verify": true
+    "verify": true,
+    "public_key": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAFgPVn2T8wSXjrGha1fD/mkzyUKutFXVIapgpsnxjaVc=\n-----END PUBLIC KEY-----"
   },
   "criteria": [
     {
@@ -14,8 +13,14 @@
     },
     {
       "id": "builder-id-azure",
-      "description": "Builder ID is dev, prod or release",
+      "description": "Built on Azure dev, prod or release",
       "cel": "predicate.runDetails.builder.id in [ 'https://ghaf-jenkins-controller-dev.northeurope.cloudapp.azure.com/', 'https://ghaf-jenkins-controller-prod.northeurope.cloudapp.azure.com/', 'https://ghaf-jenkins-controller-release.northeurope.cloudapp.azure.com/' ]",
+      "required": false
+    },
+    {
+      "id": "builder-id-hetzner",
+      "description": "Built on Hetzner CI dev, prod or release",
+      "cel": "predicate.runDetails.builder.id in [ 'https://ci-dev.vedenemo.dev/', 'https://ci-prod.vedenemo.dev/', 'https://ci-release.vedenemo.dev/' ]",
       "required": false
     },
     {
