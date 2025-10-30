@@ -124,6 +124,7 @@ in
       jq
       curl
       grafana-loki
+      openssl
       (python3.withPackages (ps: with ps; [ pyserial ]))
     ]);
 

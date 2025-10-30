@@ -23,9 +23,8 @@ type Criteria struct {
 }
 
 type SignaturePolicy struct {
-	Certificate  string
-	Verifier_rev string
-	Verify       bool
+	Verify     bool
+	Public_key string
 }
 
 type TrustPolicy struct {
@@ -34,23 +33,51 @@ type TrustPolicy struct {
 	Criteria  []Criteria
 }
 
+func CheckOpensslExists() {
+	cmd := exec.Command("openssl", "--version")
+	err := cmd.Run()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func SavePublicKey(policy SignaturePolicy) string {
+	fmt.Println(policy.Public_key)
+	f, err := os.CreateTemp("", "provenance-signing-key.pub")
+	if err != nil {
+		panic(err)
+	}
+	_, err = f.Write([]byte(policy.Public_key))
+	if err != nil {
+		panic(err)
+	}
+	return f.Name()
+}
+
 func VerifySignature(provenance_file string, provenance_signature string, policy SignaturePolicy) {
-	fmt.Println("Verifying signature...")
+	fmt.Println("Verifying signature using public key")
+
+	CheckOpensslExists()
+	publicKeyPath := SavePublicKey(policy)
+	defer os.Remove(publicKeyPath)
+
 	cmd := exec.Command(
-		"nix", "run", fmt.Sprintf("github:tiiuae/ci-yubi/%s#verify", policy.Verifier_rev), "--",
-		"--cert", policy.Certificate,
-		"--path", provenance_file,
-		"--sigfile", provenance_signature,
+		"openssl", "pkeyutl", "-verify",
+		"-inkey", publicKeyPath, "-pubin",
+		"-sigfile", provenance_signature,
+		"-rawin", "-in", provenance_file,
 	)
 	var stderr bytes.Buffer
+	var stdout bytes.Buffer
 	cmd.Stderr = &stderr
+	cmd.Stdout = &stdout
 	err := cmd.Run()
 	if err != nil {
 		fmt.Println(stderr.String())
 		os.Exit(1)
 	}
 
-	fmt.Println("Signature OK")
+	fmt.Print(stdout.String())
 }
 
 func provenanceCheck(provenance_file string, config TrustPolicy) {
