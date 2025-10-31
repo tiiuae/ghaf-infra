@@ -38,6 +38,12 @@
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG9dKZmXqN8in6/0jglv+/txjWRkRJkPOUSVUGTx6KaG";
   };
 
+  ghaf-fleetdm = {
+    ip = "95.216.169.87";
+    internal_ip = "10.0.0.13";
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILohl64vKdsBX3x8SkKjJDphXEYTJGpnE1mHQYERUXZM";
+  };
+
   hetzarm = {
     ip = "65.21.20.242";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILx4zU4gIkTY/1oKEOkf9gTJChdx/jR3lDgZ7p/c7LEK";
