@@ -44,6 +44,7 @@ def TARGETS = [
 ]
 
 properties([
+  disableConcurrentBuilds(abortPrevious: true),
   githubProjectProperty(displayName: '', projectUrlStr: REPO_URL)
 ])
 pipeline {
