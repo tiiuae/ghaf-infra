@@ -205,6 +205,8 @@ unclassified:
       description: "Nix evaluator lock"
     - name: "build-description"
       description: "Prevent parallel build description modifications"
+    - name: "signing"
+      description: "Prevent parallel signing operations through the pkcs11 proxy"
 
 # https://plugins.jenkins.io/configuration-as-code-groovy/
 groovy:
