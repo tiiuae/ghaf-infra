@@ -7,7 +7,7 @@ def REPO_URL = 'https://github.com/tiiuae/ghaf/'
 def WORKDIR  = 'checkout'
 def PIPELINE = [:]
 
-def RELEASE_TARGETS = [
+def ALL_RELEASE_TARGETS = [
   [ target: "packages.x86_64-linux.doc",
     testset: null,
   ],
@@ -34,6 +34,21 @@ def RELEASE_TARGETS = [
   ],
 ]
 
+def LAPTOP_RELEASE_TARGETS = [
+  [ target: "packages.x86_64-linux.doc",
+    testset: null,
+  ],
+  [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug",
+    testset: '_relayboot_bat_',
+  ],
+  [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-installer",
+    testset: null,
+  ],
+  [ target: "packages.x86_64-linux.system76-darp11-b-debug",
+    testset: '_relayboot_bat_',
+  ],
+]
+
 def OTA_TARGETS = [
   [ target: "lenovo-x1-carbon-gen11-debug" ],
   [ target: "system76-darp11-b-debug" ],
@@ -42,7 +57,22 @@ def OTA_TARGETS = [
 properties([
   githubProjectProperty(displayName: '', projectUrlStr: REPO_URL),
   parameters([
-    string(name: 'GITREF', defaultValue: 'main', description: 'Ghaf git reference (Commit/Branch/Tag)'),
+    [
+      $class: 'ChoiceParameter',
+      name: 'RELEASE_TARGETS_SET',
+      choiceType: 'PT_RADIO',
+      description: '''
+        Select a release target set. Build fails if unselected.'''.stripIndent(),
+      script: [
+        $class: 'GroovyScript',
+        script: [
+          classpath: [],
+          sandbox: true,
+          script: "return ['All targets','Only laptop targets']"
+        ]
+      ]
+    ],
+    string(name: 'GITREF', defaultValue: 'main', description: 'Ghaf git reference (Commit/Branch/Tag)')
   ])
 ])
 pipeline {
@@ -80,7 +110,15 @@ pipeline {
         dir(WORKDIR) {
           script {
             MODULES.utils = load "/etc/jenkins/pipelines/modules/utils.groovy"
-            PIPELINE = MODULES.utils.create_pipeline(RELEASE_TARGETS)
+            if (params.RELEASE_TARGETS_SET.contains('All targets')) {
+              println('All release targets selected')
+              PIPELINE = MODULES.utils.create_pipeline(ALL_RELEASE_TARGETS)
+            } else if (params.RELEASE_TARGETS_SET.contains('Only laptop targets')){
+              println('Only laptop release targets selected')
+              PIPELINE = MODULES.utils.create_pipeline(LAPTOP_RELEASE_TARGETS)
+            } else {
+              error('Release targets pre-set was not selected')
+            }
           }
         }
       }
