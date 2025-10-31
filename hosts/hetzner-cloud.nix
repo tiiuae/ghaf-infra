@@ -40,7 +40,8 @@ in
   warnings = [
     (lib.mkIf
       (
-        (config.services.monitoring.logs.lokiAddress == defaultLoki)
+        config.services.monitoring.logs.enable
+        && (config.services.monitoring.logs.lokiAddress == defaultLoki)
         # naively assume name in machines matches hostname for now
         && (!builtins.hasAttr "internal_ip" machines.${config.networking.hostName})
       )
