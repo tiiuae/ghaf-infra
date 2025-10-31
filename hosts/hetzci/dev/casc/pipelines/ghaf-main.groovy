@@ -9,7 +9,7 @@ def PIPELINE = [:]
 
 def TARGETS = [
   [ target: "packages.x86_64-linux.doc",
-    testset: null,
+    no_image: true, testset: null,
   ],
   [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug",
     testset: '_relayboot_bat_',

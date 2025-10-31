@@ -44,15 +44,6 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
         build_end = run_cmd('date +%s')
         sh "mkdir -v -p ${artifacts_local_dir} && cp -P ${it.target} ${artifacts_local_dir}/"
         sh "nix-store --add-root ${artifacts_local_dir}/${it.target} -r ${artifacts_local_dir}/${it.target}"
-        def img_path = get_img_path(it.target)
-        // sign the binary using ECDSA key as it's too big for EDDSA
-        sh """
-          mkdir -v -p ${artifacts_local_dir}/scs/${it.target}
-          openssl dgst -sha256 -sign \
-            "pkcs11:token=NetHSM;object=GhafInfraSignECP256" \
-            -out ${artifacts_local_dir}/scs/${img_path}.sig \
-            ${artifacts_local_dir}/${img_path}
-        """
       }
       // Provenance
       stage("Provenance ${shortname}") {
@@ -95,11 +86,32 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
               echo "provenance attempt=\$attempt passed"
               mkdir -v -p ${artifacts_local_dir}/scs/${it.target}
               cp ${it.target}.json ${artifacts_local_dir}/scs/${it.target}/provenance.json
+              """
+          }
+        }
+      }
+      // Sign files
+      stage("Sign ${shortname}") {
+        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+          lock('signing') {
+            if (!it.no_image) {
+              def img_path = get_img_path(it.target)
+              // Sign image
+              sh """
+                mkdir -v -p "\$(dirname "${artifacts_local_dir}/scs/${img_path}")"
+                openssl dgst -sha256 -sign \
+                  "pkcs11:token=NetHSM;object=GhafInfraSignECP256" \
+                  -out ${artifacts_local_dir}/scs/${img_path}.sig \
+                  ${artifacts_local_dir}/${img_path}
+              """
+            }
+            // Sign provenance file
+            sh """
               openssl pkeyutl -sign \
                 -inkey "pkcs11:token=NetHSM;object=GhafInfraSignProv" \
                 -in ${artifacts_local_dir}/scs/${it.target}/provenance.json -rawin \
                 -out ${artifacts_local_dir}/scs/${it.target}/provenance.json.sig
-              """
+            """
           }
         }
       }
