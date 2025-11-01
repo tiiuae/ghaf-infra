@@ -35,69 +35,72 @@ in
 
   };
 
-  config = {
-    networking.firewall = lib.mkIf cfg.metrics.openFirewall {
-      allowedTCPPorts = [ config.services.prometheus.exporters.node.port ];
-      allowedUDPPorts = [ config.services.prometheus.exporters.node.port ];
-    };
+  config = lib.mkMerge [
+    (lib.mkIf cfg.metrics.enable {
+      services.prometheus.exporters = {
+        node = {
+          enable = true;
+          enabledCollectors = [ "systemd" ];
+          port = 9100;
+        };
+      };
 
-    services.prometheus.exporters = lib.mkIf cfg.metrics.enable {
-      node = {
+      # with ProtectHome=true, the exporter will report incorrect filesystem bytes for /home
+      systemd.services.prometheus-node-exporter.serviceConfig = {
+        ProtectHome = lib.mkForce "read-only";
+      };
+
+      networking.firewall = lib.mkIf cfg.metrics.openFirewall {
+        allowedTCPPorts = [ config.services.prometheus.exporters.node.port ];
+        allowedUDPPorts = [ config.services.prometheus.exporters.node.port ];
+      };
+
+      # sshified user for monitoring server to log in as
+      users.users.sshified = lib.mkIf cfg.metrics.ssh {
+        isNormalUser = true;
+        openssh.authorizedKeys.keys = [
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEKd30t0EFmMyULGlecaUX6puIAF4IjynZUo+X9k8h69 monitoring"
+        ];
+      };
+    })
+    (lib.mkIf cfg.logs.enable {
+      services.promtail = {
         enable = true;
-        enabledCollectors = [ "systemd" ];
-        port = 9100;
-      };
-    };
+        configuration = {
+          # We have no need for the HTTP or GRPC server
+          server.disable = true;
 
-    # with ProtectHome=true, the exporter will report incorrect filesystem bytes for /home
-    systemd.services.prometheus-node-exporter.serviceConfig = lib.mkIf cfg.metrics.enable {
-      ProtectHome = lib.mkForce "read-only";
-    };
+          clients = [
+            {
+              url = "${cfg.logs.lokiAddress}/loki/api/v1/push";
 
-    # sshified user for monitoring server to log in as
-    users.users.sshified = lib.mkIf cfg.metrics.ssh {
-      isNormalUser = true;
-      openssh.authorizedKeys.keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEKd30t0EFmMyULGlecaUX6puIAF4IjynZUo+X9k8h69 monitoring"
-      ];
-    };
-
-    services.promtail = lib.mkIf cfg.logs.enable {
-      enable = true;
-      configuration = {
-        # We have no need for the HTTP or GRPC server
-        server.disable = true;
-
-        clients = [
-          {
-            url = "${cfg.logs.lokiAddress}/loki/api/v1/push";
-
-            basic_auth = lib.mkIf (cfg.logs.auth.password_file != null) {
-              inherit (cfg.logs.auth) username password_file;
-            };
-          }
-        ];
-
-        scrape_configs = [
-          {
-            job_name = "journal";
-            journal = {
-              max_age = "12h";
-              labels = {
-                job = "systemd-journal";
-                host = config.networking.hostName;
+              basic_auth = lib.mkIf (cfg.logs.auth.password_file != null) {
+                inherit (cfg.logs.auth) username password_file;
               };
-            };
+            }
+          ];
 
-            relabel_configs = [
-              {
-                source_labels = [ "__journal__systemd_unit" ];
-                target_label = "unit";
-              }
-            ];
-          }
-        ];
+          scrape_configs = [
+            {
+              job_name = "journal";
+              journal = {
+                max_age = "12h";
+                labels = {
+                  job = "systemd-journal";
+                  host = config.networking.hostName;
+                };
+              };
+
+              relabel_configs = [
+                {
+                  source_labels = [ "__journal__systemd_unit" ];
+                  target_label = "unit";
+                }
+              ];
+            }
+          ];
+        };
       };
-    };
-  };
+    })
+  ];
 }

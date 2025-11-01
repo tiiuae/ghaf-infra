@@ -58,6 +58,7 @@ in
     nixos-ghaf-auth = ./ghaf-auth/configuration.nix;
     nixos-ghaf-monitoring = ./ghaf-monitoring/configuration.nix;
     nixos-ghaf-lighthouse = ./ghaf-lighthouse/configuration.nix;
+    nixos-ghaf-fleetdm = ./ghaf-fleetdm/configuration.nix;
     nixos-testagent-uae-dev = ./testagent/uae-dev/configuration.nix;
     nixos-hetzci-dev = ./hetzci/dev/configuration.nix;
     nixos-hetzci-prod = ./hetzci/prod/configuration.nix;
@@ -100,6 +101,7 @@ in
           "ghaf-auth"
           "ghaf-monitoring"
           "ghaf-lighthouse"
+          "ghaf-fleetdm"
           "testagent-uae-dev"
           "hetzci-dev"
           "hetzci-prod"
