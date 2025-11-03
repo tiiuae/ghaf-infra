@@ -78,7 +78,10 @@ creation_rules:
       - *hetzarm-rel-1
       - *jrautiola
       - *hrosten
+      - *vjuntunen
       - *fayad
+      - *cazfi
+      - *ktu
   - path_regex: hosts/builders/hetz86-1/secrets.yaml$
     key_groups:
     - age:
@@ -99,7 +102,10 @@ creation_rules:
       - *hetz86-rel-1
       - *jrautiola
       - *hrosten
+      - *vjuntunen
       - *fayad
+      - *cazfi
+      - *ktu
   - path_regex: hosts/ghaf-log/secrets.yaml$
     key_groups:
     - age:
@@ -145,6 +151,10 @@ creation_rules:
       - *hetzci-release
       - *hrosten
       - *jrautiola
+      - *vjuntunen
+      - *fayad
+      - *cazfi
+      - *ktu
   - path_regex: hosts/hetzci/prod/secrets.yaml$
     key_groups:
     - age:
