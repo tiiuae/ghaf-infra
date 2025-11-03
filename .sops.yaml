@@ -35,6 +35,7 @@ keys:
   - &testagent-uae-dev age1sl8yrksst9aq2fhg8t8h7tysgzm6ks00n9hxsvj8x6frsnrskd4szerqez
   - &nethsm-gateway age177v8xccs46774faav3tu36kfap0r04z0ukxh2t5293rwk5evrsaqd98j0p
   - &uae-lab-node1 age1ugtdwk3vgnug0xjcme3ft8a5rk2htd207z83dgp5gzk52ajf94dqerju4w
+  - &uae-nethsm-gateway age1yqpkn74zacvyujqadz5cm90e6tz8ws2kphladkyvtfrv65x5autqe9404a
 
 creation_rules:
   - path_regex: hosts/testagent/prod/secrets.yaml$
@@ -255,3 +256,12 @@ creation_rules:
       - *fayad
       - *jrautiola
       - *uae-lab-node1
+  - path_regex: hosts/uae/nethsm-gateway/secrets.yaml$
+    key_groups:
+    - age:
+      - *fayad
+      - *jrautiola
+      - *vjuntunen
+      - *hrosten
+      - *cazfi
+      - *uae-nethsm-gateway

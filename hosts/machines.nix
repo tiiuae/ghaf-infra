@@ -132,4 +132,9 @@
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGKZYL60TIQDoLwUwuZvzOdw/yikC181su5Cm1LAplcj";
   };
 
+  uae-nethsm-gateway = {
+    ip = "172.20.16.153";
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ69aPBjri8UJi1KbVDEUYW5YeHzAkQ86acQNHzqyrD0";
+  };
+
 }

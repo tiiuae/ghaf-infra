@@ -68,6 +68,7 @@ in
     nixos-hetz86-builder = ./builders/hetz86-builder/configuration.nix;
     nixos-hetz86-rel-1 = ./builders/hetz86-rel-1/configuration.nix;
     nixos-uae-lab-node1 = ./uae/lab/node1/configuration.nix;
+    nixos-uae-nethsm-gateway = ./uae/nethsm-gateway/configuration.nix;
   };
 
   # Expose as flake.lib.mkNixOS.
@@ -110,6 +111,7 @@ in
           "hetz86-builder"
           "hetz86-rel-1"
           "uae-lab-node1"
+          "uae-nethsm-gateway"
         ]
     ))
     // {

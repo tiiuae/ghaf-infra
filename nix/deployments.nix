@@ -45,6 +45,7 @@ let
     hetz86-builder = mkDeployment "hetz86-builder" machines.hetz86-builder.ip;
     hetz86-rel-1 = mkDeployment "hetz86-rel-1" machines.hetz86-rel-1.ip;
     uae-lab-node1 = mkDeployment "uae-lab-node1" machines.uae-lab-node1.ip;
+    uae-nethsm-gateway = mkDeployment "uae-nethsm-gateway" machines.uae-nethsm-gateway.ip;
   };
 
   aarch64-nodes = {
