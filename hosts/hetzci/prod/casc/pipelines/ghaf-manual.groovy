@@ -57,7 +57,7 @@ pipeline {
             def TARGETS = []
             if (params.doc) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.doc", testset: null ])
+                [ target: "packages.x86_64-linux.doc", no_image: true, testset: null ])
             }
             if (params.lenovo_x1_carbon_gen11_debug) {
               TARGETS.push(
