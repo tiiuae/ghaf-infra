@@ -244,6 +244,7 @@ creation_rules:
       - *ghaf-monitoring
       - *testagent-dev
       - *testagent-prod
+      - *testagent2-prod
       - *testagent-release
       - *nethsm-gateway
       - *hetzci-dev

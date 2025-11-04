@@ -100,6 +100,7 @@
 
   testagent2-prod = {
     ip = "172.18.16.25";
+    nebula_ip = "10.42.42.14";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDhiyhuoKlkkzxXDYhzfa/lnchwWMt/GokyIk1lBhQD6";
   };
 

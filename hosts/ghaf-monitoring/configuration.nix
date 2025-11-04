@@ -429,6 +429,7 @@ in
             [
               "testagent-dev"
               "testagent-prod"
+              "testagent2-prod"
               "testagent-release"
               "nethsm-gateway"
             ];
