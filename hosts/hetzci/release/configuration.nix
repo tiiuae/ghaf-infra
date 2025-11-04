@@ -13,6 +13,7 @@
     ../jenkins.nix
     ../cloud.nix
     ../auth.nix
+    ../signing.nix
   ];
 
   system.stateVersion = lib.mkForce "25.05";
