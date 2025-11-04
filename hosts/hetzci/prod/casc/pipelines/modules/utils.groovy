@@ -102,6 +102,31 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
           }
         }
       }
+      // Sign files
+      stage("Sign ${shortname}") {
+        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+          lock('signing') {
+            if (!it.no_image) {
+              def img_path = get_img_path(it.target)
+              // Sign image
+              sh """
+                mkdir -v -p "\$(dirname "${artifacts_local_dir}/scs/${img_path}")"
+                openssl dgst -sha256 -sign \
+                  "pkcs11:token=NetHSM;object=GhafInfraSignECP256" \
+                  -out ${artifacts_local_dir}/scs/${img_path}.sig \
+                  ${artifacts_local_dir}/${img_path}
+              """
+            }
+            // Sign provenance file
+            sh """
+              openssl pkeyutl -sign \
+                -inkey "pkcs11:token=NetHSM;object=GhafInfraSignProv" \
+                -in ${artifacts_local_dir}/scs/${it.target}/provenance.json -rawin \
+                -out ${artifacts_local_dir}/scs/${it.target}/provenance.json.sig
+            """
+          }
+        }
+      }
       // UEFI sign
       if (it.get('uefisign', false)) {
         stage("UEFI Sign ${shortname}") {
@@ -123,10 +148,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
       // Test
       if (it.testset != null && !it.testset.isEmpty()) {
         stage("Test ${shortname}") {
-          def img_path = run_cmd("find -L ${it.target} -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print -quit")
-          if (!img_path) {
-            error("No image found for target '${it.target}'")
-          }
+          def img_path = get_img_path(it.target)
           def img_url = "${env.JENKINS_URL}/${artifacts}/${img_path}"
           def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
           def desc = "Triggered by ${build_href}<br>(${it.target})"
@@ -157,6 +179,14 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
     }
   }
   return pipeline
+}
+
+def get_img_path(String target) {
+  def img_path = run_cmd("find -L ${target} -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print -quit")
+  if (!img_path) {
+    error("No image found for target '${target}'")
+  }
+  return img_path
 }
 
 def set_github_commit_status(

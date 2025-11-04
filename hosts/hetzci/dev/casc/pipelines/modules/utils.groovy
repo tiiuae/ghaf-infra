@@ -86,7 +86,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
               echo "provenance attempt=\$attempt passed"
               mkdir -v -p ${artifacts_local_dir}/scs/${it.target}
               cp ${it.target}.json ${artifacts_local_dir}/scs/${it.target}/provenance.json
-              """
+            """
           }
         }
       }
