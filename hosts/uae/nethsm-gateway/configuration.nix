@@ -7,17 +7,16 @@
   ...
 }:
 {
-  imports =
-    [
-      ./disk-config.nix
-      inputs.sops-nix.nixosModules.sops
-      inputs.disko.nixosModules.disko
-    ]
-    ++ (with self.nixosModules; [
-      common
-      team-devenv
-      service-openssh
-    ]);
+  imports = [
+    ./disk-config.nix
+    inputs.sops-nix.nixosModules.sops
+    inputs.disko.nixosModules.disko
+  ]
+  ++ (with self.nixosModules; [
+    common
+    team-devenv
+    service-openssh
+  ]);
 
   sops = {
     defaultSopsFile = ./secrets.yaml;

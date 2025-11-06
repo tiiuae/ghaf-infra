@@ -10,22 +10,21 @@
   ...
 }:
 {
-  imports =
-    [
-      ./hardware-configuration.nix
-      ./disk-config.nix
-      (modulesPath + "/profiles/qemu-guest.nix")
-      inputs.sops-nix.nixosModules.sops
-      inputs.disko.nixosModules.disko
-    ]
-    ++ (with self.nixosModules; [
-      common
-      service-openssh
-      service-nebula
-      user-bmg
-      user-fayad
-      team-devenv
-    ]);
+  imports = [
+    ./hardware-configuration.nix
+    ./disk-config.nix
+    (modulesPath + "/profiles/qemu-guest.nix")
+    inputs.sops-nix.nixosModules.sops
+    inputs.disko.nixosModules.disko
+  ]
+  ++ (with self.nixosModules; [
+    common
+    service-openssh
+    service-nebula
+    user-bmg
+    user-fayad
+    team-devenv
+  ]);
 
   sops = {
     defaultSopsFile = ./secrets.yaml;

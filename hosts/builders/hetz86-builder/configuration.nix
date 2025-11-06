@@ -8,21 +8,20 @@
   ...
 }:
 {
-  imports =
-    [
-      ./disk-config.nix
-      ../developers.nix
-      ../builders-common.nix
-      ../../hetzner-robot.nix
-      inputs.disko.nixosModules.disko
-    ]
-    ++ (with self.nixosModules; [
-      common
-      service-openssh
-      team-devenv
-      user-github
-      user-remote-build
-    ]);
+  imports = [
+    ./disk-config.nix
+    ../developers.nix
+    ../builders-common.nix
+    ../../hetzner-robot.nix
+    inputs.disko.nixosModules.disko
+  ]
+  ++ (with self.nixosModules; [
+    common
+    service-openssh
+    team-devenv
+    user-github
+    user-remote-build
+  ]);
 
   sops = {
     defaultSopsFile = ./secrets.yaml;

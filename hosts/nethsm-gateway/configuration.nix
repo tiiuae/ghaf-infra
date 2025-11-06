@@ -9,20 +9,19 @@
   ...
 }:
 {
-  imports =
-    [
-      ./disk-config.nix
-      inputs.sops-nix.nixosModules.sops
-      inputs.disko.nixosModules.disko
-      ./nethsm.nix
-    ]
-    ++ (with self.nixosModules; [
-      common
-      team-devenv
-      service-openssh
-      service-monitoring
-      service-nebula
-    ]);
+  imports = [
+    ./disk-config.nix
+    inputs.sops-nix.nixosModules.sops
+    inputs.disko.nixosModules.disko
+    ./nethsm.nix
+  ]
+  ++ (with self.nixosModules; [
+    common
+    team-devenv
+    service-openssh
+    service-monitoring
+    service-nebula
+  ]);
 
   sops = {
     defaultSopsFile = ./secrets.yaml;

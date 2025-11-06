@@ -11,19 +11,18 @@ let
   domain = "auth.vedenemo.dev";
 in
 {
-  imports =
-    [
-      ./disk-config.nix
-      ../hetzner-cloud.nix
-      inputs.sops-nix.nixosModules.sops
-      inputs.disko.nixosModules.disko
-    ]
-    ++ (with self.nixosModules; [
-      common
-      service-openssh
-      service-nginx
-      team-devenv
-    ]);
+  imports = [
+    ./disk-config.nix
+    ../hetzner-cloud.nix
+    inputs.sops-nix.nixosModules.sops
+    inputs.disko.nixosModules.disko
+  ]
+  ++ (with self.nixosModules; [
+    common
+    service-openssh
+    service-nginx
+    team-devenv
+  ]);
 
   sops = {
     defaultSopsFile = ./secrets.yaml;

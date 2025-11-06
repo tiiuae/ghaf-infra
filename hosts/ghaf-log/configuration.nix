@@ -8,22 +8,21 @@
   ...
 }:
 {
-  imports =
-    [
-      ./disk-config.nix
-      ../hetzner-cloud.nix
-      ./loki.nix
-      inputs.sops-nix.nixosModules.sops
-      inputs.disko.nixosModules.disko
-    ]
-    ++ (with self.nixosModules; [
-      common
-      service-openssh
-      service-nginx
-      team-devenv
-      user-bmg
-      user-vunnyso
-    ]);
+  imports = [
+    ./disk-config.nix
+    ../hetzner-cloud.nix
+    ./loki.nix
+    inputs.sops-nix.nixosModules.sops
+    inputs.disko.nixosModules.disko
+  ]
+  ++ (with self.nixosModules; [
+    common
+    service-openssh
+    service-nginx
+    team-devenv
+    user-bmg
+    user-vunnyso
+  ]);
 
   sops = {
     defaultSopsFile = ./secrets.yaml;

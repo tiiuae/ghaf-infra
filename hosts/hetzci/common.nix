@@ -8,18 +8,17 @@
   ...
 }:
 {
-  imports =
-    [
-      ../zramswap.nix
-      inputs.sops-nix.nixosModules.sops
-      inputs.disko.nixosModules.disko
-    ]
-    ++ (with self.nixosModules; [
-      common
-      service-openssh
-      team-devenv
-      team-testers
-    ]);
+  imports = [
+    ../zramswap.nix
+    inputs.sops-nix.nixosModules.sops
+    inputs.disko.nixosModules.disko
+  ]
+  ++ (with self.nixosModules; [
+    common
+    service-openssh
+    team-devenv
+    team-testers
+  ]);
 
   nixpkgs.hostPlatform = "x86_64-linux";
 

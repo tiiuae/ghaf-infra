@@ -27,7 +27,8 @@ let
       inherit specialArgs;
       modules = [
         self.nixosModules."nixos-${systemName}"
-      ] ++ lib.optional (extraConfig != null) extraConfig;
+      ]
+      ++ lib.optional (extraConfig != null) extraConfig;
     };
 in
 {
