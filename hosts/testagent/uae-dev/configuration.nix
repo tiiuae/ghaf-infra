@@ -6,16 +6,15 @@
   ...
 }:
 {
-  imports =
-    [
-      ./disk-config.nix
-      ../agents-common.nix
-    ]
-    ++ (with self.nixosModules; [
-      team-devenv
-      team-testers
-      user-flokli
-    ]);
+  imports = [
+    ./disk-config.nix
+    ../agents-common.nix
+  ]
+  ++ (with self.nixosModules; [
+    team-devenv
+    team-testers
+    user-flokli
+  ]);
 
   sops = {
     defaultSopsFile = ./secrets.yaml;

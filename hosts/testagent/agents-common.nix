@@ -53,17 +53,16 @@ let
   );
 in
 {
-  imports =
-    [
-      ./agent.nix
-      inputs.sops-nix.nixosModules.sops
-      inputs.disko.nixosModules.disko
-      self.nixosModules.service-monitoring
-    ]
-    ++ (with self.nixosModules; [
-      common
-      service-openssh
-    ]);
+  imports = [
+    ./agent.nix
+    inputs.sops-nix.nixosModules.sops
+    inputs.disko.nixosModules.disko
+    self.nixosModules.service-monitoring
+  ]
+  ++ (with self.nixosModules; [
+    common
+    service-openssh
+  ]);
 
   sops.secrets =
     let
@@ -104,29 +103,28 @@ in
   ];
 
   # packages available in all user sessions
-  environment.systemPackages =
-    [
-      connect-script
-      disconnect-script
-      push-relay-status
-    ]
-    ++ (with self.packages.${pkgs.system}; [
-      brainstem
-      policy-checker
-    ])
-    ++ (with inputs.robot-framework.packages.${pkgs.system}; [
-      ghaf-robot
-      KMTronic
-    ])
-    ++ (with pkgs; [
-      minicom
-      usbsdmux
-      jq
-      curl
-      grafana-loki
-      openssl
-      (python3.withPackages (ps: with ps; [ pyserial ]))
-    ]);
+  environment.systemPackages = [
+    connect-script
+    disconnect-script
+    push-relay-status
+  ]
+  ++ (with self.packages.${pkgs.system}; [
+    brainstem
+    policy-checker
+  ])
+  ++ (with inputs.robot-framework.packages.${pkgs.system}; [
+    ghaf-robot
+    KMTronic
+  ])
+  ++ (with pkgs; [
+    minicom
+    usbsdmux
+    jq
+    curl
+    grafana-loki
+    openssl
+    (python3.withPackages (ps: with ps; [ pyserial ]))
+  ]);
 
   # This server is only exposed to the internal network
   # fail2ban only causes issues here

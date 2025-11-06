@@ -42,19 +42,18 @@ stdenv.mkDerivation {
   sourceRoot = "source/BrainStem_dev_kit";
 
   nativeBuildInputs = [ autoPatchelfHook ];
-  buildInputs =
-    [
-      # libudev
-      (lib.getLib systemd)
-      # libstdc++.so libgcc_s.so
-      stdenv.cc.cc.lib
-    ]
-    ++ lib.optionals withUpdater [
-      # libcurl.so.4
-      curl
-      # libz.so.1
-      zlib
-    ];
+  buildInputs = [
+    # libudev
+    (lib.getLib systemd)
+    # libstdc++.so libgcc_s.so
+    stdenv.cc.cc.lib
+  ]
+  ++ lib.optionals withUpdater [
+    # libcurl.so.4
+    curl
+    # libz.so.1
+    zlib
+  ];
 
   # Unpack the CLI tools.
   installPhase = ''

@@ -23,32 +23,31 @@ let
       wantedBy = [ "start-agents.service" ];
       after = [ "start-agents.service" ];
 
-      path =
-        [
-          brainstem
-          inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
-          self.packages.${pkgs.system}.policy-checker
-        ]
-        ++ (with pkgs; [
-          curl
-          wget
-          jdk
-          git
-          bashInteractive
-          coreutils
-          util-linux
-          nix
-          zstd
-          jq
-          csvkit
-          sudo
-          openssh
-          iputils
-          netcat
-          python3
-          usbsdmux
-          grafana-loki
-        ]);
+      path = [
+        brainstem
+        inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
+        self.packages.${pkgs.system}.policy-checker
+      ]
+      ++ (with pkgs; [
+        curl
+        wget
+        jdk
+        git
+        bashInteractive
+        coreutils
+        util-linux
+        nix
+        zstd
+        jq
+        csvkit
+        sudo
+        openssh
+        iputils
+        netcat
+        python3
+        usbsdmux
+        grafana-loki
+      ]);
 
       serviceConfig = {
         Type = "simple";

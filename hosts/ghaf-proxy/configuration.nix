@@ -8,20 +8,19 @@
   ...
 }:
 {
-  imports =
-    [
-      ./disk-config.nix
-      ../hetzner-cloud.nix
-      inputs.sops-nix.nixosModules.sops
-      inputs.disko.nixosModules.disko
-    ]
-    ++ (with self.nixosModules; [
-      common
-      service-openssh
-      team-devenv
-      user-bmg
-      user-flokli
-    ]);
+  imports = [
+    ./disk-config.nix
+    ../hetzner-cloud.nix
+    inputs.sops-nix.nixosModules.sops
+    inputs.disko.nixosModules.disko
+  ]
+  ++ (with self.nixosModules; [
+    common
+    service-openssh
+    team-devenv
+    user-bmg
+    user-flokli
+  ]);
 
   system.stateVersion = lib.mkForce "24.05";
   nixpkgs.hostPlatform = "x86_64-linux";

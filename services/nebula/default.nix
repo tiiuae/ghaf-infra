@@ -87,30 +87,29 @@ in
             host = "any";
           }
         ];
-        inbound =
-          [
-            # allow ping
-            {
-              port = "any";
-              proto = "icmp";
-              host = "any";
-            }
-            # allow monitoring server to scrape metrics
-            {
-              port = 9100;
-              proto = "tcp";
-              groups = [ "scraper" ];
-            }
-          ]
-          ++ (lib.optionals cfg.isLighthouse [
-            # allow dns queries to the lighthouse
-            {
-              port = 53;
-              proto = "udp";
-              group = "any";
-              host = "any";
-            }
-          ]);
+        inbound = [
+          # allow ping
+          {
+            port = "any";
+            proto = "icmp";
+            host = "any";
+          }
+          # allow monitoring server to scrape metrics
+          {
+            port = 9100;
+            proto = "tcp";
+            groups = [ "scraper" ];
+          }
+        ]
+        ++ (lib.optionals cfg.isLighthouse [
+          # allow dns queries to the lighthouse
+          {
+            port = 53;
+            proto = "udp";
+            group = "any";
+            host = "any";
+          }
+        ]);
       };
     };
 

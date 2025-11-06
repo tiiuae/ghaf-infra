@@ -7,17 +7,16 @@
   ...
 }:
 {
-  imports =
-    [
-      ../agents-common.nix
-      ./disk-config.nix
-    ]
-    ++ (with self.nixosModules; [
-      service-nebula
-      team-devenv
-      team-testers
-      user-flokli
-    ]);
+  imports = [
+    ../agents-common.nix
+    ./disk-config.nix
+  ]
+  ++ (with self.nixosModules; [
+    service-nebula
+    team-devenv
+    team-testers
+    user-flokli
+  ]);
 
   sops = {
     defaultSopsFile = ./secrets.yaml;
