@@ -25,7 +25,27 @@
 
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "uae-nethsm-gateway";
-  networking.useDHCP = true;
+
+  # Assign IP configs because dhcp is disabled in network
+  networking = {
+    useDHCP = true;
+    interfaces.enp3s0 = {
+      ipv4.addresses = [
+        {
+          address = "172.31.141.51";
+          prefixLength = 24;
+        }
+      ];
+    };
+    defaultGateway = {
+      address = "172.31.141.1";
+      interface = "enp3s0";
+    };
+    nameservers = [
+      "10.161.10.11"
+      "10.161.10.12"
+    ];
+  };
 
   hardware = {
     enableRedistributableFirmware = true;
