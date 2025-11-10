@@ -1,8 +1,54 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  ...
+}:
 let
   cfg = config.services.monitoring;
+
+  alloyConfigs = {
+    base = # hcl
+      ''
+        loki.write "default" {
+        	endpoint {
+        		url = "${cfg.logs.lokiAddress}/loki/api/v1/push" 
+
+        		basic_auth {
+        			username      = "${cfg.logs.auth.username}"
+        			${
+             lib.optionalString (
+               cfg.logs.auth.password_file != null
+             ) ''password_file = "${cfg.logs.auth.password_file}"''
+           }
+        		}
+        	}
+        }
+      '';
+
+    journal =
+      lib.mkIf cfg.logs.journal # hcl
+        ''
+          discovery.relabel "journal" {
+          	targets = []
+
+          	rule {
+          		source_labels = ["__journal__systemd_unit"]
+          		target_label  = "unit"
+          	}
+          }
+
+          loki.source.journal "journal" {
+          	relabel_rules = discovery.relabel.journal.rules
+          	forward_to    = [loki.write.default.receiver]
+          	labels        = {
+          		host = "${config.networking.hostName}",
+          		job  = "systemd-journal",
+          	}
+          }
+        '';
+  } // cfg.alloy.configFiles;
 in
 {
   options.services.monitoring = {
@@ -14,6 +60,11 @@ in
 
     logs = {
       enable = lib.mkEnableOption "Push logs";
+      journal = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Enable collecting systemd journal logs";
+      };
 
       lokiAddress = lib.mkOption {
         type = lib.types.str;
@@ -33,6 +84,12 @@ in
       };
     };
 
+    alloy = {
+      configFiles = lib.mkOption {
+        type = lib.types.attrs;
+        default = { };
+      };
+    };
   };
 
   config = lib.mkMerge [
@@ -64,43 +121,25 @@ in
       };
     })
     (lib.mkIf cfg.logs.enable {
-      services.promtail = {
+      services.alloy = {
         enable = true;
-        configuration = {
-          # We have no need for the HTTP or GRPC server
-          server.disable = true;
-
-          clients = [
-            {
-              url = "${cfg.logs.lokiAddress}/loki/api/v1/push";
-
-              basic_auth = lib.mkIf (cfg.logs.auth.password_file != null) {
-                inherit (cfg.logs.auth) username password_file;
-              };
-            }
-          ];
-
-          scrape_configs = [
-            {
-              job_name = "journal";
-              journal = {
-                max_age = "12h";
-                labels = {
-                  job = "systemd-journal";
-                  host = config.networking.hostName;
-                };
-              };
-
-              relabel_configs = [
-                {
-                  source_labels = [ "__journal__systemd_unit" ];
-                  target_label = "unit";
-                }
-              ];
-            }
-          ];
-        };
+        configPath = "/etc/alloy";
+        extraFlags = [
+          "--server.http.listen-addr=127.0.0.1:9999"
+          "--disable-reporting"
+        ];
       };
+
+      users.groups.alloy = { };
+      users.users.alloy.isSystemUser = true;
+      users.users.alloy.group = "alloy";
+
+      systemd.services.alloy.serviceConfig.User = "alloy";
+      systemd.services.alloy.serviceConfig.Group = "alloy";
+
+      environment.etc = lib.mapAttrs' (
+        name: content: lib.nameValuePair "alloy/${name}.alloy" { text = content; }
+      ) alloyConfigs;
     })
   ];
 }

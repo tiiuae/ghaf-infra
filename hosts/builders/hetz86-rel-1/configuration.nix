@@ -26,7 +26,7 @@
   sops = {
     defaultSopsFile = ./secrets.yaml;
     secrets = {
-      loki_password.owner = "promtail";
+      loki_password.owner = "alloy";
       cachix-auth-token.owner = "root";
     };
   };
