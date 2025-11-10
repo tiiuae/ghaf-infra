@@ -48,9 +48,11 @@ let
       '';
   };
 
-  push-relay-status = pkgs.writeShellScriptBin "push-relay-status" (
-    builtins.readFile ./push_relays_status.sh
-  );
+  relay-board-exporter = pkgs.writeScriptBin "relay-board-exporter" ''
+    #!${pkgs.python3}/bin/python3
+    ${builtins.readFile ./relay_board_exporter.py}
+  '';
+
 in
 {
   imports = [
@@ -106,7 +108,7 @@ in
   environment.systemPackages = [
     connect-script
     disconnect-script
-    push-relay-status
+    relay-board-exporter
   ]
   ++ (with self.packages.${pkgs.system}; [
     brainstem
@@ -117,6 +119,7 @@ in
     KMTronic
   ])
   ++ (with pkgs; [
+    socat
     minicom
     usbsdmux
     jq
@@ -139,32 +142,27 @@ in
     };
   };
 
-  systemd.services.push-testagent-metrics = {
-    description = "Push relay statuses to Prometheus";
+  systemd.services.relay-board-metric-exporter = {
+    description = "KMTronic Relay Board Prometheus Exporter";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+
     serviceConfig = {
-      Type = "oneshot";
+      Type = "simple";
+      ExecStart = "${relay-board-exporter}/bin/relay-board-exporter";
+      Restart = "on-failure";
+      RestartSec = "5s";
     };
     path = with pkgs; [
+      bash
       jq
-      curl
+      socat
       coreutils
       gawk
-      push-relay-status
+      relay-board-exporter
       inputs.robot-framework.packages.${pkgs.system}.KMTronic
     ];
-    script = # sh
-      ''
-        password="$(cat ${config.sops.secrets.metrics_password.path})"
-        push-relay-status ${config.networking.hostName} "$password"
-      '';
-  };
-
-  systemd.timers.push-testagent-metrics = {
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnBootSec = "1min";
-      OnUnitActiveSec = "1min";
-    };
   };
 
   environment.etc."jenkins/provenance-trust-policy.json".source =

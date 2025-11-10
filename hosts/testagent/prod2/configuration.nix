@@ -57,6 +57,16 @@
     key = config.sops.secrets.nebula-key.path;
   };
 
+  services.nebula.networks."vedenemo".firewall = {
+    inbound = [
+      {
+        port = 8000;
+        proto = "tcp";
+        groups = [ "scraper" ];
+      }
+    ];
+  };
+
   # udev rules for test devices serial connections
   services.udev.extraRules = ''
     # Orin nx
