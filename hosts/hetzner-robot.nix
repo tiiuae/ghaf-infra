@@ -14,7 +14,7 @@
   ];
 
   sops.secrets = lib.mkIf config.services.monitoring.logs.enable {
-    loki_password.owner = "promtail";
+    loki_password.owner = "alloy";
   };
 
   services.monitoring.logs = lib.mkIf config.services.monitoring.logs.enable {

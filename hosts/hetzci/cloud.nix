@@ -15,7 +15,7 @@
   sops = {
     secrets = lib.mkMerge [
       (lib.mkIf config.services.monitoring.logs.enable {
-        loki_password.owner = "promtail";
+        loki_password.owner = "alloy";
       })
       (lib.mkIf config.nebula.enable {
         nebula-cert.owner = config.nebula.user;

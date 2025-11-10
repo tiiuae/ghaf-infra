@@ -27,7 +27,7 @@
   sops = {
     defaultSopsFile = ./secrets.yaml;
     secrets = {
-      loki_password.owner = "promtail";
+      loki_password.owner = "alloy";
       nebula-cert.owner = config.nebula.user;
       nebula-key.owner = config.nebula.user;
     };
@@ -70,23 +70,24 @@
       lokiAddress = "https://monitoring.vedenemo.dev";
       auth.password_file = config.sops.secrets.loki_password.path;
     };
-  };
 
-  services.promtail.configuration.scrape_configs = [
-    {
-      job_name = "system";
-      static_configs = [
-        {
-          targets = [ "localhost" ];
-          labels = {
-            job = "nethsm-log";
-            host = config.networking.hostName;
-            __path__ = config.nethsm.logging.file;
-          };
+    alloy.configFiles.nethsm = # hcl
+      ''
+        local.file_match "nethsm" {
+        	path_targets = [{
+        		__address__ = "localhost",
+        		__path__    = "${config.nethsm.logging.file}",
+        		host        = "${config.networking.hostName}",
+        		job         = "nethsm-log",
+        	}]
         }
-      ];
-    }
-  ];
+
+        loki.source.file "nethsm" {
+        	targets               = local.file_match.nethsm.targets
+        	forward_to            = [loki.write.default.receiver]
+        }
+      '';
+  };
 
   nebula = {
     enable = true;
