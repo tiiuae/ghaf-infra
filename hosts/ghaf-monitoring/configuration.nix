@@ -370,14 +370,6 @@ in
       );
     };
 
-    pushgateway = {
-      enable = true;
-      web = {
-        external-url = "https://${domain}/push/";
-        listen-address = "127.0.0.1:9091";
-      };
-    };
-
     scrapeConfigs = [
       {
         job_name = "hetzner-cloud";
@@ -434,6 +426,23 @@ in
             ];
       }
       {
+        job_name = "relay-board";
+        scrape_interval = "10s";
+        static_configs =
+          map
+            (name: {
+              targets = [ "${name}.sumu.vedenemo.dev:8000" ];
+              labels = {
+                machine_name = name;
+              };
+            })
+            [
+              "testagent-dev"
+              "testagent2-prod"
+              "testagent-release"
+            ];
+      }
+      {
         job_name = "nethsm";
         # let's not hammer the nethsm api so frequently
         scrape_interval = "60s";
@@ -441,16 +450,6 @@ in
           {
             # nethsm-exporter is running on the gateway, on port 8000
             targets = [ "nethsm-gateway.sumu.vedenemo.dev:8000" ];
-          }
-        ];
-      }
-      {
-        job_name = "pushgateway";
-        metrics_path = "/push/metrics";
-        honor_labels = true;
-        static_configs = [
-          {
-            targets = [ "127.0.0.1:9091" ];
           }
         ];
       }
@@ -469,10 +468,6 @@ in
         };
         "/loki" = {
           proxyPass = "http://127.0.0.1:${toString config.services.loki.configuration.server.http_listen_port}/loki";
-          basicAuthFile = config.sops.secrets.metrics_basic_auth.path;
-        };
-        "/push/" = {
-          proxyPass = "http://${config.services.prometheus.pushgateway.web.listen-address}";
           basicAuthFile = config.sops.secrets.metrics_basic_auth.path;
         };
         "/prometheus/" = {
