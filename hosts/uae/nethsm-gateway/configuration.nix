@@ -4,6 +4,7 @@
   self,
   inputs,
   lib,
+  config,
   ...
 }:
 {
@@ -15,11 +16,17 @@
   ++ (with self.nixosModules; [
     common
     team-devenv
+    user-bmg
     service-openssh
+    service-nebula
   ]);
 
   sops = {
     defaultSopsFile = ./secrets.yaml;
+    secrets = {
+      nebula-cert.owner = config.nebula.user;
+      nebula-key.owner = config.nebula.user;
+    };
   };
 
   nixpkgs.hostPlatform = "x86_64-linux";
@@ -68,6 +75,54 @@
       "sd_mod"
     ];
   };
+
+  nebula = {
+    enable = true;
+    cert = config.sops.secrets.nebula-cert.path;
+    key = config.sops.secrets.nebula-key.path;
+  };
+
+  services.nebula.networks."vedenemo".firewall = {
+    outbound = lib.mkForce [
+      # allow udp outbound only to hetzner, uae-lab
+      {
+        port = 4242;
+        proto = "udp";
+        groups = [
+          "hetzner"
+          "uae-lab"
+        ];
+      }
+      # allow dns requests
+      {
+        port = 53;
+        proto = "udp";
+        host = "any";
+      }
+      # allow any tcp or icmp outbound (between nebula hosts)
+      {
+        port = "any";
+        proto = "tcp";
+        host = "any";
+      }
+      {
+        port = "any";
+        proto = "icmp";
+        host = "any";
+      }
+    ];
+    inbound = [
+      {
+        port = 22;
+        proto = "tcp";
+        groups = [
+          "hetzner"
+          "uae-lab"
+        ];
+      }
+    ];
+  };
+
   # This server is only exposed to the internal network
   # fail2ban only causes issues here
   services.fail2ban.enable = lib.mkForce false;
