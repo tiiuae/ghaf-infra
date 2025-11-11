@@ -224,6 +224,7 @@ creation_rules:
       - *jrautiola
       - *hrosten
       - *cazfi
+      - *fayad
   - path_regex: services/nebula/ca.key.crypt$
     key_groups:
     - age:
