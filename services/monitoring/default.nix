@@ -48,7 +48,8 @@ let
           	}
           }
         '';
-  } // cfg.alloy.configFiles;
+  }
+  // cfg.alloy.configFiles;
 in
 {
   options.services.monitoring = {
