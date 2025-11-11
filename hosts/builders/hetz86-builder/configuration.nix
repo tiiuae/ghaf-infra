@@ -12,6 +12,7 @@
     ./disk-config.nix
     ../developers.nix
     ../builders-common.nix
+    ../cross-compilation.nix
     ../../hetzner-robot.nix
     inputs.disko.nixosModules.disko
   ]
