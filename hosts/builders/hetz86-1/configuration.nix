@@ -10,6 +10,7 @@
     ./disk-config.nix
     ../developers.nix
     ../builders-common.nix
+    ../cross-compilation.nix
     ../cachix-push.nix
     ../../hetzner-robot.nix
     inputs.disko.nixosModules.disko
