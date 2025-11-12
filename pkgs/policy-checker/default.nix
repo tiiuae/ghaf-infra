@@ -3,6 +3,8 @@
 {
   buildGoModule,
   lib,
+  makeWrapper,
+  openssl,
   ...
 }:
 buildGoModule {
@@ -11,4 +13,8 @@ buildGoModule {
 
   src = lib.cleanSource ./src;
   vendorHash = "sha256-1/L9BKQeHCP5PUogvxMFKaOwK5s/EKqcn/1eDWYtPOo=";
+  nativeBuildInputs = [ makeWrapper ];
+  postInstall = ''
+    wrapProgram $out/bin/policy-checker --prefix PATH : "${openssl}/bin"
+  '';
 }
