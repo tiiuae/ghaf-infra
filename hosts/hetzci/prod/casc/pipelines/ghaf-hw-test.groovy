@@ -252,7 +252,9 @@ pipeline {
               ${env.UNMOUNT_CMD}; /run/wrappers/bin/sudo rm ${dev}; ${env.MOUNT_CMD}
             fi
             if ! /run/wrappers/bin/sudo test -L ${dev}; then
-              echo "dev ${dev} is not a symlink, aborting"
+              echo "Symlink ${dev} not found. Failed to connect target USB disk to test agent."
+              echo "Check USB cables. Maybe need to reboot test agent or Acroname USB hub."
+              echo "Aborting flashing ${env.DEVICE_NAME}"
               exit 1
             fi
           """
