@@ -148,6 +148,7 @@ def create_pipeline(List<Map> targets) {
             projectName: "ghaf-hw-test",
             selector: specific("${job.number}"),
             target: "${artifacts_local_dir}/test-results/${it.target}",
+            optional: true,
           )
         }
       }

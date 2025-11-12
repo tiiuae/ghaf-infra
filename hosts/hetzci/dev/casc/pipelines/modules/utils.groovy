@@ -149,6 +149,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
             projectName: "ghaf-hw-test",
             selector: specific("${job.number}"),
             target: "${artifacts_local_dir}/test-results/${it.target}",
+            optional: true,
           )
         }
       }
