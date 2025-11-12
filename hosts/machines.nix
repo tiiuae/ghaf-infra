@@ -74,21 +74,21 @@
   hetzci-dev = {
     ip = "157.180.119.138";
     internal_ip = "10.0.0.6";
-    nebula_ip = "10.41.41.3";
+    nebula_ip = "10.42.42.3";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ8XgXW7leM8yIOyU86aDztcWBGKkBAgTiu5yaAcJcvD";
   };
 
   hetzci-prod = {
     ip = "157.180.43.236";
     internal_ip = "10.0.0.5";
-    nebula_ip = "10.41.41.4";
+    nebula_ip = "10.42.42.4";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBdDmtt7At/xDNCF0aIDvXc2T9GTP0HWaAt4DEAejcE6";
   };
 
   hetzci-release = {
     ip = "95.217.210.252";
     internal_ip = "10.0.0.9";
-    nebula_ip = "10.41.41.5";
+    nebula_ip = "10.42.42.5";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILt+qbA7j8q+CjiAY2vX1rEhH3ow4xRKqyMszVI0zvmm";
   };
 
