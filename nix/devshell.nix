@@ -64,6 +64,7 @@
             terragrunt
             nebula
             openssl
+            gnutls
             (terraform.withPlugins (p: [
               # We need to override the azurerm version to fix the issue described
               # in https://ssrc.atlassian.net/browse/SP-4926.

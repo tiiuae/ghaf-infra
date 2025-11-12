@@ -5,6 +5,7 @@
   inputs,
   lib,
   config,
+  machines,
   ...
 }:
 {
@@ -12,6 +13,7 @@
     ./disk-config.nix
     inputs.sops-nix.nixosModules.sops
     inputs.disko.nixosModules.disko
+    ../../nethsm-gateway/nethsm.nix
   ]
   ++ (with self.nixosModules; [
     common
@@ -19,11 +21,13 @@
     user-bmg
     service-openssh
     service-nebula
+    service-monitoring
   ]);
 
   sops = {
     defaultSopsFile = ./secrets.yaml;
     secrets = {
+      loki_password.owner = "alloy";
       nebula-cert.owner = config.nebula.user;
       nebula-key.owner = config.nebula.user;
     };
@@ -76,6 +80,35 @@
     ];
   };
 
+  nethsm.host = "192.168.70.11";
+  pkcs11.proxy.listenAddr = machines.uae-nethsm-gateway.nebula_ip;
+
+  services.monitoring = {
+    metrics.enable = true;
+    logs = {
+      enable = true;
+      lokiAddress = "https://monitoring.vedenemo.dev";
+      auth.password_file = config.sops.secrets.loki_password.path;
+    };
+
+    alloy.configFiles.nethsm = # hcl
+      ''
+        local.file_match "nethsm" {
+        	path_targets = [{
+        		__address__ = "localhost",
+        		__path__    = "${config.nethsm.logging.file}",
+        		host        = "${config.networking.hostName}",
+        		job         = "nethsm-log",
+        	}]
+        }
+
+        loki.source.file "nethsm" {
+        	targets               = local.file_match.nethsm.targets
+        	forward_to            = [loki.write.default.receiver]
+        }
+      '';
+  };
+
   nebula = {
     enable = true;
     cert = config.sops.secrets.nebula-cert.path;
@@ -112,6 +145,13 @@
       }
     ];
     inbound = [
+      # allow monitoring server to scrape nethsm metrics
+      {
+        inherit (config.nethsm.exporter) port;
+        proto = "tcp";
+        groups = [ "scraper" ];
+      }
+      # allow hetzner and uae-lab servers to connect
       {
         port = 22;
         proto = "tcp";
