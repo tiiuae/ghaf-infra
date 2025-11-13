@@ -32,6 +32,9 @@ def ALL_RELEASE_TARGETS = [
   [ target: "packages.x86_64-linux.system76-darp11-b-debug",
     testset: '_relayboot_bat_',
   ],
+  [ target: "packages.x86_64-linux.system76-darp11-b-debug-installer",
+    testset: null,
+  ],
 ]
 
 def LAPTOP_RELEASE_TARGETS = [
@@ -46,6 +49,9 @@ def LAPTOP_RELEASE_TARGETS = [
   ],
   [ target: "packages.x86_64-linux.system76-darp11-b-debug",
     testset: '_relayboot_bat_',
+  ],
+  [ target: "packages.x86_64-linux.system76-darp11-b-debug-installer",
+    testset: null,
   ],
 ]
 
