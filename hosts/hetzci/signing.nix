@@ -4,6 +4,8 @@
   self,
   pkgs,
   config,
+  inputs,
+  lib,
   ...
 }:
 let
@@ -54,29 +56,47 @@ let
         ''
     );
   };
+  cfg = config.hetzci.signing;
 in
 {
-  sops.secrets = {
-    tls-pks-file = {
-      owner = "jenkins";
-      group = "wheel";
-      mode = "0440";
+  options.hetzci.signing = {
+    proxy.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Enable the pkcs11-proxy configuration";
     };
   };
 
-  environment.systemPackages =
-    (with pkgs; [
-      opensc # pkcs11-tool
-      openssl
-    ])
-    ++ [ systemd-sbsign ];
+  config = lib.mkMerge [
+    (lib.mkIf cfg.proxy.enable {
+      sops.secrets = {
+        tls-pks-file = {
+          owner = "jenkins";
+          group = "wheel";
+          mode = "0440";
+        };
+      };
 
-  environment.variables = proxyConfig;
+      environment.variables = proxyConfig;
+      services.jenkins.environment = proxyConfig;
+    })
+    {
+      environment.systemPackages =
+        (with pkgs; [
+          opensc # pkcs11-tool
+          openssl
+        ])
+        ++ [ systemd-sbsign ];
 
-  services.jenkins = {
-    environment = proxyConfig;
-    packages = with pkgs; [
-      openssl
-    ];
-  };
+      services.jenkins.packages =
+        (with pkgs; [
+          openssl
+        ])
+        ++ (with inputs.ci-yubi.packages.${pkgs.system}; [
+          uefisign
+          uefisigniso
+          keygen
+        ]);
+    }
+  ];
 }

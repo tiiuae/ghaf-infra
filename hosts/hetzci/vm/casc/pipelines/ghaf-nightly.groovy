@@ -21,7 +21,7 @@ def TARGETS = [
     testset: null, uefisign: true,
   ],
   [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-release-installer",
-    testset: null,
+    testset: null, uefisigniso: true,
   ],
   [ target: "packages.x86_64-linux.lenovo-x1-gen11-hardening-debug",
     testset: null,

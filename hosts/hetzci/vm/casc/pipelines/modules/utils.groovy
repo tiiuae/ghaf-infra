@@ -16,18 +16,6 @@ def append_to_build_description(String text) {
   }
 }
 
-def run_uefi_sign(String diskPath, String target) {
-  def outdir = "${target}-signed"
-  sh """
-    mkdir -p "${outdir}/keys"
-    uefikeygen
-    test -f keys/db.crt -a -f keys/db.key
-    cp -v keys/*.der "${outdir}/keys/"
-    uefisign keys/db.crt keys/db.key "${diskPath}" "${outdir}"
-  """
-  return run_cmd("realpath ${outdir}")
-}
-
 def create_pipeline(List<Map> targets, String testagent_host = null) {
   def pipeline = [:]
   def stamp = run_cmd('date +"%Y%m%d_%H%M%S%3N"')
@@ -103,14 +91,31 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
         }
       }
       // UEFI sign
-      if (it.get('uefisign', false)) {
+      if (it.get('uefisign', false) || it.get('uefisigniso', false)) {
         stage("UEFI Sign ${shortname}") {
-          def disk_path  = run_cmd("find -L ${it.target} -type f -name 'disk1.raw.zst' -print -quit")
-          if (!disk_path) { error("uefisign: no disk1.raw.zst found for '${it.target}'") }
-          def uefisigned_dir = run_uefi_sign(disk_path, it.target)
+          def binary = "uefisign"
+          def imageName = "disk1.raw.zst"
+          if (it.get('uefisigniso', false)) {
+            binary = "uefisigniso"
+            imageName = "ghaf.iso"
+          }
+
+          def diskPath  = run_cmd("find -L ${it.target} -type f -name '${imageName}' -print -quit")
+          if (!diskPath) { 
+            error("No ${imageName} found for '${it.target}'")
+          }
+
+          def outdir = "${it.target}-signed"
+          def artifactLocation = "${artifacts_local_dir}/uefisigned"
           sh """
-            mkdir -v -p ${artifacts_local_dir}/uefisigned
-            mv ${uefisigned_dir} ${artifacts_local_dir}/uefisigned
+            mkdir -v -p "${outdir}"
+            mkdir -v -p "${artifactLocation}"
+          """
+
+          sh """
+            uefikeygen "${outdir}"
+            ${binary} "${outdir}/keys/db/db.crt" "${outdir}/keys/db/db.key" "${diskPath}" "${outdir}"
+            mv "${outdir}" "${artifactLocation}"
           """
         }
       }
