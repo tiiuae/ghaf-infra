@@ -25,5 +25,6 @@
       clientID = "hetzci-dev";
       domain = "ci-dev.vedenemo.dev";
     };
+    signing.proxy.enable = true;
   };
 }

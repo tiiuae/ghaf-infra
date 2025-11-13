@@ -7,6 +7,7 @@
     ../common.nix
     ../jenkins.nix
     ../remote-builders.nix
+    ../signing.nix
   ];
 
   system.stateVersion = lib.mkForce "25.05";

@@ -115,6 +115,35 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
           }
         }
       }
+      // UEFI sign
+      if (it.get('uefisign', false) || it.get('uefisigniso', false)) {
+        stage("UEFI Sign ${shortname}") {
+          def binary = "uefisign"
+          def imageName = "disk1.raw.zst"
+          if (it.get('uefisigniso', false)) {
+            binary = "uefisigniso"
+            imageName = "ghaf.iso"
+          }
+
+          def diskPath  = run_cmd("find -L ${it.target} -type f -name '${imageName}' -print -quit")
+          if (!diskPath) { 
+            error("No ${imageName} found for '${it.target}'")
+          }
+
+          def outdir = "${it.target}-signed"
+          def artifactLocation = "${artifacts_local_dir}/uefisigned"
+          sh """
+            mkdir -v -p "${outdir}"
+            mkdir -v -p "${artifactLocation}"
+          """
+
+          sh """
+            uefikeygen "${outdir}"
+            ${binary} "${outdir}/keys/db/db.crt" "${outdir}/keys/db/db.key" "${diskPath}" "${outdir}"
+            mv "${outdir}" "${artifactLocation}"
+          """
+        }
+      }
       // Link artifacts
       stage("Link artifacts ${shortname}") {
         if (!currentBuild.description || !currentBuild.description.contains(artifacts_href)) {

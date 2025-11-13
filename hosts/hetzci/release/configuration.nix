@@ -37,6 +37,7 @@
       clientID = "hetzci-release";
       domain = "ci-release.vedenemo.dev";
     };
+    signing.proxy.enable = true;
   };
 
   # Configure /var/lib/caddy in /etc/fstab.
