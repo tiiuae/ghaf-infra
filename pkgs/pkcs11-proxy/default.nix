@@ -9,15 +9,15 @@
 let
   pythonEnv = pkgs.python3.withPackages (ps: [ ps.pykcs11 ]);
 in
-stdenv.mkDerivation rec {
+stdenv.mkDerivation {
   pname = "pkcs11-proxy";
   version = "git";
 
   src = fetchFromGitHub {
     owner = "tiiuae";
-    repo = pname;
-    rev = "249a2bc1f36fee2b4fbb113382c206ed7929e029";
-    hash = "sha256-3s6ycbdTXqXVi4Qu2KazBIxui50Mc/NMSh/jSYGaEZw=";
+    repo = "bukka-pkcs11-proxy";
+    rev = "ed05bbe92a02e27a615c3f4b1b5e7f4f529f5dec";
+    hash = "sha256-3lYX2JpclYDx35kqNIFC8IWW9HEe1C6QoD+CGK5NcBc=";
   };
 
   buildInputs = [
@@ -33,7 +33,7 @@ stdenv.mkDerivation rec {
   ];
 
   postInstall = ''
-    cp ../p11proxy-mitm $out/bin/
+    cp ../tools/p11proxy-mitm $out/bin/
     patchShebangs $out/bin/p11proxy-mitm
     wrapProgram $out/bin/p11proxy-mitm \
       --set PATH "${pythonEnv}/bin" \
