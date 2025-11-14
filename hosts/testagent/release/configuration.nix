@@ -32,7 +32,6 @@
     variant = "release";
     hardware = [
       "orin-agx"
-      "orin-agx-64"
       "orin-nx"
       "lenovo-x1"
       "darter-pro"
