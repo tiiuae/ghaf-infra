@@ -2,13 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 _:
 let
-  loki_data_dir = "/var/lib/loki";
+  loki_data_dir = "/data/loki";
 in
 {
-  systemd.tmpfiles.rules = [ "d /var/lib/loki 0777 loki loki - -" ];
+  systemd.tmpfiles.rules = [ "d ${loki_data_dir} 0777 loki loki - -" ];
 
   services.loki = {
     enable = true;
+    dataDir = loki_data_dir;
     configuration = {
       auth_enabled = false;
       server = {
