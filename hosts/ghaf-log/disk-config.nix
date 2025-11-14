@@ -32,5 +32,14 @@
         };
       };
     };
+    data = {
+      device = "/dev/disk/by-id/scsi-0HC_Volume_103952564";
+      type = "disk";
+      content = {
+        type = "filesystem";
+        format = "ext4";
+        mountpoint = "/data";
+      };
+    };
   };
 }
