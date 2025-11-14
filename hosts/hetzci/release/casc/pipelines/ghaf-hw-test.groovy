@@ -195,11 +195,11 @@ pipeline {
           def scs_url = get_scs_url(params.IMG_URL)
           println("scs_url: ${scs_url}")
           def provenance_url = "${scs_url}/provenance.json"
+          def sig_url = "${scs_url}/provenance.json.sig"
           println("provenance_url: ${provenance_url}")
           def provenance_path = run_wget(provenance_url, TMP_IMG_DIR)
-          println "Downloaded provenance to workspace: ${provenance_path}"
-          // TODO: policy-checker needs signature file, which we don't generate in hetzci yet
-          sh "policy-checker ${provenance_path} --policy /etc/jenkins/provenance-trust-policy.json || true"
+          def sig_path = run_wget(sig_url, TMP_IMG_DIR)
+          sh "policy-checker ${provenance_path} --sig ${sig_path} --policy /etc/jenkins/provenance-trust-policy.json"
         }
       }
     }
