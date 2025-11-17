@@ -4,6 +4,7 @@
   pkgs,
   stdenv,
   fetchFromGitHub,
+  withDebug ? false,
   ...
 }:
 let
@@ -15,9 +16,9 @@ stdenv.mkDerivation {
 
   src = fetchFromGitHub {
     owner = "tiiuae";
-    repo = "bukka-pkcs11-proxy";
-    rev = "ed05bbe92a02e27a615c3f4b1b5e7f4f529f5dec";
-    hash = "sha256-3lYX2JpclYDx35kqNIFC8IWW9HEe1C6QoD+CGK5NcBc=";
+    repo = "pkcs11-proxy";
+    rev = "199f00f0874b8c0bdc34a90203171a11a791be7f";
+    hash = "sha256-xX3fdX3g+U+gdOark3vNv+/QDDHyXSc6kwhq7VWNUpo=";
   };
 
   buildInputs = [
@@ -31,6 +32,8 @@ stdenv.mkDerivation {
     openssl
     libseccomp
   ];
+
+  cmakeFlags = if withDebug then [ "-DENABLE_DEBUG_OUTPUT=1" ] else [ ];
 
   postInstall = ''
     cp ../tools/p11proxy-mitm $out/bin/
