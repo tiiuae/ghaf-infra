@@ -42,6 +42,7 @@ let
         csvkit
         sudo
         openssh
+        openssl
         iputils
         netcat
         python3

@@ -23,4 +23,5 @@ path = [
   "**.groovy",
   "**/go.sum",
   "**/ca.*.crypt",
+  "**.pub",
 ]
