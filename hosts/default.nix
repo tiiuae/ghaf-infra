@@ -43,9 +43,6 @@ in
     #
     # These are available to allow extending system configuration with
     # out-of-tree additional config (like additional trusted cache public keys)
-    nixos-az-binary-cache = ./azure/binary-cache/configuration.nix;
-    nixos-az-builder = ./azure/builder/configuration.nix;
-    nixos-az-jenkins-controller = ./azure/jenkins-controller/configuration.nix;
     nixos-hetzarm = ./builders/hetzarm/configuration.nix;
     nixos-hetzarm-rel-1 = ./builders/hetzarm-rel-1/configuration.nix;
     nixos-testagent-prod = ./testagent/prod/configuration.nix;
@@ -87,9 +84,6 @@ in
           value = mkNixOS { systemName = name; };
         })
         [
-          "az-binary-cache"
-          "az-builder"
-          "az-jenkins-controller"
           "hetzarm"
           "hetzarm-rel-1"
           "testagent-prod"
