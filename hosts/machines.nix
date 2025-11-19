@@ -144,4 +144,8 @@
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEhB9FLZab4L64esqK4cuHvLbN40D2+S9dEHvD94rR14";
   };
 
+  uae-aws-vm1 = {
+    #    ip = "40.172.192.35";
+  };
+
 }

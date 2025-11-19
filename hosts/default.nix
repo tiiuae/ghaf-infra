@@ -71,6 +71,7 @@ in
     nixos-uae-lab-node1 = ./uae/lab/node1/configuration.nix;
     nixos-uae-nethsm-gateway = ./uae/nethsm-gateway/configuration.nix;
     nixos-uae-azure-vm1 = ./uae/azure/vm1/configuration.nix;
+    nixos-uae-aws-vm1 = ./uae/aws/vm1/configuration.nix;
   };
 
   # Expose as flake.lib.mkNixOS.
@@ -115,6 +116,7 @@ in
           "uae-lab-node1"
           "uae-nethsm-gateway"
           "uae-azure-vm1"
+          "uae-aws-vm1"
         ]
     ))
     // {
