@@ -5,7 +5,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 # Ghaf Infra
 
-This repository contains NixOS and Terraform configuration for the [Ghaf](https://github.com/tiiuae/ghaf) CI/CD infrastructure.
+This repository contains NixOS configuration for the [Ghaf](https://github.com/tiiuae/ghaf) CI/CD infrastructure.
 
 ## Getting Started
 
@@ -31,52 +31,36 @@ All commands referenced in the documentation are executed inside the nix-shell.
 ```bash
 ghaf-infra
 ├── hosts # NixOS host configurations
-│   ├── azure  # Azure ghaf-infra nix host configurations (to be replaced with: hosts/hetzci/)
-│   │   ├── binary-cache
-│   │   ├── builder
-│   │   └── jenkins-controller
-│   ├── builders # Stand-alone builder configurations
-│   │   ├── hetz86-1
-│   │   ├── hetz86-builder
-│   │   ├── hetzarm
-│   │   └── developers.nix # Users with access to builder.vedenemo.dev and hetzarm.vedenemo.dev
-│   ├── hetzci # Ghaf CI in hetzner (to replace azure ghaf-infra at hosts/azure)
-│   ├── ...
-│   └── testagent # Stand-alone testagent configurations
+│   ├── builders # Builder configurations
+│   │   ├── hetz86-1 # x86_64 remote builder for non-release CI builds
+│   │   ├── hetz86-builder # x86_64 remote builder (builder.vedenemo.dev) for developers
+│   │   ├── hetz86-rel-1 # x86_64 remote builder for release CI builds
+│   │   ├── hetzarm # aarch64 remote builder (hetzarm.vedenemo.dev) for both non-release CI and developer builds
+│   │   ├── hetzarm-rel-1 # aarch64 remote builder for release CI builds
+│   │   └── ...
+│   ├── hetzci # Ghaf CI in hetzner: see hetzci/README.md
+│   ├── ghaf-auth # See: docs/jenkins-authentication.md
+│   ├── ghaf-fleetdm
+│   ├── ghaf-lighthouse # See: docs/nebula.md
+│   ├── ghaf-log # See: https://ghaflogs.vedenemo.dev
+│   ├── ghaf-monitoring # See: https://monitoring.vedenemo.dev
+│   ├── ghaf-proxy # Proxy host: ghaf-proxy.vedenemo.dev
+│   ├── ghaf-webserver
+│   └── testagent # See: docs/jenkins-testagents.md
 │       ├── dev
 │       ├── prod
-│       └── release
+│       ├── release
+│       └── ...
 ├── nix # Nix devshell, checks, deployments, etc.
 ├── pkgs # Patched/modified packages
 ├── scripts # Misc helper scripts
 ├── services # NixOS service modules
 ├── slsa # SLSA provenance buildtype document
-├── terraform  # Azure ghaf-infra terraform configuration (to be replaced with: hosts/hetzci/)
-│   ├── ...
-│   ├── main.tf
-│   ├── README-azure.md
-│   └── README.md
 ├── users # Ghaf-infra users
 ...
 ├── README.md
-├── ssh-keys.yaml # Azure ghaf-infra user ssh keys
-└── tasks.py # Entrypoint for pyinvoke deployment tasks
+└── tasks.py # See: docs/tasks.md
 ```
-
-Ghaf-infra repository includes configuration files for Ghaf CI/CD infrastructure.
-The configuration in this repository is split in two parts:
-
-- `terraform/` directory contains the terraform configuration describing the image-based CI setup in Azure infra. The host configuration files in `hosts/azure` describe the NixOS configuration for the `binary-cache`, `builder`, and `jenkins-controller` hosts as outlined in [README-azure.md](https://github.com/tiiuae/ghaf-infra/blob/main/terraform/README-azure.md#image-based-builds). The `terraform/` configuration will soon be retired and replaced with the configuraiton under `hosts/hetzci/`.
-- In addition to the terraform Azure infra, this repository contains NixOS configurations for various other stand-alone hosts in Ghaf CI/CD infra.
-  Following are examples of some of the stand-alone configurations and their current usage in the CI/CD infrastructure:
-  - `hosts/builders/hetz86-1` x86_64 remote builder in Hetzner cloud (hetz86-1.vedenemo.dev). Currently, `hetz86-1` is used as a remote builder for non-release Jenkins builds (both hetzci and azure).
-  - `hosts/builders/hetz86-builder` x86_64 remote builder in Hetzner cloud (builder.vedenemo.dev). Developers can use the builder.vedenemo.dev as a remote builder for Ghaf x86 builds.
-  - `hosts/builders/hetzarm` aarch64 remote builder in Hetzner cloud (hetzarm.vedenemo.dev). Developers can use `hetzarm.vedenemo.dev` as a remote builder for Ghaf aarch builds. Additionally, `hetzarm` is used both from Ghaf github actions and non-release Jenkins builds as a remote builder.
-  - `hosts/builders/hetzci` See: https://github.com/tiiuae/ghaf-infra/blob/main/hosts/hetzci/README.md.
-  - `hosts/builders/testagents/*` define the configuration for testagents used from ghaf-infra Jenkins instances.
-
-Usage and deployment of the Azure infra is described in [`terraform/README.md`](https://github.com/tiiuae/ghaf-infra/blob/main/terraform/README.md).
-Following sections describe the intended usage and deployment of the stand-alone NixOS configurations.
 
 ## Usage
 
@@ -108,7 +92,7 @@ Onboarding new admins require the following manual steps:
 
 - Add their user and ssh key to [users](./users/) and import the user on the hosts they need access to.
 - If they need to manage sops secrets, add their [age key](./docs/adapting-to-new-environments.md#add-your-admin-sops-key) to [.sops.yaml](.sops.yaml), update the `creation_rules`, and run the [`update-sops-files`](./docs/tasks.md#update-sops-files) task.
-- [Deploy](./docs/deploy-rs.md) the new configuration to changed hosts (hetz86-builder, hetzarm).
+- [Deploy](./docs/deploy-rs.md) the new configuration to changed hosts.
 
 ### Hetzci development
 
