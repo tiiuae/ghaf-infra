@@ -32,7 +32,6 @@
           echo 1>&2 "Welcome to the development shell!"
           echo ""
           echo "This shell provides following helper commands:"
-          echo " - prefetch-plugins hosts/azure/jenkins-controller"
           echo " - prefetch-plugins hosts/hetzci/release"
           echo " - prefetch-plugins hosts/hetzci/prod"
           echo " - prefetch-plugins hosts/hetzci/dev"
@@ -43,7 +42,6 @@
         packages =
           (with pkgs; [
             go
-            azure-cli
             git
             jq
             nix
@@ -61,37 +59,9 @@
             sops
             ssh-to-age
             wget
-            terragrunt
             nebula
             openssl
             gnutls
-            (terraform.withPlugins (p: [
-              # We need to override the azurerm version to fix the issue described
-              # in https://ssrc.atlassian.net/browse/SP-4926.
-              # TODO:
-              # Below override is no longer needed when the azurerm version we
-              # get from the nixpkgs pinned in ghaf-infra flake includes a fix for
-              # https://github.com/hashicorp/terraform-provider-azurerm/issues/24444.
-              # At the time of writing, ghaf-infra flake pins to
-              # nixos-24.05, that ships with azurerm v3.97.1 which is broken.
-              # For more information on the available azurerm versions, see:
-              # https://registry.terraform.io/providers/hashicorp/azurerm.
-              (p.azurerm.override {
-                owner = "hashicorp";
-                repo = "terraform-provider-azurerm";
-                rev = "v3.85.0";
-                hash = "sha256-YXVSApUnJlwxIldDoijl72rA9idKV/vGRf0tAiaH8cc=";
-                vendorHash = null;
-              })
-              p.external
-              p.local
-              p.null
-              p.random
-              p.secret
-              p.sops
-              p.tls
-              p.sops
-            ]))
           ])
           ++ (with inputs'; [
             nix-fast-build.packages.default

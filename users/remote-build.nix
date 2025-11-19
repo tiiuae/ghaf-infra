@@ -3,7 +3,7 @@
 {
   users.users = {
     remote-build = {
-      description = "Azure ghaf infra runs external remote builds as this user";
+      description = "User for remote builds";
       isNormalUser = true;
       openssh.authorizedKeys.keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM2rhqSdifRmTwyrc3rvXWyDMznrIAAkVwhEsufLYiTp"

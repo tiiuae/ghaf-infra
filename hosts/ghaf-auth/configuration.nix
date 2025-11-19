@@ -97,38 +97,6 @@ in
         in
         [
           {
-            id = "ghaf-jenkins-controller-uaenorth";
-            name = "Ghaf Jenkins controller (uaenorth)";
-            redirectURIs =
-              map (env: "https://ghaf-jenkins-controller-${env}.uaenorth.cloudapp.azure.com/oauth2/callback")
-                [
-                  "dev"
-                  "prod"
-                  "release"
-                ];
-            secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
-            inherit grantTypes;
-          }
-          {
-            id = "ghaf-jenkins-controller-northeurope";
-            name = "Ghaf Jenkins controller (northeurope)";
-            redirectURIs =
-              map (env: "https://ghaf-jenkins-controller-${env}.northeurope.cloudapp.azure.com/oauth2/callback")
-                [
-                  "release"
-                  "alextserepov"
-                  "cazfi"
-                  "flokli"
-                  "henri"
-                  "jrautiola"
-                  "kaitusa"
-                  "vjuntunen"
-                  "fayad"
-                ];
-            secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
-            inherit grantTypes;
-          }
-          {
             id = "hetzci-release";
             name = "ci-release.vedenemo.dev";
             redirectURIs = [ "https://ci-release.vedenemo.dev/oauth2/callback" ];

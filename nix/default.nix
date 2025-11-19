@@ -6,7 +6,6 @@
     ./checks.nix
     ./deployments.nix
     ./devshell.nix
-    ./nixpkgs.nix
     ./treefmt.nix
     ./git-hooks.nix
     ./packages.nix

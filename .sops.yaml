@@ -206,16 +206,6 @@ creation_rules:
       - *vjuntunen
       - *jrautiola
       - *hrosten
-  - path_regex: terraform/terraform-secrets.yaml$
-    key_groups:
-    - age:
-      - *fayad
-      - *vjuntunen
-      - *jrautiola
-      - *hrosten
-      - *cazfi
-      - *flokli
-      - *ktu
   - path_regex: hosts/nethsm-gateway/secrets.yaml$
     key_groups:
     - age:

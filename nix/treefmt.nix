@@ -24,7 +24,6 @@
           statix.enable = true; # prevents use of nix anti-patterns https://github.com/nerdypepper/statix
           shellcheck.enable = true; # lints shell scripts https://github.com/koalaman/shellcheck
           ruff-format.enable = true; # faster python formatter which is equivalent to black
-          terraform.enable = true; # terraform formatter
           actionlint.enable = true; # lints github actions
         };
       };
