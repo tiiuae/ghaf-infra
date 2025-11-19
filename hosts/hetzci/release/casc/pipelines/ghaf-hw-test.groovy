@@ -88,12 +88,15 @@ def run_wget(String url, String to_dir) {
 }
 
 @NonCPS
-def get_scs_url(String img_url) {
+def split_img_url(String img_url) {
   // Why NonCPS? See: https://stackoverflow.com/a/48465528
-  def match = img_url =~ /(.*commit_[a-f0-9]{40})\/([^\/]+)/
-  def artifacts_url = match[0][1]
-  def target_name = match[0][2]
-  return "${artifacts_url}/scs/${target_name}"
+  def match = img_url =~ /(.*commit_[a-f0-9]{40})\/([^\/]+)\/(.+)/
+  def split = [
+    "artifacts_url"   : match[0][1],
+    "target_name"     : match[0][2],
+    "img_relpath"     : match[0][3]
+  ]
+  return split
 }
 
 def get_test_conf_property(String file_path, String device, String property) {
@@ -189,13 +192,14 @@ pipeline {
         }
       }
     }
-    stage('Verify provenance (stub)') {
+    stage('Verify provenance') {
       steps {
         script {
-          def scs_url = get_scs_url(params.IMG_URL)
-          println("scs_url: ${scs_url}")
-          def provenance_url = "${scs_url}/provenance.json"
-          def sig_url = "${scs_url}/provenance.json.sig"
+          def split = split_img_url(params.IMG_URL)
+          def artifacts_url = split["artifacts_url"]
+          def target = split["target_name"]
+          def provenance_url = "${artifacts_url}/scs/${target}/provenance.json"
+          def sig_url = "${provenance_url}.sig"
           println("provenance_url: ${provenance_url}")
           def provenance_path = run_wget(provenance_url, TMP_IMG_DIR)
           def sig_path = run_wget(sig_url, TMP_IMG_DIR)
@@ -208,6 +212,15 @@ pipeline {
         script {
           def img_path = run_wget(params.IMG_URL, TMP_IMG_DIR)
           println "Downloaded image to workspace: ${img_path}"
+          def split = split_img_url(params.IMG_URL)
+          def artifacts_url = split["artifacts_url"]
+          def target = split["target_name"]
+          def img_relpath = split["img_relpath"]
+          def sig_url = "${artifacts_url}/scs/${target}/${img_relpath}.sig"
+          def sig_path = run_wget(sig_url, TMP_IMG_DIR)
+          println "Downloaded SLSA signature file to workspace: ${sig_path}"
+          // Verify SLSA signature aborting if the verification fails
+          sh "openssl dgst -verify /etc/jenkins/GhafInfraSignECP256.pub -signature ${sig_path} ${img_path}"
           // Uncompress
           if(img_path.endsWith(".zst")) {
             sh "zstd -dfv ${img_path}"
