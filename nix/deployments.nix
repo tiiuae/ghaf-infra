@@ -46,6 +46,7 @@ let
     hetz86-rel-1 = mkDeployment "hetz86-rel-1" machines.hetz86-rel-1.ip;
     uae-lab-node1 = mkDeployment "uae-lab-node1" machines.uae-lab-node1.ip;
     uae-nethsm-gateway = mkDeployment "uae-nethsm-gateway" machines.uae-nethsm-gateway.ip;
+    uae-azure-vm1 = mkDeployment "uae-azure-vm1" machines.uae-azure-vm1.ip;
   };
 
   aarch64-nodes = {

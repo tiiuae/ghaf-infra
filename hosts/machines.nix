@@ -139,4 +139,9 @@
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGKZYL60TIQDoLwUwuZvzOdw/yikC181su5Cm1LAplcj";
   };
 
+  uae-azure-vm1 = {
+    ip = "74.162.65.190";
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEhB9FLZab4L64esqK4cuHvLbN40D2+S9dEHvD94rR14";
+  };
+
 }
