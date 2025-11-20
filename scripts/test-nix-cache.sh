@@ -43,9 +43,9 @@ Options:
 
 Example:
 
-  sudo ./$MYNAME \
-    -f github:tiiuae/ghaf#packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64 \
-    -b https://prod-cache.vedenemo.dev \
+  sudo ./$MYNAME \\
+    -f github:tiiuae/ghaf#packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64 \\
+    -b https://prod-cache.vedenemo.dev \\
     -k 'prod-cache.vedenemo.dev~1:JcytRNMJJdYJVQCYwLNsrfVhct5dhCK2D3fa6O1WHOI='
 EOF
 }
