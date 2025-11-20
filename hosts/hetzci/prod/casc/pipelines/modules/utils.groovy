@@ -139,6 +139,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
 
           sh """
             uefikeygen "${outdir}"
+            tar -cf "${outdir}/keys.tar" "${outdir}/keys"
             ${binary} "${outdir}/keys/db/db.crt" "${outdir}/keys/db/db.key" "${diskPath}" "${outdir}"
             mv "${outdir}" "${artifactLocation}"
           """
