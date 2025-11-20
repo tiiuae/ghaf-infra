@@ -14,6 +14,8 @@
           gitlint.enable = true;
           # fix end-of-files
           end-of-file-fixer.enable = true;
+          # trim trailing whitespaces
+          trim-trailing-whitespace.enable = true;
 
           # run all formatters
           treefmt = {

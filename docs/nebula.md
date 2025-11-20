@@ -24,7 +24,7 @@ The lighthouse can also be used as a DNS server to resolve the host ip addresses
 We have the following DNS records to facilitate this:
 
 ```
-sumu.vedenemo.dev. 0  NS  sumu.vedenemo.dev.  
+sumu.vedenemo.dev. 0  NS  sumu.vedenemo.dev.
 sumu.vedenemo.dev. 0  A   65.109.141.136
 ```
 

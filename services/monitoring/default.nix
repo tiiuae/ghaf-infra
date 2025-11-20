@@ -13,7 +13,7 @@ let
       ''
         loki.write "default" {
         	endpoint {
-        		url = "${cfg.logs.lokiAddress}/loki/api/v1/push" 
+        		url = "${cfg.logs.lokiAddress}/loki/api/v1/push"
 
         		basic_auth {
         			username      = "${cfg.logs.auth.username}"

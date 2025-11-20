@@ -214,7 +214,7 @@ in
             [pkcs11_sect]
             activate = 1
             module = "${pkcs11-provider}/lib/ossl-modules/pkcs11.so"
-            pkcs11-module-path = ${pkcs11Modules.p11-kit} 
+            pkcs11-module-path = ${pkcs11Modules.p11-kit}
             pkcs11-module-quirks = no-deinit
           ''
       );
