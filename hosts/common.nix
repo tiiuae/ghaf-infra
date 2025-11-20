@@ -47,7 +47,7 @@ in
       substituters = [
         "https://ghaf-dev.cachix.org?priority=20"
       ];
-      # Avoid copying unecessary stuff over SSH
+      # Avoid copying unnecessary stuff over SSH
       builders-use-substitutes = true;
       # Auto-free the /nix/store:
       #

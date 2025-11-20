@@ -53,7 +53,7 @@ At this point, you should have an azure VM with an SSH access to the target, usi
 The commands in this section are run on the azure target VM.
 
 #### Temporarily allow sudo without password on the target
-You need to temporarily enable sudo without password on the target host, otherwise nixos-anyhwere [fails](https://github.com/nix-community/nixos-anywhere/issues/178) to run on the target.
+You need to temporarily enable sudo without password on the target host, otherwise nixos-anywhere [fails](https://github.com/nix-community/nixos-anywhere/issues/178) to run on the target.
 Note: generally on azure VMs, sudo with no password is enabled by default.
 
 In case it's not enabled yet, use `visudo` to modify the `/etc/sudoers` to add an entry like:

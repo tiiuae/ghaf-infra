@@ -66,7 +66,7 @@ The resolvedDependencies array MUST contain all the dependencies of the target d
 
 The dependency's URI is a hashed nix store path, which can be found on the system's nix store and binary cache.
 
-The depencency's `digest` should contain the sha256 hash of the file contents.
+The dependency's `digest` should contain the sha256 hash of the file contents.
 
 The `name` and `version` fields are OPTIONAL but should be included if they are available.
 

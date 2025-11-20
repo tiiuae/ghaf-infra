@@ -20,12 +20,12 @@ RED='' GREEN='' NONE=''
 
 usage() {
   cat <<EOF
-Usage: $MYNAME [-h] [-v] [-o OUTFILE] -b BINCACHE -k KEY -f FLAKEREF 
+Usage: $MYNAME [-h] [-v] [-o OUTFILE] -b BINCACHE -k KEY -f FLAKEREF
 
 Perform basic download test for the given binary cache.
 The script attempts to download the FLAKEREF closure from the given
 binary cache, outputting the time the cache download took.
-Script fails unless the full closure is available on the binary 
+Script fails unless the full closure is available on the binary
 cache - it will not attempt to rebuild anything.
 Script makes use of a temporary nix store so possible earlier cached
 content on the local nix store will not be used by the nix build

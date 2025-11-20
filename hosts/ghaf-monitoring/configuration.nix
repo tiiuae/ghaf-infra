@@ -355,7 +355,7 @@ in
     retentionTime = "90d";
     globalConfig.scrape_interval = "15s";
 
-    # blackbox exporter can ping abritrary urls for us
+    # blackbox exporter can ping arbitrary urls for us
     exporters.blackbox = {
       enable = true;
       listenAddress = "127.0.0.1";

@@ -115,7 +115,7 @@ def sh_ret_out(String cmd) {
 }
 
 def run_wget(String url, String to_dir) {
-  // Downlaod `url` setting the directory prefix `to_dir` preserving
+  // Download `url` setting the directory prefix `to_dir` preserving
   // the hierarchy of directories locally.
   sh "wget --show-progress --progress=dot:giga --force-directories --timestamping -P ${to_dir} ${url}"
   // Re-run wget: this will not re-download anything, it's needed only to

@@ -15,7 +15,7 @@ usage() {
   cat <<EOF
 Usage: $MYNAME [-u USER] -s SSH_OPTS -k PUB_KEY_PATH
 
-Add a USER to the remote host using SSH_OPTS for the initial login, adding 
+Add a USER to the remote host using SSH_OPTS for the initial login, adding
 public key PUB_KEY_PATH to the USER's authorized_keys on the remote host.
 
 Options:
@@ -27,9 +27,9 @@ Options:
 
 Example:
 
-  Following command adds user new_user to host remote_host allowing 
-  new_user ssh login to remote_host with key that matches the public 
-  key ~/.ssh/id_new_user.pub. For the initial login, the command uses 
+  Following command adds user new_user to host remote_host allowing
+  new_user ssh login to remote_host with key that matches the public
+  key ~/.ssh/id_new_user.pub. For the initial login, the command uses
   admin@remote_host -i admin_key:
 
   $MYNAME -s 'admin@remote_host -i admin_key' -u new_user -k ~/.ssh/id_new_user.pub
@@ -101,7 +101,7 @@ exit_unless_file_exists() {
 }
 
 test_remote_sudo() {
-  # shellcheck disable=SC2086 # intented word splitting of $OPT_s
+  # shellcheck disable=SC2086 # intended word splitting of $OPT_s
   ssh -tt -o ConnectTimeout=5 $OPT_s "sudo -n true || exit 9" >/dev/null
   ret="$?"
   if [ "$ret" = "9" ]; then
@@ -113,8 +113,8 @@ test_remote_sudo() {
   fi
 }
 
-# shellcheck disable=SC2086 # intented word splitting of $OPT_s
-# shellcheck disable=SC2029 # intented client side expansion of $OPT_u
+# shellcheck disable=SC2086 # intended word splitting of $OPT_s
+# shellcheck disable=SC2029 # intended client side expansion of $OPT_u
 add_remote_user() {
   if ! ssh $OPT_s "\
         sudo useradd -m -d /home/$OPT_u $OPT_u; \
