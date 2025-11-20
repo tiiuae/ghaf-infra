@@ -22,9 +22,10 @@
           nixfmt.enable = true; # nix formatter (rfc-style) https://github.com/NixOS/nixfmt
           deadnix.enable = true; # removes dead nix code https://github.com/astro/deadnix
           statix.enable = true; # prevents use of nix anti-patterns https://github.com/nerdypepper/statix
-          shellcheck.enable = true; # lints shell scripts https://github.com/koalaman/shellcheck
-          ruff-format.enable = true; # faster python formatter which is equivalent to black
-          actionlint.enable = true; # lints github actions
+          shellcheck.enable = true; # bash linter https://github.com/koalaman/shellcheck
+          shfmt.enable = true; # bash formatter https://github.com/mvdan/sh
+          ruff-format.enable = true; # python formatter https://github.com/astral-sh/ruff
+          actionlint.enable = true; # github actions linter
         };
       };
 
