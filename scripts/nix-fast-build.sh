@@ -45,8 +45,8 @@ Options:
        to determine the build targets. This option is mutually exclusive with
        option -t.
        Example: -f '^devShells\.'
- -t    Target selector list - space separated list of flake outputs to build. 
-       This options is mutually exclusive with option -f. 
+ -t    Target selector list - space separated list of flake outputs to build.
+       This options is mutually exclusive with option -f.
        Example: -t 'devShells.x86_64-linux.default checks.x86_64-linux.treefmt'
 
 
@@ -70,8 +70,8 @@ Examples:
 
   Following command builds all 'checks.x86_64-linux.*debug' targets on
   the specified remote builder 'my_builder' authenticating as user 'me'
-  with ssh key '~/.ssh/my_key', not downloading build results from remote, 
-  skipping builds that are already in binary cache, and accepting the target 
+  with ssh key '~/.ssh/my_key', not downloading build results from remote,
+  skipping builds that are already in binary cache, and accepting the target
   flake configuration (assuming 'me' is a nix trusted user on remote):
 
     $MYNAME \\
@@ -227,7 +227,7 @@ fast_build() {
   # we need to export the relevant option in `NIX_SSHOPTS` to completely
   # disable ssh multiplexing:
   export NIX_SSHOPTS="-o ControlMaster=no"
-  # shellcheck disable=SC2086 # intented word splitting of $OPTS
+  # shellcheck disable=SC2086 # intended word splitting of $OPTS
   nix-fast-build \
     --flake ".#$target" \
     --eval-workers 3 \

@@ -64,7 +64,7 @@ Add the above age public key to the `.sops.yaml` with your username. You will al
 ### Generate and add server sops key
 ```bash
 # Run in nix-shell on your host
-# generate a new ssh server key for the taget system:
+# generate a new ssh server key for the target system:
 ssh-keygen -t ed25519 -a 100 -C mytarget -f ~/.ssh/mytarget_id_ed25519
 # print the host age public key
 $ ssh-to-age < ~/.ssh/mytarget_id_ed25519.pub

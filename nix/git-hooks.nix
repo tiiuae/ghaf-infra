@@ -7,6 +7,16 @@
   ];
   perSystem =
     { pkgs, ... }:
+    let
+      typosConfig = pkgs.writeText "typos.toml" ''
+        [default]
+        extend-ignore-re = [
+          ".*ssh-ed25519 .*",
+          ".*aks-uaenorth.*",
+          ".*set -ue.*",
+        ]
+      '';
+    in
     {
       pre-commit = {
         settings.hooks = {
@@ -16,7 +26,19 @@
           end-of-file-fixer.enable = true;
           # trim trailing whitespaces
           trim-trailing-whitespace.enable = true;
-
+          # spell check
+          typos = {
+            enable = true;
+            excludes = [
+              "^LICENSES/.*"
+              ".*\.yaml"
+              ".*\.crypt"
+              ".*/plugins\.json"
+            ];
+            settings = {
+              configPath = typosConfig.outPath;
+            };
+          };
           # run all formatters
           treefmt = {
             package = self.formatter.${pkgs.system};

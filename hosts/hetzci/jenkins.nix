@@ -90,7 +90,7 @@ in
         "-Dhudson.model.DirectoryBrowserSupport.CSP=\"sandbox allow-scripts; default-src 'none'; img-src 'self' data: ; style-src 'self' 'unsafe-inline' data: ; script-src 'self' 'unsafe-inline' 'unsafe-eval';\""
         # Point to configuration-as-code config
         "-Dcasc.jenkins.config=${cfg.casc}"
-        # Disable the intitial setup wizard, and the creation of initialAdminPassword.
+        # Disable the initial setup wizard, and the creation of initialAdminPassword.
         "-Djenkins.install.runSetupWizard=false"
         # Allow setting the following possibly undefined parameters
         "-Dhudson.model.ParametersAction.safeParameters=DESC,RELOAD_ONLY"
