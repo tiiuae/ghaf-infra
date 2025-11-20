@@ -15,9 +15,9 @@ sops decrypt "$FLAKE_ROOT"/services/nebula/ca.key.crypt >"ca.key"
 sops decrypt "$FLAKE_ROOT"/services/nebula/ca.crt.crypt >"ca.crt"
 
 nebula-cert sign \
-	-out-crt host.crt \
-	-out-key host.key \
-	"$@"
+  -out-crt host.crt \
+  -out-key host.key \
+  "$@"
 
 echo "nebula-cert: |"
 sed -e 's/^/    /' host.crt
