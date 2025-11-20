@@ -148,4 +148,9 @@
     #    ip = "40.172.192.35";
   };
 
+  uae-azureci-dev = {
+    ip = "20.174.166.150";
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICWPvVQeelj9vgk/+auNzanO/CnQcbtUel6wqpLV/gnJ";
+  };
+
 }
