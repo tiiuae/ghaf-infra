@@ -13,9 +13,9 @@ PURGE_KEEP_BUILDS="${PURGE_KEEP_BUILDS:=3}"
 # Skip purge if nix store disk usage is less than PURGE_DU_PCT percent
 PURGE_DU_PCT="${PURGE_DU_PCT:=90}"
 
-nix_store_du_pct=$( (df /nix/store --output=pcent || df /nix --output=pcent || df / --output=pcent) | tr -dc '0-9' )
+nix_store_du_pct=$( (df /nix/store --output=pcent || df /nix --output=pcent || df / --output=pcent) | tr -dc '0-9')
 echo "nix store disk usage: $nix_store_du_pct%"
-if (( nix_store_du_pct < PURGE_DU_PCT )); then
+if ((nix_store_du_pct < PURGE_DU_PCT)); then
   exit 0
 fi
 
