@@ -299,4 +299,3 @@ In case you want to execute nixos-anywhere manually, or you run into issues exec
 
 ## Install the target configuration
 Please see the documentation in the main [README](../README.md#install) for instructions on how to install the new configuration.
-
