@@ -12,6 +12,8 @@
         settings.hooks = {
           # lint commit messages
           gitlint.enable = true;
+          # fix end-of-files
+          end-of-file-fixer.enable = true;
 
           # run all formatters
           treefmt = {
