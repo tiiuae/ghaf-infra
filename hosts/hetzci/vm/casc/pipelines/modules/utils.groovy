@@ -101,7 +101,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
           }
 
           def diskPath  = run_cmd("find -L ${it.target} -type f -name '${imageName}' -print -quit")
-          if (!diskPath) { 
+          if (!diskPath) {
             error("No ${imageName} found for '${it.target}'")
           }
 
