@@ -66,6 +66,7 @@ in
           csvkit
           curl
           git
+          gnutar
           hostname
           jq
           nix
