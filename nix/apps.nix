@@ -63,6 +63,7 @@ in
     {
       run-hetzci-vm = {
         type = "app";
+        meta.description = "Run the hetzci VM";
         program =
           run-vm-with-share pkgs self.nixosConfigurations.hetzci-vm.config
             "${self.outPath}/hosts/hetzci/vm/secrets.yaml";

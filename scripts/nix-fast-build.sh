@@ -74,11 +74,11 @@ Examples:
   skipping builds that are already in binary cache, and accepting the target 
   flake configuration (assuming 'me' is a nix trusted user on remote):
 
-    $MYNAME \
-      -f '^checks\.x86_64-linux\..*debug$' \
-      -o '--remote me@my_builder \
-          --remote-ssh-option IdentityFile ~/.ssh/my_key \
-          --no-download --skip-cached' \
+    $MYNAME \\
+      -f '^checks\.x86_64-linux\..*debug$' \\
+      -o '--remote me@my_builder \\
+          --remote-ssh-option IdentityFile ~/.ssh/my_key \\
+          --no-download --skip-cached' \\
           --option accept-flake-config true
 
   --
@@ -88,8 +88,8 @@ Examples:
   in the output target name) on the specified remote builder 'my_builder'
   authenticating as user 'me':
 
-    $MYNAME \
-      -f '^checks\.aarch64-linux\.((?!release).)*$' \
+    $MYNAME \\
+      -f '^checks\.aarch64-linux\.((?!release).)*$' \\
       -o '--remote me@my_builder'
 
 EOF
