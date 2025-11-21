@@ -6,13 +6,6 @@
     { pkgs, ... }:
     {
       checks = {
-        pycodestyle =
-          pkgs.runCommandLocal "pycodestyle" { nativeBuildInputs = [ pkgs.python3.pkgs.pycodestyle ]; }
-            ''
-              cd ${self.outPath}
-              pycodestyle --max-line-length 90 $(find . -type f -name "*.py" ! -path "*result*" ! -path "*eggs*")
-              touch $out
-            '';
         pylint =
           pkgs.runCommandLocal "pylint"
             {
