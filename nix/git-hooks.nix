@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
-{ inputs, self, ... }:
+{ inputs, ... }:
 {
   imports = with inputs; [
     git-hooks-nix.flakeModule
@@ -41,11 +41,31 @@
           };
           # check reuse compliance
           reuse.enable = true;
-          # run all formatters
-          treefmt = {
-            package = self.formatter.${pkgs.system};
+          # nix formatter (rfc-style)
+          nixfmt-rfc-style.enable = true;
+          # removes dead nix code
+          deadnix.enable = true;
+          # prevents use of nix anti-patterns
+          statix = {
             enable = true;
+            args = [
+              "fix"
+            ];
           };
+          # bash linter
+          shellcheck.enable = true;
+          # bash formatter
+          shfmt = {
+            enable = true;
+            args = [
+              "--indent"
+              "2"
+            ];
+          };
+          # python formatter
+          ruff-format.enable = true;
+          # github actions linter
+          actionlint.enable = true;
         };
       };
     };
