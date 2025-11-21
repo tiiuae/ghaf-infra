@@ -6,8 +6,8 @@
     ./checks.nix
     ./deployments.nix
     ./devshell.nix
-    ./treefmt.nix
     ./git-hooks.nix
     ./packages.nix
+    ./formatter.nix
   ];
 }
