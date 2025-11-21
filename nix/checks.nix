@@ -24,7 +24,7 @@
             ''
               cd ${self.outPath}
               export HOME=/tmp
-              pylint --enable=useless-suppression -rn $(find . -type f -name "*.py" ! -path "*result*" ! -path "*eggs*")
+              pylint --enable=useless-suppression -rn $(find . -type f -name "*.py")
               touch $out
             '';
       };
