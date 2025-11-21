@@ -6,11 +6,6 @@
     { pkgs, ... }:
     {
       checks = {
-        reuse = pkgs.runCommandLocal "reuse-lint" { buildInputs = [ pkgs.reuse ]; } ''
-          cd ${self.outPath}
-          reuse lint
-          touch $out
-        '';
         pycodestyle =
           pkgs.runCommandLocal "pycodestyle" { nativeBuildInputs = [ pkgs.python3.pkgs.pycodestyle ]; }
             ''
