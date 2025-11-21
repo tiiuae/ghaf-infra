@@ -39,6 +39,8 @@
               configPath = typosConfig.outPath;
             };
           };
+          # check reuse compliance
+          reuse.enable = true;
           # run all formatters
           treefmt = {
             package = self.formatter.${pkgs.system};
