@@ -1,22 +1,12 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
-{ inputs, ... }:
+{ inputs, self, ... }:
 {
   imports = with inputs; [
     git-hooks-nix.flakeModule
   ];
   perSystem =
-    { pkgs, ... }:
-    let
-      typosConfig = pkgs.writeText "typos.toml" ''
-        [default]
-        extend-ignore-re = [
-          ".*ssh-ed25519 .*",
-          ".*aks-uaenorth.*",
-          ".*set -ue.*",
-        ]
-      '';
-    in
+    { ... }:
     {
       pre-commit = {
         settings.hooks = {
@@ -36,7 +26,7 @@
               ".*/plugins\.json"
             ];
             settings = {
-              configPath = typosConfig.outPath;
+              configPath = "${self.outPath}/.typos.toml";
             };
           };
           # check reuse compliance
