@@ -97,24 +97,24 @@ in
         in
         [
           {
-            id = "hetzci-release";
-            name = "ci-release.vedenemo.dev";
-            redirectURIs = [ "https://ci-release.vedenemo.dev/oauth2/callback" ];
-            secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
+            id = "hetzci-dev";
+            name = "ci-dev.vedenemo.dev";
+            redirectURIs = [ "https://ci-dev.vedenemo.dev/oauth2/callback" ];
+            secretEnv = "CI_DEV_CLIENT_SECRET";
             inherit grantTypes;
           }
           {
             id = "hetzci-prod";
             name = "ci-prod.vedenemo.dev";
             redirectURIs = [ "https://ci-prod.vedenemo.dev/oauth2/callback" ];
-            secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
+            secretEnv = "CI_PROD_CLIENT_SECRET";
             inherit grantTypes;
           }
           {
-            id = "hetzci-dev";
-            name = "ci-dev.vedenemo.dev";
-            redirectURIs = [ "https://ci-dev.vedenemo.dev/oauth2/callback" ];
-            secretEnv = "JENKINS_CONTROLLER_AUTH_SECRET";
+            id = "hetzci-release";
+            name = "ci-release.vedenemo.dev";
+            redirectURIs = [ "https://ci-release.vedenemo.dev/oauth2/callback" ];
+            secretEnv = "CI_RELEASE_CLIENT_SECRET";
             inherit grantTypes;
           }
         ];
@@ -134,15 +134,13 @@ in
 
   users.groups.dex = { };
 
-  services.nginx = {
-    virtualHosts = {
-      "auth.vedenemo.dev" = {
-        enableACME = true;
-        forceSSL = true;
-        default = true;
-        locations."/" = {
-          proxyPass = "http://${config.services.dex.settings.web.http}";
-        };
+  services.nginx.virtualHosts = {
+    "auth.vedenemo.dev" = {
+      enableACME = true;
+      forceSSL = true;
+      default = true;
+      locations."/" = {
+        proxyPass = "http://${config.services.dex.settings.web.http}";
       };
     };
   };
