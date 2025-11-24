@@ -282,6 +282,8 @@ def install(c: Any, alias: str, yes: bool = False) -> None:
         if ask != "y":
             return
 
+    assert_stateversion(alias, yes)
+
     # Check ssh and remote user
     try:
         remote_user = h.run(cmd="whoami", stdout=subprocess.PIPE).stdout.strip()
@@ -349,6 +351,48 @@ def install(c: Any, alias: str, yes: bool = False) -> None:
     print(f"Wait for {h.host} to start", end="")
     wait_for_port(h.host, 22)
     reboot(c, alias)
+
+
+def assert_stateversion(alias: str, yes: bool):
+    """Assert that stateVersion matches nixpkgs version"""
+    host = TARGETS.get(alias).nixosconfig
+    ret = subprocess.run(
+        [
+            "nix",
+            "eval",
+            "--impure",
+            "--json",
+            "--expr",
+            f'let \
+                flake = builtins.getFlake ("git+file://" + toString {ROOT}); \
+                host = flake.nixosConfigurations.{host}; \
+                nixpkgsVersion = builtins.substring 0 5 host.lib.version; \
+                stateVersion = host.config.system.stateVersion; \
+              in {{ inherit stateVersion nixpkgsVersion; }}',
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    try:
+        ret.check_returncode()
+    except subprocess.CalledProcessError:
+        logger.error(ret.stderr)
+        sys.exit(1)
+
+    version_data = json.loads(ret.stdout)
+    state_version = version_data["stateVersion"]
+    nixpkgs_version = version_data["nixpkgsVersion"]
+    if state_version != nixpkgs_version:
+        logger.warning(
+            f"Attempting to install {alias} with nixpkgs version "
+            f"'{nixpkgs_version}' but `{host}.config.system.stateVersion` is '{state_version}'."
+        )
+        logger.warning("stateVersion should be bumped to match installation state!")
+        if not yes:
+            ask = input("Still continue? [y/N] ")
+            if ask != "y":
+                sys.exit(1)
 
 
 def wait_for_port(host: str, port: int, shutdown: bool = False) -> None:
