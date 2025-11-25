@@ -113,7 +113,6 @@ get_recursively() {
     --level=inf \
     --timestamping \
     --no-if-modified-since \
-    --continue \
     --execute robots=off \
     --reject 'index.html?*' \
     --user-agent=Mozilla/5.0 \
@@ -133,7 +132,7 @@ get_recursively() {
 
 tar_subdirs() {
   outdir="$1"
-  find "$outdir" -type d -name 'build_*-commit_*' | while read -r build_dir; do
+  find "$outdir" -type d -name '*-commit_*' | while read -r build_dir; do
     find "$build_dir" -type d -mindepth 1 -maxdepth 1 | while read -r target_dir; do
       target_reldir="$(basename "$target_dir")"
       tar -cf "${target_dir}.tar" -C "$build_dir" "$target_reldir"
