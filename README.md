@@ -69,7 +69,7 @@ The configuration files in this repository declaratively define the system confi
 
 ### Secrets
 
-For deployment secrets (such as the binary cache signing key), this project uses [sops-nix](https://github.com/Mic92/sops-nix).
+For deployment secrets (such as the ssh host key), this project uses [sops-nix](https://github.com/Mic92/sops-nix).
 
 The general idea is: each host have `secrets.yaml` file that contains the encrypted secrets required by that host. As an example, the `secrets.yaml` file for the host ghaf-proxy defines a secret [`loki_password`](https://github.com/tiiuae/ghaf-infra/blob/6be2cb637af86ddb1abd8bfb60160f81ce6581ca/hosts/ghaf-proxy/secrets.yaml#L2) which is used by the host ghaf-proxy in [its](https://github.com/tiiuae/ghaf-infra/blob/6be2cb637af86ddb1abd8bfb60160f81ce6581ca/hosts/ghaf-proxy/configuration.nix#L51) monitoring service configuration to push logs to Grafana Loki. All secrets in `secrets.yaml` can be decrypted with each host's ssh key - sops automatically decrypts the host secrets when the system activates (i.e. on boot or whenever nixos-rebuild switch occurs) and places the decrypted secrets in the configured file paths. An [admin user](https://github.com/tiiuae/ghaf-infra/blob/6be2cb637af86ddb1abd8bfb60160f81ce6581ca/.sops.yaml#L6-L12) manages the secrets by using the `sops` command line tool.
 
