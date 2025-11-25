@@ -4,7 +4,7 @@
 # SPDX-FileCopyrightText: 2023 Nix community projects
 # SPDX-License-Identifier: MIT
 
-# pylint: disable=global-statement, too-many-locals
+# pylint: disable=global-statement, too-many-locals, too-many-statements
 
 # This file originates from:
 # https://github.com/nix-community/infra/blob/c4c8c32b51/tasks.py
@@ -340,6 +340,11 @@ def install(c: Any, alias: str, yes: bool = False) -> None:
                 sys.exit(1)
 
     target = TARGETS.get(alias)
+    # Build the target nixosConfiguration locally before calling nixos-anywhere
+    # to abort early in case the build fails
+    command = "nix build --no-link .#nixosConfigurations."
+    command += f"{target.nixosconfig}.config.system.build.toplevel"
+    c.run(command)
     with TemporaryDirectory() as tmpdir:
         decrypt_host_key(target, tmpdir)
         command = f"nixos-anywhere {h.host} --extra-files {tmpdir} "
