@@ -27,7 +27,7 @@ def poweroff(String device) {
 pipeline {
   agent { label 'built-in' }
   triggers {
-    cron('0 19 * * *')
+    cron(env.CI_ENV == 'dev' ? '0 19 * * *' : '')
   }
   options {
     buildDiscarder(logRotator(numToKeepStr: '30'))

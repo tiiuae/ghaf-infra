@@ -28,7 +28,7 @@ pipeline {
                 git --git-dir=${build_workspace}/.git log -n1 --pretty=format:'%H' 2>/dev/null
               """
             }
-            def cachix_cache = "ghaf-release"
+            def cachix_cache = env.CI_ENV == "release" ? "ghaf-release" : "ghaf-dev"
             stage("Cachix pin") {
               withCredentials([string(credentialsId: 'cachix-auth-token', variable: 'TOKEN')]) {
                 env.CACHIX_AUTH_TOKEN="$TOKEN".trim()

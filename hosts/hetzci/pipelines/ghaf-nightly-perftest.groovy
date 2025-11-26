@@ -46,7 +46,7 @@ properties([
         script: [
           classpath: [],
           sandbox: true,
-          script: "return ['prod','dev','release']"
+          script: "return ['dev','prod','release']"
         ]
       ]
     ]
@@ -55,7 +55,7 @@ properties([
 pipeline {
   agent { label 'built-in' }
   triggers {
-    cron('0 0 * * *')
+    cron(env.CI_ENV == 'prod' ? '0 0 * * *' : '')
   }
   options {
     buildDiscarder(logRotator(numToKeepStr: '30'))
@@ -90,7 +90,7 @@ pipeline {
             if (params.TESTAGENT_HOST) {
               PIPELINE = MODULES.utils.create_pipeline(TARGETS, params.TESTAGENT_HOST)
             } else {
-              PIPELINE = MODULES.utils.create_pipeline(TARGETS, 'prod')
+              PIPELINE = MODULES.utils.create_pipeline(TARGETS, env.CI_ENV)
             }
           }
         }

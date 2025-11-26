@@ -138,7 +138,7 @@ in
     # Jenkins home dir (by default at /var/lib/jenkins) mode needs to be 755
     users.users.jenkins.homeMode = "755";
 
-    environment.etc."jenkins/pipelines".source = cfg.casc + /pipelines;
+    environment.etc."jenkins/pipelines".source = ./pipelines;
     environment.etc."jenkins/nix-fast-build.sh".source = "${self.outPath}/scripts/nix-fast-build.sh";
 
     systemd.services.jenkins = {

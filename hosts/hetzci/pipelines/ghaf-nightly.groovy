@@ -8,54 +8,69 @@ def WORKDIR  = 'checkout'
 def PIPELINE = [:]
 
 def TARGETS = [
+  [ target: "packages.x86_64-linux.doc",
+    no_image: true, testset: null,
+  ],
   [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug",
-    testset: '_relayboot_perf_',
+    testset: '_relayboot_gui_regression_', uefisign: true,
+  ],
+  [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-installer",
+    testset: '_relayboot_gui_regression_',
+  ],
+  [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-release",
+    testset: null,
+  ],
+  [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-release-installer",
+    testset: null, uefisigniso: true,
+  ],
+  [ target: "packages.x86_64-linux.lenovo-x1-gen11-hardening-debug",
+    testset: null,
+  ],
+  [ target: "packages.x86_64-linux.lenovo-x1-gen11-hardening-debug-installer",
+    testset: null,
+  ],
+  [ target: "packages.x86_64-linux.dell-latitude-7230-debug",
+    testset: null,
   ],
   [ target: "packages.x86_64-linux.dell-latitude-7330-debug",
-    testset: '_relayboot_perf_',
+    testset: '_relayboot_regression_',
   ],
   [ target: "packages.aarch64-linux.nvidia-jetson-orin-agx-debug",
-    testset: '_relayboot_perf_',
+    testset: '_relayboot_regression_',
+  ],
+  [ target: "packages.aarch64-linux.nvidia-jetson-orin-agx64-debug",
+    testset: '_relayboot_regression_',
   ],
   [ target: "packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64",
-    testset: '_relayboot_perf_',
+    testset: '_relayboot_regression_',
+  ],
+  [ target: "packages.x86_64-linux.nvidia-jetson-orin-agx64-debug-from-x86_64",
+    testset: '_relayboot_regression_',
   ],
   [ target: "packages.aarch64-linux.nvidia-jetson-orin-nx-debug",
-    testset: '_relayboot_perf_',
+    testset: '_relayboot_regression_',
   ],
   [ target: "packages.x86_64-linux.nvidia-jetson-orin-nx-debug-from-x86_64",
-    testset: '_relayboot_perf_',
+    testset: '_relayboot_regression_',
+  ],
+  [ target: "packages.x86_64-linux.generic-x86_64-debug",
+    testset: null,
+  ],
+  [ target: "packages.aarch64-linux.nxp-imx8mp-evk-debug",
+    testset: null,
   ],
   [ target: "packages.x86_64-linux.system76-darp11-b-debug",
-    testset: '_relayboot_perf_',
+    testset: '_relayboot_gui_regression_', uefisign: true,
   ],
 ]
 
 properties([
-  githubProjectProperty(displayName: '', projectUrlStr: REPO_URL),
-  parameters([
-    [
-      $class: 'ChoiceParameter',
-      name: 'TESTAGENT_HOST',
-      choiceType: 'PT_RADIO',
-      description: '''
-        Select the testagent-host. This parameter allows specifying the exact testagent in case Jenkins controller is
-        connected with multiple agents.'''.stripIndent(),
-      script: [
-        $class: 'GroovyScript',
-        script: [
-          classpath: [],
-          sandbox: true,
-          script: "return ['dev','prod','release']"
-        ]
-      ]
-    ]
-  ])
+  githubProjectProperty(displayName: '', projectUrlStr: REPO_URL)
 ])
 pipeline {
   agent { label 'built-in' }
   triggers {
-    cron('0 0 * * *')
+    cron(env.CI_ENV == "prod" ? '0 20 * * *' : '')
   }
   options {
     buildDiscarder(logRotator(numToKeepStr: '30'))
@@ -87,11 +102,7 @@ pipeline {
         dir(WORKDIR) {
           script {
             MODULES.utils = load "/etc/jenkins/pipelines/modules/utils.groovy"
-            if (params.TESTAGENT_HOST) {
-              PIPELINE = MODULES.utils.create_pipeline(TARGETS, params.TESTAGENT_HOST)
-            } else {
-              PIPELINE = MODULES.utils.create_pipeline(TARGETS, 'dev')
-            }
+            PIPELINE = MODULES.utils.create_pipeline(TARGETS)
           }
         }
       }
@@ -100,9 +111,7 @@ pipeline {
       steps {
         dir(WORKDIR) {
           script {
-            PIPELINE.each { key, value ->
-              value()
-            }
+            parallel PIPELINE
           }
         }
       }
