@@ -37,6 +37,15 @@ in
       description = "Expected Ghaf GitHub webhook secret";
       default = true;
     };
+    envType = lib.mkOption {
+      type = lib.types.enum [
+        "dev"
+        "prod"
+        "release"
+        "vm"
+      ];
+      description = "The type of environment this is";
+    };
   };
   config = {
     sops = {
@@ -81,6 +90,10 @@ in
           pkgs.cachix
           pkgs.nixos-rebuild
         ];
+
+      environment = {
+        CI_ENV = cfg.envType;
+      };
 
       extraJavaOptions = [
         # Useful when the 'sh' step fails:

@@ -28,6 +28,7 @@
 
   hetzci = {
     jenkins = {
+      envType = "release";
       casc = ./casc;
       pluginsFile = ./plugins.json;
       withGithubStatus = false;
