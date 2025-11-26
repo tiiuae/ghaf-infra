@@ -228,14 +228,31 @@ groovy:
       import org.jenkinsci.plugins.workflow.job.WorkflowJob
       import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition
       import groovy.io.FileType
+      def pipelinesToLoad = [
+        "ghaf-hw-test-manual.groovy",
+        "ghaf-hw-test.groovy",
+        "ghaf-main.groovy",
+        "ghaf-manual.groovy",
+        "ghaf-nightly-perftest.groovy",
+        "ghaf-nightly-poweroff.groovy",
+        "ghaf-nightly.groovy",
+        "ghaf-pre-merge-manual.groovy",
+        "ghaf-pre-merge.groovy",
+        "ghaf-release-candidate.groovy",
+        "ghaf-release-publish.groovy",
+      ]
       println("Loading pipelines")
       def pipelines = new File("/etc/jenkins/pipelines/")
       pipelines.eachFile(FileType.FILES) { file ->
-        println("Loading pipeline from: " + file.name)
-        def pipeline_name = file.name.substring(0, file.name.lastIndexOf('.'))
-        def job = new WorkflowJob(Jenkins.getInstance(), pipeline_name)
-        job.definition = new CpsFlowDefinition(file.text, true)
-        job.save()
+        if (pipelinesToLoad.contains(file.name)) {
+          println("Loading pipeline from: " + file.name)
+          def pipeline_name = file.name.substring(0, file.name.lastIndexOf('.'))
+          def job = new WorkflowJob(Jenkins.getInstance(), pipeline_name)
+          job.definition = new CpsFlowDefinition(file.text, true)
+          job.save()
+        } else {
+          println("Skipping pipeline " + file.name)
+        }
       }
       Jenkins.getInstance().reload()
   # Trigger all pipelines on jenkins service (re)start:
