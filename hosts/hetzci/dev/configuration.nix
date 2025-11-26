@@ -18,6 +18,7 @@
 
   hetzci = {
     jenkins = {
+      envType = "dev";
       casc = ./casc;
       pluginsFile = ./plugins.json;
     };

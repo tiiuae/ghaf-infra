@@ -15,6 +15,7 @@
   sops.defaultSopsFile = ./secrets.yaml;
 
   hetzci.jenkins = {
+    envType = "vm";
     casc = ./casc;
     pluginsFile = ./plugins.json;
   };
