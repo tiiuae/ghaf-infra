@@ -88,62 +88,56 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
           }
         }
       }
-      // SLSA sign
-      // Skip SLSA signing in vm environment, where NetHSM is not available
+      // Signing stages
+      // Skip signing stages in vm environment, where NetHSM is not available
       if (env.CI_ENV != 'vm') {
-        stage("Sign ${shortname}") {
-          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-            lock('signing') {
-              if (!it.no_image) {
-                def img_path = get_img_path(it.target, artifacts_local_dir)
-                // Sign image
+        if (!it.no_image) {
+          stage("Sign image ${shortname}") {
+            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+              def img_path = get_img_path(it.target, artifacts_local_dir)
+              sh """
+                mkdir -v -p "\$(dirname "${artifacts_local_dir}/scs/${img_path}")"
+              """
+              lock('signing') {
                 sh """
-                  mkdir -v -p "\$(dirname "${artifacts_local_dir}/scs/${img_path}")"
                   openssl dgst -sha256 -sign \
                     "pkcs11:token=NetHSM;object=GhafInfraSignECP256" \
                     -out ${artifacts_local_dir}/scs/${img_path}.sig \
                     ${artifacts_local_dir}/${img_path}
                 """
               }
-              // Sign provenance file
+            }
+          }
+        }
+        stage("Sign provenance ${shortname}") {
+          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+            lock('signing') {
               sh """
-                openssl pkeyutl -sign \
+                openssl pkeyutl -sign -rawin \
                   -inkey "pkcs11:token=NetHSM;object=GhafInfraSignProv" \
-                  -in ${artifacts_local_dir}/scs/${it.target}/provenance.json -rawin \
-                  -out ${artifacts_local_dir}/scs/${it.target}/provenance.json.sig
+                  -out ${artifacts_local_dir}/scs/${it.target}/provenance.json.sig \
+                  -in ${artifacts_local_dir}/scs/${it.target}/provenance.json
               """
             }
           }
         }
-      }
-      // UEFI sign
-      if (it.get('uefisign', false) || it.get('uefisigniso', false)) {
-        stage("UEFI Sign ${shortname}") {
-          def binary = "uefisign"
-          def imageName = "disk1.raw.zst"
-          if (it.get('uefisigniso', false)) {
-            binary = "uefisigniso"
-            imageName = "ghaf.iso"
+        if (it.get('uefisign', false) || it.get('uefisigniso', false)) {
+          stage("Sign UEFI ${shortname}") {
+            def binary = it.get('uefisigniso', false) ? "uefisigniso" : "uefisign"
+            def imageName = it.get('uefisigniso', false) ? "ghaf.iso" : "disk1.raw.zst"
+
+            def diskPath  = run_cmd("find -L ${artifacts_local_dir}/${it.target} -type f -name '${imageName}' -print -quit")
+            if (!diskPath) {
+              error("No ${imageName} found for '${it.target}'")
+            }
+
+            def outdir = "${artifacts_local_dir}/uefisigned/${it.target}-signed"
+            sh "mkdir -v -p ${outdir}"
+
+            lock('signing') {
+              sh "${binary} /etc/jenkins/keys/db.pem 'pkcs11:token=NetHSM;object=tempDBkey' '${diskPath}' ${outdir}"
+            }
           }
-
-          def diskPath  = run_cmd("find -L ${artifacts_local_dir}/${it.target} -type f -name '${imageName}' -print -quit")
-          if (!diskPath) {
-            error("No ${imageName} found for '${it.target}'")
-          }
-
-          def outdir = "${it.target}-signed"
-          def artifactLocation = "${artifacts_local_dir}/uefisigned"
-          sh """
-            mkdir -v -p "${outdir}"
-            mkdir -v -p "${artifactLocation}"
-          """
-
-          sh """
-            uefikeygen "${outdir}"
-            tar -cf "${outdir}/keys.tar" "${outdir}/keys"
-            ${binary} "${outdir}/keys/db/db.crt" "${outdir}/keys/db/db.key" "${diskPath}" "${outdir}"
-            mv "${outdir}" "${artifactLocation}"
-          """
         }
       }
       // Link artifacts
