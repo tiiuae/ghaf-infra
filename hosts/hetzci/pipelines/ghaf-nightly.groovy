@@ -64,18 +64,24 @@ def TARGETS = [
   ],
 ]
 
-properties([
-  githubProjectProperty(displayName: '', projectUrlStr: REPO_URL)
-])
 pipeline {
   agent { label 'built-in' }
-  triggers {
-    cron(env.CI_ENV == "prod" ? '0 20 * * *' : '')
-  }
   options {
     buildDiscarder(logRotator(numToKeepStr: '30'))
   }
   stages {
+    stage('Set properties') {
+      steps {
+        script {
+          properties([
+            githubProjectProperty(displayName: '', projectUrlStr: REPO_URL),
+            pipelineTriggers([
+              cron(env.CI_ENV == 'prod' ? '0 20 * * *' : '')
+            ]),
+          ])
+        }
+      }
+    }
     stage('Reload only') {
       when { expression { params && params.RELOAD_ONLY } }
       steps {
