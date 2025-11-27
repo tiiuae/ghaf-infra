@@ -167,6 +167,7 @@ in
 
   environment.etc."jenkins/provenance-trust-policy.json".source =
     "${self.outPath}/slsa/provenance-trust-policy.json";
+
   environment.etc."jenkins/GhafInfraSignECP256.pub".source =
-    "${self.outPath}/slsa/GhafInfraSignECP256.pub";
+    "${self.outPath}/keys/GhafInfraSignECP256.pub";
 }

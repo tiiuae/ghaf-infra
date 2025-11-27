@@ -81,6 +81,8 @@ in
       services.jenkins.environment = proxyConfig;
     })
     {
+      environment.etc."jenkins/keys/db.pem".source = "${self.outPath}/keys/tempDBkey.pem";
+
       environment.systemPackages =
         (with pkgs; [
           opensc # pkcs11-tool
@@ -95,7 +97,6 @@ in
         ++ (with inputs.ci-yubi.packages.${pkgs.system}; [
           uefisign
           uefisigniso
-          keygen
         ]);
     }
   ];

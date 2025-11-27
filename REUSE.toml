@@ -24,4 +24,5 @@ path = [
   "**/go.sum",
   "**/ca.*.crypt",
   "**.pub",
+  "**.pem",
 ]
