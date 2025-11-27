@@ -3,7 +3,6 @@
 {
   imports = [
     ./apps.nix
-    ./checks.nix
     ./deployments.nix
     ./devshell.nix
     ./git-hooks.nix

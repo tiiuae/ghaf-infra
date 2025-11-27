@@ -6,8 +6,10 @@
     git-hooks-nix.flakeModule
   ];
   perSystem =
-    { ... }:
+    { pkgs, ... }:
     {
+      # See https://flake.parts/options/pre-commit-hooks-nix
+      # for all the available hooks and options
       pre-commit = {
         settings.hooks = {
           # lint commit messages
@@ -56,6 +58,31 @@
           ruff-format.enable = true;
           # github actions linter
           actionlint.enable = true;
+          # python linter
+          pylint = {
+            enable = true;
+            args = [
+              "--enable=useless-suppression"
+              "--fail-on=useless-suppression"
+            ];
+            package = (
+              pkgs.python3.withPackages (
+                pp: with pp; [
+                  aiohttp
+                  deploykit
+                  invoke
+                  loguru
+                  prometheus-client
+                  pycodestyle
+                  pylint
+                  pylint
+                  requests
+                  tabulate
+                  urllib3
+                ]
+              )
+            );
+          };
         };
       };
     };
