@@ -31,36 +31,42 @@ def TARGETS = [
   ],
 ]
 
-properties([
-  githubProjectProperty(displayName: '', projectUrlStr: REPO_URL),
-  parameters([
-    [
-      $class: 'ChoiceParameter',
-      name: 'TESTAGENT_HOST',
-      choiceType: 'PT_RADIO',
-      description: '''
-        Select the testagent-host. This parameter allows specifying the exact testagent in case Jenkins controller is
-        connected with multiple agents.'''.stripIndent(),
-      script: [
-        $class: 'GroovyScript',
-        script: [
-          classpath: [],
-          sandbox: true,
-          script: "return ['dev','prod','release']"
-        ]
-      ]
-    ]
-  ])
-])
 pipeline {
   agent { label 'built-in' }
-  triggers {
-    cron(env.CI_ENV == 'prod' ? '0 0 * * *' : '')
-  }
   options {
     buildDiscarder(logRotator(numToKeepStr: '30'))
   }
   stages {
+    stage('Set properties') {
+      steps {
+        script {
+          properties([
+            githubProjectProperty(displayName: '', projectUrlStr: REPO_URL),
+            parameters([
+              [
+                $class: 'ChoiceParameter',
+                name: 'TESTAGENT_HOST',
+                choiceType: 'PT_RADIO',
+                description: '''
+                  Select the testagent-host. This parameter allows specifying the exact testagent in case Jenkins controller is
+                  connected with multiple agents.'''.stripIndent(),
+                script: [
+                  $class: 'GroovyScript',
+                  script: [
+                    classpath: [],
+                    sandbox: true,
+                    script: "return ['dev','prod','release']"
+                  ]
+                ]
+              ]
+            ]),
+            pipelineTriggers([
+              cron(env.CI_ENV == 'prod' ? '0 0 * * *' : '')
+            ]),
+          ])
+        }
+      }
+    }
     stage('Reload only') {
       when { expression { params && params.RELOAD_ONLY } }
       steps {

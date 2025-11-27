@@ -1,9 +1,5 @@
 #!/usr/bin/env groovy
 
-properties([
-  githubProjectProperty(displayName: '')
-])
-
 def poweroff(String device) {
   def testagent_nodes = nodesByLabel(label: "$device", offline: false)
   if (!testagent_nodes) {
@@ -26,13 +22,22 @@ def poweroff(String device) {
 
 pipeline {
   agent { label 'built-in' }
-  triggers {
-    cron(env.CI_ENV == 'dev' ? '0 19 * * *' : '')
-  }
   options {
     buildDiscarder(logRotator(numToKeepStr: '30'))
   }
   stages {
+    stage('Set properties') {
+      steps {
+        script {
+          properties([
+            githubProjectProperty(displayName: ''),
+            pipelineTriggers([
+              cron(env.CI_ENV == 'dev' ? '0 19 * * *' : '')
+            ]),
+          ])
+        }
+      }
+    }
     stage('Reload only') {
       when { expression { params && params.RELOAD_ONLY } }
       steps {
