@@ -40,10 +40,8 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
       // Build
       stage("Build ${shortname}") {
         build_beg = run_cmd('date +%s')
-        sh "nix build --fallback -v .#${it.target} --out-link ${it.target}"
+        sh "nix build --fallback -v .#${it.target} --out-link ${artifacts_local_dir}/${it.target}"
         build_end = run_cmd('date +%s')
-        sh "mkdir -v -p ${artifacts_local_dir} && cp -P ${it.target} ${artifacts_local_dir}/"
-        sh "nix-store --add-root ${artifacts_local_dir}/${it.target} -r ${artifacts_local_dir}/${it.target}"
       }
       // Provenance
       stage("Provenance ${shortname}") {
@@ -75,7 +73,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
           catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
             sh """
               attempt=1; max_attempts=5;
-              while ! provenance ${it.target}/ --recursive --out ${it.target}.json; do
+              while ! provenance  ${artifacts_local_dir}/${it.target}/ --recursive --out ${it.target}.json; do
                 echo "provenance attempt=\$attempt failed"
                 if (( \$attempt >= \$max_attempts )); then
                   exit 1
@@ -95,7 +93,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
           lock('signing') {
             if (!it.no_image) {
-              def img_path = get_img_path(it.target)
+              def img_path = get_img_path(it.target, artifacts_local_dir)
               // Sign image
               sh """
                 mkdir -v -p "\$(dirname "${artifacts_local_dir}/scs/${img_path}")"
@@ -125,7 +123,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
             imageName = "ghaf.iso"
           }
 
-          def diskPath  = run_cmd("find -L ${it.target} -type f -name '${imageName}' -print -quit")
+          def diskPath  = run_cmd("find -L ${artifacts_local_dir}/${it.target} -type f -name '${imageName}' -print -quit")
           if (!diskPath) {
             error("No ${imageName} found for '${it.target}'")
           }
@@ -154,7 +152,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
       // Test
       if (it.testset != null && !it.testset.isEmpty()) {
         stage("Test ${shortname}") {
-          def img_path = get_img_path(it.target)
+          def img_path = get_img_path(it.target, artifacts_local_dir)
           def img_url = "${env.JENKINS_URL}/${artifacts}/${img_path}"
           def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
           def desc = "Triggered by ${build_href}<br>(${it.target})"
@@ -188,12 +186,13 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
   return pipeline
 }
 
-def get_img_path(String target) {
-  def img_path = run_cmd("find -L ${target} -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print -quit")
+def get_img_path(String target, String in_path) {
+  def img_path = run_cmd("find -L ${in_path}/${target} -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print -quit")
   if (!img_path) {
     error("No image found for target '${target}'")
   }
-  return img_path
+  // Return img_path relative to 'in_path'
+  return img_path - "${in_path}/"
 }
 
 def set_github_commit_status(
