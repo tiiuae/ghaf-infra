@@ -117,6 +117,15 @@ in
             secretEnv = "CI_RELEASE_CLIENT_SECRET";
             inherit grantTypes;
           }
+          {
+            id = "ghaf-jenkins-controller-uaenorth";
+            name = "ghaf-jenkins-controller-prod.uaenorth.cloudapp.azure.com";
+            redirectURIs = [
+              "https://ghaf-jenkins-controller-prod.uaenorth.cloudapp.azure.com/oauth2/callback"
+            ];
+            secretEnv = "CI_PROD_UAE_CLIENT_SECRET";
+            inherit grantTypes;
+          }
         ];
     };
   };
