@@ -26,7 +26,7 @@ let
         # Retry upload three times if it fails. If it fails third time then exit with error.
         # This should fix the upload race condition.
         ERR=1
-        for i in {1..3}; do
+        for i in {1..30}; do
           nix --extra-experimental-features nix-command copy --to 'http://localhost:8080?secret-key=/etc/secrets/nix-signing-key&compression=zstd' $OUT_PATHS &&
             ERR=0 && break ||
             [ $i -le 3 ] && echo "Retrying in 10 seconds; attempt=$i failed..." && sleep 10
@@ -301,7 +301,7 @@ in
       # If we want to allow robot framework reports, we need to adjust Jenkins CSP:
       # https://plugins.jenkins.io/robot/#plugin-content-log-file-not-showing-properly
       "-Dhudson.model.DirectoryBrowserSupport.CSP=\"sandbox allow-scripts; default-src 'none'; img-src 'self' data: ; style-src 'self' 'unsafe-inline' data: ; script-src 'self' 'unsafe-inline' 'unsafe-eval';\""
-      # Disable the intitial setup wizard, and the creation of initialAdminPassword.
+      # Disable the initial setup wizard, and the creation of initialAdminPassword.
       "-Djenkins.install.runSetupWizard=false"
       # Point to configuration-as-code config
       "-Dcasc.jenkins.config=${builtins.toFile "jenkins-casc.yaml" (builtins.toJSON jenkins-casc)}"

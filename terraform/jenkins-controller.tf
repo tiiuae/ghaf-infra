@@ -60,9 +60,9 @@ module "jenkins_controller_vm" {
       {
         content = join("\n", toset([
           "OAUTH2_PROXY_COOKIE_SECRET=${random_id.oauth2_proxy_cookie_secret.b64_url}",
-          # client id and secret that are present in dex 
+          # client id and secret that are present in dex
           "OAUTH2_PROXY_CLIENT_ID=ghaf-jenkins-controller-${azurerm_resource_group.infra.location}",
-          "OAUTH2_PROXY_CLIENT_SECRET=${data.sops_file.secrets.data["oauth2_proxy_client_secret"]}",
+          "OAUTH2_PROXY_CLIENT_SECRET=${data.sops_file.secrets.data["CI_PROD_UAE_CLIENT_SECRET"]}",
           "OAUTH2_PROXY_COOKIE_DOMAINS=ghaf-jenkins-controller-${local.ws}.${azurerm_resource_group.infra.location}.cloudapp.azure.com",
         ])),
         "path" = "/var/lib/oauth2-proxy.env"
