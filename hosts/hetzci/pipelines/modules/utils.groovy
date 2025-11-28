@@ -88,28 +88,31 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
           }
         }
       }
-      // Sign files
-      stage("Sign ${shortname}") {
-        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-          lock('signing') {
-            if (!it.no_image) {
-              def img_path = get_img_path(it.target, artifacts_local_dir)
-              // Sign image
+      // SLSA sign
+      // Skip SLSA signing in vm environment, where NetHSM is not available
+      if (env.CI_ENV != 'vm') {
+        stage("Sign ${shortname}") {
+          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+            lock('signing') {
+              if (!it.no_image) {
+                def img_path = get_img_path(it.target, artifacts_local_dir)
+                // Sign image
+                sh """
+                  mkdir -v -p "\$(dirname "${artifacts_local_dir}/scs/${img_path}")"
+                  openssl dgst -sha256 -sign \
+                    "pkcs11:token=NetHSM;object=GhafInfraSignECP256" \
+                    -out ${artifacts_local_dir}/scs/${img_path}.sig \
+                    ${artifacts_local_dir}/${img_path}
+                """
+              }
+              // Sign provenance file
               sh """
-                mkdir -v -p "\$(dirname "${artifacts_local_dir}/scs/${img_path}")"
-                openssl dgst -sha256 -sign \
-                  "pkcs11:token=NetHSM;object=GhafInfraSignECP256" \
-                  -out ${artifacts_local_dir}/scs/${img_path}.sig \
-                  ${artifacts_local_dir}/${img_path}
+                openssl pkeyutl -sign \
+                  -inkey "pkcs11:token=NetHSM;object=GhafInfraSignProv" \
+                  -in ${artifacts_local_dir}/scs/${it.target}/provenance.json -rawin \
+                  -out ${artifacts_local_dir}/scs/${it.target}/provenance.json.sig
               """
             }
-            // Sign provenance file
-            sh """
-              openssl pkeyutl -sign \
-                -inkey "pkcs11:token=NetHSM;object=GhafInfraSignProv" \
-                -in ${artifacts_local_dir}/scs/${it.target}/provenance.json -rawin \
-                -out ${artifacts_local_dir}/scs/${it.target}/provenance.json.sig
-            """
           }
         }
       }
