@@ -304,7 +304,7 @@ in
       # If we want to allow robot framework reports, we need to adjust Jenkins CSP:
       # https://plugins.jenkins.io/robot/#plugin-content-log-file-not-showing-properly
       "-Dhudson.model.DirectoryBrowserSupport.CSP=\"sandbox allow-scripts; default-src 'none'; img-src 'self' data: ; style-src 'self' 'unsafe-inline' data: ; script-src 'self' 'unsafe-inline' 'unsafe-eval';\""
-      # Disable the intitial setup wizard, and the creation of initialAdminPassword.
+      # Disable the initial setup wizard, and the creation of initialAdminPassword.
       "-Djenkins.install.runSetupWizard=false"
       # Point to configuration-as-code config
       "-Dcasc.jenkins.config=${builtins.toFile "jenkins-casc.yaml" (builtins.toJSON jenkins-casc)}"
