@@ -137,6 +137,14 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
             lock('signing') {
               sh "${binary} /etc/jenkins/keys/db.pem 'pkcs11:token=NetHSM;object=tempDBkey' '${diskPath}' ${outdir}"
             }
+
+            // distribute certs with artifacts, in both pem and der formats
+            sh """
+              cp -r /etc/jenkins/keys ${outdir}/
+              openssl x509 -in ${outdir}/keys/db.pem -outform DER -out ${outdir}/keys/db.der
+              openssl x509 -in ${outdir}/keys/pk.pem -outform DER -out ${outdir}/keys/pk.der
+              openssl x509 -in ${outdir}/keys/kek.pem -outform DER -out ${outdir}/keys/kek.der
+            """
           }
         }
       }

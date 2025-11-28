@@ -81,7 +81,11 @@ in
       services.jenkins.environment = proxyConfig;
     })
     {
-      environment.etc."jenkins/keys/db.pem".source = "${self.outPath}/keys/tempDBkey.pem";
+      environment.etc = {
+        "jenkins/keys/db.pem".source = "${self.outPath}/keys/tempDBkey.pem";
+        "jenkins/keys/kek.pem".source = "${self.outPath}/keys/tempKEKkey.pem";
+        "jenkins/keys/pk.pem".source = "${self.outPath}/keys/tempPKkey.pem";
+      };
 
       environment.systemPackages =
         (with pkgs; [
