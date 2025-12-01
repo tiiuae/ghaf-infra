@@ -43,6 +43,7 @@ pipeline {
           properties([
             githubProjectProperty(displayName: '', projectUrlStr: REPO_URL),
             parameters([
+              booleanParam(name: 'SET_TESTAGENT_HOST', defaultValue: false, description: 'Set true if TESTAGENT_HOST is chosen manually.'),
               [
                 $class: 'ChoiceParameter',
                 name: 'TESTAGENT_HOST',
@@ -55,7 +56,7 @@ pipeline {
                   script: [
                     classpath: [],
                     sandbox: true,
-                    script: "return ['prod','dev','release']"
+                    script: "return ['dev','prod','release']"
                   ]
                 ]
               ]
@@ -93,7 +94,7 @@ pipeline {
         dir(WORKDIR) {
           script {
             MODULES.utils = load "/etc/jenkins/pipelines/modules/utils.groovy"
-            if (params.TESTAGENT_HOST) {
+            if (params.SET_TESTAGENT_HOST && params.TESTAGENT_HOST) {
               PIPELINE = MODULES.utils.create_pipeline(TARGETS, params.TESTAGENT_HOST)
             } else {
               PIPELINE = MODULES.utils.create_pipeline(TARGETS, env.CI_ENV)
