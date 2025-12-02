@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/goccy/go-yaml"
 	"github.com/google/cel-go/cel"
 	"github.com/urfave/cli/v3"
 )
@@ -23,8 +24,8 @@ type Criteria struct {
 }
 
 type SignaturePolicy struct {
-	Verify     bool
-	Public_key string
+	Verify      bool
+	Certificate string
 }
 
 type TrustPolicy struct {
@@ -41,13 +42,13 @@ func CheckOpensslExists() {
 	}
 }
 
-func SavePublicKey(policy SignaturePolicy) string {
-	fmt.Println(policy.Public_key)
-	f, err := os.CreateTemp("", "provenance-signing-key.pub")
+func SaveCertificate(policy SignaturePolicy) string {
+	fmt.Println(policy.Certificate)
+	f, err := os.CreateTemp("", "provenance-certificate.pem")
 	if err != nil {
 		panic(err)
 	}
-	_, err = f.Write([]byte(policy.Public_key))
+	_, err = f.Write([]byte(policy.Certificate))
 	if err != nil {
 		panic(err)
 	}
@@ -55,15 +56,15 @@ func SavePublicKey(policy SignaturePolicy) string {
 }
 
 func VerifySignature(provenance_file string, provenance_signature string, policy SignaturePolicy) {
-	fmt.Println("Verifying signature using public key")
+	fmt.Println("Verifying signature")
 
 	CheckOpensslExists()
-	publicKeyPath := SavePublicKey(policy)
-	defer os.Remove(publicKeyPath)
+	certPath := SaveCertificate(policy)
+	defer os.Remove(certPath)
 
 	cmd := exec.Command(
 		"openssl", "pkeyutl", "-verify",
-		"-inkey", publicKeyPath, "-pubin",
+		"-inkey", certPath, "-certin",
 		"-sigfile", provenance_signature,
 		"-rawin", "-in", provenance_file,
 	)
@@ -180,7 +181,10 @@ func main() {
 				panic(err)
 			}
 			var config TrustPolicy
-			_ = json.Unmarshal(raw, &config)
+			err = yaml.Unmarshal(raw, &config)
+			if err != nil {
+				panic(err)
+			}
 
 			if config.Signature.Verify {
 				if provenance_signature != "" {

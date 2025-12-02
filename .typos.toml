@@ -7,3 +7,6 @@ extend-ignore-re = [
   ".*aks-uaenorth.*",
   ".*set -ue.*",
 ]
+
+[default.extend-words]
+certin = "certin"
