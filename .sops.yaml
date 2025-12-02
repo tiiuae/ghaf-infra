@@ -9,7 +9,7 @@ keys:
   - &vjuntunen age194hljejmy63ph884cnuuume7z33txlkp9an7l3yt2n3sjjere52qkvlfju
   - &cazfi age10a2kt6f07urjv6ahutda3jgr73wferkcqjhkvukwm07eaaqyrqtsh08syf
   - &fayad age18t3gss4l6l629rd8s93eh3ctycu9vjnsftehy38c8tstu2gqycxs64t4sw
-  - &ktu age1czt3ddm0wngf6h6aj0es8d4kh6y7tx7fflf2dfeafmy7apwyr59qw3rcza
+  - &ktu age1w0ymdztkr043a9gnxrx95k77ek5h58zza5q7jz9gqm63gz2chgcskkfwzt
 
   # hosts
   - &testagent-prod age12nrv5a9rk9vqvx2tqvghn4kt9ps6gdszmmynhjegl2ewefkh03fsexuy9y
