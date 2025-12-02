@@ -165,9 +165,9 @@ in
     ];
   };
 
-  environment.etc."jenkins/provenance-trust-policy.json".source =
-    "${self.outPath}/slsa/provenance-trust-policy.json";
+  environment.etc."jenkins/provenance-trust-policy.yaml".source =
+    "${self.outPath}/slsa/provenance-trust-policy.yaml";
 
-  environment.etc."jenkins/GhafInfraSignECP256.pub".source =
-    "${self.outPath}/keys/GhafInfraSignECP256.pub";
+  environment.etc."jenkins/GhafInfraSignECP256.pem".source =
+    "${self.outPath}/keys/GhafInfraSignECP256.pem";
 }

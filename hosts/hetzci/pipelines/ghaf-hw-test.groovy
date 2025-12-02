@@ -209,7 +209,7 @@ pipeline {
           println("provenance_url: ${provenance_url}")
           def provenance_path = run_wget(provenance_url, TMP_IMG_DIR)
           def sig_path = run_wget(sig_url, TMP_IMG_DIR)
-          sh "policy-checker ${provenance_path} --sig ${sig_path} --policy /etc/jenkins/provenance-trust-policy.json"
+          sh "policy-checker ${provenance_path} --sig ${sig_path} --policy /etc/jenkins/provenance-trust-policy.yaml"
         }
       }
     }
@@ -226,7 +226,12 @@ pipeline {
           def sig_path = run_wget(sig_url, TMP_IMG_DIR)
           println "Downloaded SLSA signature file to workspace: ${sig_path}"
           // Verify SLSA signature aborting if the verification fails
-          sh "openssl dgst -verify /etc/jenkins/GhafInfraSignECP256.pub -signature ${sig_path} ${img_path}"
+          // openssl dgst cannot process a complete certificate in one go, but expects a raw public key
+          sh """
+            openssl x509 -pubkey -noout -in /etc/jenkins/GhafInfraSignECP256.pem > pubkey.pub
+            openssl dgst -verify pubkey.pub -signature ${sig_path} ${img_path}
+            rm pubkey.pub
+           """
           // Uncompress
           if(img_path.endsWith(".zst")) {
             sh "zstd -dfv ${img_path}"
