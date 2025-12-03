@@ -1,0 +1,14 @@
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - string:
+              scope: GLOBAL
+              id: "jenkins-github-webhook-secret"
+              secret: "${file:/run/secrets/jenkins_github_webhook_secret}"
+              description: "Github webhook secret"
+
+unclassified:
+  gitHubPluginConfig:
+    hookSecretConfigs:
+    - credentialsId: "jenkins-github-webhook-secret"

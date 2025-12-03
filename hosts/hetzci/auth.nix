@@ -34,6 +34,8 @@ in
       };
     };
 
+    environment.etc."jenkins/casc/auth.yaml".source = ./casc/auth.yaml;
+
     services.oauth2-proxy = {
       enable = true;
       inherit (cfg) clientID;

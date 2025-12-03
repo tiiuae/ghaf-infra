@@ -1,0 +1,58 @@
+appearance:
+  pipelineGraphView:
+    showGraphOnBuildPage: true
+  themeManager:
+    theme: "darkSystem" # follow system theme
+
+jenkins:
+  numExecutors: 4
+  markupFormatter:
+    rawHtml:
+      disableSyntaxHighlighting: false
+  log:
+    recorders:
+    - loggers:
+      - name: "org.jenkinsci.plugins.github"
+        level: "ALL"
+      name: "Debug"
+
+unclassified:
+  timestamper:
+    allPipelines: true
+  lockableResourcesManager:
+    declaredResources:
+    - name: "evaluator"
+      description: "Nix evaluator lock"
+    - name: "build-description"
+      description: "Prevent parallel build description modifications"
+    - name: "signing"
+      description: "Prevent parallel signing operations through the pkcs11 proxy"
+
+# https://plugins.jenkins.io/configuration-as-code-groovy/
+groovy:
+  # Load pipelines:
+  - script: |
+      import jenkins.model.*
+      import hudson.model.*
+      import org.jenkinsci.plugins.workflow.job.WorkflowJob
+      import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition
+      import groovy.io.FileType
+      println("Loading pipelines")
+      def pipelines = new File("/etc/jenkins/pipelines/")
+      pipelines.eachFile(FileType.FILES) { file ->
+        println("Loading pipeline from: " + file.name)
+        def pipeline_name = file.name.substring(0, file.name.lastIndexOf('.'))
+        def job = new WorkflowJob(Jenkins.getInstance(), pipeline_name)
+        job.definition = new CpsFlowDefinition(file.text, true)
+        job.save()
+      }
+      Jenkins.getInstance().reload()
+  # Trigger all pipelines on jenkins service (re)start:
+  - script: |
+      import jenkins.model.*
+      import hudson.model.*
+      def params = new ParametersAction([ new StringParameterValue("RELOAD_ONLY", "true")])
+      for (job in Jenkins.getInstance().getAllItems(Job)) {
+        println("Triggering job: " + job.getName())
+        job.scheduleBuild2(0, params);
+      }

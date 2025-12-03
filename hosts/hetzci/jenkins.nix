@@ -11,12 +11,90 @@
 }:
 let
   cfg = config.hetzci.jenkins;
+
+  # copies only pipelines declared in cfg.pipelines
+  filteredPipelines = pkgs.runCommand "pipelines" { } ''
+    mkdir -p $out
+    cp -r ${./pipelines}/modules $out/
+
+    ${pkgs.lib.concatMapStringsSep "\n" (name: ''
+      cp ${./pipelines}/${name}.groovy "$out/"
+    '') cfg.pipelines}
+  '';
+
+  cascConfig = pkgs.writeText "config.yaml" (
+    # YAML is a superset of JSON, ie. json is valid yaml
+    builtins.toJSON {
+      unclassified.location.url = "${cfg.url}";
+      jenkins.nodes = # all permutations of device and host lists
+        lib.mapCartesianProduct
+          (
+            { host, device }:
+            {
+              permanent = {
+                name = "${host}-${device}";
+                labelString = device;
+                launcher = "inbound";
+                mode = "EXCLUSIVE";
+                remoteFS = "/var/lib/jenkins/agents/${device}";
+                retentionStrategy = "always";
+              };
+            }
+          )
+          {
+            host = cfg.nodes.testagentHosts;
+            device = cfg.nodes.devices;
+          };
+    }
+  );
 in
 {
   options.hetzci.jenkins = {
-    casc = lib.mkOption {
-      type = lib.types.path;
-      description = "Path to the Jenkins CASC";
+    envType = lib.mkOption {
+      type = lib.types.enum [
+        "dev"
+        "prod"
+        "release"
+        "vm"
+      ];
+      description = "The type of environment this is";
+    };
+    url = lib.mkOption {
+      type = lib.types.str;
+      description = "Public URL of the jenkins instance";
+    };
+    extraCasc = lib.mkOption {
+      type = lib.types.attrs;
+      description = "Extra configuration to be added into the jenkins casc";
+      default = { };
+    };
+    pipelines = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      description = "Jenkins pipelines to load from the pipelines directory";
+      default = [ ];
+    };
+    nodes = {
+      devices = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        description = "Devices to create agent nodes for";
+        default = [
+          "darter-pro"
+          "dell-7330"
+          "lenovo-x1"
+          "orin-agx"
+          "orin-agx-64"
+          "orin-nx"
+        ];
+      };
+      testagentHosts = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        description = "Variations of device nodes to create";
+        default = [
+          "dev"
+          "prod"
+          "release"
+        ];
+      };
     };
     pluginsFile = lib.mkOption {
       type = lib.types.path;
@@ -36,15 +114,6 @@ in
       type = lib.types.bool;
       description = "Expected Ghaf GitHub webhook secret";
       default = true;
-    };
-    envType = lib.mkOption {
-      type = lib.types.enum [
-        "dev"
-        "prod"
-        "release"
-        "vm"
-      ];
-      description = "The type of environment this is";
     };
   };
   config = {
@@ -102,7 +171,7 @@ in
         # https://plugins.jenkins.io/robot/#plugin-content-log-file-not-showing-properly
         "-Dhudson.model.DirectoryBrowserSupport.CSP=\"sandbox allow-scripts; default-src 'none'; img-src 'self' data: ; style-src 'self' 'unsafe-inline' data: ; script-src 'self' 'unsafe-inline' 'unsafe-eval';\""
         # Point to configuration-as-code config
-        "-Dcasc.jenkins.config=${cfg.casc}"
+        "-Dcasc.jenkins.config=/etc/jenkins/casc"
         # Disable the initial setup wizard, and the creation of initialAdminPassword.
         "-Djenkins.install.runSetupWizard=false"
         # Allow setting the following possibly undefined parameters
@@ -138,13 +207,50 @@ in
     # Jenkins home dir (by default at /var/lib/jenkins) mode needs to be 755
     users.users.jenkins.homeMode = "755";
 
-    environment.etc."jenkins/pipelines".source = ./pipelines;
-    environment.etc."jenkins/nix-fast-build.sh".source = "${self.outPath}/scripts/nix-fast-build.sh";
+    environment.etc = lib.mkMerge [
+      {
+        "jenkins/nix-fast-build.sh".source = "${self.outPath}/scripts/nix-fast-build.sh";
+        "jenkins/pipelines".source = filteredPipelines;
+        "jenkins/casc/common.yaml".source = ./casc/common.yaml;
+        "jenkins/casc/config.yaml".source = cascConfig;
+        "jenkins/casc/extraConfig.yaml".source = pkgs.writeText "extraConfig.yaml" (
+          builtins.toJSON cfg.extraCasc
+        );
+      }
+      (lib.mkIf cfg.withCachix {
+        "jenkins/casc/cachix.yaml".source = ./casc/cachix.yaml;
+      })
+      (lib.mkIf cfg.withGithubStatus {
+        "jenkins/casc/githubToken.yaml".source = ./casc/githubToken.yaml;
+      })
+      (lib.mkIf cfg.withGithubWebhook {
+        "jenkins/casc/githubWebhook.yaml".source = ./casc/githubWebhook.yaml;
+      })
+    ];
 
     systemd.services.jenkins = {
       serviceConfig = {
         Restart = "on-failure";
       };
+    };
+
+    # Remove all config files from jenkins home before loading the casc.
+    # This ensures there's no lingering config from the past,
+    # and only what is in the casc is regenerated
+    systemd.services.jenkins-config-cleanup = {
+      before = [ "jenkins.service" ];
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        User = "jenkins";
+        WorkingDirectory = "/var/lib/jenkins";
+      };
+      script = # sh
+        ''
+          rm -f *.xml
+          rm -f nodes/*/config.xml
+          rm -f jobs/*/config.xml
+        '';
     };
 
     systemd.services.jenkins-purge-artifacts = {
