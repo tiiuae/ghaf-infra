@@ -19,8 +19,19 @@
   hetzci = {
     jenkins = {
       envType = "dev";
-      casc = ./casc;
       pluginsFile = ./plugins.json;
+      url = "https://ci-dev.vedenemo.dev";
+      pipelines = [
+        "ghaf-hw-test-manual"
+        "ghaf-hw-test"
+        "ghaf-main"
+        "ghaf-manual"
+        "ghaf-nightly-perftest"
+        "ghaf-nightly-poweroff"
+        "ghaf-nightly"
+        "ghaf-pre-merge-manual"
+        "ghaf-pre-merge"
+      ];
     };
     auth = {
       clientID = "hetzci-dev";

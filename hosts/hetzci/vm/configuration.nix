@@ -16,8 +16,25 @@
 
   hetzci.jenkins = {
     envType = "vm";
-    casc = ./casc;
     pluginsFile = ./plugins.json;
+    url = "http://localhost:8080";
+    nodes.testagentHosts = [ ];
+    pipelines = [
+      "ghaf-hw-test-manual"
+      "ghaf-hw-test"
+      "ghaf-main"
+      "ghaf-manual"
+      "ghaf-nightly-perftest"
+      "ghaf-nightly-poweroff"
+      "ghaf-nightly"
+      "ghaf-pre-merge-manual"
+      "ghaf-pre-merge"
+      "ghaf-release-candidate"
+      "ghaf-release-publish"
+    ];
+    extraCasc = {
+      jenkins.authorizationStrategy = "unsecured";
+    };
   };
 
   # VM specific configuration:

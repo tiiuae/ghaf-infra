@@ -1,0 +1,14 @@
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - string:
+              scope: GLOBAL
+              id: "jenkins-github-commit-status-token"
+              secret: "${file:/run/secrets/jenkins_github_commit_status_token}"
+              description: "Github token used to set the commit statuses"
+
+unclassified:
+  gitHubPluginConfig:
+    configs:
+    - credentialsId: "jenkins-github-commit-status-token"

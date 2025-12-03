@@ -29,8 +29,13 @@
   hetzci = {
     jenkins = {
       envType = "release";
-      casc = ./casc;
       pluginsFile = ./plugins.json;
+      url = "https://ci-release.vedenemo.dev";
+      nodes.testagentHosts = [ "release" ];
+      pipelines = [
+        "ghaf-release-candidate"
+        "ghaf-release-publish"
+      ];
       withGithubStatus = false;
       withGithubWebhook = false;
     };
