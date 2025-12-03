@@ -164,7 +164,7 @@ in
           zstd
         ])
         ++ [
-          inputs.sbomnix.packages.${pkgs.system}.sbomnix # provenance
+          inputs.sbomnix.packages.${pkgs.stdenv.hostPlatform.system}.sbomnix # provenance
         ]
         ++ lib.optionals cfg.withCachix [
           pkgs.cachix
@@ -172,7 +172,7 @@ in
         ]
         ++ lib.optionals cfg.withArchiveArtifacts [
           pkgs.tree
-          self.packages.${pkgs.system}.archive-ghaf-release
+          self.packages.${pkgs.stdenv.hostPlatform.system}.archive-ghaf-release
         ];
 
       environment = {

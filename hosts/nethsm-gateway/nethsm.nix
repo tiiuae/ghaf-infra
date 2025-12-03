@@ -24,7 +24,7 @@ let
     };
   };
 
-  inherit (self.packages.${pkgs.system})
+  inherit (self.packages.${pkgs.stdenv.hostPlatform.system})
     pkcs11-proxy
     systemd-sbsign
     nethsm-pkcs11
@@ -212,7 +212,7 @@ in
         yubihsm-shell
         p11-kit
       ])
-      ++ (with inputs.ci-yubi.packages.${pkgs.system}; [
+      ++ (with inputs.ci-yubi.packages.${pkgs.stdenv.hostPlatform.system}; [
         cert-to-auth
       ])
       ++ [
