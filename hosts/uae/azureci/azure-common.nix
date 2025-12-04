@@ -69,6 +69,7 @@ in
       "rootdelay=300"
       "panic=1"
       "boot.panic_on_fail"
+      "net.ifnames=0"
     ];
 
     # Load Hyper-V kernel modules
@@ -78,6 +79,14 @@ in
       "hv_utils"
       "hv_storvsc"
     ];
+
+    # EFI configurations for boot
+    boot.loader.grub = {
+      efiSupport = true;
+      efiInstallAsRemovable = true;
+    };
+
+    hardware.enableRedistributableFirmware = true;
 
     # Accelerated networking, configured following:
     # https://learn.microsoft.com/en-us/azure/virtual-network/accelerated-networking-overview
