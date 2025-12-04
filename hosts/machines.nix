@@ -145,4 +145,10 @@
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMIWc4nMur2NE5kpuLeOWa3C0qOSEa9glK1zS+HazKeD";
   };
 
+  uae-azureci-az86-1 = {
+    ip = "20.46.48.30";
+    internal_ip = "10.51.16.5";
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFmPjEbOd0J7FIECLL4bn8bBrlnpzvEzqgadjPUU7Pj5";
+  };
+
 }
