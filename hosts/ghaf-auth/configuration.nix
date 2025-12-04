@@ -123,7 +123,16 @@ in
             redirectURIs = [
               "https://ghaf-jenkins-controller-prod.uaenorth.cloudapp.azure.com/oauth2/callback"
             ];
-            secretEnv = "CI_PROD_UAE_CLIENT_SECRET";
+            secretEnv = "UAE_CI_PROD_CLIENT_SECRET";
+            inherit grantTypes;
+          }
+          {
+            id = "ghaf-jenkins-controller-northeurope";
+            name = "ghaf-jenkins-controller-release.northeurope.cloudapp.azure.com";
+            redirectURIs = [
+              "https://ghaf-jenkins-controller-release.northeurope.cloudapp.azure.com/oauth2/callback"
+            ];
+            secretEnv = "AZURE_CI_RELEASE_CLIENT_SECRET";
             inherit grantTypes;
           }
         ];
