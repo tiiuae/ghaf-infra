@@ -62,6 +62,8 @@
             nebula
             openssl
             gnutls
+            minio-client
+            tree
           ])
           ++ (with inputs'; [
             nix-fast-build.packages.default
