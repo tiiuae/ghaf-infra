@@ -42,6 +42,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
         build_beg = run_cmd('date +%s')
         sh "nix build --fallback -v .#${it.target} --out-link ${artifacts_local_dir}/${it.target}"
         build_end = run_cmd('date +%s')
+        sh "echo ${artifacts_local_dir} >./artifacts_dir"
       }
       // Provenance
       stage("Provenance ${shortname}") {
