@@ -118,10 +118,10 @@ in
             inherit grantTypes;
           }
           {
-            id = "ghaf-jenkins-controller-uaenorth";
-            name = "ghaf-jenkins-controller-prod.uaenorth.cloudapp.azure.com";
+            id = "azureci-prod";
+            name = "ci-prod.uaenorth.cloudapp.azure.com";
             redirectURIs = [
-              "https://ghaf-jenkins-controller-prod.uaenorth.cloudapp.azure.com/oauth2/callback"
+              "https://ci-prod.uaenorth.cloudapp.azure.com/oauth2/callback"
             ];
             secretEnv = "UAE_CI_PROD_CLIENT_SECRET";
             inherit grantTypes;
