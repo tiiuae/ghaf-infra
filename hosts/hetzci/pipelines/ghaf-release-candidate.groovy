@@ -133,9 +133,7 @@ pipeline {
       steps {
         dir(WORKDIR) {
           script {
-            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-              parallel PIPELINE
-            }
+            parallel PIPELINE
           }
         }
       }

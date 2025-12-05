@@ -20,7 +20,7 @@ RED='' NONE=''
 # variables. We intentionally don't want these variables to be command-line
 # options.
 STORAGE_URL="${STORAGE_URL:=https://hel1.your-objectstorage.com}"
-BUCKET="${BUCKET:=ghaf-artifacts}"
+BUCKET="${BUCKET:=ghaf-artifacts-dev}"
 PUB_PROV_PATH="${PUB_PROV_PATH:=/etc/jenkins/GhafInfraSignProv.pub}"
 PUB_IMG_PATH="${PUB_IMG_PATH:=/etc/jenkins/GhafInfraSignECP256.pub}"
 ACCESS_KEY="${ACCESS_KEY:=}"
@@ -173,7 +173,7 @@ prepare_artifacts() {
   artifactsdir="$1"
   for dir in "$artifactsdir"/*/; do
     target_name="$(basename "$dir")"
-    # Only continue if target_name is listed in th build_targets list
+    # Skip unless target_name is listed in the build_targets list
     if ! echo "${build_targets[@]}" | grep -P -q " $target_name "; then
       continue
     fi
