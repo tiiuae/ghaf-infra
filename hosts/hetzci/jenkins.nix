@@ -115,6 +115,11 @@ in
       description = "Expected Ghaf GitHub webhook secret";
       default = true;
     };
+    withArchiveArtifacts = lib.mkOption {
+      type = lib.types.bool;
+      description = "Add capability to archive artifacts to permanent storage";
+      default = false;
+    };
   };
   config = {
     sops = {
@@ -127,6 +132,10 @@ in
         })
         (lib.mkIf cfg.withGithubWebhook {
           jenkins_github_webhook_secret.owner = "jenkins";
+        })
+        (lib.mkIf cfg.withArchiveArtifacts {
+          jenkins_archive_access_key.owner = "jenkins";
+          jenkins_archive_secret_key.owner = "jenkins";
         })
       ];
     };
@@ -158,6 +167,11 @@ in
         ++ lib.optionals cfg.withCachix [
           pkgs.cachix
           pkgs.nixos-rebuild
+        ]
+        ++ lib.optionals cfg.withArchiveArtifacts [
+          pkgs.openssl
+          pkgs.minio-client
+          pkgs.tree
         ];
 
       environment = {
@@ -225,6 +239,12 @@ in
       })
       (lib.mkIf cfg.withGithubWebhook {
         "jenkins/casc/githubWebhook.yaml".source = ./casc/githubWebhook.yaml;
+      })
+      (lib.mkIf cfg.withArchiveArtifacts {
+        "jenkins/casc/archiveArtifacts.yaml".source = ./casc/archiveArtifacts.yaml;
+        "jenkins/archive-ghaf-release.sh".source = "${self.outPath}/scripts/archive-ghaf-release.sh";
+        "jenkins/GhafInfraSignECP256.pub".source = "${self.outPath}/keys/GhafInfraSignECP256.pub";
+        "jenkins/GhafInfraSignProv.pub".source = "${self.outPath}/keys/GhafInfraSignProv.pub";
       })
     ];
 
