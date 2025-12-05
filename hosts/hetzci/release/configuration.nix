@@ -38,6 +38,7 @@
       ];
       withGithubStatus = false;
       withGithubWebhook = false;
+      withArchiveArtifacts = true;
     };
     auth = {
       clientID = "hetzci-release";
