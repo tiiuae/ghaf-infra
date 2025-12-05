@@ -28,8 +28,15 @@
   hetzci = {
     jenkins = {
       envType = "prod";
-      casc = ./casc;
       pluginsFile = ./plugins.json;
+      url = "https://ci-prod.uaenorth.cloudapp.azure.com";
+      pipelines = [
+        "ghaf-hw-test-manual"
+        "ghaf-hw-test"
+        "ghaf-main"
+        "ghaf-manual"
+        "ghaf-nightly"
+      ];
       withCachix = false;
     };
     auth = {
@@ -37,5 +44,4 @@
       domain = "ci-prod.uaenorth.cloudapp.azure.com";
     };
   };
-
 }
