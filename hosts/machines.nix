@@ -142,7 +142,7 @@
   uae-azureci-prod = {
     ip = "74.162.68.205";
     internal_ip = "10.51.16.4";
-    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMIWc4nMur2NE5kpuLeOWa3C0qOSEa9glK1zS+HazKeD";
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICgPq27pnOcNPRnYBCZpsOyHfRhhtWU2EiUQFUHZCqev";
   };
 
   uae-azureci-az86-1 = {
