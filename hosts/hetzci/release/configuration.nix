@@ -33,6 +33,7 @@
       url = "https://ci-release.vedenemo.dev";
       nodes.testagentHosts = [ "release" ];
       pipelines = [
+        "ghaf-hw-test"
         "ghaf-release-candidate"
         "ghaf-release-publish"
       ];
