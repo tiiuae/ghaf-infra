@@ -204,8 +204,8 @@ in
         builtins.listToAttrs (map mkJenkinsPlugin manifest);
     };
 
-    # Jenkins home dir (by default at /var/lib/jenkins) mode needs to be 755
-    users.users.jenkins.homeMode = "755";
+    # Caddy needs to be able to access files under /var/lib/jenkins
+    users.users.caddy.extraGroups = [ "jenkins" ];
 
     environment.etc = lib.mkMerge [
       {
