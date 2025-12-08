@@ -23,7 +23,15 @@
   };
 
   hardware.enableRedistributableFirmware = true;
-  networking.useDHCP = true;
+
+  networking.useNetworkd = true;
+  networking.useDHCP = false;
+  networking.usePredictableInterfaceNames = false;
+
+  systemd.network.networks."10-uplink" = {
+    matchConfig.Name = "eth0";
+    networkConfig.DHCP = "ipv4";
+  };
 
   boot.loader.grub = {
     efiSupport = true;
@@ -32,6 +40,7 @@
 
   boot.initrd.availableKernelModules = [
     "ahci" # modern SATA devices
+    "sd_mod" # SATA drives
     "nvme" # NVMe drives
     "usbhid" # USB devices
     "xhci_pci" # USB 3.0
