@@ -32,12 +32,11 @@
 
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "hetz86-1";
+  boot.kernelModules = [ "kvm-amd" ];
 
   cachix-push = {
     cacheName = "ghaf-dev";
   };
-
-  boot.kernelModules = [ "kvm-amd" ];
 
   services.monitoring = {
     metrics = {
