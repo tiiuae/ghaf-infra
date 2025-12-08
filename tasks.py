@@ -179,13 +179,14 @@ def print_keys(_c: Any, alias: str) -> None:
         )
 
 
-def get_deploy_host(alias: str) -> DeployHost:
+def get_deploy_host(alias: str, user: str | None = None) -> DeployHost:
     """
     Return DeployHost object, given `alias`
     """
     hostname = TARGETS.get(alias).hostname
     deploy_host = DeployHost(
         host=hostname,
+        user=user,
         host_key_check=HostKeyCheck.NONE,
         # verbose_ssh=True,
     )
@@ -264,7 +265,7 @@ def install_release(c: Any) -> None:
 
 
 @task
-def install(c: Any, alias: str, yes: bool = False) -> None:
+def install(c: Any, alias: str, user: str | None = None, yes: bool = False) -> None:
     """
     Install `alias` configuration using nixos-anywhere, deploying host private key.
     Note: this will automatically partition and re-format the target hard drive,
@@ -275,7 +276,7 @@ def install(c: Any, alias: str, yes: bool = False) -> None:
     Example usage:
     inv install hetzci-release --yes
     """
-    h = get_deploy_host(alias)
+    h = get_deploy_host(alias, user)
 
     if not yes:
         ask = input(f"Install configuration '{alias}'? [y/N] ")
@@ -290,7 +291,13 @@ def install(c: Any, alias: str, yes: bool = False) -> None:
         ret = subprocess.run(["whoami"], capture_output=True, text=True, check=True)
         assert ret is not None
         local_user = ret.stdout.strip()
-        if not yes and remote_user and local_user and remote_user != local_user:
+        if (
+            not yes
+            and user is None
+            and remote_user
+            and local_user
+            and remote_user != local_user
+        ):
             logger.warning(
                 f"Remote user '{remote_user}' is not your current local user. "
                 "You will likely not be able to login to the remote host "
@@ -347,7 +354,8 @@ def install(c: Any, alias: str, yes: bool = False) -> None:
     c.run(command)
     with TemporaryDirectory() as tmpdir:
         decrypt_host_key(target, tmpdir)
-        command = f"nixos-anywhere {h.host} --extra-files {tmpdir} "
+        ssh_target = f"{h.user}@{h.host}" if h.user is not None else h.host
+        command = f"nixos-anywhere {ssh_target} --extra-files {tmpdir} "
         command += f"--flake .#{target.nixosconfig} --option accept-flake-config true"
         logger.warning(command)
         c.run(command)
