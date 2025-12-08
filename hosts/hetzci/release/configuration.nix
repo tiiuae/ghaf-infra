@@ -78,7 +78,7 @@
       let
         commonOptions = {
           maxJobs = 16;
-          speedFactor = 10;
+          speedFactor = 2;
           supportedFeatures = [
             "kvm"
             "nixos-test"
@@ -91,18 +91,27 @@
       in
       [
         (
-          {
+          commonOptions
+          // {
             hostName = "hetz86-rel-1";
             system = "x86_64-linux";
           }
-          // commonOptions
         )
         (
-          {
+          commonOptions
+          // {
+            hostName = "hetz86-rel-2";
+            system = "x86_64-linux";
+            maxJobs = 48;
+            speedFactor = 6; # three times the 16 core machines
+          }
+        )
+        (
+          commonOptions
+          // {
             hostName = "hetzarm-rel-1";
             system = "aarch64-linux";
           }
-          // commonOptions
         )
       ];
   };
@@ -112,6 +121,8 @@
     knownHosts = {
       "hetz86-rel-1".publicKey = machines.hetz86-rel-1.publicKey;
       "${machines.hetz86-rel-1.ip}".publicKey = machines.hetz86-rel-1.publicKey;
+      "hetz86-rel-2".publicKey = machines.hetz86-rel-2.publicKey;
+      "${machines.hetz86-rel-2.ip}".publicKey = machines.hetz86-rel-2.publicKey;
       "hetzarm-rel-1".publicKey = machines.hetzarm-rel-1.publicKey;
       "${machines.hetzarm-rel-1.ip}".publicKey = machines.hetzarm-rel-1.publicKey;
     };
@@ -120,6 +131,8 @@
     extraConfig = lib.mkAfter ''
       Host hetz86-rel-1
       Hostname ${machines.hetz86-rel-1.ip}
+      Host hetz86-rel-2
+      Hostname ${machines.hetz86-rel-2.ip}
       Host hetzarm-rel-1
       Hostname ${machines.hetzarm-rel-1.ip}
     '';
