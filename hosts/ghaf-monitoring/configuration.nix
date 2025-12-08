@@ -20,6 +20,7 @@ let
       hetzarm
       hetz86-1
       hetz86-builder
+      hetz86-rel-2
       ;
   };
 in
