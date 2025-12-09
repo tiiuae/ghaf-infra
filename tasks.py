@@ -247,7 +247,7 @@ def install_release(c: Any) -> None:
     inv install-release
     """
     # Install release hosts
-    release_hosts = ["hetz86-rel-1", "hetz86-rel-2", "hetzarm-rel-1", "hetzci-release"]
+    release_hosts = ["hetz86-rel-2", "hetzarm-rel-1", "hetzci-release"]
     for host in release_hosts:
         install(c, host, yes=True)
     # Connect testagent-release to the installed release jenkins controller

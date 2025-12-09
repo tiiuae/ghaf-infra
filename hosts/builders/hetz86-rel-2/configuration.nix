@@ -47,4 +47,6 @@
     };
     logs.enable = true;
   };
+
+  nix.settings.cores = 24; # default is 0 -> all 48 cores
 }
