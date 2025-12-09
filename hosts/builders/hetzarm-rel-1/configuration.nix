@@ -23,6 +23,8 @@
     team-devenv
   ]);
 
+  system.stateVersion = "25.05";
+
   sops = {
     defaultSopsFile = ./secrets.yaml;
     secrets = {
