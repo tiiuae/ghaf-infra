@@ -16,7 +16,7 @@
     ../signing.nix
   ];
 
-  system.stateVersion = lib.mkForce "25.05";
+  system.stateVersion = "25.05";
   networking.hostName = "hetzci-release";
 
   sops = {
