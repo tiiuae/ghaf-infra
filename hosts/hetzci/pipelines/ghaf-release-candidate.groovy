@@ -12,7 +12,7 @@ def ALL_RELEASE_TARGETS = [
     no_image: true, testset: null,
   ],
   [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug",
-    testset: '_relayboot_bat_',
+    testset: '_relayboot_bat_', build_otapin: true,
   ],
   [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-installer",
     testset: null,
@@ -30,7 +30,7 @@ def ALL_RELEASE_TARGETS = [
     testset: '_relayboot_bat_',
   ],
   [ target: "packages.x86_64-linux.system76-darp11-b-debug",
-    testset: '_relayboot_bat_',
+    testset: '_relayboot_bat_', build_otapin: true,
   ],
   [ target: "packages.x86_64-linux.system76-darp11-b-debug-installer",
     testset: null,
@@ -42,22 +42,17 @@ def LAPTOP_RELEASE_TARGETS = [
     no_image: true, testset: null,
   ],
   [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug",
-    testset: '_relayboot_bat_',
+    testset: '_relayboot_bat_', build_otapin: true,
   ],
   [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-installer",
     testset: null,
   ],
   [ target: "packages.x86_64-linux.system76-darp11-b-debug",
-    testset: '_relayboot_bat_',
+    testset: '_relayboot_bat_', build_otapin: true,
   ],
   [ target: "packages.x86_64-linux.system76-darp11-b-debug-installer",
     testset: null,
   ],
-]
-
-def OTA_TARGETS = [
-  [ target: "lenovo-x1-carbon-gen11-debug" ],
-  [ target: "system76-darp11-b-debug" ],
 ]
 
 properties([
@@ -134,22 +129,6 @@ pipeline {
         dir(WORKDIR) {
           script {
             parallel PIPELINE
-          }
-        }
-      }
-    }
-    stage('Build OTA pin') {
-      steps {
-        dir(WORKDIR) {
-          script {
-            OTA_TARGETS.each {
-              stage("Build ${it.target}") {
-                sh """
-                  nixos-rebuild build --fallback --flake .#${it.target}
-                  mv result otapin.${it.target}
-                """
-              }
-            }
           }
         }
       }
