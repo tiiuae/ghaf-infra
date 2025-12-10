@@ -48,6 +48,9 @@ def init() {
   } else if(params.IMG_URL.contains("orin-nx-")) {
     env.DEVICE_NAME = 'OrinNX1'
     env.DEVICE_TAG = 'orin-nx'
+  } else if(params.IMG_URL.contains("lenovo-x1-carbon-gen11-debug-signed")) {
+    env.DEVICE_NAME = 'X1-Secure-Boot'
+    env.DEVICE_TAG = 'x1-sec-boot'
   } else if(params.IMG_URL.contains("lenovo-x1-")) {
     env.DEVICE_NAME = 'LenovoX1-1'
     env.DEVICE_TAG = 'lenovo-x1'
@@ -120,10 +123,15 @@ def ghaf_robot_test(String testname='relayboot') {
   if (!env.DEVICE_NAME) {
     error("DEVICE_NAME not set")
   }
+  if (env.DEVICE_TAG == "x1-sec-boot") {
+    env.DEVICE_TEST_TAG = "lenovo-x1"
+  } else {
+    env.DEVICE_TEST_TAG = env.DEVICE_TAG
+  }
   if (testname.contains('turnoff')) {
     env.INCLUDE_TEST_TAGS = "${testname}"
   } else {
-    env.INCLUDE_TEST_TAGS = "${testname}AND${env.DEVICE_TAG}"
+    env.INCLUDE_TEST_TAGS = "${testname}AND${env.DEVICE_TEST_TAG}"
   }
   dir("Robot-Framework/test-suites") {
     sh 'rm -f *.txt *.png *.mp4 output.xml report.html log.html'

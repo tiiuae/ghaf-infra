@@ -35,7 +35,7 @@ properties([
         script: [
           classpath: [],
           sandbox: true,
-          script: "return ['orin-agx','orin-agx-64','orin-nx','lenovo-x1','dell-7330','darter-pro']"
+          script: "return ['orin-agx','orin-agx-64','orin-nx','lenovo-x1','dell-7330','darter-pro', 'x1-sec-boot']"
         ]
       ]
     ],
@@ -58,7 +58,6 @@ properties([
     booleanParam(name: 'BOOT', defaultValue: true, description: 'Run boot test before any other tests (if any).'),
     booleanParam(name: 'WIPE_ONLY', defaultValue: false, description: 'Run just internal memory wiping stage! Use this option ONLY with installer image!.'),
     booleanParam(name: 'TURN_OFF', defaultValue: false, description: 'Turn off the device after other tests (if any).'),
-    booleanParam(name: 'USE_RELAY', defaultValue: true, description: 'Use relay board to cut power from the target device.')
   ])
 ])
 
@@ -70,37 +69,55 @@ def init() {
     return 'built-in'
   }
   def deviceMap = [
-    "orin-agx"           : [name: 'OrinAGX1',   urlmatch: 'orin-agx-'],
-    "orin-agx-64"        : [name: 'OrinAGX64',  urlmatch: 'orin-agx64-'],
-    "orin-nx"            : [name: 'OrinNX1',    urlmatch: 'orin-nx-'],
-    "lenovo-x1"          : [name: 'LenovoX1-1', urlmatch: 'lenovo-x1-'],
-    "dell-7330"          : [name: 'Dell7330',   urlmatch: 'dell-latitude-7330-'],
-    "darter-pro"         : [name: 'DarterPRO',  urlmatch: 'system76-darp11-b-']
+    "orin-agx"           : [name: 'OrinAGX1'],
+    "orin-agx-64"        : [name: 'OrinAGX64'],
+    "orin-nx"            : [name: 'OrinNX1'],
+    "dell-7330"          : [name: 'Dell7330'],
+    "darter-pro"         : [name: 'DarterPRO'],
+    "lenovo-x1"          : [name: 'LenovoX1-1'],
+    "x1-sec-boot"        : [name: 'X1-Secure-Boot']
   ]
-  if (params.IMG_URL) {
-    for (tag in deviceMap.keySet()) {
-      if (params.IMG_URL.contains(deviceMap[tag].urlmatch)) {
-        env.DEVICE_TAG = tag
-        break
-      }
-    }
+  // Determine the device name
+  if(params.IMG_URL.contains("orin-agx-")) {
+    env.DEVICE_NAME = 'OrinAGX1'
+    env.DEVICE_TAG = 'orin-agx'
+  } else if(params.IMG_URL.contains("orin-agx64-")) {
+    env.DEVICE_NAME = 'OrinAGX64'
+    env.DEVICE_TAG = 'orin-agx-64'
+  } else if(params.IMG_URL.contains("orin-nx-")) {
+    env.DEVICE_NAME = 'OrinNX1'
+    env.DEVICE_TAG = 'orin-nx'
+  } else if(params.IMG_URL.contains("lenovo-x1-carbon-gen11-debug-signed")) {
+    env.DEVICE_NAME = 'X1-Secure-Boot'
+    env.DEVICE_TAG = 'x1-sec-boot'
+  } else if(params.IMG_URL.contains("lenovo-x1-")) {
+    env.DEVICE_NAME = 'LenovoX1-1'
+    env.DEVICE_TAG = 'lenovo-x1'
+  } else if(params.IMG_URL.contains("dell-latitude-7330-")) {
+    env.DEVICE_NAME = 'Dell7330'
+    env.DEVICE_TAG = 'dell-7330'
+  } else if(params.IMG_URL.contains("system76-darp11-b-")) {
+    env.DEVICE_NAME = 'DarterPRO'
+    env.DEVICE_TAG = 'darter-pro'
   }
   if (!env.DEVICE_TAG || env.DEVICE_TAG == null) {
     error("DEVICE_TAG is not defined and could not be derived from IMG_URL ${env.IMG_URL}")
+  }
+  if (!params.IMG_URL || params.IMG_URL == null) {
+    env.DEVICE_NAME = deviceMap[env.DEVICE_TAG].name
   }
   def label = env.DEVICE_TAG
   if (params.TESTAGENT_HOST) {
     label = "${params.TESTAGENT_HOST}-${env.DEVICE_TAG}"
   }
-  env.DEVICE_NAME = deviceMap[env.DEVICE_TAG].name
   println("Using DEVICE_NAME: ${env.DEVICE_NAME}")
   println("Using DEVICE_TAG: ${env.DEVICE_TAG}")
   currentBuild.description = "${label}"
-  env.BOOT_TAG = "boot"
-  env.POWEROFF_TAG = "turnoff"
-  if (params.USE_RELAY) {
-    env.BOOT_TAG = "relayboot"
-    env.POWEROFF_TAG = "relay-turnoff"
+
+  if (env.DEVICE_TAG == "x1-sec-boot") {
+    env.DEVICE_BOOT_TAG = "lenovo-x1"
+  } else {
+    env.DEVICE_BOOT_TAG = env.DEVICE_TAG
   }
   def testagent_nodes = nodesByLabel(label: label, offline: false)
   if (!testagent_nodes) {
@@ -296,7 +313,7 @@ pipeline {
       when { expression { params && params.BOOT && !params.WIPE_ONLY } }
       steps {
         script {
-          ghaf_robot_test("${env.BOOT_TAG}AND${env.DEVICE_TAG}")
+          ghaf_robot_test("relaybootAND${env.DEVICE_BOOT_TAG}")
         }
       }
     }
@@ -324,7 +341,7 @@ pipeline {
       when { expression { params && params.TURN_OFF } }
       steps {
         script {
-          ghaf_robot_test("${env.POWEROFF_TAG}")
+          ghaf_robot_test("relay-turnoff")
         }
       }
     }

@@ -84,6 +84,7 @@ in
           "orin-agx"
           "orin-agx-64"
           "orin-nx"
+          "x1-sec-boot"
         ];
       };
       testagentHosts = lib.mkOption {
