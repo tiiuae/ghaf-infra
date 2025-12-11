@@ -25,4 +25,5 @@ path = [
   "**/ca.*.crypt",
   "**.pub",
   "**.pem",
+  "keys/secboot/*"
 ]

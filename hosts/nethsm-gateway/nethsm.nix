@@ -36,6 +36,54 @@ let
     yubihsm = "${pkgs.yubihsm-shell}/lib/pkcs11/yubihsm_pkcs11.so";
     p11-kit = "${pkgs.p11-kit}/lib/p11-kit-proxy.so";
   };
+
+  nethsm-operator-username = "ghafinfrasign~ghafsigner";
+
+  nethsm-cmd = pkgs.writeShellScriptBin "nethsm-cmd" ''
+    nitropy nethsm --no-verify-tls \
+      --host ${config.nethsm.host} \
+      --username ${nethsm-operator-username} \
+      --password "$(cat ${config.sops.secrets.nethsm-operator-password.path})" \
+      "$@"
+  '';
+
+  get-secureboot-keys = pkgs.writeShellScriptBin "get-secureboot-keys" ''
+    set -eo pipefail
+
+    if [[ -z "$1" ]]; then
+      echo "Usage: $(basename "$0") <outpath>"
+      exit 1
+    fi
+
+    # change these when rotating keys
+    PK="tempPKkey"
+    KEK="tempKEKkey"
+    DB="tempDBkey"
+
+    OUT="$1"
+    mkdir -p "$OUT"
+    pushd "$OUT"
+
+    echo "Fetching certificates..."
+    nethsm-cmd get-certificate --key-id "$PK" > PK.crt
+    nethsm-cmd get-certificate --key-id "$KEK" > KEK.crt
+    nethsm-cmd get-certificate --key-id "$DB" > db.crt
+
+    echo "Creating DER files..."
+    openssl x509 -in PK.crt -outform DER -out PK.der
+    openssl x509 -in KEK.crt -outform DER -out KEK.der
+    openssl x509 -in db.crt -outform DER -out db.der
+
+    echo "Signing auth files..."
+    OPENSSL_CONF=$OPENSSL_CONF_LEGACY_ENGINE
+    cert-to-auth \
+      --pk PK.crt --kek KEK.crt --db db.crt \
+      --pk-uri "pkcs11:token=NetHSM;object=$PK" \
+      --kek-uri "pkcs11:token=NetHSM;object=$KEK" \
+
+    echo "Generated $(date -u) from NetHSM objects \`$PK\`, \`$KEK\` and \`$DB\`" > README.md
+    echo "Done"
+  '';
 in
 {
   options = {
@@ -73,7 +121,10 @@ in
     sops.secrets = {
       tls-pks-file.owner = "root";
       nethsm-metrics-credentials.owner = "root";
-      nethsm-operator-password.owner = "root";
+      nethsm-operator-password = {
+        group = "wheel";
+        mode = "0440";
+      };
     };
 
     systemd.services.nethsm-exporter = {
@@ -121,7 +172,7 @@ in
               description: Tampere Office NetHSM
 
               operator:
-                username: ghafinfrasign~ghafsigner
+                username: ${nethsm-operator-username}
                 password: ${config.sops.placeholder.nethsm-operator-password}
 
               instances:
@@ -161,9 +212,14 @@ in
         yubihsm-shell
         p11-kit
       ])
+      ++ (with inputs.ci-yubi.packages.${pkgs.system}; [
+        cert-to-auth
+      ])
       ++ [
         systemd-sbsign
         pkcs11-proxy
+        nethsm-cmd
+        get-secureboot-keys
       ];
 
     # PKCS#11 modules that p11-kit will load
@@ -213,9 +269,29 @@ in
 
             [pkcs11_sect]
             activate = 1
-            module = "${pkcs11-provider}/lib/ossl-modules/pkcs11.so"
+            module = ${pkcs11-provider}/lib/ossl-modules/pkcs11.so
             pkcs11-module-path = ${pkcs11Modules.p11-kit}
             pkcs11-module-quirks = no-deinit
+          ''
+      );
+
+      # Use this when providers aren't supported
+      OPENSSL_CONF_LEGACY_ENGINE = toString (
+        pkgs.writeText "openssl.cnf" # toml
+          ''
+            openssl_conf = openssl_init
+
+            [openssl_init]
+            engines = engine_section
+
+            [engine_section]
+            pkcs11 = pkcs11_section
+
+            [pkcs11_section]
+            engine_id = pkcs11
+            dynamic_path = ${pkgs.libp11}/lib/engines/pkcs11.so
+            MODULE_PATH = ${pkcs11Modules.p11-kit}
+            init = 0
           ''
       );
 

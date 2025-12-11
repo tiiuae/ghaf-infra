@@ -82,9 +82,9 @@ in
     })
     {
       environment.etc = {
-        "jenkins/keys/db.pem".source = "${self.outPath}/keys/tempDBkey.pem";
-        "jenkins/keys/kek.pem".source = "${self.outPath}/keys/tempKEKkey.pem";
-        "jenkins/keys/pk.pem".source = "${self.outPath}/keys/tempPKkey.pem";
+        "jenkins/keys/secboot".source = "${self.outPath}/keys/secboot";
+        "jenkins/keys/tempDBkey.pem".source = "${self.outPath}/keys/tempDBkey.pem";
+        "jenkins/enroll-secureboot-keys.sh".source = "${self.outPath}/scripts/enroll-secureboot-keys.sh";
       };
 
       environment.systemPackages =
