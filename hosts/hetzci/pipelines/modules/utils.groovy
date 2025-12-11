@@ -70,22 +70,20 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
           "PROVENANCE_TIMESTAMP_FINISHED=${build_end}",
           "PROVENANCE_EXTERNAL_PARAMS=${ext_params}"
         ]) {
-          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-            sh """
-              attempt=1; max_attempts=5;
-              while ! provenance  ${artifacts_local_dir}/${it.target}/ --recursive --out ${it.target}.json; do
-                echo "provenance attempt=\$attempt failed"
-                if (( \$attempt >= \$max_attempts )); then
-                  exit 1
-                fi
-                attempt=\$(( \$attempt + 1 ))
-                sleep 30
-              done
-              echo "provenance attempt=\$attempt passed"
-              mkdir -v -p ${artifacts_local_dir}/scs/${it.target}
-              cp ${it.target}.json ${artifacts_local_dir}/scs/${it.target}/provenance.json
-            """
-          }
+          sh """
+            attempt=1; max_attempts=5;
+            while ! provenance  ${artifacts_local_dir}/${it.target}/ --recursive --out ${it.target}.json; do
+              echo "provenance attempt=\$attempt failed"
+              if (( \$attempt >= \$max_attempts )); then
+                exit 1
+              fi
+              attempt=\$(( \$attempt + 1 ))
+              sleep 30
+            done
+            echo "provenance attempt=\$attempt passed"
+            mkdir -v -p ${artifacts_local_dir}/scs/${it.target}
+            cp ${it.target}.json ${artifacts_local_dir}/scs/${it.target}/provenance.json
+          """
         }
       }
       // Build OTA pin
@@ -106,32 +104,28 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
       if (env.CI_ENV != 'vm') {
         if (!it.no_image) {
           stage("Sign image ${shortname}") {
-            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-              def img_path = get_img_path(it.target, artifacts_local_dir)
+            def img_path = get_img_path(it.target, artifacts_local_dir)
+            sh """
+              mkdir -v -p "\$(dirname "${artifacts_local_dir}/scs/${img_path}")"
+            """
+            lock('signing') {
               sh """
-                mkdir -v -p "\$(dirname "${artifacts_local_dir}/scs/${img_path}")"
+                openssl dgst -sha256 -sign \
+                  "pkcs11:token=NetHSM;object=GhafInfraSignECP256" \
+                  -out ${artifacts_local_dir}/scs/${img_path}.sig \
+                  ${artifacts_local_dir}/${img_path}
               """
-              lock('signing') {
-                sh """
-                  openssl dgst -sha256 -sign \
-                    "pkcs11:token=NetHSM;object=GhafInfraSignECP256" \
-                    -out ${artifacts_local_dir}/scs/${img_path}.sig \
-                    ${artifacts_local_dir}/${img_path}
-                """
-              }
             }
           }
         }
         stage("Sign provenance ${shortname}") {
-          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-            lock('signing') {
-              sh """
-                openssl pkeyutl -sign -rawin \
-                  -inkey "pkcs11:token=NetHSM;object=GhafInfraSignProv" \
-                  -out ${artifacts_local_dir}/scs/${it.target}/provenance.json.sig \
-                  -in ${artifacts_local_dir}/scs/${it.target}/provenance.json
-              """
-            }
+          lock('signing') {
+            sh """
+              openssl pkeyutl -sign -rawin \
+                -inkey "pkcs11:token=NetHSM;object=GhafInfraSignProv" \
+                -out ${artifacts_local_dir}/scs/${it.target}/provenance.json.sig \
+                -in ${artifacts_local_dir}/scs/${it.target}/provenance.json
+            """
           }
         }
         if (it.get('uefisign', false) || it.get('uefisigniso', false)) {
