@@ -90,11 +90,14 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
       }
       // Build OTA pin
       if (it.get('build_otapin', false)) {
-        stage("OTA Build ${it.target}") {
+        stage("OTA Build ${shortname}") {
           def ota_target = it.target.tokenize('.').last()
           sh """
+            mkdir -v -p ${ota_target}; cd ${ota_target}
             nixos-rebuild build --fallback --flake .#${ota_target}
             mv result ${artifacts_local_dir}/otapin.${ota_target}
+            nix-store --add-root ${artifacts_local_dir}/otapin.${ota_target} \
+              -r ${artifacts_local_dir}/otapin.${ota_target}
           """
         }
       }
