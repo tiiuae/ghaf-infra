@@ -79,7 +79,7 @@ while sleep 30; do
     --old-group-format='' --new-group-format='%>' \
     "$TMPDIR/ref" "$TMPDIR/snapshot" >"$TMPDIR/new" || true
   # Filter paths that match the following regexp
-  filter='(nixos\.img$|\.iso$|\.raw\.zst|\.img\.zst|\-disko-images)'
+  filter='(nixos\.img$|\.iso$|\.raw\.zst|\.img\.zst|\-disko-images|\-set-environment$|\-etc-pam-environment$)'
   while read -r storepath; do
     # Also skip if the store path is a (symlink to) directory and any
     # directory contents matches the filter
