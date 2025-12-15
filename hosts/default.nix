@@ -34,9 +34,7 @@ in
 {
   flake.nixosModules = {
     # shared modules
-    qemu-common = import ./qemu-common.nix;
     common = import ./common.nix;
-    generic-disk-config = import ./generic-disk-config.nix;
 
     # All flake.nixosConfigurations, before we call lib.nixosSystem over them.
     # We use a 'nixos-' prefix to distinguish them from regular modules.
