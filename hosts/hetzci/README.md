@@ -25,7 +25,7 @@ Bootstrap nix shell with the required dependencies:
 All example commands in this document are executed from this nix shell.
 
 ## Directory Structure
-```
+```shell
 hosts/hetzci/
 ├── dev
 |   └── ...
@@ -33,31 +33,31 @@ hosts/hetzci/
 |   └── ...
 ├── release
 |   └── ...
-└── vm
-    ├── casc
-    │   ├── jenkins-casc.yaml
-    │   └── pipelines
-    │       ├── ghaf-manual.groovy
-            ...
-    │       └── modules
-    │           └── utils.groovy
-    ├── configuration.nix
-    └── secrets.yaml
-
+├── vm
+|   ├── configuration.nix  # nixosConfiguration for the jenkins host
+|   ├── disk-config.nix    # disko nix configuration
+|   ├── plugins.json       # jenkins plugins installed on the given host
+|   ├── plugins.txt        # used to update/re-generate the `plugins.json`
+|   └── secrets.yaml       # encrypted sops secrets specific to given host
+...
+├── casc                   # Jenkins casc (configuration-as-code) configuration.
+│   ├── auth.yaml          # Composed of smaller modules, optionally
+│   ├── cachix.yaml        # included in the host casc folder by nix options
+│   ├── common.yaml        # based on the features needed in each jenkins host
+.   ...
+├── pipelines              # Jenkins pipelines
+│   ├── ghaf-main.groovy
+│   ├── ghaf-manual.groovy
+    ...
+    └── modules            # Jenkins pipeline modules
+        └── utils.groovy
 ```
-Each subdirectory under [`hosts/hetzci`](https://github.com/tiiuae/ghaf-infra/tree/main/hosts/hetzci) contains the configuration for the given hetzci environment. Configuration for each environment follows the same structure:
-- `casc` directory contains the jenkins configuration-as-code config, with the main configuration at `casc/jenkins-casc.yaml`
-- `casc/pipelines` contains the jenkins pipelines and pipeline modules for the specific environment
-- `configuration.nix` is the nixosConfiguration for the jenkins host
-- `secrets.yaml` encrypted sops secrets specific to given environment
-
-There are four independent hetzci environments: `dev`, `prod`, `release`, and `vm` each in its own subdirectory:
+[`hosts/hetzci`](https://github.com/tiiuae/ghaf-infra/tree/main/hosts/hetzci) contains the configuration for the four different hetzci environments: `dev`, `prod`, `release`, and `vm`:
 - `release`: release jenkins CI to support ghaf release builds. The `release` jenkins web interface is available at: https://ci-release.vedenemo.dev/.
-- `prod`: production jenkins CI to support ghaf development activities. The `prod` jenkins web interface is available at: https://ci-prod.vedenemo.dev/
-- `dev`: development jenkins CI to support ghaf-infra and ghaf hw-test development activities. The `dev` jenkins web interface is available at: https://ci-dev.vedenemo.dev/
+- `prod`: production jenkins CI to support ghaf development activities. The `prod` jenkins web interface is available at: https://ci-prod.vedenemo.dev/.
+- `dev`: development jenkins CI to support ghaf-infra and ghaf hw-test development activities. The `dev` jenkins web interface is available at: https://ci-dev.vedenemo.dev/.
 - `vm`: configuration which can be run in Qemu VM locally to support testing hetzci changes in a local VM before deploying to `dev` or `prod`. The configuration is modified to allow local testing, as an example: `caddy` service configuration is simplified, `jenkins` configuration is modified to not require authentication, and `getty` automatically logs in as root.
 
-We want to keep the configurations fully independent in each environment to be able to test changes in non-prod environment(s) before promoting the change to `prod` or `release`. For this reason, many parts of the hetzci configuration need to be duplicated between the different configuration subdirectories. On developing a configuration change, we anticipate the change is first introduced in `vm` subdirectory, then moves forward to `dev`, and finally copied over to `prod` and `release` as explained below. Both the `prod` and `release` should only be deployed from the ghaf-infra main branch, thus never running configurations that would not have gone through the review process and preferably some testing in `dev` first.
 
 ## Usage
 
@@ -101,6 +101,8 @@ To stop the VM, use `Ctrl-a` `x` or command `shutdown now` in the VM terminal.
 
 ### Deploy Changes to dev
 
+**Important**: before deploying changes to `dev`, you need to sync with the rest of the team to not interfere someone else's testing.
+
 After testing changes locally in a VM as explained above, copy the same changes to the `dev` directory and deploy following the documentation in [deploy-rs.md](https://github.com/tiiuae/ghaf-infra/blob/main/docs/deploy-rs.md):
 
 ```bash
@@ -110,6 +112,8 @@ After testing changes locally in a VM as explained above, copy the same changes 
 Which would deploy the changes to https://ci-dev.vedenemo.dev
 
 ### Deploy Changes to prod
+
+**Important**: do not deploy `prod` outside ghaf-infra main. In addition, before deployment you need to sync with the rest of the team to not interfere possible ongoing production testing.
 
 After testing changes locally in a VM and optionally in a `dev` environment as explained above, copy the same changes to `prod` directory and deploy:
 ```bash
@@ -176,5 +180,8 @@ Runs on all changes to Ghaf PRs authored by tiiuae organization members. Trigger
 #### ghaf-pre-merge-manual
 Allows manually triggering a pre-merge check given a Ghaf PR number. Optionally writes the check status to GitHub PR.
 
-#### ghaf-release
-Manually triggered pipeline to build and test ghaf releases.
+#### ghaf-release-candidate
+Manually triggered pipeline to build and test ghaf release candidate.
+
+#### ghaf-release-publish
+Manually triggered pipeline to publish a ghaf release candidate. Includes stages, such as: pinning the release for OTA, archiving the release content to permanent storage, etc.
