@@ -58,7 +58,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Install nix
-        uses: cachix/install-nix-action@0b0e072294b088b73964f1d72dfdac0951439dbd
+        uses: cachix/install-nix-action@4e002c8ec80594ecd40e759629461e26c8abed15
       - name: Add builders to ssh_known_hosts
         shell: bash
         run: |
