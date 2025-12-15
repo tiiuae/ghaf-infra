@@ -75,7 +75,6 @@
                   prometheus-client
                   pycodestyle
                   pylint
-                  pylint
                   requests
                   tabulate
                   urllib3
