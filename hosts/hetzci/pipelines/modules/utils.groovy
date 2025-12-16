@@ -130,19 +130,12 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
         }
         if (it.get('uefisign', false) || it.get('uefisigniso', false)) {
           stage("Sign UEFI ${shortname}") {
-            def binary = it.get('uefisigniso', false) ? "uefisigniso" : "uefisign"
-            def imageName = it.get('uefisigniso', false) ? "ghaf.iso" : "disk1.raw.zst"
-
-            def diskPath  = run_cmd("find -L ${artifacts_local_dir}/${it.target} -type f -name '${imageName}' -print -quit")
-            if (!diskPath) {
-              error("No ${imageName} found for '${it.target}'")
-            }
-
-            def outdir = "${artifacts_local_dir}/uefisigned/${it.target}-signed"
+            def diskPath = artifacts_local_dir + "/" + get_img_path(it.target, artifacts_local_dir)
+            def outdir = run_cmd("dirname '${diskPath}' | sed 's/${it.target}/uefisigned\\/${it.target}/'")
             sh "mkdir -v -p ${outdir}"
 
             lock('signing') {
-              sh "${binary} /etc/jenkins/keys/tempDBkey.pem 'pkcs11:token=NetHSM;object=tempDBkey' '${diskPath}' ${outdir}"
+              sh "uefisign /etc/jenkins/keys/tempDBkey.pem 'pkcs11:token=NetHSM;object=tempDBkey' '${diskPath}' ${outdir}"
             }
 
             def keydir = "keys"
@@ -167,36 +160,49 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
         stage("Test ${shortname}") {
           def img_path = get_img_path(it.target, artifacts_local_dir)
           def img_url = "${env.JENKINS_URL}/${artifacts}/${img_path}"
-          def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
-          def desc = "Triggered by ${build_href}<br>(${it.target})"
-          def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
-            parameters: [
-              string(name: "IMG_URL", value: img_url),
-              string(name: "TESTSET", value: it.testset),
-              string(name: "DESC", value: desc),
-              string(name: "TESTAGENT_HOST", value: testagent_host),
-              booleanParam(name: "RELOAD_ONLY", value: false),
-            ],
-          )
-          println("ghaf-hw-test log '${it.target}':")
-          sh "cat /var/lib/jenkins/jobs/ghaf-hw-test/builds/${job.number}/log | sed 's/^/    /'"
-          if (job.result != "SUCCESS") {
-            unstable("FAILED: ${it.target} ${it.testset}")
-            currentBuild.result = "FAILURE"
-            def test_href = "<a href=\"${job.absoluteUrl}\">⛔ ${shortname}</a>"
-            append_to_build_description(test_href)
+          run_hw_tests(it.target, img_url, testagent_host, it.testset, artifacts_local_dir)
+        }
+        if (it.uefitest) {
+          stage("Test Signed ${shortname}") {
+            def img_path = get_img_path(it.target, "${artifacts_local_dir}/uefisigned")
+            def img_url = "${env.JENKINS_URL}/${artifacts}/uefisigned/${img_path}"
+            run_hw_tests("uefisigned/${it.target}", img_url, testagent_host, it.testset, artifacts_local_dir, false)
           }
-          copyArtifacts(
-            projectName: "ghaf-hw-test",
-            selector: specific("${job.number}"),
-            target: "${artifacts_local_dir}/test-results/${it.target}",
-            optional: true,
-          )
         }
       }
     }
   }
   return pipeline
+}
+
+def run_hw_tests(String target, String img_url, String testagent_host, String testset, String results_location, Boolean verify=true) {
+  def shortname = target.substring(target.lastIndexOf('.') + 1)
+  def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
+  def desc = "Triggered by ${build_href}<br>(${target})"
+  def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
+    parameters: [
+      string(name: "IMG_URL", value: img_url),
+      string(name: "TESTSET", value: testset),
+      string(name: "DESC", value: desc),
+      string(name: "TESTAGENT_HOST", value: testagent_host),
+      booleanParam(name: "VERIFY", value: verify),
+      booleanParam(name: "RELOAD_ONLY", value: false),
+    ],
+  )
+  println("ghaf-hw-test log '${target}:")
+  sh "cat /var/lib/jenkins/jobs/ghaf-hw-test/builds/${job.number}/log | sed 's/^/    /'"
+  if (job.result != "SUCCESS") {
+    unstable("FAILED: ${target} ${testset}")
+    currentBuild.result = "FAILURE"
+    def test_href = "<a href=\"${job.absoluteUrl}\">⛔ ${shortname}</a>"
+    append_to_build_description(test_href)
+  }
+  copyArtifacts(
+    projectName: "ghaf-hw-test",
+    selector: specific("${job.number}"),
+    target: "${results_location}/test-results/${target}",
+    optional: true,
+  )
 }
 
 def get_img_path(String target, String in_path) {

@@ -12,7 +12,7 @@ def TARGETS = [
     no_image: true, testset: null,
   ],
   [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug",
-    testset: '_relayboot_gui_regression_', uefisign: true,
+    testset: '_relayboot_gui_regression_', uefisign: true, uefitest: true
   ],
   [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-installer",
     testset: '_relayboot_gui_regression_', uefisigniso: true,
