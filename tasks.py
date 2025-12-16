@@ -278,6 +278,18 @@ def install(c: Any, alias: str, user: str | None = None, yes: bool = False) -> N
     """
     h = get_deploy_host(alias, user)
 
+    # Map host alias to kexec image tarball used for the given host during nixos-anywhere
+    # kexec switch. If not specified in the below dictionary, uses the nixos-anywhere
+    # default kexec image which depends on the nixos-anywhere version, see:
+    # https://github.com/nix-community/nixos-anywhere/blob/bad98b/src/nixos-anywhere.sh#L706
+    nixos_images_url = "https://github.com/nix-community/nixos-images/releases/download"
+    kexec_images = {
+        "hetz86-rel-2": (
+            f"{nixos_images_url}/nixos-24.05/"
+            "nixos-kexec-installer-noninteractive-x86_64-linux.tar.gz"
+        )
+    }
+
     if not yes:
         ask = input(f"Install configuration '{alias}'? [y/N] ")
         if ask != "y":
@@ -355,7 +367,8 @@ def install(c: Any, alias: str, user: str | None = None, yes: bool = False) -> N
     with TemporaryDirectory() as tmpdir:
         decrypt_host_key(target, tmpdir)
         ssh_target = f"{h.user}@{h.host}" if h.user is not None else h.host
-        command = f"nixos-anywhere {ssh_target} --extra-files {tmpdir} "
+        kexec = f"--kexec {kexec_images[alias]}" if alias in kexec_images else ""
+        command = f"nixos-anywhere {ssh_target} --extra-files {tmpdir} {kexec} "
         command += f"--flake .#{target.nixosconfig} --option accept-flake-config true"
         logger.warning(command)
         c.run(command)
