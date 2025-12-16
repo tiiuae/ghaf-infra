@@ -16,7 +16,8 @@ properties([
     string(name: 'CI_TEST_REPO_BRANCH', defaultValue: 'main', description: 'Select ci-test-automation branch to checkout.'),
     string(name: 'IMG_URL', defaultValue: '', description: 'Target image url.'),
     string(name: 'TESTSET', defaultValue: '_relayboot_', description: 'Target testset, e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.'),
-    string(name: 'TESTAGENT_HOST', defaultValue: null, description: 'Target testagent host, e.g.: dev, prod, release')
+    string(name: 'TESTAGENT_HOST', defaultValue: null, description: 'Target testagent host, e.g.: dev, prod, release'),
+    booleanParam(name: 'VERIFY', defaultValue: true, description: 'Verify provenance and image signature'),
   ])
 ])
 
@@ -48,7 +49,7 @@ def init() {
   } else if(params.IMG_URL.contains("orin-nx-")) {
     env.DEVICE_NAME = 'OrinNX1'
     env.DEVICE_TAG = 'orin-nx'
-  } else if(params.IMG_URL.contains("lenovo-x1-carbon-gen11-debug-signed")) {
+  } else if(params.IMG_URL.contains("uefisigned/packages.x86_64-linux.lenovo-x1")) {
     env.DEVICE_NAME = 'X1-Secure-Boot'
     env.DEVICE_TAG = 'x1-sec-boot'
   } else if(params.IMG_URL.contains("lenovo-x1-")) {
@@ -207,6 +208,7 @@ pipeline {
       }
     }
     stage('Verify provenance') {
+      when { expression { params && params.VERIFY } }
       steps {
         script {
           def split = split_img_url(params.IMG_URL)
@@ -226,20 +228,22 @@ pipeline {
         script {
           def img_path = run_wget(params.IMG_URL, TMP_IMG_DIR)
           println "Downloaded image to workspace: ${img_path}"
-          def split = split_img_url(params.IMG_URL)
-          def artifacts_url = split["artifacts_url"]
-          def target = split["target_name"]
-          def img_relpath = split["img_relpath"]
-          def sig_url = "${artifacts_url}/scs/${target}/${img_relpath}.sig"
-          def sig_path = run_wget(sig_url, TMP_IMG_DIR)
-          println "Downloaded SLSA signature file to workspace: ${sig_path}"
-          // Verify SLSA signature aborting if the verification fails
-          // openssl dgst cannot process a complete certificate in one go, but expects a raw public key
-          sh """
-            openssl x509 -pubkey -noout -in /etc/jenkins/GhafInfraSignECP256.pem > pubkey.pub
-            openssl dgst -verify pubkey.pub -signature ${sig_path} ${img_path}
-            rm pubkey.pub
-           """
+          if (params && params.VERIFY) {
+            def split = split_img_url(params.IMG_URL)
+            def artifacts_url = split["artifacts_url"]
+            def img_relpath = split["img_relpath"]
+            def target = split["target_name"]
+            def sig_url = "${artifacts_url}/scs/${target}/${img_relpath}.sig"
+            def sig_path = run_wget(sig_url, TMP_IMG_DIR)
+            println "Downloaded SLSA signature file to workspace: ${sig_path}"
+            // Verify SLSA signature aborting if the verification fails
+            // openssl dgst cannot process a complete certificate in one go, but expects a raw public key
+            sh """
+              openssl x509 -pubkey -noout -in /etc/jenkins/GhafInfraSignECP256.pem > pubkey.pub
+              openssl dgst -verify pubkey.pub -signature ${sig_path} ${img_path}
+              rm pubkey.pub
+             """
+          }
           // Uncompress
           if(img_path.endsWith(".zst")) {
             sh "zstd -dfv ${img_path}"
