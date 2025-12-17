@@ -55,6 +55,7 @@
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B72836E78E0", SYMLINK+="ssdDELL7330", MODE="0666", GROUP="dialout"
 
     # Darter Pro
+    SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTFMF0X0", SYMLINK+="ttyDARTER", MODE="0666", GROUP="dialout"
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B72838C556F", SYMLINK+="ssdDARTER", MODE="0666", GROUP="dialout"
 
@@ -99,7 +100,7 @@
         };
         DarterPRO = {
           inherit location;
-          serial_port = "NONE";
+          serial_port = "/dev/ttyDARTER";
           device_ip_address = "172.18.16.21";
           socket_ip_address = "NONE";
           plug_type = "NONE";
