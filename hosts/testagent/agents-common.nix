@@ -48,8 +48,21 @@ let
       '';
   };
 
+  relayPython = (
+    pkgs.python3.withPackages (
+      ps: with ps; [
+        fastapi
+        uvicorn
+        jinja2
+        python-multipart
+        requests
+        pyserial
+      ]
+    )
+  );
+
   relay-board-exporter = pkgs.writeScriptBin "relay-board-exporter" ''
-    #!${pkgs.python3}/bin/python3
+    #!${relayPython}/bin/python3
     ${builtins.readFile ./relay_board_exporter.py}
   '';
 
