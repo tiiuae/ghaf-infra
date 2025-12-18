@@ -17,7 +17,7 @@
             echo "WARNING: flake root not round; skipping helpers installation."
             return
           fi
-          prefetch-plugins () {
+          update-jenkins-plugins () {
             conf_path="$1"
             if [ -z "$conf_path" ]; then
               echo "Error: missing first argument - expecting relative path to host configuration"
@@ -32,8 +32,8 @@
           echo 1>&2 "Welcome to the development shell!"
           echo ""
           echo "This shell provides following helper commands:"
-          echo " - prefetch-plugins hosts/hetzci"
-          echo " - prefetch-plugins hosts/uae/azureci"
+          echo " - update-jenkins-plugins hosts/hetzci"
+          echo " - update-jenkins-plugins hosts/uae/azureci"
           echo ""
         '';
 
