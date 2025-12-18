@@ -1,4 +1,5 @@
-version: '2.0'
+version: '2.1'
+
 signature:
   verify: true
   certificate: |
@@ -18,15 +19,46 @@ signature:
     -----END CERTIFICATE-----
 
 criteria:
+  # --- Schema / type hardening --------------------------------------------
+
+  - id: intoto-statement-v1
+    description: Provenance must be an in-toto Statement v1
+    required: true
+    cel: _type == 'https://in-toto.io/Statement/v1'
+
+  - id: slsa-provenance-v1
+    description: Provenance must use the SLSA provenance v1 predicate type
+    required: true
+    cel: predicateType == 'https://slsa.dev/provenance/v1'
+
+  - id: predicate-present
+    description: Provenance must contain predicate object (non-null)
+    required: true
+    cel: predicate != null
+
+  - id: subject-present
+    description: Provenance must contain at least one subject
+    required: true
+    cel: size(subject) > 0
+
+  # --- Scope / source / workflow constraints -------------------------------
+
   - id: target-repo-ghaf
     description: Target repository is tiiuae/ghaf
     required: true
     cel: predicate.buildDefinition.externalParameters.target.repository == 'https://github.com/tiiuae/ghaf/'
 
-  - id: built-recently
-    description: Build was finished less than 3 hours ago
+  - id: workflow-repo-expected
+    description: Workflow repository is expected (ghaf-infra)
     required: true
-    cel: now - timestamp(predicate.runDetails.metadata.finishedOn) < duration('3h')
+    cel: predicate.buildDefinition.externalParameters.workflow.repository == 'https://github.com/tiiuae/ghaf-infra/'
+
+  - id: workflow-ref-allowed
+    description: Workflow ref is an allowed branch/tag (main or tags)
+    required: true
+    cel: >
+      predicate.buildDefinition.externalParameters.workflow.ref == 'refs/heads/main' ||
+      predicate.buildDefinition.externalParameters.workflow.ref.startsWith('refs/tags/')
 
   - id: builder-id-hetzner
     description: Built on Hetzner CI dev, prod or release
@@ -37,3 +69,42 @@ criteria:
         'https://ci-prod.vedenemo.dev/',
         'https://ci-release.vedenemo.dev/'
       ]
+
+  # --- Time / freshness / sanity checks ------------------------------------
+
+  - id: started-finished-present
+    description: Provenance contains startedOn and finishedOn timestamps (non-null)
+    required: true
+    cel: >
+      predicate.runDetails.metadata.startedOn != null &&
+      predicate.runDetails.metadata.finishedOn != null
+
+  - id: built-recently
+    description: Build was finished less than 3 hours ago (local verifier time; operational check)
+    required: true
+    cel: now - timestamp(predicate.runDetails.metadata.finishedOn) < duration('3h')
+
+  - id: build-duration-reasonable
+    description: Build duration is reasonable (finishedOn - startedOn < 6 hours)
+    required: true
+    cel: >
+      timestamp(predicate.runDetails.metadata.finishedOn) -
+      timestamp(predicate.runDetails.metadata.startedOn) < duration('6h')
+
+  # --- Run identity / replay-reduction -------------------------------------
+
+  - id: invocation-id-present
+    description: Provenance contains a non-trivial invocationId
+    required: true
+    cel: predicate.runDetails.metadata.invocationId != null &&
+         size(predicate.runDetails.metadata.invocationId) > 10
+
+  # --- BuildType sanity -----------------------------------------------------
+
+  - id: buildtype-sane
+    description: buildType must look like a clean https URL and not contain escaped quotes
+    required: true
+    cel: >
+      predicate.buildDefinition.buildType != null &&
+      predicate.buildDefinition.buildType.startsWith('https://') &&
+      !predicate.buildDefinition.buildType.contains('\"')
