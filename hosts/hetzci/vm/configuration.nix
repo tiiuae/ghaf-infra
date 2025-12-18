@@ -16,7 +16,6 @@
 
   hetzci.jenkins = {
     envType = "vm";
-    pluginsFile = ./plugins.json;
     url = "http://localhost:8080";
     nodes.testagentHosts = [ ];
     pipelines = [

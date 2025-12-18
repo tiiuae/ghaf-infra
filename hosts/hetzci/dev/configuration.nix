@@ -19,7 +19,6 @@
   hetzci = {
     jenkins = {
       envType = "dev";
-      pluginsFile = ./plugins.json;
       url = "https://ci-dev.vedenemo.dev";
       pipelines = [
         "ghaf-hw-test-manual"

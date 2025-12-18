@@ -32,10 +32,7 @@
           echo 1>&2 "Welcome to the development shell!"
           echo ""
           echo "This shell provides following helper commands:"
-          echo " - prefetch-plugins hosts/hetzci/release"
-          echo " - prefetch-plugins hosts/hetzci/prod"
-          echo " - prefetch-plugins hosts/hetzci/dev"
-          echo " - prefetch-plugins hosts/hetzci/vm"
+          echo " - prefetch-plugins hosts/hetzci"
           echo ""
         '';
 
