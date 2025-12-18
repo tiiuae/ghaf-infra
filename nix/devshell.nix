@@ -33,6 +33,7 @@
           echo ""
           echo "This shell provides following helper commands:"
           echo " - prefetch-plugins hosts/hetzci"
+          echo " - prefetch-plugins hosts/uae/azureci"
           echo ""
         '';
 
