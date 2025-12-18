@@ -36,8 +36,6 @@ hosts/hetzci/
 ├── vm
 |   ├── configuration.nix  # nixosConfiguration for the jenkins host
 |   ├── disk-config.nix    # disko nix configuration
-|   ├── plugins.json       # jenkins plugins installed on the given host
-|   ├── plugins.txt        # used to update/re-generate the `plugins.json`
 |   └── secrets.yaml       # encrypted sops secrets specific to given host
 ...
 ├── casc                   # Jenkins casc (configuration-as-code) configuration.
