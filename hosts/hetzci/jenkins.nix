@@ -100,6 +100,7 @@ in
     pluginsFile = lib.mkOption {
       type = lib.types.path;
       description = "Path to the plugins.json";
+      default = ./plugins.json;
     };
     withCachix = lib.mkOption {
       type = lib.types.bool;

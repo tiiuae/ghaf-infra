@@ -29,7 +29,6 @@
   hetzci = {
     jenkins = {
       envType = "release";
-      pluginsFile = ./plugins.json;
       url = "https://ci-release.vedenemo.dev";
       nodes.testagentHosts = [ "release" ];
       pipelines = [
