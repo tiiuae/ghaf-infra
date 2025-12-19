@@ -63,7 +63,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
           }
         """
         withEnv([
-          'PROVENANCE_BUILD_TYPE="https://github.com/tiiuae/ghaf-infra/blob/ea938e90/slsa/v1.0/L1/buildtype.md"',
+          'PROVENANCE_BUILD_TYPE=https://github.com/tiiuae/ghaf-infra/blob/ea938e90/slsa/v1.0/L1/buildtype.md',
           "PROVENANCE_BUILDER_ID=${env.JENKINS_URL}",
           "PROVENANCE_INVOCATION_ID=${env.BUILD_URL}",
           "PROVENANCE_TIMESTAMP_BEGIN=${build_beg}",
