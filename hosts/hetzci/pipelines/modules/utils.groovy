@@ -145,12 +145,13 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
               sh "${binary} /etc/jenkins/keys/tempDBkey.pem 'pkcs11:token=NetHSM;object=tempDBkey' '${diskPath}' ${outdir}"
             }
 
-            def keydir = "${outdir}/keys"
+            def keydir = "keys"
+            def keysLocation = "${outdir}/${keydir}"
             sh """
-              cp -r -L /etc/jenkins/keys/secboot ${keydir}
-              chmod +w ${keydir}
-              cp -L /etc/jenkins/enroll-secureboot-keys.sh ${keydir}/enroll.sh
-              tar -cvf ${outdir}/keys.tar ${keydir}
+              cp -r -L /etc/jenkins/keys/secboot ${keysLocation}
+              chmod +w ${keysLocation}
+              cp -L /etc/jenkins/enroll-secureboot-keys.sh ${keysLocation}/enroll.sh
+              tar -cvf ${keysLocation}.tar -C ${outdir} ${keydir}
             """
           }
         }
