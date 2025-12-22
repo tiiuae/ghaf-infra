@@ -11,10 +11,10 @@
 {
   imports = [
     ./disk-config.nix
-    ../azure-common.nix
-    ../../../builders/developers.nix
-    ../../../builders/builders-common.nix
-    ../../../builders/cross-compilation.nix
+    ../../azure-common.nix
+    ../../../../builders/developers.nix
+    ../../../../builders/builders-common.nix
+    ../../../../builders/cross-compilation.nix
     (modulesPath + "/profiles/qemu-guest.nix")
     inputs.disko.nixosModules.disko
     inputs.sops-nix.nixosModules.sops
@@ -24,8 +24,23 @@
     service-openssh
     team-devenv
     user-github
-    user-remote-build
   ]);
+
+  users.users = {
+    remote-build = {
+      description = "User for remote builds";
+      isNormalUser = true;
+      openssh.authorizedKeys.keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG23fArR5mkx9eCHVKZ2EN/fqxR5LcXKkz4e8DSwLwG+"
+      ];
+      extraGroups = [ ];
+    };
+  };
+
+  nix.settings.trusted-users = [
+    "@wheel"
+    "remote-build"
+  ];
 
   sops.defaultSopsFile = ./secrets.yaml;
 

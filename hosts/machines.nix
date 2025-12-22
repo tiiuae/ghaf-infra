@@ -146,6 +146,7 @@
 
   uae-azureci-prod = {
     ip = "74.162.68.205";
+    nebula_ip = "10.42.42.34";
     internal_ip = "10.51.16.4";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICgPq27pnOcNPRnYBCZpsOyHfRhhtWU2EiUQFUHZCqev";
   };
@@ -153,7 +154,7 @@
   uae-azureci-az86-1 = {
     ip = "20.46.48.30";
     internal_ip = "10.51.16.5";
-    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFmPjEbOd0J7FIECLL4bn8bBrlnpzvEzqgadjPUU7Pj5";
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG23fArR5mkx9eCHVKZ2EN/fqxR5LcXKkz4e8DSwLwG+";
   };
 
 }
