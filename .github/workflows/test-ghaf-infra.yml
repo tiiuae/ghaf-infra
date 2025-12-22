@@ -70,8 +70,8 @@ jobs:
         run: |
           if [ "${{ matrix.arch }}" == "x86_64-linux" ]; then
             BUILDER="${BUILDER_X86}"
-            # x86 targets: all nixosConfigurations except hetzarm, also build x86 devShell
-            FILTER='(^nixosConfigurations\.((?!hetzarm).)*$|^devShells.x86_64-linux.*$)'
+            # x86 targets: all nixosConfigurations except hetzarm, devShell, pre-commit checks
+            FILTER='(^nixosConfigurations\.((?!hetzarm).)*$|^devShells.x86_64-linux.*$|x86_64-linux\.pre-commit)'
           elif [ "${{ matrix.arch }}" == "aarch64-linux" ]; then
             BUILDER="${BUILDER_AARCH}"
             # aarch64 targets: hetzarm nixosConfiguration
@@ -81,8 +81,6 @@ jobs:
             exit 1
           fi
           OPTS="--remote $BUILDER --no-download --skip-cached --option accept-flake-config true"
-          # Build 'checks' on both x86 and aarch
-          ./scripts/nix-fast-build.sh -t "checks.${{ matrix.arch }}" -o "$OPTS"
           # Build arch-specific targets based on FILTER
           ./scripts/nix-fast-build.sh -f "$FILTER" -o "$OPTS"
         env:
