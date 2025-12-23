@@ -8,12 +8,14 @@
 }:
 {
   imports = [
+    ../nebula.nix
     ./disk-config.nix
     ../azure-common.nix
     ../remote-builders.nix
     ../../../hetzci/auth.nix
     ../../../hetzci/common.nix
     ../../../hetzci/jenkins.nix
+    ../../../hetzci/signing.nix
     (modulesPath + "/profiles/qemu-guest.nix")
     inputs.disko.nixosModules.disko
   ];
@@ -43,5 +45,6 @@
       clientID = "azureci-prod";
       domain = "ci-prod.uaenorth.cloudapp.azure.com";
     };
+    signing.proxy.enable = true;
   };
 }
