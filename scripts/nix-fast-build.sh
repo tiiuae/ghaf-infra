@@ -113,9 +113,7 @@ parallel() {
 }
 
 nix-fast-build() {
-  # nix-fast-build in nixos-unstable does not work correctly for our use-case,
-  # therefore, using the version from 24.11. TODO: file a bug in nix-fast-build.
-  nix run nixpkgs/nixos-24.11#nix-fast-build -- "$@"
+  nix run --inputs-from .# nixpkgs#nix-fast-build -- "$@"
 }
 
 jq() {
