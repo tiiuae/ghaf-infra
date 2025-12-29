@@ -127,6 +127,7 @@
           ./nix
           ./services
           ./users
+          ./scripts
         ];
       };
 }
