@@ -101,6 +101,9 @@ in
         ++ (with inputs.ci-yubi.packages.${pkgs.system}; [
           uefisign
           uefisigniso
+        ])
+        ++ (with self.packages.${pkgs.system}; [
+          verify-signature
         ]);
     }
   ];

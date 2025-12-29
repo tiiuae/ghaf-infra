@@ -236,13 +236,7 @@ pipeline {
             def sig_url = "${artifacts_url}/scs/${target}/${img_relpath}.sig"
             def sig_path = run_wget(sig_url, TMP_IMG_DIR)
             println "Downloaded SLSA signature file to workspace: ${sig_path}"
-            // Verify SLSA signature aborting if the verification fails
-            // openssl dgst cannot process a complete certificate in one go, but expects a raw public key
-            sh """
-              openssl x509 -pubkey -noout -in /etc/jenkins/GhafInfraSignECP256.pem > pubkey.pub
-              openssl dgst -verify pubkey.pub -signature ${sig_path} ${img_path}
-              rm pubkey.pub
-             """
+            sh "verify-signature image ${img_path} ${sig_path}"
           }
           // Uncompress
           if(img_path.endsWith(".zst")) {

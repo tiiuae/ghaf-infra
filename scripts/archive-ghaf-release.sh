@@ -21,8 +21,6 @@ RED='' NONE=''
 # options.
 STORAGE_URL="${STORAGE_URL:=https://hel1.your-objectstorage.com}"
 BUCKET="${BUCKET:=ghaf-artifacts-dev}"
-PUB_PROV_PATH="${PUB_PROV_PATH:=/etc/jenkins/GhafInfraSignProv.pub}"
-PUB_IMG_PATH="${PUB_IMG_PATH:=/etc/jenkins/GhafInfraSignECP256.pub}"
 ACCESS_KEY="${ACCESS_KEY:=}"
 SECRET_KEY="${SECRET_KEY:=}"
 
@@ -146,13 +144,13 @@ verify_signatures() {
     exit 1
   fi
   echo "[+] Verifying: $img"
-  if ! openssl dgst -verify "$PUB_IMG_PATH" -signature "$img_sig" "$img" >/dev/null; then
+  if ! verify-signature image "$img" "$img_sig"; then
     print_err "failed verifying image signature"
     print_err "  image: $img"
     print_err "  signature: $img_sig"
     exit 1
   fi
-  if ! openssl pkeyutl -verify -inkey "$PUB_PROV_PATH" -pubin -sigfile "$prov_sig" -in "$prov" -rawin >/dev/null; then
+  if ! verify-signature provenance "$prov" "$prov_sig"; then
     print_err "failed verifying provenance signature"
     print_err "  provenance: $prov"
     print_err "  signature: $prov_sig"
@@ -220,7 +218,6 @@ main() {
   exit_unless_command_exists mc
   exit_unless_command_exists tar
   exit_unless_command_exists realpath
-  exit_unless_command_exists openssl
   exit_unless_command_exists tree
 
   # Prepare the release archive from artifacts
