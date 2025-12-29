@@ -4,7 +4,7 @@
   buildGoModule,
   lib,
   makeWrapper,
-  openssl,
+  selfPkgs,
   ...
 }:
 buildGoModule {
@@ -15,6 +15,6 @@ buildGoModule {
   vendorHash = "sha256-0P/vmGoSYBSj4lLyw56vn8jEOP9innq53QXpLrXUKf0=";
   nativeBuildInputs = [ makeWrapper ];
   postInstall = ''
-    wrapProgram $out/bin/policy-checker --prefix PATH : "${openssl}/bin"
+    wrapProgram $out/bin/policy-checker --prefix PATH : "${selfPkgs.verify-signature}/bin"
   '';
 }

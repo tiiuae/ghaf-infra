@@ -171,9 +171,8 @@ in
           pkgs.nixos-rebuild
         ]
         ++ lib.optionals cfg.withArchiveArtifacts [
-          pkgs.openssl
-          pkgs.minio-client
           pkgs.tree
+          self.packages.${pkgs.system}.archive-ghaf-release
         ];
 
       environment = {
@@ -244,9 +243,6 @@ in
       })
       (lib.mkIf cfg.withArchiveArtifacts {
         "jenkins/casc/archiveArtifacts.yaml".source = ./casc/archiveArtifacts.yaml;
-        "jenkins/archive-ghaf-release.sh".source = "${self.outPath}/scripts/archive-ghaf-release.sh";
-        "jenkins/GhafInfraSignECP256.pub".source = "${self.outPath}/keys/GhafInfraSignECP256.pub";
-        "jenkins/GhafInfraSignProv.pub".source = "${self.outPath}/keys/GhafInfraSignProv.pub";
       })
     ];
 

@@ -2,10 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   perSystem =
-    { pkgs, ... }:
+    { pkgs, self', ... }:
     {
       packages = {
-        policy-checker = pkgs.callPackage ../pkgs/policy-checker { };
+        policy-checker = pkgs.callPackage ../pkgs/policy-checker {
+          selfPkgs = self'.packages;
+        };
         nethsm-exporter = pkgs.callPackage ../pkgs/nethsm-exporter { };
         pkcs11-proxy = pkgs.callPackage ../pkgs/pkcs11-proxy { };
         systemd-sbsign = pkgs.callPackage ../pkgs/systemd-sbsign { };

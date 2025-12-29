@@ -27,6 +27,7 @@ let
         brainstem
         inputs.robot-framework.packages.${pkgs.system}.ghaf-robot
         self.packages.${pkgs.system}.policy-checker
+        self.packages.${pkgs.system}.verify-signature
       ]
       ++ (with pkgs; [
         curl

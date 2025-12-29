@@ -12,7 +12,10 @@ properties([
       If left empty, uses the current latest artifacts from the 'ghaf-release-candidate' pipeline.
       Example:
       'https://ci-release.vedenemo.dev/artifacts/ghaf-release-candidate/20251210_081817797-commit_28fb2bdcbb558d02c33b01ef25a2250ff3fdc479/'
-      '''.stripIndent())
+      '''.stripIndent()),
+    string(name: 'BUCKET', defaultValue: null, description: '''
+      Override the object storage bucket to push to, leave empty to select automatically.
+      '''.stripIndent()),
   ])
 ])
 pipeline {
@@ -100,9 +103,13 @@ pipeline {
               ]) {
                 env.ACCESS_KEY="$ACCESS_KEY".trim()
                 env.SECRET_KEY="$SECRET_KEY".trim()
-                env.BUCKET=(env.CI_ENV == 'release' ? 'ghaf-artifacts' : 'ghaf-artifacts-dev')
+                if (params.BUCKET == null) {
+                  env.BUCKET=(env.CI_ENV == 'release' ? 'ghaf-artifacts' : 'ghaf-artifacts-dev')
+                } else {
+                  env.BUCKET = params.BUCKET
+                }
                 sh """
-                  /etc/jenkins/archive-ghaf-release.sh -a "$ARTIFACTS_DIR" -t "${params.GHAF_VERSION}"
+                  archive-ghaf-release -a "$ARTIFACTS_DIR" -t "${params.GHAF_VERSION}"
                 """
               }
             }

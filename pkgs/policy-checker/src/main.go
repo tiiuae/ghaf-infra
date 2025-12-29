@@ -24,8 +24,7 @@ type Criteria struct {
 }
 
 type SignaturePolicy struct {
-	Verify      bool
-	Certificate string
+	Verify bool
 }
 
 type TrustPolicy struct {
@@ -34,51 +33,25 @@ type TrustPolicy struct {
 	Criteria  []Criteria
 }
 
-func CheckOpensslExists() {
-	cmd := exec.Command("openssl", "--version")
-	err := cmd.Run()
-	if err != nil {
-		panic(err)
-	}
-}
-
-func SaveCertificate(policy SignaturePolicy) string {
-	fmt.Println(policy.Certificate)
-	f, err := os.CreateTemp("", "provenance-certificate.pem")
-	if err != nil {
-		panic(err)
-	}
-	_, err = f.Write([]byte(policy.Certificate))
-	if err != nil {
-		panic(err)
-	}
-	return f.Name()
-}
-
 func VerifySignature(provenance_file string, provenance_signature string, policy SignaturePolicy) {
 	fmt.Println("Verifying signature")
-
-	CheckOpensslExists()
-	certPath := SaveCertificate(policy)
-	defer os.Remove(certPath)
-
 	cmd := exec.Command(
-		"openssl", "pkeyutl", "-verify",
-		"-inkey", certPath, "-certin",
-		"-sigfile", provenance_signature,
-		"-rawin", "-in", provenance_file,
+		"verify-signature",
+		"provenance",
+		provenance_file,
+		provenance_signature,
 	)
 	var stderr bytes.Buffer
 	var stdout bytes.Buffer
 	cmd.Stderr = &stderr
 	cmd.Stdout = &stdout
 	err := cmd.Run()
+	fmt.Print(stdout.String())
 	if err != nil {
+		fmt.Println("Verification command failed")
 		fmt.Println(stderr.String())
 		os.Exit(1)
 	}
-
-	fmt.Print(stdout.String())
 }
 
 func provenanceCheck(provenance_file string, config TrustPolicy) {
