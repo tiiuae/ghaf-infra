@@ -68,6 +68,9 @@
     /run/current-system/sw/bin/udevadm trigger --subsystem-match=block
   '';
 
+  # disabled because there is not relay board configured
+  systemd.services.relay-board-metric-exporter.enable = false;
+
   # Details of the hardware devices connected to this host
   environment.etc."jenkins/test_config.json".text =
     let

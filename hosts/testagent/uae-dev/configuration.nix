@@ -58,6 +58,9 @@
     /run/current-system/sw/bin/udevadm trigger --subsystem-match=block
   '';
 
+  # disabled because there is not relay board configured
+  systemd.services.relay-board-metric-exporter.enable = false;
+
   # Details of the hardware devices connected to this host
   # placeholder configs from finland. configs in progress based on new uae targets
   environment.etc."jenkins/test_config.json".text =
