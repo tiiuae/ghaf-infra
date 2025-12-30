@@ -37,7 +37,6 @@
       "lenovo-x1"
       "dell-7330"
       "darter-pro"
-      "x1-sec-boot"
     ];
   };
 
@@ -102,10 +101,6 @@
     SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTFMF6RS", SYMLINK+="ttyDARTER", MODE="0666", GROUP="dialout"
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B72838C5549", SYMLINK+="ssdDARTER", MODE="0666", GROUP="dialout"
-
-    # Lenovo X1 Secure Boot
-    # SSD-drive
-    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B72838C560C", SYMLINK+="ssdSecBoot", MODE="0666", GROUP="dialout"
 
   '';
 
@@ -192,17 +187,6 @@
           usbhub_serial = "0x21AED8C1";
           ext_drive_by-id = "/dev/ssdDARTER";
           threads = 16;
-        };
-        X1-Secure-Boot = {
-          inherit location;
-          serial_port = "NONE";
-          device_ip_address = "172.18.16.15";
-          socket_ip_address = "NONE";
-          plug_type = "NONE";
-          switch_bot = "LenovoSecBoot";
-          usbhub_serial = "78493F26";
-          ext_drive_by-id = "/dev/ssdSecBoot";
-          threads = 20;
         };
       };
     };
