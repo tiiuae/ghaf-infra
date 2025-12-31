@@ -72,7 +72,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
         ]) {
           sh """
             attempt=1; max_attempts=5;
-            while ! provenance  ${artifacts_local_dir}/${it.target}/ --recursive --out ${it.target}.json; do
+            while ! provenance ${artifacts_local_dir}/${it.target}/ --recursive --out ${it.target}.json; do
               echo "provenance attempt=\$attempt failed"
               if (( \$attempt >= \$max_attempts )); then
                 exit 1
@@ -96,6 +96,19 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
             mv result ${artifacts_local_dir}/otapin.${ota_target}
             nix-store --add-root ${artifacts_local_dir}/otapin.${ota_target} \
               -r ${artifacts_local_dir}/otapin.${ota_target}
+          """
+        }
+      }
+      // Run sbomnix
+      if (it.get('sbom', false)) {
+        stage("SBOM ${shortname}") {
+          outdir = "${artifacts_local_dir}/scs/${it.target}"
+          sh """
+            mkdir -v -p ${outdir}
+            sbomnix ${artifacts_local_dir}/${it.target} \
+              --csv ${outdir}/sbom.csv \
+              --cdx ${outdir}/sbom.cdx.json \
+              --spdx ${outdir}/sbom.spdx.json
           """
         }
       }
