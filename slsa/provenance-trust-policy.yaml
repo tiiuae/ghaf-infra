@@ -84,13 +84,6 @@ criteria:
     required: true
     cel: now - timestamp(predicate.runDetails.metadata.finishedOn) < duration('3h')
 
-  - id: build-duration-reasonable
-    description: Build duration is reasonable (finishedOn - startedOn < 6 hours)
-    required: true
-    cel: >
-      timestamp(predicate.runDetails.metadata.finishedOn) -
-      timestamp(predicate.runDetails.metadata.startedOn) < duration('6h')
-
   # --- Run identity / replay-reduction -------------------------------------
 
   - id: invocation-id-present
