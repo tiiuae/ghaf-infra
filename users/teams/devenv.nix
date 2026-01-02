@@ -7,7 +7,6 @@
     ../fayad.nix
     ../hrosten.nix
     ../jrautiola.nix
-    ../vjuntunen.nix
     ../alextserepov.nix
   ];
 }

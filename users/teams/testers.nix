@@ -4,7 +4,6 @@
   imports = [
     ../leivos.nix
     ../mariia.nix
-    ../mikkos.nix
     ../milval.nix
   ];
 }

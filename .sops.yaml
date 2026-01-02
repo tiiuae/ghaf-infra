@@ -6,7 +6,6 @@ keys:
   - &flokli age1lvpj49ewyx9a4uxevl05wfevmqld2d25juc65acjqpmerzdpc9kq2kxdgs
   - &hrosten age1hc6hszepd5xezxkgd3yx74pn3scxjm5w6px48m4rq9yj7w6rke7q72zhgn
   - &jrautiola age1hszrldafdz09hzze4lgq58r0r66p4sjftn6q8z6h0leer77jhf4qd9vu9v
-  - &vjuntunen age194hljejmy63ph884cnuuume7z33txlkp9an7l3yt2n3sjjere52qkvlfju
   - &cazfi age10a2kt6f07urjv6ahutda3jgr73wferkcqjhkvukwm07eaaqyrqtsh08syf
   - &fayad age18t3gss4l6l629rd8s93eh3ctycu9vjnsftehy38c8tstu2gqycxs64t4sw
   - &ktu age1w0ymdztkr043a9gnxrx95k77ek5h58zza5q7jz9gqm63gz2chgcskkfwzt
@@ -47,28 +46,24 @@ creation_rules:
       - *testagent-prod
       - *jrautiola
       - *flokli
-      - *vjuntunen
       - *hrosten
   - path_regex: hosts/testagent/dev/secrets.yaml$
     key_groups:
     - age:
       - *testagent-dev
       - *jrautiola
-      - *vjuntunen
       - *hrosten
   - path_regex: hosts/testagent/prod2/secrets.yaml$
     key_groups:
     - age:
       - *testagent2-prod
       - *jrautiola
-      - *vjuntunen
       - *hrosten
   - path_regex: hosts/testagent/release/secrets.yaml$
     key_groups:
     - age:
       - *testagent-release
       - *jrautiola
-      - *vjuntunen
       - *hrosten
   - path_regex: hosts/builders/hetzarm/secrets.yaml$
     key_groups:
@@ -83,7 +78,6 @@ creation_rules:
       - *hetzarm-rel-1
       - *jrautiola
       - *hrosten
-      - *vjuntunen
       - *fayad
       - *cazfi
       - *ktu
@@ -107,7 +101,6 @@ creation_rules:
       - *hetz86-rel-1
       - *jrautiola
       - *hrosten
-      - *vjuntunen
       - *fayad
       - *cazfi
       - *ktu
@@ -117,7 +110,6 @@ creation_rules:
       - *hetz86-rel-2
       - *jrautiola
       - *hrosten
-      - *vjuntunen
       - *fayad
       - *cazfi
       - *ktu
@@ -173,7 +165,6 @@ creation_rules:
       - *hetzci-release
       - *hrosten
       - *jrautiola
-      - *vjuntunen
       - *fayad
       - *cazfi
       - *ktu
@@ -195,7 +186,6 @@ creation_rules:
       - *hetzci-vm
       - *hrosten
       - *jrautiola
-      - *vjuntunen
       - *fayad
       - *cazfi
       - *ktu
@@ -208,7 +198,6 @@ creation_rules:
       - *testagent-release
       - *testagent-uae-dev
       - *jrautiola
-      - *vjuntunen
       - *fayad
       - *hrosten
   - path_regex: hosts/testagent/uae-dev/secrets.yaml$
@@ -216,14 +205,12 @@ creation_rules:
     - age:
       - *testagent-uae-dev
       - *fayad
-      - *vjuntunen
       - *jrautiola
       - *hrosten
   - path_regex: hosts/nethsm-gateway/secrets.yaml$
     key_groups:
     - age:
       - *nethsm-gateway
-      - *vjuntunen
       - *jrautiola
       - *hrosten
       - *cazfi
@@ -232,7 +219,6 @@ creation_rules:
     key_groups:
     - age:
       - *fayad
-      - *vjuntunen
       - *jrautiola
       - *hrosten
       - *cazfi
@@ -240,7 +226,6 @@ creation_rules:
     key_groups:
     - age:
       - *fayad
-      - *vjuntunen
       - *jrautiola
       - *hrosten
       - *cazfi
@@ -267,7 +252,6 @@ creation_rules:
     - age:
       - *fayad
       - *jrautiola
-      - *vjuntunen
       - *hrosten
       - *cazfi
       - *uae-nethsm-gateway
