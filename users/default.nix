@@ -8,7 +8,6 @@
     user-ktu = import ./ktu.nix;
     user-avnik = import ./avnik.nix;
     user-flokli = import ./flokli.nix;
-    user-vjuntunen = import ./vjuntunen.nix;
     user-mariia = import ./mariia.nix;
     user-leivos = import ./leivos.nix;
     user-vunnyso = import ./vunnyso.nix;
@@ -17,7 +16,6 @@
     user-github = import ./github.nix;
     user-remote-build = import ./remote-build.nix;
     user-alextserepov = import ./alextserepov.nix;
-    user-mikkos = import ./mikkos.nix;
     user-milval = import ./milval.nix;
     user-vadikas = import ./vadikas.nix;
 
