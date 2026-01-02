@@ -204,6 +204,11 @@ pipeline {
             echo { \\\"Job\\\": \\\"${env.TARGET}\\\" } > ${TEST_CONFIG_DIR}/${BUILD_NUMBER}.json
             ls -la ${TEST_CONFIG_DIR}
           """
+          sh '''
+            if command -v materialize-fleet-enroll-secret >/dev/null 2>&1; then
+              /run/wrappers/bin/sudo materialize-fleet-enroll-secret || true
+            fi
+          '''
         }
       }
     }
