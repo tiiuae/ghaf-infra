@@ -67,7 +67,7 @@ in
     nixos-uae-lab-node1 = ./uae/lab/node1/configuration.nix;
     nixos-uae-nethsm-gateway = ./uae/nethsm-gateway/configuration.nix;
     nixos-uae-azureci-prod = ./uae/azureci/prod/configuration.nix;
-    nixos-uae-azureci-az86-1 = ./uae/azureci/az86-1/configuration.nix;
+    nixos-uae-azureci-az86-1 = ./uae/azureci/builders/az86-1/configuration.nix;
   };
 
   # Expose as flake.lib.mkNixOS.
