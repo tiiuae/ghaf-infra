@@ -92,7 +92,7 @@
           // {
             hostName = "hetz86-rel-2";
             system = "x86_64-linux";
-            maxJobs = 32;
+            maxJobs = 7;
             speedFactor = 12;
           }
         )
