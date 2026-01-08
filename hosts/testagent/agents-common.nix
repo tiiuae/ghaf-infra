@@ -66,6 +66,10 @@ let
     ${builtins.readFile ./relay_board_exporter.py}
   '';
 
+  materialize-fleet-enroll-secret = pkgs.writeShellScriptBin "materialize-fleet-enroll-secret" (
+    builtins.readFile ../../scripts/materialize-fleet-enroll-secret.sh
+  );
+
 in
 {
   imports = [
@@ -122,6 +126,7 @@ in
     connect-script
     disconnect-script
     relay-board-exporter
+    materialize-fleet-enroll-secret
   ]
   ++ (with self.packages.${pkgs.system}; [
     brainstem
