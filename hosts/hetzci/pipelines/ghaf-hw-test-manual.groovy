@@ -213,12 +213,19 @@ pipeline {
     stage('Setup') {
       steps {
         script {
+          env.TARGET = env.DEVICE_TAG
+          if(params.IMG_URL) {
+            def match = params.IMG_URL =~ /commit_[0-9a-f]{5,40}\/([^\/]+)/
+            if(match) {
+              env.TARGET = "${match.group(1)}"
+            }
+          }
           env.TEST_CONFIG_DIR = 'Robot-Framework/config'
           sh """
             mkdir -p ${TEST_CONFIG_DIR}
             rm -f ${TEST_CONFIG_DIR}/*.json
             ln -sv ${CONF_FILE_PATH} ${TEST_CONFIG_DIR}
-            echo { \\\"Job\\\": \\\"${env.DEVICE_TAG}\\\" } > ${TEST_CONFIG_DIR}/${BUILD_NUMBER}.json
+            echo { \\\"Job\\\": \\\"${env.TARGET}\\\" } > ${TEST_CONFIG_DIR}/${BUILD_NUMBER}.json
             ls -la ${TEST_CONFIG_DIR}
           """
         }
