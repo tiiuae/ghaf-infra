@@ -102,7 +102,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
       // Run sbomnix
       if (it.get('sbom', false)) {
         stage("SBOM ${shortname}") {
-          outdir = "${artifacts_local_dir}/scs/${it.target}"
+          def outdir = "${artifacts_local_dir}/scs/${it.target}"
           sh """
             mkdir -v -p ${outdir}
             sbomnix ${artifacts_local_dir}/${it.target} \
