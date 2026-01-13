@@ -279,6 +279,10 @@ in
         User = "jenkins";
         WorkingDirectory = "/var/lib/jenkins";
       };
+      path = with pkgs; [
+        coreutils
+        nix
+      ];
       script = builtins.readFile ./purge-jenkins-artifacts.sh;
     };
 
