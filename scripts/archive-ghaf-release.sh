@@ -164,9 +164,11 @@ prepare_artifacts() {
     " packages.aarch64-linux.nvidia-jetson-orin-agx-debug "
     " packages.aarch64-linux.nvidia-jetson-orin-nx-debug "
     " packages.x86_64-linux.lenovo-x1-carbon-gen11-debug "
+    " packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-installer "
     " packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64 "
     " packages.x86_64-linux.nvidia-jetson-orin-nx-debug-from-x86_64 "
     " packages.x86_64-linux.system76-darp11-b-debug "
+    " packages.x86_64-linux.system76-darp11-b-debug-installer "
   )
   artifactsdir="$1"
   for dir in "$artifactsdir"/*/; do
@@ -183,12 +185,16 @@ prepare_artifacts() {
     if [ -d "$artifactsdir/scs/$target_name" ]; then
       ln -s "$artifactsdir/scs/$target_name" "$TMPDIR/$target_name/scs"
     fi
+    # verify signatures
+    verify_signatures "$TMPDIR/$target_name"
     # test-results output
     if [ -d "$artifactsdir/test-results/$target_name" ]; then
       ln -s "$artifactsdir/test-results/$target_name" "$TMPDIR/$target_name/test-results"
     fi
-    # verify signatures
-    verify_signatures "$TMPDIR/$target_name"
+    # uefisigned output
+    if [ -d "$artifactsdir/uefisigned/$target_name" ]; then
+      ln -s "$artifactsdir/uefisigned/$target_name" "$TMPDIR/$target_name/uefisigned"
+    fi
     # Create a release tarball
     tarball=${target_name#"packages."} # strip possible 'packages.' prefix
     mkdir -p "$TMPDIR/archived"
