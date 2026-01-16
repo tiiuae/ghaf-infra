@@ -164,9 +164,11 @@ prepare_artifacts() {
     " packages.aarch64-linux.nvidia-jetson-orin-agx-debug "
     " packages.aarch64-linux.nvidia-jetson-orin-nx-debug "
     " packages.x86_64-linux.lenovo-x1-carbon-gen11-debug "
+    " packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-installer "
     " packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64 "
     " packages.x86_64-linux.nvidia-jetson-orin-nx-debug-from-x86_64 "
     " packages.x86_64-linux.system76-darp11-b-debug "
+    " packages.x86_64-linux.system76-darp11-b-debug-installer "
   )
   artifactsdir="$1"
   for dir in "$artifactsdir"/*/; do
