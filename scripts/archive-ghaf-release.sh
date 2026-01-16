@@ -185,12 +185,16 @@ prepare_artifacts() {
     if [ -d "$artifactsdir/scs/$target_name" ]; then
       ln -s "$artifactsdir/scs/$target_name" "$TMPDIR/$target_name/scs"
     fi
+    # verify signatures
+    verify_signatures "$TMPDIR/$target_name"
     # test-results output
     if [ -d "$artifactsdir/test-results/$target_name" ]; then
       ln -s "$artifactsdir/test-results/$target_name" "$TMPDIR/$target_name/test-results"
     fi
-    # verify signatures
-    verify_signatures "$TMPDIR/$target_name"
+    # uefisigned output
+    if [ -d "$artifactsdir/uefisigned/$target_name" ]; then
+      ln -s "$artifactsdir/uefisigned/$target_name" "$TMPDIR/$target_name/uefisigned"
+    fi
     # Create a release tarball
     tarball=${target_name#"packages."} # strip possible 'packages.' prefix
     mkdir -p "$TMPDIR/archived"
