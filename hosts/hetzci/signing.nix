@@ -9,7 +9,7 @@
   ...
 }:
 let
-  inherit (self.packages.${pkgs.system}) pkcs11-proxy systemd-sbsign;
+  inherit (self.packages.${pkgs.stdenv.hostPlatform.system}) pkcs11-proxy systemd-sbsign;
 
   # patch in the 1.1 update.
   # can be removed when we update to 25.11
@@ -98,11 +98,11 @@ in
         (with pkgs; [
           openssl
         ])
-        ++ (with inputs.ci-yubi.packages.${pkgs.system}; [
+        ++ (with inputs.ci-yubi.packages.${pkgs.stdenv.hostPlatform.system}; [
           uefisign
           uefisigniso
         ])
-        ++ (with self.packages.${pkgs.system}; [
+        ++ (with self.packages.${pkgs.stdenv.hostPlatform.system}; [
           verify-signature
         ]);
     }
