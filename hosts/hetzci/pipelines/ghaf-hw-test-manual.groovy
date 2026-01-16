@@ -87,7 +87,7 @@ def init() {
   } else if(params.IMG_URL.contains("orin-nx-")) {
     env.DEVICE_NAME = 'OrinNX1'
     env.DEVICE_TAG = 'orin-nx'
-  } else if(params.IMG_URL.contains("lenovo-x1-carbon-gen11-debug-signed")) {
+  } else if(params.IMG_URL.contains("uefisigned/packages.x86_64-linux.lenovo-x1")) {
     env.DEVICE_NAME = 'X1-Secure-Boot'
     env.DEVICE_TAG = 'x1-sec-boot'
   } else if(params.IMG_URL.contains("lenovo-x1-")) {
