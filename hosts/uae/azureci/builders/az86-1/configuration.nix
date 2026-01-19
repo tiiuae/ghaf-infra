@@ -11,10 +11,10 @@
 {
   imports = [
     ./disk-config.nix
-    ../azure-common.nix
-    ../../../builders/developers.nix
-    ../../../builders/builders-common.nix
-    ../../../builders/cross-compilation.nix
+    ../../azure-common.nix
+    ../../../../builders/developers.nix
+    ../../../../builders/builders-common.nix
+    ../../../../builders/cross-compilation.nix
     (modulesPath + "/profiles/qemu-guest.nix")
     inputs.disko.nixosModules.disko
     inputs.sops-nix.nixosModules.sops
@@ -24,7 +24,7 @@
     service-openssh
     team-devenv
     user-github
-    user-remote-build
+    user-uae-remote-build
   ]);
 
   sops.defaultSopsFile = ./secrets.yaml;

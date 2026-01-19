@@ -18,6 +18,7 @@
     user-alextserepov = import ./alextserepov.nix;
     user-milval = import ./milval.nix;
     user-vadikas = import ./vadikas.nix;
+    user-uae-remote-build = import ./uae-remote-build.nix;
 
     team-devenv = import ./teams/devenv.nix;
     team-testers = import ./teams/testers.nix;
