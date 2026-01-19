@@ -241,6 +241,7 @@ creation_rules:
       - *hetzci-release
       - *uae-lab-node1
       - *uae-nethsm-gateway
+      - *uae-azureci-prod
   - path_regex: hosts/uae/lab/node1/secrets.yaml$
     key_groups:
     - age:
@@ -262,7 +263,7 @@ creation_rules:
       - *jrautiola
       - *hrosten
       - *uae-azureci-prod
-  - path_regex: hosts/uae/azureci/az86-1/secrets.yaml$
+  - path_regex: hosts/uae/azureci/builders/az86-1/secrets.yaml$
     key_groups:
     - age:
       - *fayad

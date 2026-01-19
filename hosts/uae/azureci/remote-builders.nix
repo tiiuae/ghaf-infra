@@ -49,7 +49,7 @@
     extraConfig = lib.mkAfter ''
       Host az86-1.uaenorth.cloudapp.azure.com
       Hostname az86-1.uaenorth.cloudapp.azure.com
-      User remote-build
+      User uae-remote-build
       IdentityFile ${config.sops.secrets.azureci_builder_ssh_key.path}
     '';
   };
