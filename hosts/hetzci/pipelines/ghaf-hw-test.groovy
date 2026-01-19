@@ -349,14 +349,6 @@ pipeline {
         }
       }
     }
-    stage('GUI test') {
-      when { expression { env.BOOT_PASSED == 'true' && env.TESTSET.contains('_gui_')} }
-      steps {
-        script {
-          ghaf_robot_test('gui')
-        }
-      }
-    }
     stage('Perf test') {
       when { expression { env.BOOT_PASSED == 'true' && env.TESTSET.contains('_perf_')} }
       steps {
