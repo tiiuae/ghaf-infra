@@ -25,9 +25,19 @@ if command -v "bootctl" &>/dev/null; then
   sudo bootctl | head -n 8
 fi
 
-set -x
-sudo chattr -i /sys/firmware/efi/efivars/db-*
-sudo chattr -i /sys/firmware/efi/efivars/KEK-*
+run_chattr() {
+  VAR="$(find /sys/firmware/efi/efivars/ -maxdepth 1 -name "$1" -print -quit)"
+  if [[ -n $VAR ]]; then
+    echo "[+] Running chattr on $VAR"
+    sudo chattr -i "$VAR"
+  fi
+}
+
+run_chattr "db-*"
+run_chattr "KEK-*"
+
+echo "Updating efi variables"
 sudo efi-updatevar -c db.crt db
 sudo efi-updatevar -c KEK.crt KEK
 sudo efi-updatevar -f PK.auth PK
+echo "Success!"
