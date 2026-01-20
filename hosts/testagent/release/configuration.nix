@@ -116,6 +116,8 @@
         relay_serial_port = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A10KZMAN-if00-port0";
         OrinAGX1 = {
           inherit location;
+          device_id = "00-f6-e8-89-30";
+          netvm_hostname = "ghaf-4142434608";
           serial_port = "/dev/ttyAGX1";
           relay_number = 2;
           device_ip_address = "172.18.16.51";
@@ -128,6 +130,8 @@
         };
         OrinAGX64 = {
           inherit location;
+          device_id = "";
+          netvm_hostname = "";
           serial_port = "/dev/ttyAGX64";
           relay_number = 1;
           device_ip_address = "172.18.16.4";
@@ -140,6 +144,8 @@
         };
         LenovoX1-1 = {
           inherit location;
+          device_id = "00-29-66-d5-30";
+          netvm_hostname = "ghaf-0694605104";
           serial_port = "NONE";
           device_ip_address = "172.18.16.64";
           socket_ip_address = "NONE";
@@ -151,6 +157,8 @@
         };
         OrinNX1 = {
           inherit location;
+          device_id = "00-58-d5-f7-96";
+          netvm_hostname = "ghaf-1490417558";
           serial_port = "/dev/ttyORINNX1";
           relay_number = 3;
           device_ip_address = "172.18.16.46";
@@ -163,6 +171,8 @@
         };
         DarterPRO = {
           inherit location;
+          device_id = "00-d3-8a-29-b3";
+          netvm_hostname = "ghaf-3549047219";
           serial_port = "/dev/ttyDARTER";
           device_ip_address = "172.18.16.42";
           socket_ip_address = "NONE";

@@ -86,6 +86,8 @@
         relay_serial_port = "NONE";
         LenovoX1-1 = {
           inherit location;
+          device_id = "00-ed-ea-96-fb";
+          netvm_hostname = "ghaf-3991574267";
           serial_port = "NONE";
           device_ip_address = "172.18.16.66";
           socket_ip_address = "NONE";
@@ -97,6 +99,8 @@
         };
         Dell7330 = {
           inherit location;
+          device_id = "00-32-e0-be-f3";
+          netvm_hostname = "ghaf-0853589747";
           serial_port = "NONE";
           device_ip_address = "172.18.16.7";
           socket_ip_address = "NONE";
@@ -108,6 +112,8 @@
         };
         DarterPRO = {
           inherit location;
+          device_id = "00-6c-7e-14-0c";
+          netvm_hostname = "ghaf-1820201996";
           serial_port = "/dev/ttyDARTER";
           device_ip_address = "172.18.16.21";
           socket_ip_address = "NONE";
@@ -119,6 +125,8 @@
         };
         X1-Secure-Boot = {
           inherit location;
+          device_id = "00-5e-3c-a5-01";
+          netvm_hostname = "ghaf-1581032705";
           serial_port = "NONE";
           device_ip_address = "172.18.16.15";
           socket_ip_address = "NONE";
