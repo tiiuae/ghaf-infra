@@ -4,7 +4,8 @@
 # SPDX-FileCopyrightText: 2023 Nix community projects
 # SPDX-License-Identifier: MIT
 
-# pylint: disable=global-statement, too-many-locals, too-many-statements
+# pylint: disable=global-statement, too-many-locals
+# pylint: disable=too-many-statements, too-many-branches
 
 # This file originates from:
 # https://github.com/nix-community/infra/blob/c4c8c32b51/tasks.py
@@ -34,6 +35,7 @@ import socket
 import subprocess
 import sys
 import time
+import shutil
 from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
@@ -246,10 +248,66 @@ def install_release(c: Any) -> None:
     Example usage:
     inv install-release
     """
-    # Install release hosts
-    release_hosts = ["hetz86-rel-2", "hetzarm-rel-1", "hetzci-release"]
-    for host in release_hosts:
-        install(c, host, yes=True)
+    with TemporaryDirectory(delete=True) as t:
+        tmpdir = Path(t)
+        # Generate an ssh CA used for this release installation instance
+        ca = tmpdir / "ca/ssh_user_ca"
+        ca.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(
+            ["ssh-keygen", "-f", f"{ca}", "-C", "", "-N", ""],
+            stdout=subprocess.PIPE,
+            text=True,
+            check=True,
+        )
+        # CA public key will be copied to builders and declared in TrustedUserCAKeys
+        ca_pub = tmpdir / "builder/etc/ssh/keys/ssh_user_ca.pub"
+        ca_pub.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(
+            ["cp", f"{ca}.pub", f"{ca_pub}"],
+            stdout=subprocess.PIPE,
+            text=True,
+            check=True,
+        )
+        # Generate an ssh key and sign a certificate that allows ssh to x86 builder
+        user = "hetz86-rel-2-builder"
+        key = tmpdir / f"controller/etc/ssh/certs/{user}"
+        key.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(
+            ["ssh-keygen", "-f", f"{key}", "-C", "", "-N", ""],
+            stdout=subprocess.PIPE,
+            text=True,
+            check=True,
+        )
+        subprocess.run(
+            ["ssh-keygen", "-s", f"{ca}", "-I", "", "-n", f"{user}", f"{key}.pub"],
+            stdout=subprocess.PIPE,
+            text=True,
+            check=True,
+        )
+        # Generate an ssh key and sign a certificate that allows ssh to arm builder
+        user = "hetzarm-rel-1-builder"
+        key = tmpdir / f"controller/etc/ssh/certs/{user}"
+        key.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(
+            ["ssh-keygen", "-f", f"{key}", "-C", "", "-N", ""],
+            stdout=subprocess.PIPE,
+            text=True,
+            check=True,
+        )
+        subprocess.run(
+            ["ssh-keygen", "-s", f"{ca}", "-I", "", "-n", f"{user}", f"{key}.pub"],
+            stdout=subprocess.PIPE,
+            text=True,
+            check=True,
+        )
+        # Install builders and the controller copying the relevant ssh trusted CA
+        # public key (builders) and the ssh keys (controller) from tmpdir to host.
+        # The temporary ssh CA private key gets removed when tmpdir is deleted
+        # on exiting this code block.
+        install(c, "hetz86-rel-2", yes=True, copy_dir=tmpdir / "builder")
+        install(c, "hetzarm-rel-1", yes=True, copy_dir=tmpdir / "builder")
+        install(c, "hetzci-release", yes=True, copy_dir=tmpdir / "controller")
+
     # Connect testagent-release to the installed release jenkins controller
     h = get_deploy_host("testagent-release")
     try:
@@ -265,7 +323,13 @@ def install_release(c: Any) -> None:
 
 
 @task
-def install(c: Any, alias: str, user: str | None = None, yes: bool = False) -> None:
+def install(
+    c: Any,
+    alias: str,
+    user: str | None = None,
+    yes: bool = False,
+    copy_dir: str | None = None,
+) -> None:
     """
     Install `alias` configuration using nixos-anywhere, deploying host private key.
     Note: this will automatically partition and re-format the target hard drive,
@@ -276,6 +340,7 @@ def install(c: Any, alias: str, user: str | None = None, yes: bool = False) -> N
     Example usage:
     inv install hetzci-release --yes
     """
+    logger.info(f"Installing '{alias}'")
     h = get_deploy_host(alias, user)
 
     # Map host alias to kexec image tarball used for the given host during nixos-anywhere
@@ -365,6 +430,8 @@ def install(c: Any, alias: str, user: str | None = None, yes: bool = False) -> N
     command += f"{target.nixosconfig}.config.system.build.toplevel"
     c.run(command)
     with TemporaryDirectory() as tmpdir:
+        if copy_dir:
+            shutil.copytree(Path(copy_dir), Path(tmpdir), dirs_exist_ok=True)
         decrypt_host_key(target, tmpdir)
         ssh_target = f"{h.user}@{h.host}" if h.user is not None else h.host
         kexec = f"--kexec {kexec_images[alias]}" if alias in kexec_images else ""

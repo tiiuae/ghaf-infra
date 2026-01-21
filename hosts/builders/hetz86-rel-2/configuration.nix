@@ -50,4 +50,11 @@
   };
 
   nix.settings.cores = 32; # default is 0 -> all 48 cores
+
+  users.users.hetz86-rel-2-builder = {
+    isNormalUser = true;
+  };
+  nix.settings.trusted-users = [
+    "hetz86-rel-2-builder"
+  ];
 }

@@ -3,7 +3,6 @@
 {
   self,
   lib,
-  config,
   machines,
   ...
 }:
@@ -84,8 +83,6 @@
             "benchmark"
             "big-parallel"
           ];
-          sshUser = "hetzci-release";
-          sshKey = config.sops.secrets.ssh_private_key.path;
         };
       in
       [
@@ -96,6 +93,8 @@
             system = "x86_64-linux";
             maxJobs = 7;
             speedFactor = 12;
+            sshUser = "hetz86-rel-2-builder";
+            sshKey = "/etc/ssh/certs/hetz86-rel-2-builder";
           }
         )
         (
@@ -105,6 +104,8 @@
             system = "aarch64-linux";
             maxJobs = 16;
             speedFactor = 2;
+            sshUser = "hetzarm-rel-1-builder";
+            sshKey = "/etc/ssh/certs/hetzarm-rel-1-builder";
           }
         )
       ];

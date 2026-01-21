@@ -14,16 +14,8 @@
   nix.settings.extra-trusted-public-keys = lib.mkForce [ "" ];
   nix.settings.extra-substituters = lib.mkForce [ "" ];
   nix.settings.trusted-substituters = lib.mkForce [ "" ];
-
-  # hetzci-release can use this as remote builder
-  users.users.hetzci-release = {
-    isNormalUser = true;
-    openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIO9k4r3MqFXlatxzDwZash9U8R8dRhlxyHI050hsCFy"
-    ];
+  nix.settings.trusted-users = [ "@wheel" ];
+  services.openssh = {
+    extraConfig = "TrustedUserCAKeys /etc/ssh/keys/ssh_user_ca.pub";
   };
-  nix.settings.trusted-users = [
-    "@wheel"
-    "hetzci-release"
-  ];
 }
