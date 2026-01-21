@@ -59,6 +59,7 @@
             wget
             nebula
             openssl
+            openssh
             gnutls
             minio-client
             tree

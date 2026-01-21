@@ -46,6 +46,13 @@
     logs.enable = true;
   };
 
+  users.users.hetzarm-rel-1-builder = {
+    isNormalUser = true;
+  };
+  nix.settings.trusted-users = [
+    "hetzarm-rel-1-builder"
+  ];
+
   # Nixos-anywhere kexec switch fails on hetzner cloud arm VMs without this
   boot.kernelPackages = pkgs.linuxPackages_latest;
 }
