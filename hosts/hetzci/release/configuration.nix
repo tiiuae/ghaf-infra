@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 {
+  self,
   lib,
   config,
   machines,
@@ -14,6 +15,7 @@
     ../cloud.nix
     ../auth.nix
     ../signing.nix
+    self.nixosModules.user-ctsopokis
   ];
 
   system.stateVersion = "25.05";

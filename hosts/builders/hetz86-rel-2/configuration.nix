@@ -21,6 +21,7 @@
     common
     service-openssh
     team-devenv
+    user-ctsopokis
   ]);
 
   system.stateVersion = "25.05";

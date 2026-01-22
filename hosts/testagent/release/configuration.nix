@@ -15,6 +15,7 @@
     team-devenv
     team-testers
     user-flokli
+    user-ctsopokis
   ]);
 
   sops = {
