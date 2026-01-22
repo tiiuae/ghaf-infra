@@ -127,11 +127,6 @@
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPP2xRl4jtu1ARpyj9W3uEo+GACLywosKhal432CgK+H";
   };
 
-  testagent-uae-dev = {
-    ip = "172.19.16.12";
-    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHO30maPQbVUqURaur8ze2S0vrrUivj2QdItIHsK75RS";
-  };
-
   nethsm-gateway = {
     ip = "192.168.70.11";
     nebula_ip = "10.42.42.20";
@@ -161,6 +156,11 @@
     ip = "20.46.48.30";
     internal_ip = "10.51.16.5";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG23fArR5mkx9eCHVKZ2EN/fqxR5LcXKkz4e8DSwLwG+";
+  };
+
+  uae-testagent-prod = {
+    ip = "172.20.16.24";
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHO30maPQbVUqURaur8ze2S0vrrUivj2QdItIHsK75RS";
   };
 
 }

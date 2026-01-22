@@ -49,6 +49,7 @@ let
     uae-nethsm-gateway = mkDeployment "uae-nethsm-gateway" machines.uae-nethsm-gateway.ip;
     uae-azureci-prod = mkDeployment "uae-azureci-prod" machines.uae-azureci-prod.ip;
     uae-azureci-az86-1 = mkDeployment "uae-azureci-az86-1" machines.uae-azureci-az86-1.ip;
+    uae-testagent-prod = mkDeployment "uae-testagent-prod" machines.uae-testagent-prod.ip;
   };
 
   aarch64-nodes = {

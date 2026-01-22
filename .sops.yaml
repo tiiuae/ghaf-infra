@@ -39,6 +39,7 @@ keys:
   - &uae-nethsm-gateway age1yqpkn74zacvyujqadz5cm90e6tz8ws2kphladkyvtfrv65x5autqe9404a
   - &uae-azureci-prod age13jsxg67hfnk7pqrf0tsnqrdxs8ktly4ke2vqwsx0c0lqytlwd98s58rkna
   - &uae-azureci-az86-1 age1rcwsekkzc2x35kv3qcg6dvgjsl28nxhes4e9g8l5gue54tx2qp7s53wclg
+  - &uae-testagent-prod age1sl8yrksst9aq2fhg8t8h7tysgzm6ks00n9hxsvj8x6frsnrskd4szerqez
 
 creation_rules:
   - path_regex: hosts/testagent/prod/secrets.yaml$
@@ -282,3 +283,17 @@ creation_rules:
       - *jrautiola
       - *hrosten
       - *uae-azureci-az86-1
+  - path_regex: hosts/uae/testagent/prod/secrets.yaml$
+    key_groups:
+    - age:
+      - *fayad
+      - *jrautiola
+      - *hrosten
+      - *uae-testagent-prod
+  - path_regex: hosts/uae/testagent/credentials.yaml$
+    key_groups:
+    - age:
+      - *uae-testagent-prod
+      - *jrautiola
+      - *fayad
+      - *hrosten
