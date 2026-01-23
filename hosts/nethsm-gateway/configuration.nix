@@ -75,15 +75,15 @@
         local.file_match "nethsm" {
         	path_targets = [{
         		__address__ = "localhost",
-        		__path__    = "${config.nethsm.logging.file}",
-        		host        = "${config.networking.hostName}",
-        		job         = "nethsm-log",
+        		__path__ = "${config.nethsm.logging.file}",
+        		host = "${config.networking.hostName}",
+        		job = "nethsm-log",
         	}]
         }
 
         loki.source.file "nethsm" {
-        	targets               = local.file_match.nethsm.targets
-        	forward_to            = [loki.write.default.receiver]
+        	targets = local.file_match.nethsm.targets
+        	forward_to = [loki.write.default.receiver]
         }
       '';
   };

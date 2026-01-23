@@ -10,10 +10,9 @@
 let
   cfg = config.nebula;
 
-  networkName = "vedenemo";
   lighthouseAddress = "10.42.42.1";
   listenPort = 4242; # UDP port Nebula will use for sending/receiving traffic and for handshakes
-  serviceUser = config.systemd.services."nebula@${networkName}".serviceConfig.User or "root";
+  serviceUser = config.systemd.services."nebula@${cfg.networkName}".serviceConfig.User or "root";
 in
 {
   options.nebula = {
@@ -38,6 +37,11 @@ in
       readOnly = true;
       description = "Used to access the user that the nebula service is run as, don't change";
     };
+
+    networkName = lib.mkOption {
+      type = lib.types.str;
+      default = "vedenemo";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -52,7 +56,7 @@ in
       dig
     ];
 
-    services.nebula.networks."${networkName}" = {
+    services.nebula.networks."${cfg.networkName}" = {
       enable = true;
 
       inherit (cfg) cert key isLighthouse;
@@ -115,7 +119,7 @@ in
 
     networking.firewall = {
       # don't stack nixos firewall on top of the nebula firewall
-      trustedInterfaces = [ "nebula.${networkName}" ];
+      trustedInterfaces = [ "nebula.${cfg.networkName}" ];
       # globally open port 53 to serve DNS
       allowedUDPPorts = lib.mkIf cfg.isLighthouse [ 53 ];
     };
