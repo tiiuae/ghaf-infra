@@ -101,6 +101,7 @@ in
         ++ (with inputs.ci-yubi.packages.${pkgs.stdenv.hostPlatform.system}; [
           uefisign
           uefisigniso
+          uefisign-simple
         ])
         ++ (with self.packages.${pkgs.stdenv.hostPlatform.system}; [
           verify-signature

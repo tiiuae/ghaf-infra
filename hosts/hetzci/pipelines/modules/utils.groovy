@@ -147,8 +147,13 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
             def outdir = run_cmd("dirname '${diskPath}' | sed 's/${it.target}/uefisigned\\/${it.target}/'")
             sh "mkdir -v -p ${outdir}"
 
+            def signer = "uefisign"
+            if (it.target.contains("nvidia-jetson-orin")) {
+              signer = "uefisign-simple"
+            }
+
             lock('signing') {
-              sh "uefisign /etc/jenkins/keys/tempDBkey.pem 'pkcs11:token=NetHSM;object=tempDBkey' '${diskPath}' ${outdir}"
+              sh "${signer} /etc/jenkins/keys/tempDBkey.pem 'pkcs11:token=NetHSM;object=tempDBkey' '${diskPath}' ${outdir}"
             }
 
             def keydir = "keys"
