@@ -311,7 +311,13 @@ def install_release(c: Any) -> None:
     # Connect testagent-release to the installed release jenkins controller
     h = get_deploy_host("testagent-release")
     try:
-        h.run(cmd="connect https://ci-release.vedenemo.dev", timeout=10)
+        cmd = (
+            "retries=3; for i in $(seq 0 $retries); do "
+            "  connect https://ci-release.vedenemo.dev && exit 0; "
+            "  if (( $i < (( $retries-1 )) )); then sleep 5; else exit 1; fi; "
+            "done"
+        )
+        h.run(cmd=cmd, timeout=20)
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
         logger.info(
             "Failed connecting 'testagent-release' to the installed release environment. "
