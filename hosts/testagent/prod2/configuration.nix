@@ -121,7 +121,7 @@
           socket_ip_address = "NONE";
           plug_type = "NONE";
           switch_bot = "NONE";
-          usbhub_serial = "92D8AEB7";
+          usbhub_serial = "FD70061F";
           ext_drive_by-id = "/dev/ssdORINAGX1";
           threads = 12;
         };
