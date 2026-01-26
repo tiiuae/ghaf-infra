@@ -311,9 +311,9 @@ in
         isNormalUser = true;
         openssh.authorizedKeys.keys = [ machines.testagent-release.publicKey ];
       };
-      testagent-uae-dev = {
+      uae-testagent-prod = {
         isNormalUser = true;
-        openssh.authorizedKeys.keys = [ machines.testagent-uae-dev.publicKey ];
+        openssh.authorizedKeys.keys = [ machines.uae-testagent-prod.publicKey ];
       };
     };
   };
