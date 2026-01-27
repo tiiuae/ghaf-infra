@@ -5,5 +5,6 @@
     ../leivos.nix
     ../mariia.nix
     ../milval.nix
+    ../pavelf.nix
   ];
 }

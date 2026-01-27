@@ -20,6 +20,7 @@
     user-vadikas = import ./vadikas.nix;
     user-uae-remote-build = import ./uae-remote-build.nix;
     user-ctsopokis = import ./ctsopokis.nix;
+    user-pavelf = import ./pavelf.nix;
 
     team-devenv = import ./teams/devenv.nix;
     team-testers = import ./teams/testers.nix;

@@ -248,6 +248,13 @@ let
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIstCgKDX1vVWI8MgdVwsEMhju6DQJubi3V0ziLcU/2h vunny.sodhi@unikie.com"
       ];
     }
+    {
+      desc = "Pavel Fedorov";
+      name = "pavelf";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH7MQKZ4CCzQ3aLm6Orh0NM+rTz8ykcmZdJg14yI0Rkc"
+      ];
+    }
   ];
 in
 {
