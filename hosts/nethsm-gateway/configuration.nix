@@ -21,6 +21,7 @@
     service-openssh
     service-monitoring
     service-nebula
+    user-ctsopokis
   ]);
 
   sops = {
