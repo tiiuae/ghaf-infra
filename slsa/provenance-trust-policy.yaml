@@ -14,11 +14,14 @@ criteria:
     cel: now - timestamp(predicate.runDetails.metadata.finishedOn) < duration('3h')
 
   - id: builder-id-hetzner
-    description: Built on Hetzner CI dev, prod or release
+    description: Built on Hetzner CI dev, prod, release or UAE Azure CI dev, prod, release
     required: true
     cel: |
       predicate.runDetails.builder.id in [
         'https://ci-dev.vedenemo.dev/',
         'https://ci-prod.vedenemo.dev/',
-        'https://ci-release.vedenemo.dev/'
+        'https://ci-release.vedenemo.dev/',
+        'https://ci-prod.uaenorth.cloudapp.azure.com/',
+        'https://ci-dev.uaenorth.cloudapp.azure.com/',
+        'https://ci-release.uaenorth.cloudapp.azure.com/'
       ]
