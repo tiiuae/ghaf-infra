@@ -72,8 +72,7 @@
     robot-framework = {
       url = "github:tiiuae/ci-test-automation";
       inputs = {
-        # requires 25.05
-        # nixpkgs.follows = "nixpkgs";
+        nixpkgs.follows = "nixpkgs";
         flake-utils.follows = "flake-utils";
       };
     };
