@@ -91,7 +91,7 @@ pipeline {
             }
             if (params.nvidia_jetson_orin_nx_debug) {
               TARGETS.push(
-                [ target: "packages.aarch64-linux.nvidia-jetson-orin-nx-debug", testset: params.TESTSET ])
+                [ target: "packages.aarch64-linux.nvidia-jetson-orin-nx-debug", uefisign: params.UEFISIGN, testset: params.TESTSET ])
             }
             if (params.system76_darp11_b_debug) {
               TARGETS.push(
