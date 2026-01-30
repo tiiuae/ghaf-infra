@@ -9,6 +9,8 @@
   ...
 }:
 let
+  cfg = config.hetzci.signing;
+
   inherit (self.packages.${pkgs.stdenv.hostPlatform.system}) pkcs11-proxy systemd-sbsign;
 
   # patch in the 1.1 update.
@@ -26,7 +28,7 @@ let
     };
   };
 
-  proxyConfig = {
+  proxyEnv = {
     PKCS11_PROXY_MODULE = "${pkcs11-proxy}/lib/libpkcs11-proxy.so";
     PKCS11_PROXY_TLS_PSK_FILE = config.sops.secrets.tls-pks-file.path;
     PKCS11_PROXY_SOCKET = "tls://nethsm-gateway.sumu.vedenemo.dev:2345";
@@ -56,7 +58,23 @@ let
         ''
     );
   };
-  cfg = config.hetzci.signing;
+
+  signingPackages =
+    (with pkgs; [
+      opensc # pkcs11-tool
+      openssl
+    ])
+    ++ (with inputs.ci-yubi.packages.${pkgs.stdenv.hostPlatform.system}; [
+      uefisign
+      uefisigniso
+      uefisign-simple
+    ])
+    ++ (with self.packages.${pkgs.stdenv.hostPlatform.system}; [
+      verify-signature
+    ])
+    ++ [
+      systemd-sbsign
+    ];
 in
 {
   options.hetzci.signing = {
@@ -77,8 +95,8 @@ in
         };
       };
 
-      environment.variables = proxyConfig;
-      services.jenkins.environment = proxyConfig;
+      environment.variables = proxyEnv;
+      services.jenkins.environment = proxyEnv;
     })
     {
       environment.etc = {
@@ -87,25 +105,8 @@ in
         "jenkins/enroll-secureboot-keys.sh".source = "${self.outPath}/scripts/enroll-secureboot-keys.sh";
       };
 
-      environment.systemPackages =
-        (with pkgs; [
-          opensc # pkcs11-tool
-          openssl
-        ])
-        ++ [ systemd-sbsign ];
-
-      services.jenkins.packages =
-        (with pkgs; [
-          openssl
-        ])
-        ++ (with inputs.ci-yubi.packages.${pkgs.stdenv.hostPlatform.system}; [
-          uefisign
-          uefisigniso
-          uefisign-simple
-        ])
-        ++ (with self.packages.${pkgs.stdenv.hostPlatform.system}; [
-          verify-signature
-        ]);
+      environment.systemPackages = signingPackages;
+      services.jenkins.packages = signingPackages;
     }
   ];
 }
