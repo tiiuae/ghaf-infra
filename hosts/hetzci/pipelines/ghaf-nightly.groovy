@@ -45,7 +45,7 @@ def TARGETS = [
     testset: '_relayboot_regression_', sbom: true,
   ],
   [ target: "packages.aarch64-linux.nvidia-jetson-orin-nx-debug",
-    testset: '_relayboot_regression_', sbom: true,
+    testset: '_relayboot_regression_', uefisign: true, sbom: true,
   ],
   [ target: "packages.x86_64-linux.nvidia-jetson-orin-nx-debug-from-x86_64",
     testset: '_relayboot_regression_', sbom: true,
