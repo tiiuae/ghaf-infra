@@ -76,10 +76,6 @@
           ext_drive_by-id = "/dev/ssdX1";
           threads = 20;
         };
-        measurement_agent = {
-          inherit location;
-          device_ip_address = "172.18.16.10";
-        };
       };
     };
 }
