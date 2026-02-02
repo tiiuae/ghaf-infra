@@ -44,46 +44,48 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
         build_end = run_cmd('date +%s')
       }
       // Provenance
-      stage("Provenance ${shortname}") {
-        def ext_params = """
-          {
-            "target": {
-              "name": "${it.target}",
-              "repository": "${target_repo}",
-              "ref": "${target_commit}"
-            },
-            "workflow": {
-              "name": "${host_name}",
-              "repository": "https://github.com/tiiuae/ghaf-infra",
-              "ref": "${host_revision}"
-            },
-            "job": "${env.JOB_NAME}",
-            "jobParams": ${JsonOutput.toJson(params)},
-            "buildRun": "${env.BUILD_ID}"
-          }
-        """
-        withEnv([
-          'PROVENANCE_BUILD_TYPE=https://github.com/tiiuae/ghaf-infra/blob/ea938e90/slsa/v1.0/L1/buildtype.md',
-          "PROVENANCE_BUILDER_ID=${env.JENKINS_URL}",
-          "PROVENANCE_INVOCATION_ID=${env.BUILD_URL}",
-          "PROVENANCE_TIMESTAMP_BEGIN=${build_beg}",
-          "PROVENANCE_TIMESTAMP_FINISHED=${build_end}",
-          "PROVENANCE_EXTERNAL_PARAMS=${ext_params}"
-        ]) {
-          sh """
-            attempt=1; max_attempts=5;
-            while ! provenance ${artifacts_local_dir}/${it.target}/ --recursive --out ${it.target}.json; do
-              echo "provenance attempt=\$attempt failed"
-              if (( \$attempt >= \$max_attempts )); then
-                exit 1
-              fi
-              attempt=\$(( \$attempt + 1 ))
-              sleep 30
-            done
-            echo "provenance attempt=\$attempt passed"
-            mkdir -v -p ${artifacts_local_dir}/scs/${it.target}
-            cp ${it.target}.json ${artifacts_local_dir}/scs/${it.target}/provenance.json
+      if (it.get('provenance', true)) {
+        stage("Provenance ${shortname}") {
+          def ext_params = """
+            {
+              "target": {
+                "name": "${it.target}",
+                "repository": "${target_repo}",
+                "ref": "${target_commit}"
+              },
+              "workflow": {
+                "name": "${host_name}",
+                "repository": "https://github.com/tiiuae/ghaf-infra",
+                "ref": "${host_revision}"
+              },
+              "job": "${env.JOB_NAME}",
+              "jobParams": ${JsonOutput.toJson(params)},
+              "buildRun": "${env.BUILD_ID}"
+            }
           """
+          withEnv([
+            'PROVENANCE_BUILD_TYPE=https://github.com/tiiuae/ghaf-infra/blob/ea938e90/slsa/v1.0/L1/buildtype.md',
+            "PROVENANCE_BUILDER_ID=${env.JENKINS_URL}",
+            "PROVENANCE_INVOCATION_ID=${env.BUILD_URL}",
+            "PROVENANCE_TIMESTAMP_BEGIN=${build_beg}",
+            "PROVENANCE_TIMESTAMP_FINISHED=${build_end}",
+            "PROVENANCE_EXTERNAL_PARAMS=${ext_params}"
+          ]) {
+            sh """
+              attempt=1; max_attempts=5;
+              while ! provenance ${artifacts_local_dir}/${it.target}/ --recursive --out ${it.target}.json; do
+                echo "provenance attempt=\$attempt failed"
+                if (( \$attempt >= \$max_attempts )); then
+                  exit 1
+                fi
+                attempt=\$(( \$attempt + 1 ))
+                sleep 30
+              done
+              echo "provenance attempt=\$attempt passed"
+              mkdir -v -p ${artifacts_local_dir}/scs/${it.target}
+              cp ${it.target}.json ${artifacts_local_dir}/scs/${it.target}/provenance.json
+            """
+          }
         }
       }
       // Build OTA pin
@@ -131,14 +133,16 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
             }
           }
         }
-        stage("Sign provenance ${shortname}") {
-          lock('signing') {
-            sh """
-              openssl pkeyutl -sign -rawin \
-                -inkey "pkcs11:token=NetHSM;object=GhafInfraSignProv" \
-                -out ${artifacts_local_dir}/scs/${it.target}/provenance.json.sig \
-                -in ${artifacts_local_dir}/scs/${it.target}/provenance.json
-            """
+        if (it.get('provenance', true)) {
+          stage("Sign provenance ${shortname}") {
+            lock('signing') {
+              sh """
+                openssl pkeyutl -sign -rawin \
+                  -inkey "pkcs11:token=NetHSM;object=GhafInfraSignProv" \
+                  -out ${artifacts_local_dir}/scs/${it.target}/provenance.json.sig \
+                  -in ${artifacts_local_dir}/scs/${it.target}/provenance.json
+              """
+            }
           }
         }
         if (it.get('uefisign', false) || it.get('uefisigniso', false)) {
