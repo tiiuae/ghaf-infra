@@ -55,6 +55,15 @@ def LAPTOP_RELEASE_TARGETS = [
   ],
 ]
 
+def MINIMAL_BUILD_TARGETS = [
+  [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug",
+    testset: null, provenance: false,
+  ],
+  [ target: "packages.aarch64-linux.nvidia-jetson-orin-agx-debug",
+    testset: null, provenance: false,
+  ],
+]
+
 properties([
   githubProjectProperty(displayName: '', projectUrlStr: REPO_URL),
   parameters([
@@ -69,7 +78,7 @@ properties([
         script: [
           classpath: [],
           sandbox: true,
-          script: "return ['All targets','Only laptop targets']"
+          script: "return ['All targets','Only laptop targets','Minimal build targets (cache warming)']"
         ]
       ]
     ],
@@ -117,6 +126,9 @@ pipeline {
             } else if (params.RELEASE_TARGETS_SET.contains('Only laptop targets')){
               println('Only laptop release targets selected')
               PIPELINE = MODULES.utils.create_pipeline(LAPTOP_RELEASE_TARGETS)
+            } else if (params.RELEASE_TARGETS_SET.contains('Minimal build targets')){
+              println('Minimal build targets selected')
+              PIPELINE = MODULES.utils.create_pipeline(MINIMAL_BUILD_TARGETS)
             } else {
               error('Release targets pre-set was not selected')
             }
