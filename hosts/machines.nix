@@ -65,7 +65,7 @@
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG68NdmOw3mhiBZwDv81dXitePoc1w//p/LpsHHA8QRp";
   };
 
-  hetz86-rel-1 = {
+  hetz86-dbg-1 = {
     ip = "46.62.194.110";
     internal_ip = "10.0.0.11";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGg4+l1ln0HycoqkN0vbwvU+fZBniozhLq0Z8hGsGfjx";

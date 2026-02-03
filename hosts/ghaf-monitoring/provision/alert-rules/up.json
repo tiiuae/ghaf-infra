@@ -12,7 +12,7 @@
       "datasourceUid": "prometheus",
       "model": {
         "editorMode": "code",
-        "expr": "up{machine_name!~\"hetzci-release|hetz86-rel-2|hetzarm-rel-1|hetz86-rel-1\"}",
+        "expr": "up{machine_name!~\"hetzci-release|hetz86-rel-2|hetzarm-rel-1\"}",
         "instant": true,
         "intervalMs": 1000,
         "legendFormat": "__auto",

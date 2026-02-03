@@ -43,7 +43,7 @@ let
     hetzci-dev = mkDeployment "hetzci-dev" machines.hetzci-dev.ip;
     hetz86-1 = mkDeployment "hetz86-1" machines.hetz86-1.ip;
     hetz86-builder = mkDeployment "hetz86-builder" machines.hetz86-builder.ip;
-    hetz86-rel-1 = mkDeployment "hetz86-rel-1" machines.hetz86-rel-1.ip;
+    hetz86-dbg-1 = mkDeployment "hetz86-dbg-1" machines.hetz86-dbg-1.ip;
     hetz86-rel-2 = mkDeployment "hetz86-rel-2" machines.hetz86-rel-2.ip;
     uae-lab-node1 = mkDeployment "uae-lab-node1" machines.uae-lab-node1.ip;
     uae-nethsm-gateway = mkDeployment "uae-nethsm-gateway" machines.uae-nethsm-gateway.ip;
