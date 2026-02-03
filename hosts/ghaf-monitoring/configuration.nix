@@ -385,7 +385,6 @@ in
             {
               inherit (machines)
                 ghaf-log
-                ghaf-proxy
                 ghaf-auth
                 ghaf-monitoring
                 ghaf-lighthouse
