@@ -63,7 +63,7 @@ def TARGETS = [
     testset: null, uefisigniso: true, sbom: true,
   ],
   [ target: "packages.x86_64-linux.system76-darp11-b-storeDisk-debug",
-    testset: null, sbom: true,
+    testset: '_relayboot_regression_', sbom: true,
   ],
 ]
 
