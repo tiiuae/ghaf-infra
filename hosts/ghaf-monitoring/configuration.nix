@@ -392,7 +392,6 @@ in
                 hetzci-dev
                 hetzci-prod
                 hetzci-release
-                hetz86-rel-1
                 hetzarm-rel-1
                 ;
             };
