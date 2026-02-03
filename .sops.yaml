@@ -16,6 +16,7 @@ keys:
   - &testagent2-prod age1em5asquegsxym8zudytvd2p2r0hu7nhuuhw8k72x8ax9mej3xptq463aed
   - &testagent-release age1pkd7crz3c0axuy4nnesjjzmklmqptx9fq5v8ndjevfgr5lqg8cgskhfyt7
   - &hetzarm age1ppunea05ue028qezt9rvhp59dgcskkleetyjpqtxzea7vtp4ppfqh7ltuy
+  - &hetzarm-dbg-1 age1nmtxrxazy6p8av6xm9jdtnx4n372fm8f5zw6amlzzxca2taa4vxq6wqgd2
   - &hetzarm-rel-1 age1nws8wlvsdmrkskepx76ygcklqcrx4x9nk05czpgx9jdc7uyryepqda2sfs
   - &hetz86-1 age1zy44vwv4t97fhaupczfu835t6lfssxhzd6sfu7vlmel5gfrg4gxq6j5egr
   - &hetz86-builder age13p9uu27kv9qchcxy6dd8s602fep5zk3xqe8pwhe7yqaa5hyj697qhax6g8
@@ -72,6 +73,15 @@ creation_rules:
       - *jrautiola
       - *hrosten
       - *fayad
+  - path_regex: hosts/builders/hetzarm-dbg-1/secrets.yaml$
+    key_groups:
+    - age:
+      - *hetzarm-dbg-1
+      - *jrautiola
+      - *hrosten
+      - *fayad
+      - *cazfi
+      - *ktu
   - path_regex: hosts/builders/hetzarm-rel-1/secrets.yaml$
     key_groups:
     - age:

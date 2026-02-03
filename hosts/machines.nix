@@ -49,6 +49,12 @@
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILx4zU4gIkTY/1oKEOkf9gTJChdx/jR3lDgZ7p/c7LEK";
   };
 
+  hetzarm-dbg-1 = {
+    ip = "46.62.194.107";
+    internal_ip = "10.0.0.14";
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB3y9z/2FWQdM9nnUJSc8bdsXApC0ug/ttdOGM/r2Zoq";
+  };
+
   hetzarm-rel-1 = {
     ip = "46.62.196.166";
     internal_ip = "10.0.0.12";
