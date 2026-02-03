@@ -168,7 +168,7 @@ prepare_artifacts() {
     " packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64 "
     " packages.x86_64-linux.nvidia-jetson-orin-nx-debug-from-x86_64 "
     " packages.x86_64-linux.system76-darp11-b-debug "
-    " packages.x86_64-linux.system76-darp11-b-debug-installer "
+    " packages.x86_64-linux.system76-darp11-b-storeDisk-debug-installer "
   )
   artifactsdir="$1"
   for dir in "$artifactsdir"/*/; do

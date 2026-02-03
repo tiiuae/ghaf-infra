@@ -32,7 +32,7 @@ def ALL_RELEASE_TARGETS = [
   [ target: "packages.x86_64-linux.system76-darp11-b-debug",
     testset: '_relayboot_bat_', uefisign: true, build_otapin: true, sbom: true,
   ],
-  [ target: "packages.x86_64-linux.system76-darp11-b-debug-installer",
+  [ target: "packages.x86_64-linux.system76-darp11-b-storeDisk-debug-installer",
     testset: null, uefisigniso: true, sbom: true,
   ],
 ]
@@ -50,7 +50,7 @@ def LAPTOP_RELEASE_TARGETS = [
   [ target: "packages.x86_64-linux.system76-darp11-b-debug",
     testset: '_relayboot_bat_', uefisign: true, build_otapin: true, sbom: true,
   ],
-  [ target: "packages.x86_64-linux.system76-darp11-b-debug-installer",
+  [ target: "packages.x86_64-linux.system76-darp11-b-storeDisk-debug-installer",
     testset: null, uefisigniso: true, sbom: true,
   ],
 ]
