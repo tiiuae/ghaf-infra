@@ -97,6 +97,13 @@ in
         in
         [
           {
+            id = "hetzci-dbg";
+            name = "ci-dbg.vedenemo.dev";
+            redirectURIs = [ "https://ci-dbg.vedenemo.dev/oauth2/callback" ];
+            secretEnv = "CI_DBG_CLIENT_SECRET";
+            inherit grantTypes;
+          }
+          {
             id = "hetzci-dev";
             name = "ci-dev.vedenemo.dev";
             redirectURIs = [ "https://ci-dev.vedenemo.dev/oauth2/callback" ];

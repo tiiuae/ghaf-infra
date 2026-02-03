@@ -50,13 +50,13 @@ in
     nixos-testagent-release = ./testagent/release/configuration.nix;
     nixos-nethsm-gateway = ./nethsm-gateway/configuration.nix;
     nixos-ghaf-log = ./ghaf-log/configuration.nix;
-    nixos-ghaf-proxy = ./ghaf-proxy/configuration.nix;
     nixos-ghaf-webserver = ./ghaf-webserver/configuration.nix;
     nixos-ghaf-auth = ./ghaf-auth/configuration.nix;
     nixos-ghaf-monitoring = ./ghaf-monitoring/configuration.nix;
     nixos-ghaf-lighthouse = ./ghaf-lighthouse/configuration.nix;
     nixos-ghaf-fleetdm = ./ghaf-fleetdm/configuration.nix;
     nixos-testagent-uae-dev = ./testagent/uae-dev/configuration.nix;
+    nixos-hetzci-dbg = ./hetzci/dbg/configuration.nix;
     nixos-hetzci-dev = ./hetzci/dev/configuration.nix;
     nixos-hetzci-prod = ./hetzci/prod/configuration.nix;
     nixos-hetzci-release = ./hetzci/release/configuration.nix;
@@ -95,13 +95,13 @@ in
           "testagent-release"
           "nethsm-gateway"
           "ghaf-log"
-          "ghaf-proxy"
           "ghaf-webserver"
           "ghaf-auth"
           "ghaf-monitoring"
           "ghaf-lighthouse"
           "ghaf-fleetdm"
           "testagent-uae-dev"
+          "hetzci-dbg"
           "hetzci-dev"
           "hetzci-prod"
           "hetzci-release"

@@ -24,11 +24,11 @@ keys:
   - &hetz86-rel-2 age1ekw7ej2cxl3q2zdjgy39su8nm6prxtpcjkzh3qu2j0k0sengypas7rzcs9
   - &hetzci-release age19kx56nu8rlwtyaap83vyg940ylv9hpf7dprgdpcctqqv8k8ecqhsnxtfs4
   - &hetzci-prod age1av993eefvndhv2apa4x7tpc7ezyhuj3jz9866vtulnrdwmjqe5hqrjc2z8
+  - &hetzci-dbg age1sv50w7ydcqxxng4nfpvretqhusfkjewtrzpu4006z685xgplha2sa9tv9v
   - &hetzci-dev age10xhyyjrhackyac2f042t3z8yqld3sh39ul3mukwkt6gyr7gn9upq8n30gm
   - &hetzci-vm age1lur2w9nehe2thcjrnddh554gygncs8dynv0fmr74sgytd69qqcdsr42d8j
   - &ghaf-log age15kk5q4u68pfsy5auzah6klsdk6p50jnkr986u7vpzfrnj30pz4ssq7wnud
   - &ghaf-webserver age1f643hcr8xvzm6fha93xhn6dw552tfd6zvu7eulxk7vedgt09d9ysljsayq
-  - &ghaf-proxy age1sv50w7ydcqxxng4nfpvretqhusfkjewtrzpu4006z685xgplha2sa9tv9v
   - &ghaf-auth age1xuynsp2q9cj0h7f3syha7p7n8t034m2u8qldn6zlwx4nee8d5chskr4el7
   - &ghaf-monitoring age1g2g220kp8p47al7w3jdqtpyw77u5pgc8ntz2zu50uez76vj7agtqqwwpyd
   - &ghaf-lighthouse age1wcs30q9l7c3vk3tgs3zmu86hcgjaaujckmt0fjm2w9xlvqnk4cyqndvx4n
@@ -129,13 +129,6 @@ creation_rules:
       - *ghaf-log
       - *jrautiola
       - *hrosten
-  - path_regex: hosts/ghaf-proxy/secrets.yaml$
-    key_groups:
-    - age:
-      - *ghaf-proxy
-      - *jrautiola
-      - *fayad
-      - *hrosten
   - path_regex: hosts/ghaf-monitoring/secrets.yaml$
     key_groups:
     - age:
@@ -184,6 +177,15 @@ creation_rules:
       - *hetzci-prod
       - *hrosten
       - *jrautiola
+  - path_regex: hosts/hetzci/dbg/secrets.yaml$
+    key_groups:
+    - age:
+      - *hetzci-dbg
+      - *fayad
+      - *jrautiola
+      - *hrosten
+      - *cazfi
+      - *ktu
   - path_regex: hosts/hetzci/dev/secrets.yaml$
     key_groups:
     - age:

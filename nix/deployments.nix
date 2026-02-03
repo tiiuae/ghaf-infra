@@ -32,7 +32,6 @@ let
     testagent-uae-dev = mkDeployment "testagent-uae-dev" machines.testagent-uae-dev.ip;
     nethsm-gateway = mkDeployment "nethsm-gateway" machines.nethsm-gateway.ip;
     ghaf-log = mkDeployment "ghaf-log" machines.ghaf-log.ip;
-    ghaf-proxy = mkDeployment "ghaf-proxy" machines.ghaf-proxy.ip;
     ghaf-webserver = mkDeployment "ghaf-webserver" machines.ghaf-webserver.ip;
     ghaf-auth = mkDeployment "ghaf-auth" machines.ghaf-auth.ip;
     ghaf-monitoring = mkDeployment "ghaf-monitoring" machines.ghaf-monitoring.ip;
@@ -40,6 +39,7 @@ let
     ghaf-fleetdm = mkDeployment "ghaf-fleetdm" machines.ghaf-fleetdm.ip;
     hetzci-release = mkDeployment "hetzci-release" machines.hetzci-release.ip;
     hetzci-prod = mkDeployment "hetzci-prod" machines.hetzci-prod.ip;
+    hetzci-dbg = mkDeployment "hetzci-dbg" machines.hetzci-dbg.ip;
     hetzci-dev = mkDeployment "hetzci-dev" machines.hetzci-dev.ip;
     hetz86-1 = mkDeployment "hetz86-1" machines.hetz86-1.ip;
     hetz86-builder = mkDeployment "hetz86-builder" machines.hetz86-builder.ip;

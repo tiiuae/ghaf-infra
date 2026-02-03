@@ -7,12 +7,6 @@
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICMmB3Ws5MVq0DgVu+Hth/8NhNAYEwXyz4B6FRCF6Nu2";
   };
 
-  ghaf-proxy = {
-    ip = "95.216.200.85";
-    internal_ip = "10.0.0.3";
-    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIALs+OQDrCKRIKkwTwI4MI+oYC3RTEus9cXCBcIyRHzl";
-  };
-
   ghaf-webserver = {
     ip = "37.27.204.82";
     internal_ip = "10.0.0.8";
@@ -80,6 +74,12 @@
   hetz86-rel-2 = {
     ip = "65.21.200.168";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPG/KEdKxs3ws7aoHSar4UqK7RzmAGa8j9Xug6Eo7VMm";
+  };
+
+  hetzci-dbg = {
+    ip = "95.216.200.85";
+    internal_ip = "10.0.0.3";
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIALs+OQDrCKRIKkwTwI4MI+oYC3RTEus9cXCBcIyRHzl";
   };
 
   hetzci-dev = {
