@@ -53,6 +53,7 @@ let
 
   aarch64-nodes = {
     hetzarm = mkDeployment "hetzarm" machines.hetzarm.ip;
+    hetzarm-dbg-1 = mkDeployment "hetzarm-dbg-1" machines.hetzarm-dbg-1.ip;
     hetzarm-rel-1 = mkDeployment "hetzarm-rel-1" machines.hetzarm-rel-1.ip;
   };
 

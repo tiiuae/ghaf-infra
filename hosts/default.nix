@@ -42,6 +42,7 @@ in
     # These are available to allow extending system configuration with
     # out-of-tree additional config (like additional trusted cache public keys)
     nixos-hetzarm = ./builders/hetzarm/configuration.nix;
+    nixos-hetzarm-dbg-1 = ./builders/hetzarm-dbg-1/configuration.nix;
     nixos-hetzarm-rel-1 = ./builders/hetzarm-rel-1/configuration.nix;
     nixos-testagent-prod = ./testagent/prod/configuration.nix;
     nixos-testagent-dev = ./testagent/dev/configuration.nix;
@@ -86,6 +87,7 @@ in
         })
         [
           "hetzarm"
+          "hetzarm-dbg-1"
           "hetzarm-rel-1"
           "testagent-prod"
           "testagent-dev"
