@@ -21,11 +21,10 @@
     secrets.metrics_password.owner = "root";
   };
   nixpkgs.hostPlatform = "x86_64-linux";
-  networking.hostName = "testagent-uae-dev";
+  networking.hostName = "uae-testagent-prod";
   services.testagent = {
-    variant = "dev";
+    variant = "prod";
     hardware = [
-      "orin-agx"
       "lenovo-x1"
     ];
   };
@@ -42,13 +41,9 @@
   # udev rules for test devices serial connections
   # placeholder configs from finland. need updation with new uae targets, in progress
   services.udev.extraRules = ''
-    # Orin agx
-    # SSD-drive
-    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S6XNNS0W202677W", SYMLINK+="ssdORINAGX1", MODE="0666", GROUP="dialout"
-
     # Lenovo X1
     # SSD-drive
-    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S6XPNS0W606188E", SYMLINK+="ssdX1", MODE="0666", GROUP="dialout"
+    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="00000000NAAL2E2X", SYMLINK+="ssdX1", MODE="0666", GROUP="dialout"
   '';
 
   # Trigger UDEV rules
@@ -69,25 +64,17 @@
     in
     builtins.toJSON {
       addresses = {
-        OrinAGX1 = {
-          inherit location;
-          serial_port = "/dev/ttyACM0";
-          device_ip_address = "172.19.16.13";
-          socket_ip_address = "172.19.16.23";
-          plug_type = "TAPOP100v2";
-          switch_bot = "NONE";
-          usbhub_serial = "0x2954223B";
-          ext_drive_by-id = "/dev/ssdORINAGX1";
-          threads = 8;
-        };
+        relay_serial_port = "NONE";
         LenovoX1-1 = {
           inherit location;
+          device_id = "00-87-26-3f-89";
+          netvm_hostname = "ghaf-2267430793";
           serial_port = "NONE";
-          device_ip_address = "172.19.16.14";
+          device_ip_address = "172.20.16.53";
           socket_ip_address = "NONE";
           plug_type = "NONE";
-          switch_bot = "LenovoX1-uae-dev";
-          usbhub_serial = "0x99EB9D84";
+          switch_bot = "UAE-LenovoX1-prod";
+          usbhub_serial = "0xB7D9AFB6";
           ext_drive_by-id = "/dev/ssdX1";
           threads = 20;
         };

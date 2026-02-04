@@ -55,7 +55,6 @@ in
     nixos-ghaf-monitoring = ./ghaf-monitoring/configuration.nix;
     nixos-ghaf-lighthouse = ./ghaf-lighthouse/configuration.nix;
     nixos-ghaf-fleetdm = ./ghaf-fleetdm/configuration.nix;
-    nixos-testagent-uae-dev = ./testagent/uae-dev/configuration.nix;
     nixos-hetzci-dbg = ./hetzci/dbg/configuration.nix;
     nixos-hetzci-dev = ./hetzci/dev/configuration.nix;
     nixos-hetzci-prod = ./hetzci/prod/configuration.nix;
@@ -69,6 +68,7 @@ in
     nixos-uae-nethsm-gateway = ./uae/nethsm-gateway/configuration.nix;
     nixos-uae-azureci-prod = ./uae/azureci/prod/configuration.nix;
     nixos-uae-azureci-az86-1 = ./uae/azureci/builders/az86-1/configuration.nix;
+    nixos-uae-testagent-prod = ./uae/testagent/prod/configuration.nix;
   };
 
   # Expose as flake.lib.mkNixOS.
@@ -100,7 +100,6 @@ in
           "ghaf-monitoring"
           "ghaf-lighthouse"
           "ghaf-fleetdm"
-          "testagent-uae-dev"
           "hetzci-dbg"
           "hetzci-dev"
           "hetzci-prod"
@@ -113,6 +112,7 @@ in
           "uae-nethsm-gateway"
           "uae-azureci-prod"
           "uae-azureci-az86-1"
+          "uae-testagent-prod"
         ]
     ))
     // {

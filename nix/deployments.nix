@@ -29,7 +29,6 @@ let
     testagent-dev = mkDeployment "testagent-dev" machines.testagent-dev.ip;
     testagent2-prod = mkDeployment "testagent2-prod" machines.testagent2-prod.ip;
     testagent-release = mkDeployment "testagent-release" machines.testagent-release.ip;
-    testagent-uae-dev = mkDeployment "testagent-uae-dev" machines.testagent-uae-dev.ip;
     nethsm-gateway = mkDeployment "nethsm-gateway" machines.nethsm-gateway.ip;
     ghaf-log = mkDeployment "ghaf-log" machines.ghaf-log.ip;
     ghaf-webserver = mkDeployment "ghaf-webserver" machines.ghaf-webserver.ip;
@@ -49,6 +48,7 @@ let
     uae-nethsm-gateway = mkDeployment "uae-nethsm-gateway" machines.uae-nethsm-gateway.ip;
     uae-azureci-prod = mkDeployment "uae-azureci-prod" machines.uae-azureci-prod.ip;
     uae-azureci-az86-1 = mkDeployment "uae-azureci-az86-1" machines.uae-azureci-az86-1.ip;
+    uae-testagent-prod = mkDeployment "uae-testagent-prod" machines.uae-testagent-prod.ip;
   };
 
   aarch64-nodes = {
