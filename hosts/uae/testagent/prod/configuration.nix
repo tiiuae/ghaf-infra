@@ -13,19 +13,32 @@
   ++ (with self.nixosModules; [
     team-devenv
     team-testers
+    service-nebula
   ]);
 
   sops = {
     defaultSopsFile = ./secrets.yaml;
-    secrets.metrics_password.owner = "root";
+    secrets = {
+      metrics_password.owner = "alloy";
+      nebula-cert.owner = config.nebula.user;
+      nebula-key.owner = config.nebula.user;
+    };
   };
+
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "uae-testagent-prod";
   services.testagent = {
     variant = "prod";
     hardware = [
       "lenovo-x1"
+      "darter-pro"
     ];
+  };
+
+  nebula = {
+    enable = true;
+    cert = config.sops.secrets.nebula-cert.path;
+    key = config.sops.secrets.nebula-key.path;
   };
 
   boot.initrd.availableKernelModules = [
@@ -43,6 +56,11 @@
     # Lenovo X1
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="00000000NAAL2E2X", SYMLINK+="ssdX1", MODE="0666", GROUP="dialout"
+
+    # Darter Pro
+    # SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTFMF0X0", SYMLINK+="ttyDARTER", MODE="0666", GROUP="dialout"
+    # SSD-drive
+    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S7MNNL0YA16081M", SYMLINK+="ssdDARTER", MODE="0666", GROUP="dialout"
   '';
 
   # Trigger UDEV rules
@@ -76,6 +94,19 @@
           usbhub_serial = "0xB7D9AFB6";
           ext_drive_by-id = "/dev/ssdX1";
           threads = 20;
+        };
+        DarterPRO = {
+          inherit location;
+          device_id = "00-6c-7e-14-0c";
+          netvm_hostname = "ghaf-1820201996";
+          serial_port = "/dev/ttyDARTER";
+          device_ip_address = "172.20.16.54";
+          socket_ip_address = "NONE";
+          plug_type = "NONE";
+          switch_bot = "UAE-DarterPRO-prod";
+          usbhub_serial = "0x1674021B";
+          ext_drive_by-id = "/dev/ssdDARTER";
+          threads = 16;
         };
       };
     };
