@@ -193,10 +193,10 @@ in
           {
             id,
             version,
-            hash,
+            sha256,
           }:
-          pkgs.fetchurl {
-            inherit hash;
+          builtins.fetchurl {
+            inherit sha256;
             name = "dashboard-${toString id}_rev${toString version}.json";
             url = "https://grafana.com/api/dashboards/${toString id}/revisions/${toString version}/download";
           };
@@ -205,7 +205,7 @@ in
         (dashboard {
           name = "node-exporter-full";
           src = fetchDashboard {
-            hash = "sha256-fReu5M4+jrjiTN8kaM/2KPG5WYSe+H1z21T/Iv2JSuA=";
+            sha256 = "sha256-fReu5M4+jrjiTN8kaM/2KPG5WYSe+H1z21T/Iv2JSuA=";
             id = 15172;
             version = 6;
           };
