@@ -57,17 +57,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1749102428,
-        "narHash": "sha256-6Tw+M4WWOcmEXNCvx8+rNABDSW2gizB4ijEqys6uXKM=",
+        "lastModified": 1770019181,
+        "narHash": "sha256-hwsYgDnby50JNVpTRYlF3UR/Rrpt01OrxVuryF40CFY=",
         "owner": "serokell",
         "repo": "deploy-rs",
-        "rev": "5829cec63845eb50984dc8787b0edfe81bf5b980",
+        "rev": "77c906c0ba56aabdbc72041bf9111b565cdd6171",
         "type": "github"
       },
       "original": {
         "owner": "serokell",
         "repo": "deploy-rs",
-        "rev": "5829cec63845eb50984dc8787b0edfe81bf5b980",
         "type": "github"
       }
     },
