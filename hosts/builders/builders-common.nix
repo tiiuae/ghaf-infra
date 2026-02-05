@@ -16,4 +16,9 @@
       value = "8192";
     }
   ];
+  # https://nix.dev/manual/nix/2.33/advanced-topics/cores-vs-jobs#tuning-cores-and-jobs
+  nix.settings = {
+    max-jobs = 3; # Build at most 3 derivations at a time
+    cores = 0; # Each build can use all available cores
+  };
 }
