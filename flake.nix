@@ -55,11 +55,11 @@
       flake = false;
     };
 
-    # Used for deploying remote systems
+    # Used for deploying remote systems. This needs to be its own
+    # input, because nixpkgs only packages the deploy-rs CLI binary,
+    # not the library functions we use in deployments.nix.
     deploy-rs = {
-      # pinned until this regression is fixed
-      # https://github.com/serokell/deploy-rs/issues/325
-      url = "github:serokell/deploy-rs/5829cec63845eb50984dc8787b0edfe81bf5b980";
+      url = "github:serokell/deploy-rs";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-compat.follows = "flake-compat";
