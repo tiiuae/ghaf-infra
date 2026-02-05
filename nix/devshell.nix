@@ -43,6 +43,7 @@
             git
             jq
             nix
+            nix-fast-build
             nixfmt-rfc-style
             nixos-rebuild
             nixos-anywhere
@@ -65,7 +66,6 @@
             tree
           ])
           ++ (with inputs'; [
-            nix-fast-build.packages.default
             deploy-rs.packages.default
           ]);
       };
