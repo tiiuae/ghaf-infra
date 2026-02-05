@@ -15,7 +15,6 @@
     service-nebula
     team-devenv
     team-testers
-    user-flokli
   ]);
 
   sops = {

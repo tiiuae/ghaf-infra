@@ -13,7 +13,6 @@
   ++ (with self.nixosModules; [
     team-devenv
     team-testers
-    user-flokli
   ]);
 
   sops = {
