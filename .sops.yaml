@@ -3,7 +3,6 @@
 
 keys:
   # users
-  - &flokli age1lvpj49ewyx9a4uxevl05wfevmqld2d25juc65acjqpmerzdpc9kq2kxdgs
   - &hrosten age1hc6hszepd5xezxkgd3yx74pn3scxjm5w6px48m4rq9yj7w6rke7q72zhgn
   - &jrautiola age1hszrldafdz09hzze4lgq58r0r66p4sjftn6q8z6h0leer77jhf4qd9vu9v
   - &cazfi age10a2kt6f07urjv6ahutda3jgr73wferkcqjhkvukwm07eaaqyrqtsh08syf
@@ -46,7 +45,6 @@ creation_rules:
     - age:
       - *testagent-prod
       - *jrautiola
-      - *flokli
       - *hrosten
   - path_regex: hosts/testagent/dev/secrets.yaml$
     key_groups:

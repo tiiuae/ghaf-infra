@@ -7,7 +7,6 @@
     user-cazfi = import ./cazfi.nix;
     user-ktu = import ./ktu.nix;
     user-avnik = import ./avnik.nix;
-    user-flokli = import ./flokli.nix;
     user-mariia = import ./mariia.nix;
     user-leivos = import ./leivos.nix;
     user-vunnyso = import ./vunnyso.nix;
