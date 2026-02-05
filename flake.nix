@@ -21,7 +21,6 @@
   inputs = {
     # Nixpkgs
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
-    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
 
     # Allows us to structure the flake with the NixOS module system
     flake-parts.url = "github:hercules-ci/flake-parts";
