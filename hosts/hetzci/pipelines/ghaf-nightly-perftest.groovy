@@ -29,6 +29,9 @@ def TARGETS = [
   [ target: "packages.x86_64-linux.system76-darp11-b-debug",
     testset: '_relayboot_perf_',
   ],
+  [ target: "packages.x86_64-linux.system76-darp11-b-storeDisk-debug",
+    testset: '_relayboot_perf_',
+  ],
 ]
 
 pipeline {
