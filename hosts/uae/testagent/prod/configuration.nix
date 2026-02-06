@@ -97,8 +97,8 @@
         };
         DarterPRO = {
           inherit location;
-          device_id = "00-6c-7e-14-0c";
-          netvm_hostname = "ghaf-1820201996";
+          device_id = "00-e5-01-b6-aa";
+          netvm_hostname = "ghaf-3842094762";
           serial_port = "/dev/ttyDARTER";
           device_ip_address = "172.20.16.54";
           socket_ip_address = "NONE";
