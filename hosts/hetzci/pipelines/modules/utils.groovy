@@ -29,7 +29,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
   // Evaluate
   stage("Eval") {
     lock('evaluator') {
-      sh 'nix flake show --all-systems | ansi2txt'
+      sh 'nix flake show --all-systems'
     }
   }
   targets.each {
