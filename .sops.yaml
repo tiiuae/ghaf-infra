@@ -244,6 +244,7 @@ creation_rules:
       - *uae-lab-node1
       - *uae-nethsm-gateway
       - *uae-azureci-prod
+      - *uae-testagent-prod
   - path_regex: hosts/uae/lab/node1/secrets.yaml$
     key_groups:
     - age:

@@ -160,6 +160,7 @@
 
   uae-testagent-prod = {
     ip = "172.20.16.24";
+    nebula_ip = "10.42.42.35";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHO30maPQbVUqURaur8ze2S0vrrUivj2QdItIHsK75RS";
   };
 
