@@ -10,6 +10,9 @@ set -u # treat unset variables as an error and exit
 # Expected arguments and their defaults if not passed in environment variables
 # Trigger purge when disk usage is more than PURGE_DU_PCT percent
 PURGE_DU_PCT="${PURGE_DU_PCT:=85}"
+# On each invocation of this script, delete this percentage of builds per
+# pipeline, always keeping at least the newest build.
+PURGE_BUILD_PCT="${PURGE_BUILD_PCT:=20}"
 
 purge() {
   # Cleanup /tmp: delete large files owned by jenkins modified at least 24 hours ago
@@ -18,13 +21,33 @@ purge() {
   # Remove jenkins artifacts from /var/lib/jenkins/artifacts.
   # Outer loop finds the directories directly under /var/lib/jenkins/artifacts/,
   # that is, the per-pipeline artifacts directories. Inner loop removes the oldest
-  # build on each pipeline, always keeping at least the current newest build.
+  # builds per pipeline rounding by ceil % (ensures some removal once deletable > 0),
+  # always keeping at least the newest build per each pipeline.
   echo "Cleanup jenkins artifacts"
   while IFS= read -r path; do
-    find "$path" -maxdepth 0 -exec ls -rt {} + | head -n -1 | head -n +1 | while read -r x; do
-      echo "Removing '$path/$x'"
-      rm -fr "${path:?}/${x:?}"
-    done
+    build_count=$(find "$path" -maxdepth 1 -mindepth 1 -type d -printf '.' 2>/dev/null | wc -c | tr -d ' ')
+    if ((build_count <= 1)); then
+      continue
+    fi
+    deletable=$((build_count - 1))
+    remove_count=$(((deletable * PURGE_BUILD_PCT + 99) / 100))
+    if ((remove_count < 1)); then
+      continue
+    fi
+    if ((remove_count > deletable)); then
+      remove_count=$deletable
+    fi
+    echo "Removing $remove_count build(s) from '$path'"
+    deleted=0
+    while IFS= read -r -d '' entry; do
+      entry_path=${entry#* }
+      echo "Removing '$entry_path'"
+      rm -fr "$entry_path"
+      deleted=$((deleted + 1))
+      if ((deleted >= remove_count)); then
+        break
+      fi
+    done < <(find "$path" -maxdepth 1 -mindepth 1 -type d -printf '%T@ %p\0' | sort -z -n)
   done < <(find /var/lib/jenkins/artifacts -maxdepth 1 -mindepth 1 -type d)
 }
 
