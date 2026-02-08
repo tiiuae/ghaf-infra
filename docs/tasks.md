@@ -41,6 +41,7 @@ Current ghaf-infra targets:
 │ alias             │ nixosconfig       │ hostname        │
 ╞═══════════════════╪═══════════════════╪═════════════════╡
 │ ghaf-auth         │ ghaf-auth         │ 37.27.190.109   │
+│ ghaf-fleetdm      │ ghaf-fleetdm      │ 95.216.169.87   │
 │ ghaf-lighthouse   │ ghaf-lighthouse   │ 65.109.141.136  │
 │ ghaf-log          │ ghaf-log          │ 95.217.177.197  │
 │ ghaf-monitoring   │ ghaf-monitoring   │ 135.181.103.32  │
@@ -49,6 +50,7 @@ Current ghaf-infra targets:
 │ hetz86-1          │ hetz86-1          │ 37.27.170.242   │
 │ hetz86-builder    │ hetz86-builder    │ 65.108.7.79     │
 │ hetz86-rel-1      │ hetz86-rel-1      │ 46.62.194.110   │
+│ hetz86-rel-2      │ hetz86-rel-2      │ 65.21.200.168   │
 │ hetzarm           │ hetzarm           │ 65.21.20.242    │
 │ hetzarm-rel-1     │ hetzarm-rel-1     │ 46.62.196.166   │
 │ hetzci-dev        │ hetzci-dev        │ 157.180.119.138 │
