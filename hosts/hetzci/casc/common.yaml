@@ -51,8 +51,33 @@ groovy:
   - script: |
       import jenkins.model.*
       import hudson.model.*
+      import hudson.security.ACL
+      import hudson.security.ACLContext
+      def reloadDelaySeconds = 10
       def params = new ParametersAction([ new StringParameterValue("RELOAD_ONLY", "true")])
-      for (job in Jenkins.getInstance().getAllItems(Job)) {
-        println("Triggering job: " + job.getName())
-        job.scheduleBuild2(0, params);
+      println("Scheduling pipeline reload in ${reloadDelaySeconds}s")
+      Thread.start("pipeline-startup-reload") {
+        // Background threads do not reliably inherit Jenkins SYSTEM auth context.
+        // Use SYSTEM explicitly so job lookup/scheduling works during startup.
+        ACLContext aclContext = ACL.as2(ACL.SYSTEM2)
+        try {
+          sleep(reloadDelaySeconds * 1000L)
+          def jobs = Jenkins.getInstance().getAllItems(Job)
+          println("Found ${jobs.size()} jobs for startup reload")
+          for (job in jobs) {
+            println("Triggering job: " + job.getName())
+            def queueItem = job.scheduleBuild2(0, params)
+            if (queueItem == null) {
+              println("Skipped triggering job: ${job.getName()}")
+            }
+          }
+        } catch (InterruptedException ignored) {
+          Thread.currentThread().interrupt()
+          println("Startup pipeline reload thread interrupted")
+        } catch (Exception e) {
+          println("Startup pipeline reload thread failed: ${e}")
+          e.printStackTrace()
+        } finally {
+          aclContext.close()
+        }
       }
