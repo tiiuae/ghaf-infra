@@ -33,20 +33,24 @@ groovy:
   # Load pipelines:
   - script: |
       import jenkins.model.*
-      import hudson.model.*
       import org.jenkinsci.plugins.workflow.job.WorkflowJob
       import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition
       import groovy.io.FileType
       println("Loading pipelines")
       def pipelines = new File("/etc/jenkins/pipelines/")
       pipelines.eachFile(FileType.FILES) { file ->
-        println("Loading pipeline from: " + file.name)
-        def pipeline_name = file.name.substring(0, file.name.lastIndexOf('.'))
-        def job = new WorkflowJob(Jenkins.getInstance(), pipeline_name)
+        if (!file.name.endsWith(".groovy")) {
+          return
+        }
+        def pipelineName = file.name.substring(0, file.name.lastIndexOf('.'))
+        println("Loading pipeline from: ${pipelineName}")
+        def job = Jenkins.getInstance().getItemByFullName(pipelineName, WorkflowJob)
+        if (job == null) {
+          job = Jenkins.getInstance().createProject(WorkflowJob, pipelineName)
+        }
         job.definition = new CpsFlowDefinition(file.text, true)
         job.save()
       }
-      Jenkins.getInstance().reload()
   # Trigger all pipelines on jenkins service (re)start:
   - script: |
       import jenkins.model.*
