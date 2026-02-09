@@ -60,7 +60,7 @@
     # Darter Pro
     # SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTFMF0X0", SYMLINK+="ttyDARTER", MODE="0666", GROUP="dialout"
     # SSD-drive
-    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S7MNNL0YA16081M", SYMLINK+="ssdDARTER", MODE="0666", GROUP="dialout"
+    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B7283C09CCC", SYMLINK+="ssdDARTER", MODE="0666", GROUP="dialout"
   '';
 
   # Trigger UDEV rules
@@ -97,9 +97,9 @@
         };
         DarterPRO = {
           inherit location;
-          device_id = "00-e5-01-b6-aa";
-          netvm_hostname = "ghaf-3842094762";
-          serial_port = "/dev/ttyDARTER";
+          device_id = "00-af-d8-d8-c0";
+          netvm_hostname = "ghaf-2950224064";
+          serial_port = "NONE";
           device_ip_address = "172.20.16.54";
           socket_ip_address = "NONE";
           plug_type = "NONE";
