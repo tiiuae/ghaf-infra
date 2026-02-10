@@ -339,7 +339,7 @@ pipeline {
       }
     }
     stage('Run Ghaf-installer') {
-      when { expression { env.TARGET.contains("lenovo-x1-carbon-gen11-debug-installer") } }
+      when { expression { env.TARGET.contains("installer") } }
       steps {
         script {
           println "Run ghaf-installer"
@@ -392,9 +392,12 @@ pipeline {
       }
     }
     stage('Wipe system') {
-      when { expression { env.TARGET.contains("lenovo-x1-carbon-gen11-debug-installer")} }
+      when { expression { env.TARGET.contains("installer")} }
       steps {
         script {
+          if (env.TARGET.contains("system76-darp11-b-storeDisk-debug-installer")) {
+            ghaf_robot_test('break')
+          }
           ghaf_robot_test('turnoff')
           println "Connect SSD to the laptop"
           sh "${env.UNMOUNT_CMD}; sleep 10"
