@@ -44,7 +44,7 @@
             jq
             nix
             nix-fast-build
-            nixfmt-rfc-style
+            nixfmt
             nixos-rebuild
             nixos-anywhere
             python3.pkgs.aiohttp
