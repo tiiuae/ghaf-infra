@@ -98,9 +98,9 @@ pipeline {
     stage('Checkout') {
       steps {
         dir(WORKDIR) {
+          deleteDir()
           checkout scmGit(
             branches: [[name: 'main']],
-            extensions: [[$class: 'WipeWorkspace']],
             userRemoteConfigs: [[url: REPO_URL]]
           )
         }
