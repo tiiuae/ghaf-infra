@@ -4,7 +4,7 @@
 python3Packages.buildPythonApplication rec {
   pname = "nethsm-exporter";
   version = "0.1.0";
-  pyproject = false;
+  format = "other";
 
   src = ./src;
 
