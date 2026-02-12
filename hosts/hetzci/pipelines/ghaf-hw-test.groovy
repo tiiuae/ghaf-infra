@@ -186,9 +186,9 @@ pipeline {
     }
     stage('Checkout') {
       steps {
+        deleteDir()
         checkout scmGit(
           branches: [[name: "${params.CI_TEST_REPO_BRANCH}"]],
-          extensions: [[$class: 'WipeWorkspace']],
           userRemoteConfigs: [[url: CI_TEST_REPO_URL]]
         )
       }

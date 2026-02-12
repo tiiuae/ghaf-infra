@@ -69,6 +69,7 @@ pipeline {
               error('Missing GITHUB_PR_NUMBER')
             }
           }
+          deleteDir()
           checkout scmGit(
             userRemoteConfigs: [[
               url: REPO_URL,
@@ -80,9 +81,6 @@ pipeline {
               refspec: "+refs/pull/${params.GITHUB_PR_NUMBER}/merge:refs/remotes/pr_origin/pull/${params.GITHUB_PR_NUMBER}/merge",
             ]],
             branches: [[name: "pr_origin/pull/${params.GITHUB_PR_NUMBER}/merge"]],
-            extensions: [
-              [$class: 'WipeWorkspace'],
-            ],
           )
           script {
             sh "git fetch pr_origin pull/${params.GITHUB_PR_NUMBER}/head:PR_head"

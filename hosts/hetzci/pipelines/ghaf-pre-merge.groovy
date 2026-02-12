@@ -78,6 +78,7 @@ pipeline {
     stage('Checkout') {
       steps {
         dir(WORKDIR) {
+          deleteDir()
           // https://www.jenkins.io/doc/pipeline/steps/params/scmgit/#scmgit
           // https://github.com/KostyaSha/github-integration-plugin/blob/master/docs/Configuration.adoc
           checkout scmGit(
@@ -95,7 +96,6 @@ pipeline {
             ]],
             branches: [[name: 'pr_origin/pull/${GITHUB_PR_NUMBER}/merge']],
             extensions: [
-              [$class: 'WipeWorkspace'],
               // We use the 'changelogToBranch' extension to correctly
               // show the PR changed commits in Jenkins changes.
               // References:
