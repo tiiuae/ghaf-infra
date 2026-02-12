@@ -62,6 +62,7 @@
           pylint = {
             enable = true;
             args = [
+              "--jobs=0"
               "--enable=useless-suppression"
               "--fail-on=useless-suppression"
             ];
