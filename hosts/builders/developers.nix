@@ -178,6 +178,7 @@ let
       name = "rodrigo";
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINS5sjFgJ+OKjQQrxdlxsdG5lodd5Zei7BXCaWc/E8R9 rodrigo.pino@tii.ae"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHu4r7nCQ6A26HsE4+wIupvXAfVQHgBGXv0+epCho2/m build-server-key"
       ];
     }
     {
