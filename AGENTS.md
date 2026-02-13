@@ -23,7 +23,7 @@ This repository is a Nix flake for Ghaf CI/CD infrastructure.
 - `nix build .#nixosConfigurations.<host>.config.system.build.toplevel`: build one host config locally.
 
 ## Coding Style & Naming Conventions
-- Nix: format with `nixfmt-rfc-style`; keep module entry files as `default.nix` where practical.
+- Nix: format with `nixfmt`; keep module entry files as `default.nix` where practical.
 - Python: format with `ruff format`; lint with `pylint`.
 - Shell: format with `shfmt --indent 2`; validate with `shellcheck`.
 - Keep host/service paths lowercase and hyphenated (for example `hosts/ghaf-monitoring`, `services/remote-build`).
