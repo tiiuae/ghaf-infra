@@ -79,6 +79,12 @@ Each host's private ssh key is stored as sops secret and automatically deployed 
 
 The secrets configuration and the usage of `sops` is adopted from [nix-community infra](https://github.com/nix-community/infra) project.
 
+For CI runs that need a Fleet enroll secret, the test agents can materialize an
+optional secret file into the host path used by Ghaf (default:
+`/persist/common/ghaf/fleet/enroll`). Provide the secret either via
+`FLEET_ENROLL_SECRET`/`FLEET_ENROLL_SECRET_FILE` or by placing a file at
+`/run/secrets/fleet_enroll_secret`.
+
 ### Onboarding new remote builder users
 
 Onboarding new users to remote builders require the following manual steps:
