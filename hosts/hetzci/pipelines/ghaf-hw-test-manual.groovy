@@ -263,7 +263,7 @@ pipeline {
           } else {
             def serial = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'usbhub_serial')
             env.MOUNT_CMD = "/run/wrappers/bin/sudo AcronameHubCLI -u 0 -s ${serial}; sleep 10"
-            env.UNMOUNT_CMD = "/run/wrappers/bin/sudo AcronameHubCLI -u 1 -s ${serial}"
+            env.UNMOUNT_CMD = "/run/wrappers/bin/sudo AcronameHubCLI -u 1 -s ${serial}; sleep 10"
           }
           // Mount the target disk
           sh "${env.MOUNT_CMD}"
@@ -301,6 +301,12 @@ pipeline {
           sh "/run/wrappers/bin/sudo dd if=${env.IMG_PATH} of=${dev} bs=1M status=progress conv=fsync"
           // Unmount
           sh "${env.UNMOUNT_CMD}"
+          sh """
+            if /run/wrappers/bin/sudo test -L ${dev}; then
+              echo "Symlink ${dev} was found. Failed to unmount target USB disk from test agent."
+              exit 1
+            fi
+          """
           currentBuild.description = "${currentBuild.description}<br>✅ Device flashed"
         }
       }
