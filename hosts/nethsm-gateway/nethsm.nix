@@ -47,6 +47,13 @@ let
       "$@"
   '';
 
+  # https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-sdk-tools-libraries.html#hsm2-pkcs11-configuration-sample-label
+  yubihsmConf = toString (
+    pkgs.writeText "yubihsm_pkcs11.conf" ''
+      connector=http://127.0.0.1:12345
+    ''
+  );
+
   get-secureboot-keys = pkgs.writeShellScriptBin "get-secureboot-keys" ''
     set -eo pipefail
 
@@ -54,6 +61,8 @@ let
       echo "Usage: $(basename "$0") <outpath>"
       exit 1
     fi
+
+    TOKEN="NetHSM"
 
     # change these when rotating keys
     PK="tempPKkey"
@@ -78,10 +87,10 @@ let
     OPENSSL_CONF=$OPENSSL_CONF_LEGACY_ENGINE
     cert-to-auth \
       --pk PK.crt --kek KEK.crt --db db.crt \
-      --pk-uri "pkcs11:token=NetHSM;object=$PK" \
-      --kek-uri "pkcs11:token=NetHSM;object=$KEK" \
+      --pk-uri "pkcs11:token=$TOKEN;object=$PK" \
+      --kek-uri "pkcs11:token=$TOKEN;object=$KEK" \
 
-    echo "Generated $(date -u) from NetHSM objects \`$PK\`, \`$KEK\` and \`$DB\`" > README.md
+    echo "Generated $(date -u) from $TOKEN objects \`$PK\`, \`$KEK\` and \`$DB\`" > README.md
     echo "Done"
   '';
 in
@@ -122,6 +131,10 @@ in
       tls-pks-file.owner = "root";
       nethsm-metrics-credentials.owner = "root";
       nethsm-operator-password = {
+        group = "wheel";
+        mode = "0440";
+      };
+      yubihsm-pin = {
         group = "wheel";
         mode = "0440";
       };
@@ -243,12 +256,7 @@ in
       # can be used with pkcs11-tool --module
       P11MODULE = pkcs11Modules.p11-kit;
 
-      # https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-sdk-tools-libraries.html#hsm2-pkcs11-configuration-sample-label
-      YUBIHSM_PKCS11_CONF = toString (
-        pkgs.writeText "yubihsm_pkcs11.conf" ''
-          connector=http://127.0.0.1:12345
-        ''
-      );
+      YUBIHSM_PKCS11_CONF = yubihsmConf;
 
       # https://github.com/latchset/pkcs11-provider/blob/main/HOWTO.md
       OPENSSL_CONF = toString (
@@ -272,6 +280,7 @@ in
             module = ${pkcs11-provider}/lib/ossl-modules/pkcs11.so
             pkcs11-module-path = ${pkcs11Modules.p11-kit}
             pkcs11-module-quirks = no-deinit
+            pkcs11-module-token-pin = file:${config.sops.secrets.yubihsm-pin.path}
           ''
       );
 
@@ -315,10 +324,11 @@ in
       environment = {
         PKCS11_DAEMON_SOCKET = "tls://${config.pkcs11.proxy.listenAddr}:${toString config.pkcs11.proxy.listenPort}";
         PKCS11_PROXY_TLS_PSK_FILE = config.sops.secrets.tls-pks-file.path;
+        YUBIHSM_PKCS11_CONF = yubihsmConf;
       };
 
       serviceConfig = {
-        ExecStart = "${lib.getExe pkcs11-proxy} ${pkcs11Modules.p11-kit}";
+        ExecStart = "${lib.getExe pkcs11-proxy} ${pkcs11Modules.yubihsm}";
         Restart = "on-failure";
         RestartSec = "5s";
       };

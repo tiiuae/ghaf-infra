@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
+{ inputs, ... }:
 {
   perSystem =
     { pkgs, ... }:
@@ -9,10 +10,14 @@
         runtimeInputs = with pkgs; [
           openssl
         ];
-        runtimeEnv = {
-          IMG_CERT = "${../keys/GhafInfraSignECP256.pem}";
-          PROV_CERT = "${../keys/GhafInfraSignProv.pem}";
-        };
+        runtimeEnv =
+          let
+            keySource = inputs.ghaf-infra-pki.packages.${pkgs.stdenv.hostPlatform.system}.yubi-slsa-pki;
+          in
+          {
+            IMG_CERT = "${keySource}/share/ghaf-infra-pki/slsa/GhafInfraSignECP256.pem";
+            PROV_CERT = "${keySource}/share/ghaf-infra-pki/slsa/GhafInfraSignProv.pem";
+          };
         text = builtins.readFile ./verify-signature.sh;
       };
       archive-ghaf-release = pkgs.writeShellApplication {
