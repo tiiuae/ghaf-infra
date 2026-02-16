@@ -93,6 +93,12 @@
       };
     };
 
+    ghaf-infra-pki = {
+      url = "github:tiiuae/ghaf-infra-pki";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+      };
+    };
   };
 
   outputs =

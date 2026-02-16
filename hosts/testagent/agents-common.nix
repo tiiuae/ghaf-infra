@@ -66,6 +66,7 @@ let
     ${builtins.readFile ./relay_board_exporter.py}
   '';
 
+  keySource = inputs.ghaf-infra-pki.packages.${pkgs.stdenv.hostPlatform.system}.yubi-slsa-pki;
 in
 {
   imports = [
@@ -182,7 +183,7 @@ in
     "${self.outPath}/slsa/provenance-trust-policy.yaml";
 
   environment.etc."jenkins/GhafInfraSignECP256.pem".source =
-    "${self.outPath}/keys/GhafInfraSignECP256.pem";
+    "${keySource}/share/ghaf-infra-pki/slsa/GhafInfraSignECP256.pem";
 
   environment.etc."jenkins/ci-test-automation-pinned-source".text = inputs.robot-framework.outPath;
 }

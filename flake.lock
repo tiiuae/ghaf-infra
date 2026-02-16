@@ -193,6 +193,26 @@
         "type": "github"
       }
     },
+    "ghaf-infra-pki": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1771241686,
+        "narHash": "sha256-Q74rykKzeCtjojrQG29M6DELMxvu8Ete0Byy6m5xhbw=",
+        "owner": "tiiuae",
+        "repo": "ghaf-infra-pki",
+        "rev": "7199b7c72103a7a47e047e3452b8e673e8aecc93",
+        "type": "github"
+      },
+      "original": {
+        "owner": "tiiuae",
+        "repo": "ghaf-infra-pki",
+        "type": "github"
+      }
+    },
     "git-hooks-nix": {
       "inputs": {
         "flake-compat": [
@@ -397,6 +417,7 @@
         "flake-parts": "flake-parts",
         "flake-root": "flake-root",
         "flake-utils": "flake-utils_3",
+        "ghaf-infra-pki": "ghaf-infra-pki",
         "git-hooks-nix": "git-hooks-nix",
         "nixpkgs": "nixpkgs_3",
         "robot-framework": "robot-framework",

@@ -26,6 +26,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
   def artifacts = "artifacts/${env.JOB_BASE_NAME}/${stamp}-commit_${target_commit}"
   def artifacts_local_dir = "/var/lib/jenkins/${artifacts}"
   def artifacts_href = "<a href=\"/${artifacts}\">📦 Artifacts</a>"
+  def signingToken = "YubiHSM"
   // Evaluate
   stage("Eval") {
     lock('evaluator') {
@@ -126,7 +127,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
             lock('signing') {
               sh """
                 openssl dgst -sha256 -sign \
-                  "pkcs11:token=NetHSM;object=GhafInfraSignECP256" \
+                  "pkcs11:token=${signingToken};object=GhafInfraSignECP256" \
                   -out ${artifacts_local_dir}/scs/${img_path}.sig \
                   ${artifacts_local_dir}/${img_path}
               """
@@ -138,7 +139,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
             lock('signing') {
               sh """
                 openssl pkeyutl -sign -rawin \
-                  -inkey "pkcs11:token=NetHSM;object=GhafInfraSignProv" \
+                  -inkey "pkcs11:token=${signingToken};object=GhafInfraSignProv" \
                   -out ${artifacts_local_dir}/scs/${it.target}/provenance.json.sig \
                   -in ${artifacts_local_dir}/scs/${it.target}/provenance.json
               """
@@ -157,7 +158,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
             }
 
             lock('signing') {
-              sh "${signer} /etc/jenkins/keys/tempDBkey.pem 'pkcs11:token=NetHSM;object=tempDBkey' '${diskPath}' ${outdir}"
+              sh "${signer} /etc/jenkins/keys/tempDBkey.pem 'pkcs11:token=${signingToken};object=tempDBkey' '${diskPath}' ${outdir}"
             }
 
             def keydir = "keys"

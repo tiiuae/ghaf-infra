@@ -55,6 +55,7 @@ let
           pkcs11-module-path = "${pkcs11-proxy}/lib/libpkcs11-proxy.so"
           # fixes segfault in openssl commands
           pkcs11-module-quirks = no-deinit
+          pkcs11-module-token-pin = file:${config.sops.secrets.yubihsm-pin.path}
         ''
     );
   };
@@ -89,6 +90,11 @@ in
     (lib.mkIf cfg.proxy.enable {
       sops.secrets = {
         tls-pks-file = {
+          owner = "jenkins";
+          group = "wheel";
+          mode = "0440";
+        };
+        yubihsm-pin = {
           owner = "jenkins";
           group = "wheel";
           mode = "0440";

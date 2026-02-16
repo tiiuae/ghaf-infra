@@ -27,10 +27,12 @@ ARTIFACT=$2
 SIGNATURE=$3
 
 verify-provenance() {
+  echo "Using certificate $PROV_CERT"
   openssl pkeyutl -verify -inkey "$PROV_CERT" -certin -sigfile "$SIGNATURE" -in "$ARTIFACT" -rawin
 }
 
 verify-image() {
+  echo "Using certificate $IMG_CERT"
   TMPDIR="$(mktemp -d)"
   openssl x509 -pubkey -noout -in "$IMG_CERT" >"$TMPDIR/pubkey.pub"
   openssl dgst -verify "$TMPDIR/pubkey.pub" -signature "$SIGNATURE" "$ARTIFACT"
