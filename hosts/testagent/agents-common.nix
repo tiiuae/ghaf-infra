@@ -99,6 +99,9 @@ in
       pi-pass = credential;
       # used for ssh connections
       ssh_host_ed25519_key.owner = "jenkins";
+
+      fleetdm_enroll_secret = credential;
+      fleetdm_api_token = credential;
     };
 
   networking.useDHCP = true;
