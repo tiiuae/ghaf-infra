@@ -103,9 +103,9 @@
   },
   {
     "name": "commons-compress-api",
-    "version": "1.28.0-2",
-    "url": "https://updates.jenkins.io/download/plugins/commons-compress-api/1.28.0-2/commons-compress-api.hpi",
-    "sha256": "1idczb0dq1s39r4q5126kpipr802dpjhsqgk34zwvh34d67hk2sl"
+    "version": "1.28.0-3",
+    "url": "https://updates.jenkins.io/download/plugins/commons-compress-api/1.28.0-3/commons-compress-api.hpi",
+    "sha256": "1p9ai332inrv4d6fd2nlb0g8rnylphwhpjf9jrf9h0xja1cjhrw4"
   },
   {
     "name": "commons-lang3-api",
@@ -151,9 +151,9 @@
   },
   {
     "name": "credentials",
-    "version": "1480.v2246fd131e83",
-    "url": "https://updates.jenkins.io/download/plugins/credentials/1480.v2246fd131e83/credentials.hpi",
-    "sha256": "08y8jmvc6j9nvd072lffb9jk3h0wn08rr6vd5fzfq5lplr9mwgjx"
+    "version": "1489.v375944c125ee",
+    "url": "https://updates.jenkins.io/download/plugins/credentials/1489.v375944c125ee/credentials.hpi",
+    "sha256": "0a2asym3dkmnxi429zsrjx509pmjqfaana2xmpfaqvi7vks2s69i"
   },
   {
     "name": "credentials-binding",
@@ -217,9 +217,9 @@
   },
   {
     "name": "git",
-    "version": "5.9.0",
-    "url": "https://updates.jenkins.io/download/plugins/git/5.9.0/git.hpi",
-    "sha256": "1l32l6m2f9bpkjk1kxglbmy3a8h9wrs6css8gyzy6dbwgbjmnl23"
+    "version": "5.10.0",
+    "url": "https://updates.jenkins.io/download/plugins/git/5.10.0/git.hpi",
+    "sha256": "07jqyfrd2c87xwfk03llrlrspay76clwdwlhjfp0w5j8nrxv35s4"
   },
   {
     "name": "git-client",
@@ -235,9 +235,9 @@
   },
   {
     "name": "github",
-    "version": "1.45.0",
-    "url": "https://updates.jenkins.io/download/plugins/github/1.45.0/github.hpi",
-    "sha256": "09mhbyg3hh88jp6ijc0y2iwg7qadjivcak0vpz42pbn1clx4a2xc"
+    "version": "1.46.0",
+    "url": "https://updates.jenkins.io/download/plugins/github/1.46.0/github.hpi",
+    "sha256": "06g2if9jz91nc3svwh97qax6rrzf9ydjvfx7bs03sza48kwmnkcx"
   },
   {
     "name": "github-api",
@@ -331,9 +331,9 @@
   },
   {
     "name": "job-dsl",
-    "version": "1.93",
-    "url": "https://updates.jenkins.io/download/plugins/job-dsl/1.93/job-dsl.hpi",
-    "sha256": "09w8qxdqfan3dawacghh5zbxwx46fwqrzq4zxnii20g3qm5qw0j4"
+    "version": "3654.vdf58f53e2d15",
+    "url": "https://updates.jenkins.io/download/plugins/job-dsl/3654.vdf58f53e2d15/job-dsl.hpi",
+    "sha256": "0wmhrgz10iij015amj98da3zr0cv5lzsxawaz5d164mbhy8y79z2"
   },
   {
     "name": "joda-time-api",
@@ -625,9 +625,9 @@
   },
   {
     "name": "ssh-slaves",
-    "version": "3.1096.v0b_cc466e4323",
-    "url": "https://updates.jenkins.io/download/plugins/ssh-slaves/3.1096.v0b_cc466e4323/ssh-slaves.hpi",
-    "sha256": "14yns9yp9sny52s29k0dcmcmp8fqj02mgvjs331j81fr6sk0p133"
+    "version": "3.1097.v868116049892",
+    "url": "https://updates.jenkins.io/download/plugins/ssh-slaves/3.1097.v868116049892/ssh-slaves.hpi",
+    "sha256": "0zsr0vihv3rvhf9llhw9653r9v8049sdrl5051cqhg6jmab4jv4d"
   },
   {
     "name": "sshd",
@@ -679,9 +679,9 @@
   },
   {
     "name": "uno-choice",
-    "version": "2.8.8",
-    "url": "https://updates.jenkins.io/download/plugins/uno-choice/2.8.8/uno-choice.hpi",
-    "sha256": "1xf6zgm645rcyiqi70b094452n3idb0ag9ybzfas2j7wxggrs47z"
+    "version": "2.8.9",
+    "url": "https://updates.jenkins.io/download/plugins/uno-choice/2.8.9/uno-choice.hpi",
+    "sha256": "1qgqiyhzsalk2cvfriy2flsnnph73y37f8air3an4fh2nsg2swlq"
   },
   {
     "name": "variant",
