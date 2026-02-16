@@ -4,11 +4,11 @@
   stdenv,
   lib,
   autoPatchelfHook,
-  fetchFromGitHub,
   curl,
   systemd,
   zlib,
   writeText,
+  ciTestAutomationSrc,
   withUpdater ? true,
   ...
 }:
@@ -28,13 +28,8 @@ let
     KERNEL=="hidraw*", ATTRS{idVendor}=="1fc9", ATTRS{idProduct}=="0130", TAG+="uaccess"
   '';
 
-  # 2.9.25 seems to be gone from the official servers.
-  src = fetchFromGitHub {
-    owner = "tiiuae";
-    repo = "ci-test-automation";
-    rev = "7b44c09b2663666d83dc4764a67114ea6708e26b";
-    hash = "sha256-1Xq+J4IEsdGI+nOvyrxES5L0SZw+yA9nwVBN1lOGU20=";
-  };
+  # Reuse the ci-test-automation flake input source pinned in flake.lock.
+  src = ciTestAutomationSrc;
 in
 stdenv.mkDerivation {
   pname = "brainstem";
