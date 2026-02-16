@@ -7,18 +7,28 @@
 
 def TMP_IMG_DIR = './image'
 def CONF_FILE_PATH = '/etc/jenkins/test_config.json'
+def CI_TEST_PINNED_SOURCE_FILE = '/etc/jenkins/ci-test-automation-pinned-source'
 
 ////////////////////////////////////////////////////////////////////////////////
 
-properties([
-  parameters([
+def pipelineParameters(boolean useFlakePinnedDefault = false) {
+  return [
+    booleanParam(
+      name: 'USE_FLAKE_PINNED_CI_TEST',
+      defaultValue: useFlakePinnedDefault,
+      description: 'Use ci-test-automation source pinned in ghaf-infra flake. Defaults to enabled in release environment.'
+    ),
     string(name: 'CI_TEST_REPO_URL', defaultValue: 'https://github.com/tiiuae/ci-test-automation.git', description: 'Select ci-test-automation repository.'),
     string(name: 'CI_TEST_REPO_BRANCH', defaultValue: 'main', description: 'Select ci-test-automation branch to checkout.'),
     string(name: 'IMG_URL', defaultValue: '', description: 'Target image url.'),
     string(name: 'TESTSET', defaultValue: '_relayboot_', description: 'Target testset, e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.'),
     string(name: 'TESTAGENT_HOST', defaultValue: null, description: 'Target testagent host, e.g.: dev, prod, release'),
     booleanParam(name: 'VERIFY', defaultValue: true, description: 'Verify provenance and image signature'),
-  ])
+  ]
+}
+
+properties([
+  parameters(pipelineParameters(false))
 ])
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -174,6 +184,15 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '1000'))
   }
   stages {
+    stage('Set properties') {
+      steps {
+        script {
+          properties([
+            parameters(pipelineParameters(env.CI_ENV == 'release'))
+          ])
+        }
+      }
+    }
     stage('Reload only') {
       when { expression { params && params.RELOAD_ONLY } }
       steps {
@@ -187,10 +206,25 @@ pipeline {
     stage('Checkout') {
       steps {
         deleteDir()
-        checkout scmGit(
-          branches: [[name: "${params.CI_TEST_REPO_BRANCH}"]],
-          userRemoteConfigs: [[url: CI_TEST_REPO_URL]]
-        )
+        script {
+          if (params.USE_FLAKE_PINNED_CI_TEST) {
+            def pinned_src = sh_ret_out("cat ${CI_TEST_PINNED_SOURCE_FILE}")
+            println("Using flake-pinned ci-test-automation source: ${pinned_src}")
+            sh """
+              if [ ! -d "${pinned_src}/Robot-Framework/test-suites" ]; then
+                echo "ERROR: invalid ci-test-automation source path '${pinned_src}'"
+                exit 1
+              fi
+              cp -r "${pinned_src}/." .
+              chmod -R u+w .
+            """
+          } else {
+            checkout scmGit(
+              branches: [[name: "${params.CI_TEST_REPO_BRANCH}"]],
+              userRemoteConfigs: [[url: "${params.CI_TEST_REPO_URL}"]]
+            )
+          }
+        }
       }
     }
     stage('Setup') {
