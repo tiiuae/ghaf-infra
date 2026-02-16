@@ -157,18 +157,23 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
               signer = "uefisign-simple"
             }
 
-            lock('signing') {
-              sh "${signer} /etc/jenkins/keys/tempDBkey.pem 'pkcs11:token=${signingToken};object=tempDBkey' '${diskPath}' ${outdir}"
-            }
-
             def keydir = "keys"
-            def keysLocation = "${outdir}/${keydir}"
-            sh """
-              cp -r -L /etc/jenkins/keys/secboot ${keysLocation}
-              chmod +w ${keysLocation}
-              cp -L /etc/jenkins/enroll-secureboot-keys.sh ${keysLocation}/enroll.sh
-              tar -cvf ${keysLocation}.tar -C ${outdir} ${keydir}
-            """
+            def keysLocation = "${artifacts_local_dir}/uefisigned"
+            def keysPath = "${keysLocation}/${keydir}"
+
+            lock('signing') {
+              sh "${signer} /etc/jenkins/keys/secboot/DB.pem 'pkcs11:token=${signingToken};object=uefi-ghaf-db' '${diskPath}' ${outdir}"
+
+              // needs to be locked as well to prevent race conditions in shared directory
+              if (!fileExists("${keysPath}.tar")) {
+                sh """
+                  cp -r -L /etc/jenkins/keys/secboot ${keysPath}
+                  chmod +w ${keysPath}
+                  cp -L /etc/jenkins/enroll-secureboot-keys.sh ${keysPath}/enroll.sh
+                  tar -cvf ${keysPath}.tar -C ${keysLocation} ${keydir}
+                """
+              }
+            }
           }
         }
       }
