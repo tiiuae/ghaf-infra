@@ -1,0 +1,63 @@
+# SPDX-FileCopyrightText: 2026 TII (SSRC) and the Ghaf contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Update robot-framework flake input
+
+on:
+  schedule:
+    # 06:00 EET (UTC+2)
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update-robot-framework:
+    name: Update robot-framework input
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to push the automation branch update to this repository.
+      pull-requests: write # Required to create or update the pull request.
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@e3f713f2d8f53843e71c69a996d56f51aa9adfb9
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install nix
+        uses: cachix/install-nix-action@4e002c8ec80594ecd40e759629461e26c8abed15
+
+      - name: Update robot-framework flake input
+        shell: bash
+        run: nix flake lock --update-input robot-framework
+
+      - name: Create or update pull request
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: ${{ github.event.repository.default_branch }}
+          branch: automation/update-robot-framework
+          add-paths: flake.lock
+          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          commit-message: |
+            flake.lock: Update robot-framework input
+
+            Automated update of the robot-framework flake input.
+          signoff: true
+          title: "flake.lock: Update robot-framework input"
+          body: |
+            This PR updates the `robot-framework` flake input in `flake.lock`.
