@@ -80,7 +80,7 @@
     ];
   };
 
-  nethsm.host = "192.168.70.11";
+  nethsm.host = "192.168.70.20";
   pkcs11.proxy.listenAddr = machines.uae-nethsm-gateway.nebula_ip;
 
   services.monitoring = {
@@ -124,6 +124,7 @@
         groups = [
           "hetzner"
           "uae-lab"
+          "uae-azureci"
         ];
       }
       # allow dns requests
@@ -158,7 +159,14 @@
         groups = [
           "hetzner"
           "uae-lab"
+          "uae-azureci"
         ];
+      }
+      # pkcs11-daemon
+      {
+        port = config.pkcs11.proxy.listenPort;
+        proto = "tcp";
+        host = "any";
       }
     ];
   };
