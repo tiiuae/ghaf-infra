@@ -7,12 +7,18 @@
 
 def TMP_IMG_DIR = './image'
 def CONF_FILE_PATH = '/etc/jenkins/test_config.json'
+def CI_TEST_PINNED_SOURCE_FILE = '/etc/jenkins/ci-test-automation-pinned-source'
 env.BOOT_PASSED = 'true'
 
 ////////////////////////////////////////////////////////////////////////////////
 
-properties([
-  parameters([
+def pipelineParameters(boolean useFlakePinnedDefault = false) {
+  return [
+    booleanParam(
+      name: 'USE_FLAKE_PINNED_CI_TEST',
+      defaultValue: useFlakePinnedDefault,
+      description: 'Use ci-test-automation source pinned in ghaf-infra flake. Defaults to enabled in release environment.'
+    ),
     string(name: 'CI_TEST_REPO_URL', defaultValue: 'https://github.com/tiiuae/ci-test-automation.git', description: 'Select ci-test-automation repository.'),
     string(name: 'CI_TEST_REPO_BRANCH', defaultValue: 'main', description: 'Select ci-test-automation branch to checkout.'),
     string(name: 'TEST_TAGS', defaultValue: '', description: 'Target test tags, e.g.: appsORbusinessvm, SP-T140, SP-T45ORSP-T60, etc.'),
@@ -58,7 +64,11 @@ properties([
     booleanParam(name: 'BOOT', defaultValue: true, description: 'Run boot test before any other tests (if any).'),
     booleanParam(name: 'WIPE_ONLY', defaultValue: false, description: 'Run just internal memory wiping stage! Use this option ONLY with installer image!.'),
     booleanParam(name: 'TURN_OFF', defaultValue: false, description: 'Turn off the device after other tests (if any).'),
-  ])
+  ]
+}
+
+properties([
+  parameters(pipelineParameters(false))
 ])
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -191,6 +201,15 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '100'))
   }
   stages {
+    stage('Set properties') {
+      steps {
+        script {
+          properties([
+            parameters(pipelineParameters(env.CI_ENV == 'release'))
+          ])
+        }
+      }
+    }
     stage('Reload only') {
       when { expression { params && params.RELOAD_ONLY } }
       steps {
@@ -204,10 +223,25 @@ pipeline {
     stage('Checkout') {
       steps {
         deleteDir()
-        checkout scmGit(
-          branches: [[name: "${params.CI_TEST_REPO_BRANCH}"]],
-          userRemoteConfigs: [[url: CI_TEST_REPO_URL]]
-        )
+        script {
+          if (params.USE_FLAKE_PINNED_CI_TEST) {
+            def pinned_src = sh_ret_out("cat ${CI_TEST_PINNED_SOURCE_FILE}")
+            println("Using flake-pinned ci-test-automation source: ${pinned_src}")
+            sh """
+              if [ ! -d "${pinned_src}/Robot-Framework/test-suites" ]; then
+                echo "ERROR: invalid ci-test-automation source path '${pinned_src}'"
+                exit 1
+              fi
+              cp -r "${pinned_src}/." .
+              chmod -R u+w .
+            """
+          } else {
+            checkout scmGit(
+              branches: [[name: "${params.CI_TEST_REPO_BRANCH}"]],
+              userRemoteConfigs: [[url: "${params.CI_TEST_REPO_URL}"]]
+            )
+          }
+        }
       }
     }
     stage('Setup') {

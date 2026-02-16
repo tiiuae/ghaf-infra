@@ -208,6 +208,7 @@ def run_hw_tests(String target, String img_url, String testagent_host, String te
       string(name: "DESC", value: desc),
       string(name: "TESTAGENT_HOST", value: testagent_host),
       booleanParam(name: "VERIFY", value: verify),
+      booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: env.CI_ENV == "release"),
       booleanParam(name: "RELOAD_ONLY", value: false),
     ],
   )

@@ -183,4 +183,6 @@ in
 
   environment.etc."jenkins/GhafInfraSignECP256.pem".source =
     "${self.outPath}/keys/GhafInfraSignECP256.pem";
+
+  environment.etc."jenkins/ci-test-automation-pinned-source".text = inputs.robot-framework.outPath;
 }
