@@ -308,6 +308,9 @@ def install_release(c: Any) -> None:
         install(c, "hetzarm-rel-1", yes=True, copy_dir=tmpdir / "builder")
         install(c, "hetzci-release", yes=True, copy_dir=tmpdir / "controller")
 
+    # Deploy (don't re-install) testagent-release
+    c.run("deploy -s --targets .#testagent-release")
+
     # Connect testagent-release to the installed release jenkins controller
     h = get_deploy_host("testagent-release")
     try:
