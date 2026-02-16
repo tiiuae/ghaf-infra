@@ -28,6 +28,8 @@ let
     };
   };
 
+  keySourceUefi = inputs.ghaf-infra-pki.packages.${pkgs.stdenv.hostPlatform.system}.yubi-uefi-pki;
+
   proxyEnv = {
     PKCS11_PROXY_MODULE = "${pkcs11-proxy}/lib/libpkcs11-proxy.so";
     PKCS11_PROXY_TLS_PSK_FILE = config.sops.secrets.tls-pks-file.path;
@@ -106,8 +108,7 @@ in
     })
     {
       environment.etc = {
-        "jenkins/keys/secboot".source = "${self.outPath}/keys/secboot";
-        "jenkins/keys/tempDBkey.pem".source = "${self.outPath}/keys/tempDBkey.pem";
+        "jenkins/keys/secboot".source = "${keySourceUefi}/share/ghaf-infra-pki/uefi";
         "jenkins/enroll-secureboot-keys.sh".source = "${self.outPath}/scripts/enroll-secureboot-keys.sh";
       };
 

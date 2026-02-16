@@ -17,9 +17,9 @@ check_file() {
   fi
 }
 
-check_file db.crt
-check_file KEK.crt
-check_file PK.auth
+check_file DB.pem
+check_file KEK.pem
+check_file auth/PK.auth
 
 if command -v "bootctl" &>/dev/null; then
   sudo bootctl | head -n 8
@@ -37,7 +37,7 @@ run_chattr "db-*"
 run_chattr "KEK-*"
 
 echo "Updating efi variables"
-sudo efi-updatevar -c db.crt db
-sudo efi-updatevar -c KEK.crt KEK
-sudo efi-updatevar -f PK.auth PK
+sudo efi-updatevar -c DB.pem db
+sudo efi-updatevar -c KEK.pem KEK
+sudo efi-updatevar -f auth/PK.auth PK
 echo "Success!"
