@@ -90,6 +90,7 @@
           serial_port = "NONE";
           device_ip_address = "172.18.16.66";
           socket_ip_address = "NONE";
+          rpi_ip_address = "172.18.16.10";
           plug_type = "NONE";
           switch_bot = "LenovoX1-prod";
           usbhub_serial = "641B6D74";
@@ -134,10 +135,6 @@
           usbhub_serial = "78493F26";
           ext_drive_by-id = "/dev/ssdSecBoot";
           threads = 20;
-        };
-        measurement_agent = {
-          inherit location;
-          device_ip_address = "172.18.16.10";
         };
       };
     };
