@@ -52,6 +52,7 @@ in
   options.hetzci.jenkins = {
     envType = lib.mkOption {
       type = lib.types.enum [
+        "dbg"
         "dev"
         "prod"
         "release"
