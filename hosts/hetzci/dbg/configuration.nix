@@ -30,7 +30,7 @@ in
 
   hetzci = {
     jenkins = {
-      envType = "dev";
+      envType = "dbg";
       url = "https://ci-dbg.vedenemo.dev";
       pipelines = [
         "ghaf-hw-test"

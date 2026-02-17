@@ -116,8 +116,8 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
         }
       }
       // Signing stages
-      // Skip signing stages in vm environment, where NetHSM is not available
-      if (env.CI_ENV != 'vm') {
+      // Skip signing stages in vm and dbg environments, where NetHSM is not available
+      if (env.CI_ENV != 'vm' && env.CI_ENV != 'dbg') {
         if (!it.no_image) {
           stage("Sign image ${shortname}") {
             def img_path = get_img_path(it.target, artifacts_local_dir)
