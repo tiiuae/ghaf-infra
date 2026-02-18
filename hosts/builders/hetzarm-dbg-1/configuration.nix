@@ -7,6 +7,16 @@
   lib,
   ...
 }:
+let
+  tuning = import ../../lib/nix-tuning.nix { inherit lib; };
+
+  # Current host sizing: 16 vCPU, 30 GiB RAM, ~300 GiB root disk.
+  disk = tuning.mkDiskThresholds 300;
+  jobs = tuning.mkMaxJobs {
+    cpus = 16;
+    ramGiB = 30;
+  };
+in
 {
   imports = [
     ./disk-config.nix
@@ -44,6 +54,10 @@
   nix.settings.extra-substituters = lib.mkForce [ "" ];
   nix.settings.trusted-substituters = lib.mkForce [ "" ];
   nix.settings.trusted-users = [ "@wheel" ];
+  nix.settings.max-jobs = lib.mkForce jobs;
+  nix.settings.cores = lib.mkForce 2;
+  nix.settings.min-free = lib.mkForce disk.minFreeBytes;
+  nix.settings.max-free = lib.mkForce disk.maxFreeBytes;
 
   system.stateVersion = lib.mkForce "25.11";
 }

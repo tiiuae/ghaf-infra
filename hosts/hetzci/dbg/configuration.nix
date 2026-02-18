@@ -6,6 +6,16 @@
   machines,
   ...
 }:
+let
+  tuning = import ../../lib/nix-tuning.nix { inherit lib; };
+
+  # Current host sizing: 16 vCPU, 30 GiB RAM, ~300 GiB root disk.
+  controllerDisk = tuning.mkDiskThresholds 300;
+  builderMaxJobs = tuning.mkMaxJobs {
+    cpus = 16;
+    ramGiB = 30;
+  };
+in
 {
   imports = [
     ./disk-config.nix
@@ -55,10 +65,15 @@
 
   nix = {
     distributedBuilds = true;
+    settings = {
+      # Keep Jenkins/controller workloads off local builds.
+      max-jobs = lib.mkForce 0;
+      min-free = lib.mkOverride 40 controllerDisk.minFreeBytes;
+      max-free = lib.mkOverride 40 controllerDisk.maxFreeBytes;
+    };
     buildMachines =
       let
         commonOptions = {
-          maxJobs = 20;
           speedFactor = 10;
           supportedFeatures = [
             "kvm"
@@ -73,6 +88,7 @@
           {
             hostName = machines.hetzarm-dbg-1.ip;
             system = "aarch64-linux";
+            maxJobs = builderMaxJobs;
           }
           // commonOptions
         )
@@ -80,6 +96,7 @@
           {
             hostName = machines.hetz86-dbg-1.ip;
             system = "x86_64-linux";
+            maxJobs = builderMaxJobs;
           }
           // commonOptions
         )
