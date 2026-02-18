@@ -12,8 +12,10 @@
   virtualisation.vmVariant.virtualisation.memorySize = ram_gb * 1024;
   virtualisation.vmVariant.virtualisation.diskSize = disk_gb * 1024;
   virtualisation.vmVariant.virtualisation.writableStore = true;
-  virtualisation.vmVariant.virtualisation.useNixStoreImage = true;
-  virtualisation.vmVariant.virtualisation.mountHostNixStore = false;
+  # Avoid rebuilding a temporary store image on every run; this significantly
+  # reduces startup time.
+  virtualisation.vmVariant.virtualisation.useNixStoreImage = false;
+  virtualisation.vmVariant.virtualisation.mountHostNixStore = true;
   virtualisation.vmVariant.virtualisation.writableStoreUseTmpfs = false;
   virtualisation.vmVariant.virtualisation.qemu.consoles = [ "ttyS0,115200n8" ];
   virtualisation.vmVariant.virtualisation.qemu.options = [
