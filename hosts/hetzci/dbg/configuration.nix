@@ -34,6 +34,7 @@ in
       url = "https://ci-dbg.vedenemo.dev";
       pipelines = [
         "ghaf-hw-test"
+        "ghaf-manual"
         "ghaf-release-candidate"
       ];
       withCachix = false;
