@@ -17,12 +17,15 @@
   virtualisation.vmVariant.virtualisation.useNixStoreImage = false;
   virtualisation.vmVariant.virtualisation.mountHostNixStore = true;
   virtualisation.vmVariant.virtualisation.writableStoreUseTmpfs = false;
+  virtualisation.vmVariant.virtualisation.restrictNetwork = false;
   virtualisation.vmVariant.virtualisation.qemu.consoles = [ "ttyS0,115200n8" ];
   virtualisation.vmVariant.virtualisation.qemu.options = [
     "-display none"
     "-serial mon:stdio"
     "-device virtio-balloon"
     "-enable-kvm"
+    # Ask QEMU to self-restrict host-side capabilities.
+    "-sandbox on,obsolete=deny,elevateprivileges=deny,spawn=deny,resourcecontrol=deny"
   ];
   virtualisation.vmVariant.services.openssh.hostKeys = [
     {
