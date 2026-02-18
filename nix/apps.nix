@@ -157,6 +157,13 @@ let
         fi
       fi
 
+      if command -v ssh-keygen >/dev/null 2>&1; then
+        # Guest SSH is forwarded to host port 2222.
+        # Remove stale host keys to avoid mismatch warnings between VM runs.
+        ssh-keygen -R "[127.0.0.1]:2222" >/dev/null 2>&1 || true
+        ssh-keygen -R "[localhost]:2222" >/dev/null 2>&1 || true
+      fi
+
       echo "[+] Running '$(realpath "$0")'"
       # Host path of the shr share directory
       sharedir="${cfg.virtualisation.vmVariant.virtualisation.sharedDirectories.shr.source}"
