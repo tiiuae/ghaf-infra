@@ -88,6 +88,12 @@ To keep VM state across reboots, pass `--keep-disk`:
 ❯ nix run .#run-hetzci-vm -- --keep-disk
 ```
 
+To override VM resources for one run, pass `--ram-gb`, `--cpus`, and/or `--disk-size`:
+
+```bash
+❯ nix run .#run-hetzci-vm -- --ram-gb 16 --cpus 6 --disk-size 120G
+```
+
 Note: the `run-hetzci-vm` app target in this flake can be run by anyone, but only when run by a user that owns the secret key of one of the age public keys declared in the relevant section of [`.sops.yaml`](https://github.com/tiiuae/ghaf-infra/blob/f440c7fed409cd0ed73b4389e21751a92647d2e3/.sops.yaml#L166-L175) do the secrets get decrypted. In all other cases, the [user is notified](https://github.com/tiiuae/ghaf-infra/blob/f440c7fed409cd0ed73b4389e21751a92647d2e3/nix/apps.nix#L13-L20) and the VM will boot-up without secrets. To request access to relevant sops secrets, generate an age key following instructions from [this documentation](https://github.com/tiiuae/ci-vm-example?tab=readme-ov-file#generating-and-adding-an-admin-sops-key) and send a PR adding your key to [`.sops.yaml`](https://github.com/tiiuae/ghaf-infra/blob/f440c7fed409cd0ed73b4389e21751a92647d2e3/.sops.yaml#L166-L175).
 
 `hetzci-vm` configuration automatically sets port forwarding to allow accessing `ssh` over [host port 2222](https://github.com/tiiuae/ghaf-infra/blob/79ea3c3e8b7426a71c39bab64ffcfb99c259a143/hosts/default.nix#L133) and `jenkins` web interface over [host port 8080](https://github.com/tiiuae/ghaf-infra/blob/79ea3c3e8b7426a71c39bab64ffcfb99c259a143/hosts/default.nix#L128).

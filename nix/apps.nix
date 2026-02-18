@@ -41,6 +41,18 @@ let
       set -eu
       cleanup_disk=1
       disk_image=''${NIX_DISK_IMAGE:-./${cfg.networking.hostName}.qcow2}
+      ram_gb=""
+      cpus=""
+      disk_size=""
+      qemu_opts="''${QEMU_OPTS:-}"
+
+      append_qemu_opt() {
+        if [ -n "$qemu_opts" ]; then
+          qemu_opts="$qemu_opts $1"
+        else
+          qemu_opts="$1"
+        fi
+      }
 
       while [ "$#" -gt 0 ]; do
         case "$1" in
@@ -49,7 +61,35 @@ let
             shift
             ;;
           --disk-image)
+            if [ "$#" -lt 2 ]; then
+              echo "error: --disk-image requires a path argument" >&2
+              exit 2
+            fi
             disk_image="$2"
+            shift 2
+            ;;
+          --ram-gb)
+            if [ "$#" -lt 2 ]; then
+              echo "error: --ram-gb requires a numeric argument" >&2
+              exit 2
+            fi
+            ram_gb="$2"
+            shift 2
+            ;;
+          --cpus)
+            if [ "$#" -lt 2 ]; then
+              echo "error: --cpus requires a numeric argument" >&2
+              exit 2
+            fi
+            cpus="$2"
+            shift 2
+            ;;
+          --disk-size)
+            if [ "$#" -lt 2 ]; then
+              echo "error: --disk-size requires a size argument (e.g. 50G)" >&2
+              exit 2
+            fi
+            disk_size="$2"
             shift 2
             ;;
           --help|-h)
@@ -59,6 +99,9 @@ let
       Options:
         --keep-disk        Keep disk image after VM exits
         --disk-image PATH  Disk image path (default: ./hetzci-vm.qcow2)
+        --ram-gb GB        Override VM RAM in GiB
+        --cpus N           Override VM CPU count
+        --disk-size SIZE   Override disk size (e.g. 50G, 10240M)
         --help, -h         Show this help text
       EOF
             exit 0
@@ -73,7 +116,47 @@ let
         esac
       done
 
+      if [ -n "$ram_gb" ]; then
+        if ! ${pkgs.gnugrep}/bin/grep -Eq '^[0-9]+$' <<<"$ram_gb"; then
+          echo "error: --ram-gb must be a positive integer" >&2
+          exit 2
+        fi
+        if [ "$ram_gb" -le 0 ]; then
+          echo "error: --ram-gb must be greater than zero" >&2
+          exit 2
+        fi
+        append_qemu_opt "-m $((ram_gb * 1024))"
+      fi
+
+      if [ -n "$cpus" ]; then
+        if ! ${pkgs.gnugrep}/bin/grep -Eq '^[0-9]+$' <<<"$cpus"; then
+          echo "error: --cpus must be a positive integer" >&2
+          exit 2
+        fi
+        if [ "$cpus" -le 0 ]; then
+          echo "error: --cpus must be greater than zero" >&2
+          exit 2
+        fi
+        append_qemu_opt "-smp $cpus"
+      fi
+
       export NIX_DISK_IMAGE="$disk_image"
+      if [ -n "$qemu_opts" ]; then
+        export QEMU_OPTS="$qemu_opts"
+      fi
+
+      if [ -n "$disk_size" ]; then
+        if [ ! -e "$disk_image" ]; then
+          tmp_raw="$(${pkgs.coreutils}/bin/mktemp -t hetzci-vm-disk.XXXXXX)"
+          ${pkgs.lib.getExe pkgs.qemu}/qemu-img create -f raw "$tmp_raw" "$disk_size"
+          ${pkgs.e2fsprogs}/bin/mkfs.ext4 -L nixos "$tmp_raw" >/dev/null
+          ${pkgs.lib.getExe pkgs.qemu}/qemu-img convert -f raw -O qcow2 "$tmp_raw" "$disk_image"
+          ${pkgs.coreutils}/bin/rm -f -- "$tmp_raw"
+        else
+          ${pkgs.lib.getExe pkgs.qemu}/qemu-img resize "$disk_image" "$disk_size" >/dev/null
+        fi
+      fi
+
       echo "[+] Running '$(realpath "$0")'"
       # Host path of the shr share directory
       sharedir="${cfg.virtualisation.vmVariant.virtualisation.sharedDirectories.shr.source}"
