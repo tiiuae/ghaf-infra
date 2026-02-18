@@ -7,7 +7,7 @@
   ...
 }:
 {
-  virtualisation.vmVariant.virtualisation.graphics = false;
+  virtualisation.vmVariant.virtualisation.graphics = true;
   virtualisation.vmVariant.virtualisation.cores = vcpus;
   virtualisation.vmVariant.virtualisation.memorySize = ram_gb * 1024;
   virtualisation.vmVariant.virtualisation.diskSize = disk_gb * 1024;
@@ -15,7 +15,10 @@
   virtualisation.vmVariant.virtualisation.useNixStoreImage = true;
   virtualisation.vmVariant.virtualisation.mountHostNixStore = false;
   virtualisation.vmVariant.virtualisation.writableStoreUseTmpfs = false;
+  virtualisation.vmVariant.virtualisation.qemu.consoles = [ "ttyS0,115200n8" ];
   virtualisation.vmVariant.virtualisation.qemu.options = [
+    "-display none"
+    "-serial mon:stdio"
     "-device virtio-balloon"
     "-enable-kvm"
   ];
