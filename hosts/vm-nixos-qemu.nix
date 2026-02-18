@@ -34,5 +34,12 @@
       type = "ed25519";
     }
   ];
+  # Keep PID1 console output plain/stable on serial terminals.
+  virtualisation.vmVariant.boot.kernelParams = [ "systemd.tty.term.console=dumb" ];
+  # Keep serial console output stable by skipping agetty clear/reset sequences.
+  virtualisation.vmVariant.services.getty.extraArgs = [
+    "--noclear"
+    "--noreset"
+  ];
   virtualisation.vmVariant.services.getty.autologinUser = "root";
 }
