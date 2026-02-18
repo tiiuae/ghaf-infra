@@ -43,6 +43,16 @@
     };
   };
 
+  # Configure /var/lib/caddy in /etc/fstab for persistent caddy state.
+  fileSystems."/var/lib/caddy" = {
+    device = "/dev/disk/by-id/scsi-0HC_Volume_104714167";
+    fsType = "ext4";
+    options = [
+      "x-systemd.makefs"
+      "x-systemd.growfs"
+    ];
+  };
+
   nix = {
     distributedBuilds = true;
     buildMachines =
