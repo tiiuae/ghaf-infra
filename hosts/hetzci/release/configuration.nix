@@ -48,7 +48,7 @@
     signing.proxy.enable = true;
   };
 
-  # Configure /var/lib/caddy in /etc/fstab.
+  # Configure /var/lib/caddy in /etc/fstab for persistent caddy state.
   fileSystems."/var/lib/caddy" = {
     device = "/dev/disk/by-id/scsi-0HC_Volume_103219547";
     fsType = "ext4";
