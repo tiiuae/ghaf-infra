@@ -157,22 +157,8 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
               signer = "uefisign-simple"
             }
 
-            def keydir = "keys"
-            def keysLocation = "${artifacts_local_dir}/uefisigned"
-            def keysPath = "${keysLocation}/${keydir}"
-
             lock('signing') {
               sh "${signer} /etc/jenkins/keys/secboot/DB.pem 'pkcs11:token=${signingToken};object=uefi-ghaf-db' '${diskPath}' ${outdir}"
-
-              // needs to be locked as well to prevent race conditions in shared directory
-              if (!fileExists("${keysPath}.tar")) {
-                sh """
-                  cp -r -L /etc/jenkins/keys/secboot ${keysPath}
-                  chmod +w ${keysPath}
-                  cp -L /etc/jenkins/enroll-secureboot-keys.sh ${keysPath}/enroll.sh
-                  tar -cvf ${keysPath}.tar -C ${keysLocation} ${keydir}
-                """
-              }
             }
           }
         }
