@@ -409,6 +409,7 @@ pipeline {
             'Robot-Framework/test-suites/**/*.txt'
           archiveArtifacts allowEmptyArchive: true, artifacts: test_artifacts
         }
+        sh "rm -rf ${TMP_IMG_DIR} || true"
       }
     }
   }
