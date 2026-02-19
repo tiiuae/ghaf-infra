@@ -73,6 +73,8 @@ Following sections describe the intended workflow for hetzci development.
 ```
 Flake apps target [`run-hetzci-vm`](https://github.com/tiiuae/ghaf-infra/blob/79ea3c3e8b7426a71c39bab64ffcfb99c259a143/nix/apps.nix#L64-L69) allows running [`hosts/hetzci/vm`](https://github.com/tiiuae/ghaf-infra/tree/main/hosts/hetzci/vm) configuration locally in a Qemu VM decrypting the host sops secrets following the rules set in [`.sops.yaml`](https://github.com/tiiuae/ghaf-infra/blob/main/.sops.yaml). The general idea is explained in [tiiuae/ci-vm-example](https://github.com/tiiuae/ci-vm-example?tab=readme-ov-file#secrets).
 
+Prerequisite: `run-hetzci-vm` requires KVM acceleration on the host (`/dev/kvm` must be available and accessible to your user).
+
 On running the VM target, a disk file (`hetzci-vm.qcow2`) will be created in the current working directory. By default this disk is removed when the VM exits (ephemeral VM state).
 
 To run the `hosts/hetzci/vm` config in a local Qemu VM, execute the `run-hetzci-vm` target:
