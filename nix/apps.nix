@@ -96,6 +96,9 @@ let
             cat <<'EOF'
       Usage: nix run .#run-hetzci-vm -- [OPTIONS] [-- VM_ARGS...]
 
+      Prerequisite:
+        Host KVM must be available (`/dev/kvm` accessible to the current user)
+
       Options:
         --keep-disk        Keep disk image after VM exits
         --disk-image PATH  Disk image path (default: ./hetzci-vm.qcow2)
