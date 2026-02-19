@@ -70,6 +70,7 @@ in
 {
   imports = [
     ../../testagent/agent.nix
+    ../../testagent/gc.nix
     inputs.sops-nix.nixosModules.sops
     inputs.disko.nixosModules.disko
     self.nixosModules.service-monitoring
