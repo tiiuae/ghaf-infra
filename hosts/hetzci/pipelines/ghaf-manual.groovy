@@ -3,14 +3,15 @@
 import groovy.transform.Field
 @Field def MODULES = [:]
 
-def REPO_URL = 'https://github.com/tiiuae/ghaf/'
+def DEFAULT_REPO_URL = 'https://github.com/tiiuae/ghaf/'
 def WORKDIR  = 'checkout'
 def PIPELINE = [:]
 
 properties([
-  githubProjectProperty(displayName: '', projectUrlStr: REPO_URL),
+  githubProjectProperty(displayName: ''),
   parameters([
     booleanParam(name: 'UEFISIGN', defaultValue: false, description: 'Enable secure boot signing (for supported targets)'),
+    string(name: 'REPO_URL', defaultValue: DEFAULT_REPO_URL, description: 'Git repository URL'),
     string(name: 'GITREF', defaultValue: 'main', description: 'Ghaf git reference (Commit/Branch/Tag)'),
     string(name: 'TESTSET', defaultValue: null, description: 'By default tests are skipped. To run hw-tests, define the target testset here; e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.)'),
     booleanParam(name: 'doc', defaultValue: false, description: 'Build target packages.x86_64-linux.doc'),
@@ -26,6 +27,11 @@ properties([
     booleanParam(name: 'system76_darp11_b_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.system76-darp11-b-debug-installer'),
     booleanParam(name: 'system76_darp11_b_storeDisk_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.system76-darp11-b-storeDisk-debug'),
     booleanParam(name: 'system76_darp11_b_storeDisk_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.system76-darp11-b-storeDisk-debug-installer'),
+    booleanParam(name: 'intel_laptop_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug'),
+    booleanParam(name: 'intel_laptop_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug-installer'),
+    booleanParam(name: 'intel_laptop_low_mem_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-low-mem-debug'),
+    booleanParam(name: 'intel_laptop_low_mem_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-low-mem-debug-installer'),
+
   ])
 ])
 pipeline {
@@ -50,7 +56,7 @@ pipeline {
           deleteDir()
           checkout scmGit(
             branches: [[name: params.GITREF]],
-            userRemoteConfigs: [[url: REPO_URL]]
+            userRemoteConfigs: [[url: params.REPO_URL]]
           )
         }
       }
@@ -102,7 +108,7 @@ pipeline {
             }
             if (params.system76_darp11_b_debug_installer) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.system76-darp11-b-debug-installer", uefisign: params.UEFISIGN, testset: params.TESTSET  ])
+                [ target: "packages.x86_64-linux.system76-darp11-b-debug-installer", uefisigniso: params.UEFISIGN, testset: params.TESTSET  ])
             }
             if (params.system76_darp11_b_storeDisk_debug) {
               TARGETS.push(
@@ -110,8 +116,25 @@ pipeline {
             }
             if (params.system76_darp11_b_storeDisk_debug_installer) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.system76-darp11-b-storeDisk-debug-installer", uefisign: params.UEFISIGN, testset: params.TESTSET  ])
+                [ target: "packages.x86_64-linux.system76-darp11-b-storeDisk-debug-installer", uefisigniso: params.UEFISIGN, testset: params.TESTSET  ])
             }
+            if (params.intel_laptop_debug) {
+              TARGETS.push(
+                [ target: "packages.x86_64-linux.intel-laptop-debug", uefisign: params.UEFISIGN, testset: null ])
+            }
+            if (params.intel_laptop_debug_installer) {
+              TARGETS.push(
+                [ target: "packages.x86_64-linux.intel-laptop-debug-installer", uefisigniso: params.UEFISIGN, testset: null ])
+            }
+            if (params.intel_laptop_low_mem_debug) {
+              TARGETS.push(
+                [ target: "packages.x86_64-linux.intel-laptop-low-mem-debug", uefisign: params.UEFISIGN, testset: null ])
+            }
+            if (params.intel_laptop_low_mem_debug_installer) {
+              TARGETS.push(
+                [ target: "packages.x86_64-linux.intel-laptop-low-mem-debug-installer", uefisigniso: params.UEFISIGN, testset: null ])
+            }
+
             MODULES.utils = load "/etc/jenkins/pipelines/modules/utils.groovy"
             PIPELINE = MODULES.utils.create_pipeline(TARGETS)
           }
