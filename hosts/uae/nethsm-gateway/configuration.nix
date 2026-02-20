@@ -5,7 +5,8 @@
   inputs,
   lib,
   config,
-  machines,
+  #  machines,
+  pkgs,
   ...
 }:
 {
@@ -20,16 +21,21 @@
     team-devenv
     user-bmg
     service-openssh
-    service-nebula
+    #    service-nebula
     service-monitoring
   ]);
+
+  environment.systemPackages = with pkgs; [
+    inetutils
+    net-tools
+  ];
 
   sops = {
     defaultSopsFile = ./secrets.yaml;
     secrets = {
       loki_password.owner = "alloy";
-      nebula-cert.owner = config.nebula.user;
-      nebula-key.owner = config.nebula.user;
+      #      nebula-cert.owner = config.nebula.user;
+      #      nebula-key.owner = config.nebula.user;
     };
   };
 
@@ -81,7 +87,7 @@
   };
 
   nethsm.host = "192.168.70.20";
-  pkcs11.proxy.listenAddr = machines.uae-nethsm-gateway.nebula_ip;
+  pkcs11.proxy.listenAddr = "0.0.0.0";
 
   services.monitoring = {
     metrics.enable = true;
@@ -109,68 +115,68 @@
       '';
   };
 
-  nebula = {
-    enable = true;
-    cert = config.sops.secrets.nebula-cert.path;
-    key = config.sops.secrets.nebula-key.path;
-  };
-
-  services.nebula.networks."vedenemo".firewall = {
-    outbound = lib.mkForce [
-      # allow udp outbound only to hetzner, uae-lab
-      {
-        port = 4242;
-        proto = "udp";
-        groups = [
-          "hetzner"
-          "uae-lab"
-          "uae-azureci"
-        ];
-      }
-      # allow dns requests
-      {
-        port = 53;
-        proto = "udp";
-        host = "any";
-      }
-      # allow any tcp or icmp outbound (between nebula hosts)
-      {
-        port = "any";
-        proto = "tcp";
-        host = "any";
-      }
-      {
-        port = "any";
-        proto = "icmp";
-        host = "any";
-      }
-    ];
-    inbound = [
-      # allow monitoring server to scrape nethsm metrics
-      {
-        inherit (config.nethsm.exporter) port;
-        proto = "tcp";
-        groups = [ "scraper" ];
-      }
-      # allow hetzner and uae-lab servers to connect
-      {
-        port = 22;
-        proto = "tcp";
-        groups = [
-          "hetzner"
-          "uae-lab"
-          "uae-azureci"
-        ];
-      }
-      # pkcs11-daemon
-      {
-        port = config.pkcs11.proxy.listenPort;
-        proto = "tcp";
-        host = "any";
-      }
-    ];
-  };
-
+  #  nebula = {
+  #    enable = true;
+  #    cert = config.sops.secrets.nebula-cert.path;
+  #    key = config.sops.secrets.nebula-key.path;
+  #  };
+  #
+  #  services.nebula.networks."vedenemo".firewall = {
+  #    outbound = lib.mkForce [
+  #      # allow udp outbound only to hetzner, uae-lab
+  #      {
+  #        port = 4242;
+  #        proto = "udp";
+  #        groups = [
+  #          "hetzner"
+  #          "uae-lab"
+  #          "uae-azureci"
+  #        ];
+  #      }
+  #      # allow dns requests
+  #      {
+  #        port = 53;
+  #        proto = "udp";
+  #        host = "any";
+  #      }
+  #      # allow any tcp or icmp outbound (between nebula hosts)
+  #      {
+  #        port = "any";
+  #        proto = "tcp";
+  #        host = "any";
+  #      }
+  #      {
+  #        port = "any";
+  #        proto = "icmp";
+  #        host = "any";
+  #      }
+  #    ];
+  #    inbound = [
+  #      # allow monitoring server to scrape nethsm metrics
+  #      {
+  #        inherit (config.nethsm.exporter) port;
+  #        proto = "tcp";
+  #        groups = [ "scraper" ];
+  #      }
+  #      # allow hetzner and uae-lab servers to connect
+  #      {
+  #        port = 22;
+  #        proto = "tcp";
+  #        groups = [
+  #          "hetzner"
+  #          "uae-lab"
+  #          "uae-azureci"
+  #        ];
+  #      }
+  #      # pkcs11-daemon
+  #      {
+  #        port = config.pkcs11.proxy.listenPort;
+  #        proto = "tcp";
+  #        host = "any";
+  #      }
+  #    ];
+  #  };
+  #
   # This server is only exposed to the internal network
   # fail2ban only causes issues here
   services.fail2ban.enable = lib.mkForce false;

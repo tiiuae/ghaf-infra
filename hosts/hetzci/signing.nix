@@ -31,7 +31,7 @@ let
   proxyEnv = {
     PKCS11_PROXY_MODULE = "${pkcs11-proxy}/lib/libpkcs11-proxy.so";
     PKCS11_PROXY_TLS_PSK_FILE = config.sops.secrets.tls-pks-file.path;
-    PKCS11_PROXY_SOCKET = "tls://uae-nethsm-gateway.sumu.vedenemo.dev:2345";
+    PKCS11_PROXY_SOCKET = "tls://172.31.141.51:2345";
     PKCS11_TLS_IDENTITY = config.networking.hostName;
     OPENSSL_CONF = toString (
       pkgs.writeText "openssl.cnf" # ini
