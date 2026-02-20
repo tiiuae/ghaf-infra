@@ -20,6 +20,7 @@
     common
     team-devenv
     user-bmg
+    user-ctsopokis
     service-openssh
     #    service-nebula
     service-monitoring
