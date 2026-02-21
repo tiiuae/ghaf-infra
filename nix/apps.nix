@@ -36,15 +36,18 @@ let
     '');
 
   run-vm-with-share =
-    pkgs: cfg: secret:
+    pkgs: cfg: cfgNoHostNixStore: secret:
     (pkgs.writeShellScriptBin "run-vm-with-share" ''
       set -eu
       cleanup_disk=1
+      no_host_nix_store=0
       disk_image=''${NIX_DISK_IMAGE:-./${cfg.networking.hostName}.qcow2}
       ram_gb=""
       cpus=""
       disk_size=""
       qemu_opts="''${QEMU_OPTS:-}"
+      vm_runner="${pkgs.lib.getExe cfg.system.build.vm}"
+      vm_runner_no_host_nix_store="${pkgs.lib.getExe cfgNoHostNixStore.system.build.vm}"
 
       append_qemu_opt() {
         if [ -n "$qemu_opts" ]; then
@@ -58,6 +61,10 @@ let
         case "$1" in
           --keep-disk)
             cleanup_disk=0
+            shift
+            ;;
+          --no-host-nix-store)
+            no_host_nix_store=1
             shift
             ;;
           --disk-image)
@@ -100,12 +107,13 @@ let
         Host KVM must be available (`/dev/kvm` accessible to the current user)
 
       Options:
-        --keep-disk        Keep disk image after VM exits
-        --disk-image PATH  Disk image path (default: ./hetzci-vm.qcow2)
-        --ram-gb GB        Override VM RAM in GiB
-        --cpus N           Override VM CPU count
-        --disk-size SIZE   Override disk size (e.g. 50G, 10240M)
-        --help, -h         Show this help text
+        --keep-disk             Keep disk image after VM exits
+        --no-host-nix-store     Disable host /nix/store mount inside VM
+        --disk-image PATH       Disk image path (default: ./hetzci-vm.qcow2)
+        --ram-gb GB             Override VM RAM in GiB
+        --cpus N                Override VM CPU count
+        --disk-size SIZE        Override disk size (e.g. 50G, 10240M)
+        --help, -h              Show this help text
       EOF
             exit 0
             ;;
@@ -118,6 +126,10 @@ let
             ;;
         esac
       done
+
+      if [ "$no_host_nix_store" -eq 1 ]; then
+        vm_runner="$vm_runner_no_host_nix_store"
+      fi
 
       if [ -n "$ram_gb" ]; then
         if ! ${pkgs.gnugrep}/bin/grep -Eq '^[0-9]+$' <<<"$ram_gb"; then
@@ -189,7 +201,7 @@ let
       ${decrypt-sops-key pkgs} "${secret}" "$todir"
 
       # Run vm with the share mounted inside the virtual machine
-      ${pkgs.lib.getExe cfg.system.build.vm} "$@"
+      "$vm_runner" "$@"
     '');
 in
 {
@@ -203,6 +215,7 @@ in
         meta.description = "Run hetzci VM - 'nix run .#run-hetzci-vm -- --help'";
         program =
           run-vm-with-share pkgs self.nixosConfigurations.hetzci-vm.config
+            self.nixosConfigurations.hetzci-vm-no-host-nix-store.config
             "${self.outPath}/hosts/hetzci/vm/secrets.yaml";
       };
     };

@@ -4,6 +4,8 @@
   vcpus ? 2,
   ram_gb ? 4,
   disk_gb ? 16,
+  mount_host_nix_store ? true,
+  use_nix_store_image ? (!mount_host_nix_store),
   ...
 }:
 {
@@ -12,10 +14,9 @@
   virtualisation.vmVariant.virtualisation.memorySize = ram_gb * 1024;
   virtualisation.vmVariant.virtualisation.diskSize = disk_gb * 1024;
   virtualisation.vmVariant.virtualisation.writableStore = true;
-  # Avoid rebuilding a temporary store image on every run; this significantly
-  # reduces startup time.
-  virtualisation.vmVariant.virtualisation.useNixStoreImage = false;
-  virtualisation.vmVariant.virtualisation.mountHostNixStore = true;
+  # Host store mount is faster to start; store image keeps guest independent.
+  virtualisation.vmVariant.virtualisation.useNixStoreImage = use_nix_store_image;
+  virtualisation.vmVariant.virtualisation.mountHostNixStore = mount_host_nix_store;
   virtualisation.vmVariant.virtualisation.writableStoreUseTmpfs = false;
   virtualisation.vmVariant.virtualisation.restrictNetwork = false;
   virtualisation.vmVariant.virtualisation.qemu.consoles = [ "ttyS0,115200n8" ];
