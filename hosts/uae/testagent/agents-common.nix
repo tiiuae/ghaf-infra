@@ -114,7 +114,7 @@ in
   };
 
   services.udev.packages = [
-    self.packages.${pkgs.system}.brainstem
+    self.packages.${pkgs.stdenv.hostPlatform.system}.brainstem
     pkgs.usbsdmux
   ];
 
@@ -124,11 +124,11 @@ in
     disconnect-script
     relay-board-exporter
   ]
-  ++ (with self.packages.${pkgs.system}; [
+  ++ (with self.packages.${pkgs.stdenv.hostPlatform.system}; [
     brainstem
     policy-checker
   ])
-  ++ (with inputs.robot-framework.packages.${pkgs.system}; [
+  ++ (with inputs.robot-framework.packages.${pkgs.stdenv.hostPlatform.system}; [
     ghaf-robot
     KMTronic
   ])
@@ -175,7 +175,7 @@ in
       coreutils
       gawk
       relay-board-exporter
-      inputs.robot-framework.packages.${pkgs.system}.KMTronic
+      inputs.robot-framework.packages.${pkgs.stdenv.hostPlatform.system}.KMTronic
     ];
   };
 
