@@ -30,6 +30,39 @@ let
       ]
       ++ lib.optional (extraConfig != null) extraConfig;
     };
+
+  mkHetzciVm =
+    {
+      mountHostNixStore ? true,
+    }:
+    inputs.nixpkgs.lib.nixosSystem {
+      inherit specialArgs;
+      modules = [
+        (import ./vm-nixos-qemu.nix {
+          disk_gb = 200;
+          vcpus = 4;
+          ram_gb = 20;
+          mount_host_nix_store = mountHostNixStore;
+        })
+        self.nixosModules.nixos-hetzci-vm
+        {
+          nixpkgs.hostPlatform = "x86_64-linux";
+          # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/virtualisation/qemu-vm.nix
+          virtualisation.vmVariant.virtualisation.forwardPorts = [
+            {
+              from = "host";
+              host.port = 8080;
+              guest.port = 80;
+            }
+            {
+              from = "host";
+              host.port = 2222;
+              guest.port = 22;
+            }
+          ];
+        }
+      ];
+    };
 in
 {
   flake.nixosModules = {
@@ -116,32 +149,9 @@ in
         ]
     ))
     // {
-      hetzci-vm = inputs.nixpkgs.lib.nixosSystem {
-        inherit specialArgs;
-        modules = [
-          (import ./vm-nixos-qemu.nix {
-            disk_gb = 200;
-            vcpus = 4;
-            ram_gb = 20;
-          })
-          self.nixosModules.nixos-hetzci-vm
-          {
-            nixpkgs.hostPlatform = "x86_64-linux";
-            # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/virtualisation/qemu-vm.nix
-            virtualisation.vmVariant.virtualisation.forwardPorts = [
-              {
-                from = "host";
-                host.port = 8080;
-                guest.port = 80;
-              }
-              {
-                from = "host";
-                host.port = 2222;
-                guest.port = 22;
-              }
-            ];
-          }
-        ];
+      hetzci-vm = mkHetzciVm { };
+      hetzci-vm-no-host-nix-store = mkHetzciVm {
+        mountHostNixStore = false;
       };
     };
 }

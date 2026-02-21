@@ -68,10 +68,11 @@ Following sections describe the intended workflow for hetzci development.
 ...
 ├───apps
 │   └───x86_64-linux
-│       └───run-hetzci-vm: app
+│       └───run-hetzci-vm: app: Run hetzci VM - 'nix run .#run-hetzci-vm -- --help'
 ...
 ```
-Flake apps target [`run-hetzci-vm`](https://github.com/tiiuae/ghaf-infra/blob/79ea3c3e8b7426a71c39bab64ffcfb99c259a143/nix/apps.nix#L64-L69) allows running [`hosts/hetzci/vm`](https://github.com/tiiuae/ghaf-infra/tree/main/hosts/hetzci/vm) configuration locally in a Qemu VM decrypting the host sops secrets following the rules set in [`.sops.yaml`](https://github.com/tiiuae/ghaf-infra/blob/main/.sops.yaml). The general idea is explained in [tiiuae/ci-vm-example](https://github.com/tiiuae/ci-vm-example?tab=readme-ov-file#secrets).
+
+Flake app [`run-hetzci-vm`](https://github.com/tiiuae/ghaf-infra/blob/main/nix/apps.nix) allows running [`hosts/hetzci/vm`](https://github.com/tiiuae/ghaf-infra/tree/main/hosts/hetzci/vm) configuration locally in a Qemu VM decrypting the host sops secrets following the rules set in [`.sops.yaml`](https://github.com/tiiuae/ghaf-infra/blob/main/.sops.yaml). The general idea is explained in [tiiuae/ci-vm-example](https://github.com/tiiuae/ci-vm-example?tab=readme-ov-file#secrets).
 
 Prerequisite: `run-hetzci-vm` requires KVM acceleration on the host (`/dev/kvm` must be available and accessible to your user).
 
@@ -89,6 +90,29 @@ To keep VM state across reboots, pass `--keep-disk`:
 ```bash
 ❯ nix run .#run-hetzci-vm -- --keep-disk
 ```
+
+To run the VM with an independent guest Nix store (instead of mounting the host store), pass `--no-host-nix-store`:
+
+```bash
+❯ nix run .#run-hetzci-vm -- --no-host-nix-store
+```
+
+Default behavior (without `--no-host-nix-store`):
+- The guest mounts host `/nix/store` as a read-only backing store.
+- Guest-created store paths are written to a separate writable guest layer.
+- The guest sees a single `/nix/store` view: writable layer first, then read-only backing store.
+- Guest writes to `/nix/store` do not go to host `/nix/store`; host impact is mainly extra store read activity.
+
+Using `--no-host-nix-store` switches to a VM variant with a fully guest-managed store:
+
+- Benefits of `--no-host-nix-store`:
+  - Better isolation from host state because guest `/nix/store` is not backed by host `/nix/store`.
+  - Guest `/nix/store` is isolated from host `/nix/store`: host store paths are not mounted into the guest, and the guest fully manages its own store content.
+
+- Trade-offs of `--no-host-nix-store`:
+  - Slower startup in typical runs because the VM cannot directly reuse host store paths.
+  - Guest needs to realize and fetch more store paths itself during runtime.
+  - Usually higher disk usage during the VM run due to maintaining a separate guest store image.
 
 To override VM resources for one run, pass `--ram-gb`, `--cpus`, and/or `--disk-size`:
 
