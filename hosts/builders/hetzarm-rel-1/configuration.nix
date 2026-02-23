@@ -4,8 +4,19 @@
   pkgs,
   self,
   inputs,
+  lib,
   ...
 }:
+let
+  tuning = import ../../lib/nix-tuning.nix { inherit lib; };
+
+  # Current host sizing: 16 vCPU, 30 GiB RAM, ~300 GiB root disk.
+  disk = tuning.mkDiskThresholds 300;
+  jobs = tuning.mkMaxJobs {
+    cpus = 16;
+    ramGiB = 30;
+  };
+in
 {
   imports = [
     ./disk-config.nix
@@ -52,6 +63,10 @@
   nix.settings.trusted-users = [
     "hetzarm-rel-1-builder"
   ];
+  nix.settings.max-jobs = lib.mkForce jobs;
+  nix.settings.cores = lib.mkForce 2;
+  nix.settings.min-free = lib.mkForce disk.minFreeBytes;
+  nix.settings.max-free = lib.mkForce disk.maxFreeBytes;
 
   # Nixos-anywhere kexec switch fails on hetzner cloud arm VMs without this
   boot.kernelPackages = pkgs.linuxPackages_latest;

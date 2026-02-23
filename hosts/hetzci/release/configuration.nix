@@ -6,6 +6,24 @@
   machines,
   ...
 }:
+let
+  tuning = import ../../lib/nix-tuning.nix { inherit lib; };
+
+  # Current host sizing: 16 vCPU, 30 GiB RAM, ~337 GiB root disk.
+  controllerDisk = tuning.mkDiskThresholds 337;
+
+  # Current release builder sizing:
+  # - hetz86-rel-2: 96 vCPU, 251 GiB RAM
+  # - hetzarm-rel-1: 16 vCPU, 30 GiB RAM
+  x86BuilderMaxJobs = tuning.mkMaxJobs {
+    cpus = 96;
+    ramGiB = 251;
+  };
+  armBuilderMaxJobs = tuning.mkMaxJobs {
+    cpus = 16;
+    ramGiB = 30;
+  };
+in
 {
   imports = [
     ./disk-config.nix
@@ -70,6 +88,9 @@
   nix.settings.extra-trusted-public-keys = lib.mkForce [ "" ];
   nix.settings.extra-substituters = lib.mkForce [ "" ];
   nix.settings.trusted-substituters = lib.mkForce [ "" ];
+  nix.settings.max-jobs = lib.mkForce 0;
+  nix.settings.min-free = lib.mkOverride 60 controllerDisk.minFreeBytes;
+  nix.settings.max-free = lib.mkOverride 60 controllerDisk.maxFreeBytes;
 
   # Configure (release) remote builders
   nix = {
@@ -91,7 +112,7 @@
           // {
             hostName = "hetz86-rel-2";
             system = "x86_64-linux";
-            maxJobs = 7;
+            maxJobs = x86BuilderMaxJobs;
             speedFactor = 12;
             sshUser = "hetz86-rel-2-builder";
             sshKey = "/etc/ssh/certs/hetz86-rel-2-builder";
@@ -102,7 +123,7 @@
           // {
             hostName = "hetzarm-rel-1";
             system = "aarch64-linux";
-            maxJobs = 16;
+            maxJobs = armBuilderMaxJobs;
             speedFactor = 2;
             sshUser = "hetzarm-rel-1-builder";
             sshKey = "/etc/ssh/certs/hetzarm-rel-1-builder";
