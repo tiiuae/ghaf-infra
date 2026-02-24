@@ -6,6 +6,21 @@
   lib,
   ...
 }:
+let
+  tuning = import ../lib/nix-tuning.nix { inherit lib; };
+
+  # Current shared builder sizing:
+  # - hetz86-1: 96 vCPU, 251 GiB RAM
+  # - hetzarm: 80 vCPU, 250 GiB RAM
+  x86BuilderMaxJobs = tuning.mkMaxJobs {
+    cpus = 96;
+    ramGiB = 251;
+  };
+  armBuilderMaxJobs = tuning.mkMaxJobs {
+    cpus = 80;
+    ramGiB = 250;
+  };
+in
 {
   sops = {
     secrets = {
@@ -18,7 +33,6 @@
     buildMachines =
       let
         commonOptions = {
-          maxJobs = 20;
           speedFactor = 10;
           supportedFeatures = [
             "kvm"
@@ -33,6 +47,7 @@
           {
             hostName = "hetzarm.vedenemo.dev";
             system = "aarch64-linux";
+            maxJobs = armBuilderMaxJobs;
           }
           // commonOptions
         )
@@ -40,6 +55,7 @@
           {
             hostName = "hetz86-1.vedenemo.dev";
             system = "x86_64-linux";
+            maxJobs = x86BuilderMaxJobs;
           }
           // commonOptions
         )
