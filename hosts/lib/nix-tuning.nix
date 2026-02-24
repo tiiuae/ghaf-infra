@@ -11,20 +11,38 @@ in
 
   # Compute Nix GC watermarks from total disk capacity.
   #
+  # Defaults:
+  # - min-free = max(20 GiB, 10% of disk)
+  # - max-free = max(80 GiB, 30% of disk)
+  # - caps for large disks: 160 GiB min-free, 512 GiB max-free
+  #
   # Rationale:
   # - We trigger GC before free space becomes critically low (`min-free`).
   # - We free up to a higher target (`max-free`) to avoid frequent GC churn.
-  # - Percentages (10% / 30%) scale with disk size, while fixed floors
-  #   (20 GiB / 80 GiB) protect smaller disks.
+  # - Percentage-based targets scale naturally across host sizes.
+  # - Floors avoid tiny thresholds on small disks.
+  # - Caps prevent over-aggressive GC targets on multi-TiB disks.
+  # - Keep max-free above min-free.
   mkDiskThresholds =
     diskGiB:
     let
-      minFreeGiB = lib.max 20 (builtins.div (diskGiB * 10) 100);
-      maxFreeGiB = lib.max 80 (builtins.div (diskGiB * 30) 100);
+      minPercent = 10;
+      maxPercent = 30;
+      minFloorGiB = 20;
+      maxFloorGiB = 80;
+      minCapGiB = 160;
+      maxCapGiB = 512;
+
+      minFromPercentGiB = builtins.div (diskGiB * minPercent) 100;
+      maxFromPercentGiB = builtins.div (diskGiB * maxPercent) 100;
+      cappedMinFreeGiB = lib.min minCapGiB (lib.max minFloorGiB minFromPercentGiB);
+      cappedMaxFreeGiB = lib.min maxCapGiB (lib.max maxFloorGiB maxFromPercentGiB);
+      maxFreeGiB = lib.max cappedMinFreeGiB cappedMaxFreeGiB;
     in
     {
-      inherit minFreeGiB maxFreeGiB;
-      minFreeBytes = minFreeGiB * gib;
+      minFreeGiB = cappedMinFreeGiB;
+      inherit maxFreeGiB;
+      minFreeBytes = cappedMinFreeGiB * gib;
       maxFreeBytes = maxFreeGiB * gib;
     };
 
