@@ -3,8 +3,19 @@
 {
   self,
   inputs,
+  lib,
   ...
 }:
+let
+  tuning = import ../../lib/nix-tuning.nix { inherit lib; };
+
+  # Current host sizing: 96 vCPU, 251 GiB RAM, ~1760 GiB /nix disk.
+  disk = tuning.mkDiskThresholds 1760;
+  jobs = tuning.mkMaxJobs {
+    cpus = 96;
+    ramGiB = 251;
+  };
+in
 {
   imports = [
     ./disk-config.nix
@@ -45,4 +56,9 @@
     };
     logs.enable = true;
   };
+
+  nix.settings.max-jobs = lib.mkForce jobs;
+  nix.settings.cores = lib.mkForce 2;
+  nix.settings.min-free = lib.mkForce disk.minFreeBytes;
+  nix.settings.max-free = lib.mkForce disk.maxFreeBytes;
 }
