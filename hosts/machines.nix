@@ -38,6 +38,12 @@
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILohl64vKdsBX3x8SkKjJDphXEYTJGpnE1mHQYERUXZM";
   };
 
+  ghaf-registry = {
+    ip = "89.167.65.27";
+    internal_ip = "10.0.0.14";
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMGfy1TgAnHfOFqVXDmSdYM60fInNKYOo4Bmf2T6Q8mC";
+  };
+
   hetzarm = {
     ip = "65.21.20.242";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILx4zU4gIkTY/1oKEOkf9gTJChdx/jR3lDgZ7p/c7LEK";
