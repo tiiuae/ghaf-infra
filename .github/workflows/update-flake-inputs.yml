@@ -1,0 +1,86 @@
+# SPDX-FileCopyrightText: 2026 TII (SSRC) and the Ghaf contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Update flake inputs and Jenkins plugins
+
+on:
+  schedule:
+    # 06:00 EET (UTC+2) every Monday
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update-flake-inputs:
+    name: Update flake inputs and Jenkins plugins
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # Only required for checkout; branch/PR writes use AUTOMATION_TOKEN.
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install nix
+        uses: cachix/install-nix-action@2126ae7fc54c9df00dd18f7f18754393182c73cd
+
+      - name: Update all flake inputs
+        shell: bash
+        run: nix flake update
+
+      - name: Update Jenkins plugins
+        shell: bash
+        run: |
+          set -euo pipefail
+          nix develop -c bash -lc '
+            # Load shellHook-defined helpers (like update-jenkins-plugins) in this CI shell.
+            source <(nix print-dev-env)
+            update-jenkins-plugins hosts/hetzci
+            update-jenkins-plugins hosts/uae/azureci
+          '
+
+      - name: Configure git identity for commit hooks
+        shell: bash
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions@users.noreply.github.com"
+
+      - name: Create or update pull request
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0
+        with:
+          token: ${{ secrets.AUTOMATION_TOKEN }}
+          base: ${{ github.event.repository.default_branch }}
+          branch: automation/update-flake-inputs
+          add-paths: |
+            flake.lock
+            hosts/hetzci/plugins.json
+            hosts/uae/azureci/plugins.json
+          committer: github-actions[bot] <github-actions@users.noreply.github.com>
+          author: github-actions[bot] <github-actions@users.noreply.github.com>
+          commit-message: |
+            flake.lock: Update flake inputs and Jenkins plugins
+
+            Automated update of flake inputs and Jenkins plugins.
+          signoff: true
+          title: "flake.lock: Update flake inputs and Jenkins plugins"
+          body: |
+            This PR updates all flake inputs in `flake.lock` and refreshes Jenkins plugins manifests:
+            - `hosts/hetzci/plugins.json`
+            - `hosts/uae/azureci/plugins.json`
