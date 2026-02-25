@@ -308,11 +308,21 @@ def install_release(c: Any) -> None:
         install(c, "hetzarm-rel-1", yes=True, copy_dir=tmpdir / "builder")
         install(c, "hetzci-release", yes=True, copy_dir=tmpdir / "controller")
 
+    h = get_deploy_host("testagent-release")
+
     # Deploy (don't re-install) testagent-release
-    c.run("deploy -s --targets .#testagent-release")
+    deploy = c.run("deploy -s --targets .#testagent-release", warn=True)
+    if not deploy.ok:
+        logger.info(
+            "Failed deploying 'testagent-release'. "
+            "The release environment is otherwise up, but you should manually deploy "
+            "the testagent-release, then connect it to the release Jenkins instance. "
+            f"Hint: is the testagent at '{h.host}' accessible over SSH? "
+            "Perhaps you need to connect a VPN?"
+        )
+        return
 
     # Connect testagent-release to the installed release jenkins controller
-    h = get_deploy_host("testagent-release")
     try:
         cmd = (
             "retries=3; for i in $(seq 0 $retries); do "
