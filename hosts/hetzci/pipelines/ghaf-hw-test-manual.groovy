@@ -21,13 +21,13 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
     ),
     string(name: 'CI_TEST_REPO_URL', defaultValue: 'https://github.com/tiiuae/ci-test-automation.git', description: 'Select ci-test-automation repository.'),
     string(name: 'CI_TEST_REPO_BRANCH', defaultValue: 'main', description: 'Select ci-test-automation branch to checkout.'),
-    string(name: 'TEST_TAGS', defaultValue: '', description: 'Target test tags, e.g.: appsORbusinessvm, SP-T140, SP-T45ORSP-T60, etc.'),
+    string(name: 'TEST_TAGS', defaultValue: '', description: 'Target test tags, e.g.: lenovo-x1ANDapps, SP-T140, SP-T45ORSP-T60, etc.'),
     string(
       name: 'IMG_URL',
       defaultValue: '',
       description: '''
         Target image url. If specified, the target device is flashed with the given image before running the tests.
-        Can be left empty, in which case DEVICE_TAG must be specified. With installer image this is mantadory to give!'''.stripIndent()),
+        Can be left empty, in which case DEVICE_TAG must be specified. With installer image this is mandatory to give!'''.stripIndent()),
     [
       $class: 'ChoiceParameter',
       name: 'DEVICE_TAG',
@@ -45,6 +45,13 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
         ]
       ]
     ],
+    string(
+      name: 'JOB_SELECTOR',
+      defaultValue: '',
+      description: '''
+        Select the job. If device is flashed, the job is taken from the IMG_URL and this selection is ignored.
+        For example system76-darp11-b-storeDisk-debug-installer or system76-darp11-b-storeDisk-debug.
+        DEVICE_TAG is used as the job by default when not flashing.'''.stripIndent()),
     [
       $class: 'ChoiceParameter',
       name: 'TESTAGENT_HOST',
@@ -252,6 +259,13 @@ pipeline {
             def match = params.IMG_URL =~ /commit_[0-9a-f]{5,40}\/([^\/]+)/
             if(match) {
               env.TARGET = "${match.group(1)}"
+            }
+          } else {
+            def sel = params.JOB_SELECTOR
+            if (!sel) {
+              env.TARGET = env.DEVICE_TAG
+            } else {
+              env.TARGET = sel
             }
           }
           env.TEST_CONFIG_DIR = 'Robot-Framework/config'
