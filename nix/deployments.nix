@@ -36,6 +36,7 @@ let
     ghaf-monitoring = mkDeployment "ghaf-monitoring" machines.ghaf-monitoring.ip;
     ghaf-lighthouse = mkDeployment "ghaf-lighthouse" machines.ghaf-lighthouse.ip;
     ghaf-fleetdm = mkDeployment "ghaf-fleetdm" machines.ghaf-fleetdm.ip;
+    ghaf-registry = mkDeployment "ghaf-registry" machines.ghaf-registry.ip;
     hetzci-release = mkDeployment "hetzci-release" machines.hetzci-release.ip;
     hetzci-prod = mkDeployment "hetzci-prod" machines.hetzci-prod.ip;
     hetzci-dbg = mkDeployment "hetzci-dbg" machines.hetzci-dbg.ip;
