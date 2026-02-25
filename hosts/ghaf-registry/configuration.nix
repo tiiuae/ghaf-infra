@@ -5,11 +5,13 @@
   self,
   lib,
   inputs,
+  config,
   ...
 }:
 let
   inherit (self.packages.${pkgs.stdenv.hostPlatform.system}) zot;
   zotDataDir = "/var/lib/zot";
+  zotPort = 5000;
   zotConfig = {
     storage = {
       rootDirectory = zotDataDir;
@@ -19,13 +21,38 @@ let
 
     http = {
       address = "127.0.0.1";
-      port = "5000";
-    };
+      port = zotPort;
+      externalUrl = "https://registry.vedenemo.dev";
 
+      auth.htpasswd.path = config.sops.secrets.zot-htpasswd.path;
+      auth.openid.providers.oidc = {
+        name = "Vedenemo Auth";
+        issuer = "https://auth.vedenemo.dev";
+        credentialsFile = config.sops.templates."zot-oidc-credentials.json".path;
+        keypath = "";
+        scopes = [
+          "openid"
+          "profile"
+          "email"
+          "groups"
+        ];
+      };
+      accessControl = {
+        repositories = {
+          "**" = {
+            defaultPolicy = [
+              "read"
+              "create"
+              "update"
+              "delete"
+            ];
+          };
+        };
+      };
+    };
     log = {
       level = "info";
     };
-
     extensions = {
       ui.enable = true;
       search.enable = true;
@@ -54,17 +81,25 @@ in
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "ghaf-registry";
 
+  sops = {
+    secrets.auth-client-secret.owner = "zot";
+    secrets.zot-htpasswd.owner = "zot";
+    templates."zot-oidc-credentials.json" = {
+      owner = "zot";
+      content = builtins.toJSON {
+        clientid = "zot-registry";
+        clientsecret = config.sops.placeholder.auth-client-secret;
+      };
+    };
+  };
+
   services.nginx.virtualHosts."registry.vedenemo.dev" = {
     enableACME = true;
     forceSSL = true;
     default = true;
 
-    # OCI registry API: allow anonymous pulls, require auth for pushes
-    # locations."/v2/" = {
-    #   proxyPass = "http://127.0.0.1:${zotConfig.http.port}";
-    #       # };
     locations."/" = {
-      proxyPass = "http://127.0.0.1:${zotConfig.http.port}";
+      proxyPass = "http://127.0.0.1:${toString zotPort}";
       extraConfig = ''
         client_max_body_size 0;
         proxy_read_timeout 3600s;

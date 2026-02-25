@@ -76,7 +76,13 @@ in
             clientSecret = "$GITHUB_CLIENT_SECRET";
             redirectURI = "https://${domain}/callback";
             orgs = [
-              { name = "tiiuae"; }
+              {
+                name = "tiiuae";
+                teams = [
+                  "devenv-fi"
+                  "phone"
+                ];
+              }
             ];
             teamNameField = "slug";
           };
@@ -96,6 +102,13 @@ in
           ];
         in
         [
+          {
+            id = "zot-registry";
+            name = "registry.vedenemo.dev";
+            redirectURIs = [ "https://registry.vedenemo.dev/zot/auth/callback/oidc" ];
+            secretEnv = "ZOT_CLIENT_SECRET";
+            inherit grantTypes;
+          }
           {
             id = "hetzci-dbg";
             name = "ci-dbg.vedenemo.dev";
