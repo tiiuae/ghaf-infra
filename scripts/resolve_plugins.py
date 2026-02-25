@@ -135,7 +135,7 @@ async def main():
             print(output)
         else:
             with open(args.output, "w", encoding="utf-8") as f:
-                f.write(output)
+                f.write(f"{output}\n")
                 print(f"Wrote plugin manifest into '{args.output}'")
 
 
