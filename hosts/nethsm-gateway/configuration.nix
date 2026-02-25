@@ -37,6 +37,16 @@
   networking.hostName = "nethsm-gateway";
   networking.useDHCP = true;
 
+  # NetHSM connected directly to the ethernet port
+  networking.interfaces.enp89s0 = {
+    ipv4.addresses = [
+      {
+        address = "192.168.70.12";
+        prefixLength = 24;
+      }
+    ];
+  };
+
   hardware = {
     enableRedistributableFirmware = true;
     cpu.intel.updateMicrocode = true;

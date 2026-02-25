@@ -131,12 +131,18 @@ in
         ];
       };
 
-      users.groups.alloy = { };
-      users.users.alloy.isSystemUser = true;
-      users.users.alloy.group = "alloy";
+      systemd.services.alloy.serviceConfig = {
+        User = "alloy";
+        Group = "alloy";
+        # alloy refuses to stop blocking shutdown
+        TimeoutStopSec = "5s";
+      };
 
-      systemd.services.alloy.serviceConfig.User = "alloy";
-      systemd.services.alloy.serviceConfig.Group = "alloy";
+      users.groups.alloy = { };
+      users.users.alloy = {
+        isSystemUser = true;
+        group = "alloy";
+      };
 
       environment.etc = lib.mapAttrs' (
         name: content: lib.nameValuePair "alloy/${name}.alloy" { text = content; }
