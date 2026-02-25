@@ -151,9 +151,9 @@
   },
   {
     "name": "credentials",
-    "version": "1489.v375944c125ee",
-    "url": "https://updates.jenkins.io/download/plugins/credentials/1489.v375944c125ee/credentials.hpi",
-    "sha256": "0a2asym3dkmnxi429zsrjx509pmjqfaana2xmpfaqvi7vks2s69i"
+    "version": "1491.v6d6145e96e1c",
+    "url": "https://updates.jenkins.io/download/plugins/credentials/1491.v6d6145e96e1c/credentials.hpi",
+    "sha256": "1n2f9pxg0amlcl7kfk7a4rpnbkbh4d6z4kxv0ij9plkngbxprhbg"
   },
   {
     "name": "credentials-binding",
@@ -361,9 +361,9 @@
   },
   {
     "name": "json-path-api",
-    "version": "2.10.0-202.va_9cc16c1e476",
-    "url": "https://updates.jenkins.io/download/plugins/json-path-api/2.10.0-202.va_9cc16c1e476/json-path-api.hpi",
-    "sha256": "1gszgj4z9hhzc95glwal148h4bisx4yi50lrvpwjgs0s3f22xm3f"
+    "version": "3.0.0-218.vcd4dd1355de2",
+    "url": "https://updates.jenkins.io/download/plugins/json-path-api/3.0.0-218.vcd4dd1355de2/json-path-api.hpi",
+    "sha256": "09811anc7db9k9l86d5yad7mz3cz75zq6nffdcj5fsp3hwfdncn0"
   },
   {
     "name": "jsoup",
@@ -457,9 +457,9 @@
   },
   {
     "name": "parameterized-trigger",
-    "version": "873.v8b_e37dd8418f",
-    "url": "https://updates.jenkins.io/download/plugins/parameterized-trigger/873.v8b_e37dd8418f/parameterized-trigger.hpi",
-    "sha256": "0r6vzwgfvrkgwcc9mk3pnlhr9z60hg02l7v55f8a9cxbh336k1fc"
+    "version": "890.vc240a_a_e1217f",
+    "url": "https://updates.jenkins.io/download/plugins/parameterized-trigger/890.vc240a_a_e1217f/parameterized-trigger.hpi",
+    "sha256": "1simpyvnfmyzgskwscpblrlkg1il873nyng29bcvymi3jhffai44"
   },
   {
     "name": "pipeline-build-step",
@@ -715,9 +715,9 @@
   },
   {
     "name": "workflow-cps",
-    "version": "4255.vd9c37f80fd8a_",
-    "url": "https://updates.jenkins.io/download/plugins/workflow-cps/4255.vd9c37f80fd8a_/workflow-cps.hpi",
-    "sha256": "09m5xg019hxmziifbc42mklypr5j1srvar1dc4bn64h8llrilp6j"
+    "version": "4256.v991a_f1991c03",
+    "url": "https://updates.jenkins.io/download/plugins/workflow-cps/4256.v991a_f1991c03/workflow-cps.hpi",
+    "sha256": "13zgqqj47pclfcdcw13w0hvzw8akas3llnm2mvpyw4k96w7rgmwq"
   },
   {
     "name": "workflow-durable-task-step",
