@@ -2,6 +2,9 @@
 
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
+#
+# Enroll UEFI Secure Boot keys (DB, KEK, PK) into EFI firmware variables.
+# Expects DB.pem, KEK.pem, and auth/PK.auth in the current directory.
 
 set -euo pipefail
 

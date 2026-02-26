@@ -98,7 +98,7 @@ Anyone can run `run-hetzci-vm`, but secrets are only decrypted when the user own
 
 The VM automatically forwards:
 - **SSH**: host port 2222 → guest port 22
-- **Jenkins**: host port 8080 → guest port 8080
+- **Jenkins**: host port 8080 → guest port 80
 
 ```bash
 # SSH into the VM
