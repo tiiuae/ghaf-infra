@@ -10,6 +10,25 @@ Each machine is running one jenkins slave service for each test device, effectiv
 One controller is capable of utilizing multiple agents, if they are different variants (currently `dev`, `prod` or `release` are the possible variants).
 This is configured in the nix config of the testagent with the `services.testagent.variant` attribute.
 
+## Agent tooling
+
+Each testagent has the following tools available to the Jenkins agent services
+(configured in `hosts/testagent/agent.nix` and `hosts/testagent/agents-common.nix`):
+
+- **[BrainStem](https://acroname.com/software/brainstem-development-kit)**
+  (`AcronameHubCLI`) — controls Acroname programmable USB hubs for
+  power-cycling and USB switching of test devices. Packaged in `pkgs/brainstem/`
+  with udev rules for device access.
+- **`policy-checker`** — a Go tool (in `pkgs/policy-checker/`) that wraps
+  `verify-signature` to validate SLSA provenance and image signatures against
+  the certificates in `ghaf-infra-pki` before flashing.
+- **`ghaf-robot`** — [Robot Framework](https://robotframework.org/) test runner
+  from the `robot-framework` flake input.
+- **[FleetDM](https://fleetdm.com/) credentials** — agents hold Fleet enrollment
+  secrets and API tokens (via sops) so that Ghaf images flashed during CI
+  testing can register with the `ghaf-fleetdm` server. Fleet manages the
+  Ghaf end-devices, not the test agents themselves.
+
 ## Connecting agent to a controller
 
 To connect given testagent to a Jenkins controller, you must first SSH into the testagent.

@@ -51,6 +51,24 @@ job.
 
 The gateway also sends the NetHSM logs in addition to systemd logs to loki.
 
+## ghaf-log (separate instance)
+
+A second, independent Grafana + Loki instance runs on `ghaf-log`
+(<https://ghaflogs.vedenemo.dev>). This is **not** the same as
+`ghaf-monitoring` — it is a dedicated log analysis platform for Ghaf device
+logs, separate from the infrastructure monitoring above.
+
+| URL | Purpose |
+|---|---|
+| <https://ghaflogs.vedenemo.dev> | Grafana UI — GitHub login (`tiiuae` org, `devenv-fi` and `phone` teams) |
+| <https://loki.ghaflogs.vedenemo.dev> | Loki push/query API — basic-auth protected |
+
+External log producers (e.g. Ghaf devices running Alloy or promtail) can push
+logs to the Loki endpoint. Credentials are stored in
+`hosts/ghaf-log/secrets.yaml` (`loki_basic_auth`).
+
+Like `ghaf-monitoring`, state is stored on a Hetzner volume under `/data/`.
+
 ## Development
 
 A lot of the monitoring config depends on the host data in `hosts/machines.nix`
