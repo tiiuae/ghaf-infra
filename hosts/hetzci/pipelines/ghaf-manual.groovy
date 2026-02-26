@@ -72,7 +72,7 @@ pipeline {
             }
             if (params.lenovo_x1_carbon_gen11_debug) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug", uefisign: params.UEFISIGN, testset: params.TESTSET, uefitest: params.UEFISIGN ])
+                [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug", uefisign: params.UEFISIGN, testset: params.TESTSET ])
             }
             if (params.lenovo_x1_carbon_gen11_debug_installer) {
               TARGETS.push(
