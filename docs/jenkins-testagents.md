@@ -18,7 +18,7 @@ There you will find two commands in PATH: `connect` and `disconnect`.
 For example to connect some agent to the dev controller, run the following:
 
 ```sh
-connect https://ghaf-jenkins-controller-dev.northeurope.cloudapp.azure.com
+connect https://ci-dev.vedenemo.dev
 ```
 
 An SSH connection from the agent to the controller will be opened, fetching the connection secret.

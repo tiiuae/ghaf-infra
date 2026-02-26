@@ -70,7 +70,7 @@ openssl dgst -sha256 -sign \
 Verify signature:
 
 ```sh
-penssl dgst -verify \
+openssl dgst -verify \
     "pkcs11:token=NetHSM;object=GhafInfraSignECP256" \
     -signature disk1.raw.zst.sig \
     disk1.raw.zst
