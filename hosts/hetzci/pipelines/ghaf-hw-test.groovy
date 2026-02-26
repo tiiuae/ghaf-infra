@@ -23,7 +23,7 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
     string(name: 'IMG_URL', defaultValue: '', description: 'Target image url.'),
     string(name: 'TESTSET', defaultValue: '_relayboot_', description: 'Target testset, e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.'),
     string(name: 'TESTAGENT_HOST', defaultValue: null, description: 'Target testagent host, e.g.: dev, prod, release'),
-    booleanParam(name: 'VERIFY', defaultValue: true, description: 'Verify provenance and image signature'),
+    booleanParam(name: 'SECUREBOOT', defaultValue: false, description: 'Test on secure boot enabled hardware'),
   ]
 }
 
@@ -59,12 +59,14 @@ def init() {
   } else if(params.IMG_URL.contains("orin-nx-")) {
     env.DEVICE_NAME = 'OrinNX1'
     env.DEVICE_TAG = 'orin-nx'
-  } else if(params.IMG_URL.contains("uefisigned/packages.x86_64-linux.lenovo-x1")) {
-    env.DEVICE_NAME = 'X1-Secure-Boot'
-    env.DEVICE_TAG = 'x1-sec-boot'
   } else if(params.IMG_URL.contains("lenovo-x1-")) {
-    env.DEVICE_NAME = 'LenovoX1-1'
-    env.DEVICE_TAG = 'lenovo-x1'
+    if (params.SECUREBOOT) {
+      env.DEVICE_NAME = 'X1-Secure-Boot'
+      env.DEVICE_TAG = 'x1-sec-boot'
+    } else {
+      env.DEVICE_NAME = 'LenovoX1-1'
+      env.DEVICE_TAG = 'lenovo-x1'
+    }
   } else if(params.IMG_URL.contains("dell-latitude-7330-")) {
     env.DEVICE_NAME = 'Dell7330'
     env.DEVICE_TAG = 'dell-7330'
@@ -242,13 +244,12 @@ pipeline {
       }
     }
     stage('Verify provenance') {
-      when { expression { params && params.VERIFY } }
       steps {
         script {
           def split = split_img_url(params.IMG_URL)
           def artifacts_url = split["artifacts_url"]
           def target = split["target_name"]
-          def provenance_url = "${artifacts_url}/scs/${target}/provenance.json"
+          def provenance_url = "${artifacts_url}/${target}/attestations/provenance.json"
           def sig_url = "${provenance_url}.sig"
           println("provenance_url: ${provenance_url}")
           def provenance_path = run_wget(provenance_url, TMP_IMG_DIR)
@@ -262,16 +263,15 @@ pipeline {
         script {
           def img_path = run_wget(params.IMG_URL, TMP_IMG_DIR)
           println "Downloaded image to workspace: ${img_path}"
-          if (params && params.VERIFY) {
-            def split = split_img_url(params.IMG_URL)
-            def artifacts_url = split["artifacts_url"]
-            def img_relpath = split["img_relpath"]
-            def target = split["target_name"]
-            def sig_url = "${artifacts_url}/scs/${target}/${img_relpath}.sig"
-            def sig_path = run_wget(sig_url, TMP_IMG_DIR)
-            println "Downloaded SLSA signature file to workspace: ${sig_path}"
-            sh "verify-signature image ${img_path} ${sig_path}"
-          }
+          def split = split_img_url(params.IMG_URL)
+          def artifacts_url = split["artifacts_url"]
+          def img_relpath = split["img_relpath"]
+          def target = split["target_name"]
+          def sig_url = "${artifacts_url}/${target}/${img_relpath}.sig"
+          def sig_path = run_wget(sig_url, TMP_IMG_DIR)
+          println "Downloaded SLSA signature file to workspace: ${sig_path}"
+          sh "verify-signature image ${img_path} ${sig_path}"
+
           // Uncompress
           if(img_path.endsWith(".zst")) {
             sh "zstd -dfv ${img_path}"

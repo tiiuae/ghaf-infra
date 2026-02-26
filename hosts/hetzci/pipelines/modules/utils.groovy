@@ -6,6 +6,14 @@ def run_cmd(String cmd) {
   return sh(script: cmd, returnStdout:true).trim()
 }
 
+def path_basename(String path) {
+  if (path == null) {
+    return null
+  }
+  def idx = path.lastIndexOf('/')
+  return idx >= 0 ? path.substring(idx + 1) : path
+}
+
 def append_to_build_description(String text) {
   lock('build-description') {
     if(!currentBuild.description) {
@@ -27,6 +35,8 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
   def artifacts_local_dir = "/var/lib/jenkins/${artifacts}"
   def artifacts_href = "<a href=\"/${artifacts}\">📦 Artifacts</a>"
   def signingToken = "YubiHSM"
+  def signing_possible = env.CI_ENV != 'vm' && env.CI_ENV != 'dbg'
+
   // Evaluate
   stage("Eval") {
     lock('evaluator') {
@@ -35,14 +45,64 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
   }
   targets.each {
     def shortname = it.target.substring(it.target.lastIndexOf('.') + 1)
-    def build_beg = ''
-    def build_end = ''
+    def output = "${artifacts_local_dir}/${it.target}"
+
+    def manifest = [
+      target: it.target,
+      build: [
+        ts_begin: null,
+        ts_finished: null,
+      ],
+      image: null,
+      uefi: [
+        signed: false,
+        reason: null,
+        signing_key: null,
+      ],
+      attestations: [
+        sbom: [
+          csv: null,
+          cdx: null,
+          spdx: null,
+        ],
+        provenance: [
+          nix_build: null,
+          secureboot: null,
+        ],
+      ],
+      signatures: [
+        image: [
+          path: null,
+          signing_key: null,
+        ],
+        provenance: [
+          nix_build: [
+            path: null,
+            signing_key: null,
+          ],
+          secureboot: [
+            path: null,
+            signing_key: null,
+          ],
+        ],
+      ],
+    ]
+    if (it.no_image) {
+      manifest.uefi.reason = "no_image"
+    } else if (!signing_possible) {
+      manifest.uefi.reason = "signing_not_possible"
+    } else if (!(it.get('uefisign', false) || it.get('uefisigniso', false))) {
+      manifest.uefi.reason = "not_requested"
+    }
+
     pipeline["${it.target}"] = {
       // Build
       stage("Build ${shortname}") {
-        build_beg = run_cmd('date +%s')
-        sh "nix build --fallback -v .#${it.target} --out-link ${artifacts_local_dir}/${it.target}"
-        build_end = run_cmd('date +%s')
+        sh "mkdir -v -p ${output}"
+
+        manifest.build.ts_begin = run_cmd('date +%s')
+        sh "nix build --fallback -v .#${it.target} --out-link ${output}/nix"
+        manifest.build.ts_finished = run_cmd('date +%s')
       }
       // Provenance
       if (it.get('provenance', true)) {
@@ -68,13 +128,14 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
             'PROVENANCE_BUILD_TYPE=https://github.com/tiiuae/ghaf-infra/blob/ea938e90/slsa/v1.0/L1/buildtype.md',
             "PROVENANCE_BUILDER_ID=${env.JENKINS_URL}",
             "PROVENANCE_INVOCATION_ID=${env.BUILD_URL}",
-            "PROVENANCE_TIMESTAMP_BEGIN=${build_beg}",
-            "PROVENANCE_TIMESTAMP_FINISHED=${build_end}",
+            "PROVENANCE_TIMESTAMP_BEGIN=${manifest.build.ts_begin}",
+            "PROVENANCE_TIMESTAMP_FINISHED=${manifest.build.ts_finished}",
             "PROVENANCE_EXTERNAL_PARAMS=${ext_params}"
           ]) {
+            sh "mkdir -v -p ${output}/attestations"
             sh """
               attempt=1; max_attempts=5;
-              while ! provenance ${artifacts_local_dir}/${it.target}/ --recursive --out ${it.target}.json; do
+              while ! provenance ${output}/nix --recursive --out ${output}/attestations/provenance.json; do
                 echo "provenance attempt=\$attempt failed"
                 if (( \$attempt >= \$max_attempts )); then
                   exit 1
@@ -83,9 +144,8 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
                 sleep 30
               done
               echo "provenance attempt=\$attempt passed"
-              mkdir -v -p ${artifacts_local_dir}/scs/${it.target}
-              cp ${it.target}.json ${artifacts_local_dir}/scs/${it.target}/provenance.json
             """
+            manifest.attestations.provenance.nix_build = "attestations/provenance.json"
           }
         }
       }
@@ -105,66 +165,101 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
       // Run sbomnix
       if (it.get('sbom', false)) {
         stage("SBOM ${shortname}") {
-          def outdir = "${artifacts_local_dir}/scs/${it.target}"
+          def outdir = "${output}/attestations"
           sh """
             mkdir -v -p ${outdir}
-            sbomnix ${artifacts_local_dir}/${it.target} \
+            sbomnix ${output}/nix \
               --csv ${outdir}/sbom.csv \
               --cdx ${outdir}/sbom.cdx.json \
               --spdx ${outdir}/sbom.spdx.json
           """
+          manifest.attestations.sbom.csv = "attestations/sbom.csv"
+          manifest.attestations.sbom.cdx = "attestations/sbom.cdx.json"
+          manifest.attestations.sbom.spdx = "attestations/sbom.spdx.json"
         }
       }
       // Signing stages
       // Skip signing stages in vm and dbg environments, where NetHSM is not available
-      if (env.CI_ENV != 'vm' && env.CI_ENV != 'dbg') {
-        if (!it.no_image) {
-          stage("Sign image ${shortname}") {
-            def img_path = get_img_path(it.target, artifacts_local_dir)
+      if (signing_possible && it.get('provenance', true)) {
+        stage("Sign provenance ${shortname}") {
+          lock('signing') {
             sh """
-              mkdir -v -p "\$(dirname "${artifacts_local_dir}/scs/${img_path}")"
+              openssl pkeyutl -sign -rawin \
+                -inkey 'pkcs11:token=${signingToken};object=GhafInfraSignProv' \
+                -out ${output}/attestations/provenance.json.sig \
+                -in ${output}/attestations/provenance.json
             """
+          }
+          manifest.signatures.provenance.nix_build.path = "attestations/provenance.json.sig"
+          manifest.signatures.provenance.nix_build.signing_key = "pkcs11:token=${signingToken};object=GhafInfraSignProv"
+        }
+      }
+      if (!it.no_image) {
+        stage("Find image ${shortname}") {
+          def img_path = run_cmd("find -L ${output}/nix -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print -quit")
+          if (!img_path) {
+            error("No image found!")
+          }
+          manifest.image = img_path - "${output}/"
+        }
+        if (signing_possible) {
+          if (it.get('uefisign', false) || it.get('uefisigniso', false)) {
+            stage("Sign UEFI ${shortname}") {
+              def tmpdir = run_cmd("mktemp -d")
+              def img_name = path_basename(manifest.image)
+
+              def signer = "uefisign"
+              if (it.target.contains("nvidia-jetson-orin")) {
+                signer = "uefisign-simple"
+              }
+
+              lock('signing') {
+                sh """
+                  ${signer} /etc/jenkins/keys/secboot/DB.pem \
+                    'pkcs11:token=${signingToken};object=uefi-ghaf-db' \
+                    ${output}/${manifest.image} \
+                    ${tmpdir}
+                """
+              }
+
+              sh "mv ${tmpdir}/signed_${img_name} ${output}/${img_name}"
+              // replace original image with uefisigned one
+              manifest.image = img_name
+              manifest.uefi.signed = true;
+              manifest.uefi.reason = null
+              manifest.uefi.signing_key = "pkcs11:token=${signingToken};object=uefi-ghaf-db"
+            }
+          }
+          stage("Sign image ${shortname}") {
             lock('signing') {
+              def img_name = path_basename(manifest.image)
+              // sign the current main image be it unsigned or uefisigned
               sh """
                 openssl dgst -sha256 -sign \
-                  "pkcs11:token=${signingToken};object=GhafInfraSignECP256" \
-                  -out ${artifacts_local_dir}/scs/${img_path}.sig \
-                  ${artifacts_local_dir}/${img_path}
+                  'pkcs11:token=${signingToken};object=GhafInfraSignECP256' \
+                  -out ${output}/${img_name}.sig \
+                  ${output}/${manifest.image}
               """
             }
-          }
-        }
-        if (it.get('provenance', true)) {
-          stage("Sign provenance ${shortname}") {
-            lock('signing') {
-              sh """
-                openssl pkeyutl -sign -rawin \
-                  -inkey "pkcs11:token=${signingToken};object=GhafInfraSignProv" \
-                  -out ${artifacts_local_dir}/scs/${it.target}/provenance.json.sig \
-                  -in ${artifacts_local_dir}/scs/${it.target}/provenance.json
-              """
-            }
-          }
-        }
-        if (it.get('uefisign', false) || it.get('uefisigniso', false)) {
-          stage("Sign UEFI ${shortname}") {
-            def diskPath = artifacts_local_dir + "/" + get_img_path(it.target, artifacts_local_dir)
-            def outdir = run_cmd("dirname '${diskPath}' | sed 's/${it.target}/uefisigned\\/${it.target}/'")
-            sh "mkdir -v -p ${outdir}"
-
-            def signer = "uefisign"
-            if (it.target.contains("nvidia-jetson-orin")) {
-              signer = "uefisign-simple"
-            }
-
-            lock('signing') {
-              sh "${signer} /etc/jenkins/keys/secboot/DB.pem 'pkcs11:token=${signingToken};object=uefi-ghaf-db' '${diskPath}' ${outdir}"
-            }
+            manifest.signatures.image.path = "${path_basename(manifest.image)}.sig"
+            manifest.signatures.image.signing_key = "pkcs11:token=${signingToken};object=GhafInfraSignECP256"
           }
         }
       }
       // Link artifacts
       stage("Link artifacts ${shortname}") {
+        if (manifest.image && !manifest.uefi.signed) {
+          def img_name = path_basename(manifest.image)
+          // make symlink from output root to original image if not using uefisigned
+          sh "ln -s ${output}/${manifest.image} ${output}/${img_name}"
+          manifest.image = img_name
+        }
+
+        writeFile(
+          file: "${output}/manifest.json",
+          text: JsonOutput.prettyPrint(JsonOutput.toJson(manifest))
+        )
+
         if (!currentBuild.description || !currentBuild.description.contains(artifacts_href)) {
           append_to_build_description(artifacts_href)
         }
@@ -172,61 +267,39 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
       // Test
       if (it.testset != null && !it.testset.isEmpty()) {
         stage("Test ${shortname}") {
-          def img_path = get_img_path(it.target, artifacts_local_dir)
-          def img_url = "${env.JENKINS_URL}/${artifacts}/${img_path}"
-          run_hw_tests(it.target, img_url, testagent_host, it.testset, artifacts_local_dir)
-        }
-        if (it.uefitest) {
-          stage("Test Signed ${shortname}") {
-            def img_path = get_img_path(it.target, "${artifacts_local_dir}/uefisigned")
-            def img_url = "${env.JENKINS_URL}/${artifacts}/uefisigned/${img_path}"
-            run_hw_tests("uefisigned/${it.target}", img_url, testagent_host, it.testset, artifacts_local_dir, false)
+          def img_url = "${env.JENKINS_URL}/${artifacts}/${it.target}/${manifest.image}"
+          def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
+          // x1-sec-boot is available only in prod
+          def secboot = manifest.uefi.signed && env.CI_ENV == "prod"
+          def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
+            parameters: [
+              string(name: "IMG_URL", value: img_url),
+              string(name: "TESTSET", value: it.testset),
+              string(name: "DESC", value: "Triggered by ${build_href}<br>(${shortname})"),
+              string(name: "TESTAGENT_HOST", value: testagent_host),
+              booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: env.CI_ENV == "release"),
+              booleanParam(name: "RELOAD_ONLY", value: false),
+              booleanParam(name: "SECUREBOOT", value: secboot),
+            ],
+          )
+          println("ghaf-hw-test log '${shortname}:")
+          sh "cat /var/lib/jenkins/jobs/ghaf-hw-test/builds/${job.number}/log | sed 's/^/    /'"
+          if (job.result != "SUCCESS") {
+            unstable("FAILED: ${shortname} ${it.testset}")
+            currentBuild.result = "FAILURE"
+            append_to_build_description("<a href=\"${job.absoluteUrl}\">⛔ ${shortname}</a>")
           }
+          copyArtifacts(
+            projectName: "ghaf-hw-test",
+            selector: specific("${job.number}"),
+            target: "${output}/test-results",
+            optional: true,
+          )
         }
       }
     }
   }
   return pipeline
-}
-
-def run_hw_tests(String target, String img_url, String testagent_host, String testset, String results_location, Boolean verify=true) {
-  def shortname = target.substring(target.lastIndexOf('.') + 1)
-  def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
-  def desc = "Triggered by ${build_href}<br>(${target})"
-  def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
-    parameters: [
-      string(name: "IMG_URL", value: img_url),
-      string(name: "TESTSET", value: testset),
-      string(name: "DESC", value: desc),
-      string(name: "TESTAGENT_HOST", value: testagent_host),
-      booleanParam(name: "VERIFY", value: verify),
-      booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: env.CI_ENV == "release"),
-      booleanParam(name: "RELOAD_ONLY", value: false),
-    ],
-  )
-  println("ghaf-hw-test log '${target}:")
-  sh "cat /var/lib/jenkins/jobs/ghaf-hw-test/builds/${job.number}/log | sed 's/^/    /'"
-  if (job.result != "SUCCESS") {
-    unstable("FAILED: ${target} ${testset}")
-    currentBuild.result = "FAILURE"
-    def test_href = "<a href=\"${job.absoluteUrl}\">⛔ ${shortname}</a>"
-    append_to_build_description(test_href)
-  }
-  copyArtifacts(
-    projectName: "ghaf-hw-test",
-    selector: specific("${job.number}"),
-    target: "${results_location}/test-results/${target}",
-    optional: true,
-  )
-}
-
-def get_img_path(String target, String in_path) {
-  def img_path = run_cmd("find -L ${in_path}/${target} -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print -quit")
-  if (!img_path) {
-    error("No image found for target '${target}'")
-  }
-  // Return img_path relative to 'in_path'
-  return img_path - "${in_path}/"
 }
 
 def set_github_commit_status(

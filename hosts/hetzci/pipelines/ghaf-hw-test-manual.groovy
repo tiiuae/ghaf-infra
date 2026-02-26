@@ -68,6 +68,7 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
         ]
       ]
     ],
+    booleanParam(name: 'SECUREBOOT', defaultValue: false, description: 'Test on secure boot enabled hardware'),
     booleanParam(name: 'BOOT', defaultValue: true, description: 'Run boot test before any other tests (if any).'),
     booleanParam(name: 'WIPE_ONLY', defaultValue: false, description: 'Run just internal memory wiping stage! Use this option ONLY with installer image!.'),
     booleanParam(name: 'TURN_OFF', defaultValue: false, description: 'Turn off the device after other tests (if any).'),
@@ -104,12 +105,14 @@ def init() {
   } else if(params.IMG_URL.contains("orin-nx-")) {
     env.DEVICE_NAME = 'OrinNX1'
     env.DEVICE_TAG = 'orin-nx'
-  } else if(params.IMG_URL.contains("uefisigned/packages.x86_64-linux.lenovo-x1")) {
-    env.DEVICE_NAME = 'X1-Secure-Boot'
-    env.DEVICE_TAG = 'x1-sec-boot'
   } else if(params.IMG_URL.contains("lenovo-x1-")) {
-    env.DEVICE_NAME = 'LenovoX1-1'
-    env.DEVICE_TAG = 'lenovo-x1'
+    if (params.SECUREBOOT) {
+      env.DEVICE_NAME = 'X1-Secure-Boot'
+      env.DEVICE_TAG = 'x1-sec-boot'
+    } else {
+      env.DEVICE_NAME = 'LenovoX1-1'
+      env.DEVICE_TAG = 'lenovo-x1'
+    }
   } else if(params.IMG_URL.contains("dell-latitude-7330-")) {
     env.DEVICE_NAME = 'Dell7330'
     env.DEVICE_TAG = 'dell-7330'
