@@ -55,6 +55,7 @@ ghaf-infra
 
 ## Documentation
 
+- [Architecture overview](./docs/architecture.md) — how all the pieces fit together
 - [Deployment tasks](./docs/tasks.md) — install, reboot, and other operational tasks
 - [Deploying with deploy-rs](./docs/deploy-rs.md) — how to deploy configuration changes
 - [Monitoring](./docs/monitoring.md) — Grafana and Prometheus setup
