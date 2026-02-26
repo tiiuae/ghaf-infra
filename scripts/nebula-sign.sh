@@ -2,6 +2,10 @@
 
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
+#
+# Decrypt the Nebula CA key and certificate via sops, then run
+# 'nebula-cert sign' with the provided arguments. The decrypted
+# CA material is held in a temporary directory that is removed on exit.
 
 set -e
 

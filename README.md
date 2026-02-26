@@ -14,7 +14,7 @@ The infrastructure includes:
 - **Multi-architecture remote builders** for x86_64 and aarch64
 - **On-prem test agents** with connected hardware devices
 - **Supporting services**: monitoring, logging, authentication, [Nebula](./docs/nebula.md) overlay network, [NetHSM](./docs/nethsm.md) hardware signing, and an OCI container registry
-- **Secrets management** via [sops-nix](https://github.com/Mic92/sops-nix)
+- **Secrets management** via [sops-nix](https://github.com/Mic92/sops-nix) (see [architecture overview](./docs/architecture.md#secrets-management))
 
 ## Getting Started
 
@@ -56,6 +56,7 @@ ghaf-infra
 ## Documentation
 
 - [Architecture overview](./docs/architecture.md) — how all the pieces fit together
+- [Adding a new host](./docs/adding-a-host.md) — step-by-step runbook for onboarding a host
 - [Deployment tasks](./docs/tasks.md) — install, reboot, and other operational tasks
 - [Deploying with deploy-rs](./docs/deploy-rs.md) — how to deploy configuration changes
 - [Monitoring](./docs/monitoring.md) — Grafana and Prometheus setup

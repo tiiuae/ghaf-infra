@@ -89,11 +89,11 @@ Since `task.py` internally uses ssh when accessing hosts, the above example conf
 
 The `install` task installs the given alias configuration on the target host with [nixos-anywhere](https://github.com/nix-community/nixos-anywhere). It will automatically partition and re-format the host hard drive, meaning all data on the target will be completely overwritten with no option to rollback. During installation, it will also decrypt and deploy the host private key from the sops secrets. The intended use of the `install` task is to install NixOS configuration on a non-NixOS host, to repurpose an existing server, or reset all the configuration and data on the existing server.
 
-Note: `ìnstall` task assumes the given NixOS configuration is compatible with the specified host. In the existing Ghaf CI/CD infrastructure you can safely assume this holds true.
+Note: `install` task assumes the given NixOS configuration is compatible with the specified host. In the existing Ghaf CI/CD infrastructure you can safely assume this holds true.
 
 ```bash
 ❯ inv install --alias hetz86-rel-2
-Install configuration 'hetz86-rel-2' on host '46.62.194.110'? [y/N] y
+Install configuration 'hetz86-rel-2'? [y/N] y
 ...
 ### Uploading install SSH keys ###
 ### Gathering machine facts ###
@@ -128,6 +128,24 @@ It runs the `install` task non-interactively on all the release environment host
 # Install hetzci-release
 # Connect testagent
 ...
+```
+
+## reboot
+
+The `reboot` task reboots the host identified by the given alias. It triggers a reboot, waits for the host to go down, and then waits for it to come back up:
+
+```bash
+❯ inv reboot --alias hetzarm
+```
+
+## print-keys
+
+The `print-keys` task decrypts the host's private SSH key from sops secrets and prints the corresponding SSH and age public keys. This is useful when adding a new host to `.sops.yaml` after the initial install:
+
+```bash
+❯ inv print-keys --alias ghaf-example
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA...
+age1abc123...
 ```
 
 ## print-revision

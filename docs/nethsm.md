@@ -20,6 +20,11 @@ The requests are encrypted with a PKS key which comes from the host secrets.
 Signing operations can be done from Hetzner CI, with configured pkcs11-proxy.
 The keys used will be the ones stored on the NetHSM.
 
+The HSM infrastructure serves two independent signing purposes — **SLSA
+signing** (supply chain integrity for disk images and provenance) and **UEFI
+Secure Boot signing** (EFI binary authentication on target hardware). Both use
+the same PKCS#11 proxy but different keys and tools.
+
 ## SLSA Signing
 
 Signing of blobs is done through openssl with the keys stored in the NetHSM.
@@ -75,3 +80,48 @@ openssl dgst -verify \
     -signature disk1.raw.zst.sig \
     disk1.raw.zst
 ```
+
+## UEFI Secure Boot Signing
+
+UEFI Secure Boot signing ensures that EFI binaries and boot images are
+authenticated by the target hardware's firmware before execution. This is
+separate from SLSA signing — SLSA provides supply chain provenance, while
+Secure Boot provides runtime boot integrity enforced by the UEFI firmware.
+
+### Keys
+
+The Secure Boot key hierarchy (PK, KEK, DB) is stored on the HSM. The
+`get-secureboot-keys` command on `nethsm-gateway` fetches the certificates
+and generates the signed auth files needed for enrollment:
+
+```sh
+get-secureboot-keys /path/to/output
+```
+
+The public certificates used for build-time signing are distributed via the
+`ghaf-infra-pki` flake input (`yubi-uefi-pki` package) and deployed to
+`/etc/jenkins/keys/secboot/` on Jenkins controllers.
+
+### Signing tools
+
+Jenkins controllers have the following UEFI signing tools available
+(from the `ci-yubi` flake input and `hosts/hetzci/signing.nix`):
+
+- `uefisign` — sign individual EFI binaries
+- `uefisigniso` — sign EFI binaries within ISO images
+- `uefisign-simple` — simplified wrapper for common signing operations
+- `systemd-sbsign` — systemd's built-in sbsign tool for PE binary signing
+
+These tools use the same PKCS#11 proxy connection as SLSA signing to access
+the HSM keys.
+
+### Key enrollment
+
+To enroll the Secure Boot keys on a target device, the
+`scripts/enroll-secureboot-keys.sh` script writes the DB, KEK, and PK
+certificates into the UEFI firmware variables. It is deployed to
+`/etc/jenkins/enroll-secureboot-keys.sh` on Jenkins controllers.
+
+The script expects `DB.pem`, `KEK.pem`, and `auth/PK.auth` in the current
+directory (as produced by `get-secureboot-keys`) and requires the `efi-updatevar`
+tool from `efitools`.

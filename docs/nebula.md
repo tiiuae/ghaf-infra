@@ -107,3 +107,47 @@ nebula = {
 
 Remember to update `.sops.yaml` and then run `sops updatekeys services/nebula/ca.crt.crypt`.
 The new host should be able to decrypt `ca.crt.crypt` for nebula to run.
+
+## Onboarding checklist
+
+End-to-end steps for adding a host to the Nebula network. This assumes the
+host already exists in the infrastructure (see
+[adding a host](./adding-a-host.md) for the full setup).
+
+1. **Pick an IP** — choose the next free `10.42.42.x` address by checking
+   existing `nebula_ip` values in `hosts/machines.nix`.
+2. **Choose groups** — select the appropriate groups for the host (see
+   [firewall groups](#firewall-groups) below).
+3. **Sign a certificate** — run `./scripts/nebula-sign.sh` with the chosen
+   name, IP, and groups:
+   ```sh
+   ./scripts/nebula-sign.sh -name "<name>.sumu.vedenemo.dev" -ip "10.42.42.x/24" -groups "group1,group2"
+   ```
+4. **Add cert and key to secrets** — copy the script output into the host's
+   `secrets.yaml` (the `nebula-cert` and `nebula-key` fields).
+5. **Update `.sops.yaml`** — add the host's age key anchor to the
+   `services/nebula/ca.crt.crypt` creation rule so the host can decrypt it.
+6. **Re-encrypt** — run `sops updatekeys services/nebula/ca.crt.crypt`.
+7. **Configure NixOS** — import the `service-nebula` module in the host's
+   `configuration.nix` and enable it (see [Nix configuration](#nix-configuration)
+   above).
+8. **Add `nebula_ip`** — set the `nebula_ip` field in `hosts/machines.nix`.
+9. **Deploy** — deploy the host with `deploy .#<name>`.
+
+## Firewall groups
+
+Groups are assigned when signing a host certificate and are used in the
+Nebula firewall rules defined in `services/nebula/default.nix`.
+
+| Group | Purpose |
+|---|---|
+| `hetzner` | Hetzner cloud nodes |
+| `office` | Tampere office nodes |
+| `testagent` | Test agent machines |
+| `scraper` | Metrics scraping (ghaf-monitoring) |
+| `uae-lab` | UAE lab nodes |
+
+The `scraper` group is used in an inbound firewall rule that allows
+ghaf-monitoring to scrape Prometheus node-exporter metrics (port 9100/tcp)
+from any host in that group. Other groups are currently informational and
+can be used to add targeted firewall rules as needed.
