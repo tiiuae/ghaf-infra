@@ -89,11 +89,11 @@ Since `task.py` internally uses ssh when accessing hosts, the above example conf
 
 The `install` task installs the given alias configuration on the target host with [nixos-anywhere](https://github.com/nix-community/nixos-anywhere). It will automatically partition and re-format the host hard drive, meaning all data on the target will be completely overwritten with no option to rollback. During installation, it will also decrypt and deploy the host private key from the sops secrets. The intended use of the `install` task is to install NixOS configuration on a non-NixOS host, to repurpose an existing server, or reset all the configuration and data on the existing server.
 
-Note: `ìnstall` task assumes the given NixOS configuration is compatible with the specified host. In the existing Ghaf CI/CD infrastructure you can safely assume this holds true. However, if you plan to apply the NixOS configurations from this repository on a new infrastructure or onboard new hosts, please read the documentation in [adapting-to-new-environments.md](./adapting-to-new-environments.md).
+Note: `ìnstall` task assumes the given NixOS configuration is compatible with the specified host. In the existing Ghaf CI/CD infrastructure you can safely assume this holds true.
 
 ```bash
-❯ inv install --alias hetz86-rel-1
-Install configuration 'hetz86-rel-1' on host '46.62.194.110'? [y/N] y
+❯ inv install --alias hetz86-rel-2
+Install configuration 'hetz86-rel-2' on host '46.62.194.110'? [y/N] y
 ...
 ### Uploading install SSH keys ###
 ### Gathering machine facts ###
@@ -123,7 +123,7 @@ It runs the `install` task non-interactively on all the release environment host
 ```bash
 ❯ inv install-release
 ...
-# Install hetz86-rel-1
+# Install hetz86-rel-2
 # Install hetzarm-rel-1
 # Install hetzci-release
 # Connect testagent
@@ -164,12 +164,11 @@ Currently deployed revision(s):
 ╒═══════════════════╤════════════════════════════════════════════════╤═════════════════╤═══════════════════════════════════════════════════════════╕
 │ alias             │ revision                                       │ revision date   │ revision subject                                          │
 ╞═══════════════════╪════════════════════════════════════════════════╪═════════════════╪═══════════════════════════════════════════════════════════╡
-│ hetz86-rel-1      │ 86a1b0c2148e63ff2f01ea9d69b50b8710240b68       │ 2025-10-06      │ Increase retry timeout on provenance failure              │
+│ hetz86-rel-2      │ 86a1b0c2148e63ff2f01ea9d69b50b8710240b68       │ 2025-10-06      │ Increase retry timeout on provenance failure              │
 │ hetzarm-rel-1     │ 86a1b0c2148e63ff2f01ea9d69b50b8710240b68       │ 2025-10-06      │ Increase retry timeout on provenance failure              │
 │ hetzci-prod       │ 86a1b0c2148e63ff2f01ea9d69b50b8710240b68       │ 2025-10-06      │ Increase retry timeout on provenance failure              │
 │ hetzci-release    │ 86a1b0c2148e63ff2f01ea9d69b50b8710240b68       │ 2025-10-06      │ Increase retry timeout on provenance failure              │
 │ ghaf-log          │ 0162221a15159e6053db6b85697ff2e91865f8e5       │ 2025-09-22      │ Start using zramswap module on hosts that enable zramSwap │
-│ ghaf-proxy        │ 0162221a15159e6053db6b85697ff2e91865f8e5       │ 2025-09-22      │ Start using zramswap module on hosts that enable zramSwap │
 │ ghaf-webserver    │ 0162221a15159e6053db6b85697ff2e91865f8e5       │ 2025-09-22      │ Start using zramswap module on hosts that enable zramSwap │
 │ hetz86-1          │ 34415d537396d2ec39d4403a9a8f48150cf1ee40       │ 2025-09-18      │ Remove older profile generations                          │
 │ hetzarm           │ 34415d537396d2ec39d4403a9a8f48150cf1ee40       │ 2025-09-18      │ Remove older profile generations                          │
@@ -182,7 +181,6 @@ Currently deployed revision(s):
 │ testagent-dev     │ 45b4da02c49f23f5619590d286252a5de28a34e4-dirty │                 │                                                           │
 │ testagent-prod    │ 9066891fe09531a6cea9aadb3412bca595c93fe4       │                 │                                                           │
 │ testagent-release │ 05335d38fc73964286cc5faca486f5b1f9b7953e-dirty │                 │                                                           │
-│ testagent-uae-dev │ (unknown)                                      │                 │                                                           │
 │ testagent2-prod   │ fa149ab5230c099e6f1813ea966b19ca66dc1ec6-dirty │                 │                                                           │
 ╘═══════════════════╧════════════════════════════════════════════════╧═════════════════╧═══════════════════════════════════════════════════════════╛
 ```

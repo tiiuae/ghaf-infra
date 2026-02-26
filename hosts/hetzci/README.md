@@ -7,187 +7,156 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 This directory contains the configuration for Ghaf Jenkins CI in Hetzner.
 
-## Getting Started
+## Prerequisites
 
-This document assumes you have [`nix`](https://nixos.org/download.html) with flakes support.
-
-Clone this repository:
-```bash
-❯ git clone https://github.com/tiiuae/ghaf-infra.git
-❯ cd ghaf-infra
-```
-
-Bootstrap nix shell with the required dependencies:
-```bash
-❯ nix develop
-```
-
-All example commands in this document are executed from this nix shell.
+All commands in this document assume you have completed the [Getting Started](../../README.md#getting-started) steps from the main README and are running inside the `nix develop` shell.
 
 ## Directory Structure
+
 ```shell
 hosts/hetzci/
+├── dbg
+│   └── ...
 ├── dev
-|   └── ...
+│   └── ...
 ├── prod
-|   └── ...
+│   └── ...
 ├── release
-|   └── ...
+│   └── ...
 ├── vm
-|   ├── configuration.nix  # nixosConfiguration for the jenkins host
-|   ├── disk-config.nix    # disko nix configuration
-|   └── secrets.yaml       # encrypted sops secrets specific to given host
+│   ├── configuration.nix  # nixosConfiguration for the jenkins host
+│   ├── disk-config.nix    # disko nix configuration
+│   └── secrets.yaml       # encrypted sops secrets specific to given host
 ...
-├── casc                   # Jenkins casc (configuration-as-code) configuration.
-│   ├── auth.yaml          # Composed of smaller modules, optionally
-│   ├── cachix.yaml        # included in the host casc folder by nix options
-│   ├── common.yaml        # based on the features needed in each jenkins host
-.   ...
+├── casc                   # Jenkins CasC (configuration-as-code) modules
+│   ├── auth.yaml          # Composed of smaller modules, optionally
+│   ├── cachix.yaml        # included in the host casc folder by nix options
+│   ├── common.yaml        # based on the features needed in each jenkins host
+│   ...
 ├── pipelines              # Jenkins pipelines
-│   ├── ghaf-main.groovy
-│   ├── ghaf-manual.groovy
-    ...
-    └── modules            # Jenkins pipeline modules
-        └── utils.groovy
+│   ├── ghaf-main.groovy
+│   ├── ghaf-manual.groovy
+│   ...
+│   └── modules            # Jenkins pipeline modules
+│       └── utils.groovy
 ```
-[`hosts/hetzci`](https://github.com/tiiuae/ghaf-infra/tree/main/hosts/hetzci) contains the configuration for the four different hetzci environments: `dev`, `prod`, `release`, and `vm`:
-- `release`: release jenkins CI to support ghaf release builds. The `release` jenkins web interface is available at: https://ci-release.vedenemo.dev/.
-- `prod`: production jenkins CI to support ghaf development activities. The `prod` jenkins web interface is available at: https://ci-prod.vedenemo.dev/.
-- `dev`: development jenkins CI to support ghaf-infra and ghaf hw-test development activities. The `dev` jenkins web interface is available at: https://ci-dev.vedenemo.dev/.
-- `vm`: configuration which can be run in Qemu VM locally to support testing hetzci changes in a local VM before deploying to `dev` or `prod`. The configuration is modified to allow local testing, as an example: `caddy` service configuration is simplified, `jenkins` configuration is modified to not require authentication, and `getty` automatically logs in as root.
 
+### Environments
+
+- **`prod`** — production CI for ghaf development. Web UI: https://ci-prod.vedenemo.dev/
+- **`release`** — release CI for ghaf release builds. Web UI: https://ci-release.vedenemo.dev/
+- **`dev`** — development CI for ghaf-infra and hw-test development. Web UI: https://ci-dev.vedenemo.dev/
+- **`dbg`** — debug CI environment.
+- **`vm`** — local QEMU VM for testing changes before deploying. Modified for local use: simplified Caddy config, no Jenkins authentication, auto-login as root.
 
 ## Usage
 
-Following sections describe the intended workflow for hetzci development.
+The following sections describe the intended workflow for hetzci development.
 
 ### Develop and Test Changes Locally in a VM
 
-```bash
-❯ nix flake show
-...
-├───apps
-│   └───x86_64-linux
-│       └───run-hetzci-vm: app: Run hetzci VM - 'nix run .#run-hetzci-vm -- --help'
-...
-```
+The flake app [`run-hetzci-vm`](../../nix/apps.nix) runs the [vm](./vm) configuration locally in a QEMU VM, decrypting sops secrets per [`.sops.yaml`](../../.sops.yaml). The general idea is explained in [tiiuae/ci-vm-example](https://github.com/tiiuae/ci-vm-example?tab=readme-ov-file#secrets).
 
-Flake app [`run-hetzci-vm`](https://github.com/tiiuae/ghaf-infra/blob/main/nix/apps.nix) allows running [`hosts/hetzci/vm`](https://github.com/tiiuae/ghaf-infra/tree/main/hosts/hetzci/vm) configuration locally in a Qemu VM decrypting the host sops secrets following the rules set in [`.sops.yaml`](https://github.com/tiiuae/ghaf-infra/blob/main/.sops.yaml). The general idea is explained in [tiiuae/ci-vm-example](https://github.com/tiiuae/ci-vm-example?tab=readme-ov-file#secrets).
+**Prerequisite:** KVM acceleration (`/dev/kvm` must be available and accessible to your user).
 
-Prerequisite: `run-hetzci-vm` requires KVM acceleration on the host (`/dev/kvm` must be available and accessible to your user).
-
-On running the VM target, a disk file (`hetzci-vm.qcow2`) will be created in the current working directory. By default this disk is removed when the VM exits (ephemeral VM state).
-
-To run the `hosts/hetzci/vm` config in a local Qemu VM, execute the `run-hetzci-vm` target:
+Run the VM:
 
 ```bash
 ❯ nix run .#run-hetzci-vm
 ```
-Which starts a headless VM with a console in the current terminal.
 
-To keep VM state across reboots, pass `--keep-disk`:
+This starts a headless VM with a console in the current terminal. A disk file (`hetzci-vm.qcow2`) is created in the working directory and removed on exit by default (ephemeral state).
+
+Common options:
 
 ```bash
+# Keep VM disk across reboots
 ❯ nix run .#run-hetzci-vm -- --keep-disk
-```
 
-To run the VM with an independent guest Nix store (instead of mounting the host store), pass `--no-host-nix-store`:
-
-```bash
+# Use an independent guest Nix store (instead of mounting the host store)
 ❯ nix run .#run-hetzci-vm -- --no-host-nix-store
+
+# Override VM resources
+❯ nix run .#run-hetzci-vm -- --ram-gb 16 --cpus 6 --disk-size 120G
 ```
 
-Default behavior (without `--no-host-nix-store`):
+**Default behavior** (without `--no-host-nix-store`):
 - The guest mounts host `/nix/store` as a read-only backing store.
 - Guest-created store paths are written to a separate writable guest layer.
 - The guest sees a single `/nix/store` view: writable layer first, then read-only backing store.
 - Guest writes to `/nix/store` do not go to host `/nix/store`; host impact is mainly extra store read activity.
 
-Using `--no-host-nix-store` switches to a VM variant with a fully guest-managed store:
+**`--no-host-nix-store`** switches to a fully guest-managed store:
+- Better isolation — host store paths are not mounted into the guest.
+- Trade-offs: slower startup (cannot reuse host store paths), guest must fetch more paths itself, higher disk usage.
 
-- Benefits of `--no-host-nix-store`:
-  - Better isolation from host state because guest `/nix/store` is not backed by host `/nix/store`.
-  - Guest `/nix/store` is isolated from host `/nix/store`: host store paths are not mounted into the guest, and the guest fully manages its own store content.
+#### Secrets access
 
-- Trade-offs of `--no-host-nix-store`:
-  - Slower startup in typical runs because the VM cannot directly reuse host store paths.
-  - Guest needs to realize and fetch more store paths itself during runtime.
-  - Usually higher disk usage during the VM run due to maintaining a separate guest store image.
+Anyone can run `run-hetzci-vm`, but secrets are only decrypted when the user owns the secret key of one of the age public keys declared in [`.sops.yaml`](../../.sops.yaml). Otherwise, the VM boots without secrets and [the user is notified](../../nix/apps.nix). To request access, generate an age key following [this documentation](https://github.com/tiiuae/ci-vm-example?tab=readme-ov-file#generating-and-adding-an-admin-sops-key) and send a PR adding your key to `.sops.yaml`.
 
-To override VM resources for one run, pass `--ram-gb`, `--cpus`, and/or `--disk-size`:
+#### Port forwarding
+
+The VM automatically forwards:
+- **SSH**: host port 2222 → guest port 22
+- **Jenkins**: host port 8080 → guest port 8080
 
 ```bash
-❯ nix run .#run-hetzci-vm -- --ram-gb 16 --cpus 6 --disk-size 120G
-```
-
-Note: the `run-hetzci-vm` app target in this flake can be run by anyone, but only when run by a user that owns the secret key of one of the age public keys declared in the relevant section of [`.sops.yaml`](https://github.com/tiiuae/ghaf-infra/blob/f440c7fed409cd0ed73b4389e21751a92647d2e3/.sops.yaml#L166-L175) do the secrets get decrypted. In all other cases, the [user is notified](https://github.com/tiiuae/ghaf-infra/blob/f440c7fed409cd0ed73b4389e21751a92647d2e3/nix/apps.nix#L13-L20) and the VM will boot-up without secrets. To request access to relevant sops secrets, generate an age key following instructions from [this documentation](https://github.com/tiiuae/ci-vm-example?tab=readme-ov-file#generating-and-adding-an-admin-sops-key) and send a PR adding your key to [`.sops.yaml`](https://github.com/tiiuae/ghaf-infra/blob/f440c7fed409cd0ed73b4389e21751a92647d2e3/.sops.yaml#L166-L175).
-
-`hetzci-vm` configuration automatically sets port forwarding to allow accessing `ssh` over [host port 2222](https://github.com/tiiuae/ghaf-infra/blob/79ea3c3e8b7426a71c39bab64ffcfb99c259a143/hosts/default.nix#L133) and `jenkins` web interface over [host port 8080](https://github.com/tiiuae/ghaf-infra/blob/79ea3c3e8b7426a71c39bab64ffcfb99c259a143/hosts/default.nix#L128).
-As an example, to ssh from host to guest, you would run:
-```bash
-# To access the guest ssh from your localhost
+# SSH into the VM
 ❯ ssh -p 2222 localhost
 ```
-Similarly, while the VM is running, you can access the VM jenkins interface locally over URL http://127.0.0.1:8080.
 
-To stop the VM, use `Ctrl-a` `x` or command `shutdown now` in the VM terminal.
+The Jenkins web interface is available at http://127.0.0.1:8080 while the VM is running.
+
+To stop the VM, use `Ctrl-a` `x` or run `shutdown now` in the VM terminal.
 
 ### Deploy Changes to dev
 
-**Important**: before deploying changes to `dev`, you need to sync with the rest of the team to not interfere someone else's testing.
+**Important**: sync with the team before deploying to `dev` to avoid interfering with someone else's testing.
 
-After testing changes locally in a VM as explained above, copy the same changes to the `dev` directory and deploy following the documentation in [deploy-rs.md](https://github.com/tiiuae/ghaf-infra/blob/main/docs/deploy-rs.md):
+After testing locally in a VM, copy the changes to the `dev` directory and [deploy](../../docs/deploy-rs.md):
 
 ```bash
 ❯ deploy -s .#hetzci-dev
 ```
 
-Which would deploy the changes to https://ci-dev.vedenemo.dev
+This deploys to https://ci-dev.vedenemo.dev.
 
 ### Deploy Changes to prod
 
-**Important**: do not deploy `prod` outside ghaf-infra main. In addition, before deployment you need to sync with the rest of the team to not interfere possible ongoing production testing.
+**Important**: only deploy `prod` from ghaf-infra main. Sync with the team beforehand to avoid interfering with ongoing production testing.
 
-After testing changes locally in a VM and optionally in a `dev` environment as explained above, copy the same changes to `prod` directory and deploy:
+After testing locally in a VM and optionally in `dev`, copy the changes to `prod` and deploy:
+
 ```bash
 ❯ deploy -s .#hetzci-prod
 ```
 
-Which would deploy the changes to https://ci-prod.vedenemo.dev
+This deploys to https://ci-prod.vedenemo.dev.
 
 ### Verify Deployed Version
 
-Ensure the git revision deployed on the target host matches the git revision you expect:
+Check that the deployed git revision matches what you expect:
+
 ```bash
-# Run the 'nixos-version --configuration-revision' on the deployed remote
-# host to show the deployed git revision on remote. Below, we use
-# ci-dev.vedenemo.dev as an example:
-❯ ssh ci-dev.vedenemo.dev  'nixos-version --configuration-revision'
-f440c7fed409cd0ed73b4389e21751a92647d2e3
+❯ ssh ci-dev.vedenemo.dev 'nixos-version --configuration-revision'
 ```
 
 ### Connect Test Agents
 
-On non-VM environments, you need to manually connect the test HW agents to the deployed Jenkins host.
-Find the relevant testagent IP address at [`hosts/machines.nix`](https://github.com/tiiuae/ghaf-infra/blob/f440c7fed409cd0ed73b4389e21751a92647d2e3/hosts/machines.nix#L76-L94) and connect the test HW to the deployed environment:
+On non-VM environments, manually connect the test HW agents to the deployed Jenkins host. Find the relevant testagent IP address in [`hosts/machines.nix`](../machines.nix) and connect:
 
 ```bash
-# Run the connect script on remote testagent to connect the test devices.
-# Below example connects the testagent-dev agents to ci-dev Jenkins instance:
+# Connect testagent-dev agents to the ci-dev Jenkins instance
 ❯ ssh 172.18.16.33 connect https://ci-dev.vedenemo.dev
-...
-CONTROLLER=https://ci-dev.vedenemo.dev
-Connected agents to the controller
 ```
 
 ## Release Environment Setup
 
-The release environment is completely re-installed for each Ghaf release to support ephemeral release builds.
-See the [`install-release` task](https://github.com/tiiuae/ghaf-infra/blob/main/docs/tasks.md#install-release) that helps automate the release environment setup.
+The release environment is completely re-installed for each Ghaf release to support ephemeral release builds. See the [`install-release` task](../../docs/tasks.md#install-release) for automation details.
 
 ## Jenkins Pipeline Overview
 
-All pipelines can be tested locally in the `vm` environment, but obviously no testagents can connect to your localhost, so HW tests would not run for pipelines triggered in a VM. Also, only the ci-release environment is authorized to push to the [release cache](https://app.cachix.org/organization/tiiuae/cache/ghaf-release), so cachix push is expected to fail on running the `ghaf-release` pipeline in the VM environment.
+All pipelines can be tested locally in the `vm` environment, but no testagents can connect to localhost so HW tests will not run. Only the ci-release environment is authorized to push to the [release cache](https://app.cachix.org/organization/tiiuae/cache/ghaf-release), so cachix push will fail in other environments.
 
 #### ghaf-hw-test
 Runs Ghaf hw-tests given a ghaf image and a testset. Can be triggered manually to run a hw-test ad-hoc.
@@ -199,13 +168,16 @@ Pipeline to help Ghaf HW test development.
 Runs on push to Ghaf main. Triggered by a GitHub webhook sent to `prod` environment.
 
 #### ghaf-manual
-Allows manually triggering a set of Ghaf builds and optionally run a specified set of hw-tests against the builds.
+Allows manually triggering a set of Ghaf builds and optionally running a specified set of hw-tests against the builds.
 
 #### ghaf-nightly
 Triggers the main nightly builds and tests on schedule.
 
 #### ghaf-nightly-perftest
 Triggers performance tests nightly on schedule.
+
+#### ghaf-nightly-poweroff
+Powers off test devices nightly on schedule.
 
 #### ghaf-pre-merge
 Runs on all changes to Ghaf PRs authored by tiiuae organization members. Triggered by a GitHub webhook sent to `prod` environment.
@@ -214,7 +186,7 @@ Runs on all changes to Ghaf PRs authored by tiiuae organization members. Trigger
 Allows manually triggering a pre-merge check given a Ghaf PR number. Optionally writes the check status to GitHub PR.
 
 #### ghaf-release-candidate
-Manually triggered pipeline to build and test ghaf release candidate.
+Manually triggered pipeline to build and test a ghaf release candidate.
 
 #### ghaf-release-publish
-Manually triggered pipeline to publish a ghaf release candidate. Includes stages, such as: pinning the release for OTA, archiving the release content to permanent storage, etc.
+Manually triggered pipeline to publish a ghaf release candidate. Includes stages such as pinning the release for OTA and archiving the release content to permanent storage.

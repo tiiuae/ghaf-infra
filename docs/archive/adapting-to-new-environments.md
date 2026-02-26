@@ -3,6 +3,9 @@ SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 
+> **Note:** This document is outdated and kept for historical reference.
+> It references hosts, paths, and services that no longer exist in this repository.
+
 # Starting off in a new environment
 
 This document outlines the initial manual setup to help those who plan to apply the configurations from this repository - or something based on them - on a new environment.
@@ -88,7 +91,7 @@ creation_rules:
 ```
 
 ### Add yourself as user to the target
-Copy one of the user configurations under [users](../users/) as template for your admin user, and modify the username and the ssh key to match yours:
+Copy one of the user configurations under [users](../../users/) as template for your admin user, and modify the username and the ssh key to match yours:
 ```bash
 # Run in nix-shell on your host
 $ cp users/tester.nix users/myadmin.nix
@@ -124,7 +127,7 @@ Copy one of the system configurations under [hosts](./hosts/) as template for yo
 $ cp -r hosts/ghafhydra hosts/mytarget
 ```
 
-You will also need to add your new target configuration to the [`flake.nix`](../flake.nix):
+You will also need to add your new target configuration to the [`flake.nix`](../../flake.nix):
 ```
     ...
     # NixOS configuration entrypoint
@@ -298,4 +301,4 @@ If you followed the example in this document, your target setup is now configure
 In case you want to execute nixos-anywhere manually, or you run into issues executing the installation in your environment, see the documentation in [nixos-anywhere.md](./nixos-anywhere.md).
 
 ## Install the target configuration
-Please see the documentation in the main [README](../README.md#install) for instructions on how to install the new configuration.
+Please see the documentation in the main [README](../../README.md) for instructions on how to install the new configuration.

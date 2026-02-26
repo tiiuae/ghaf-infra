@@ -7,7 +7,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 Grafana instance is publicly accessible at <https://monitoring.vedenemo.dev>.
 The authentication happens through Github login. Login is accepted if you are
-part of the `tiiuae` or and `devenv-fi` team.
+part of the `tiiuae` or `devenv-fi` team.
 
 The hosts in ghaf-infra are monitored with Grafana running on `ghaf-monitoring`.
 
