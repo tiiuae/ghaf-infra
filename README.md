@@ -35,6 +35,30 @@ Bootstrap nix shell with the required dependencies:
 
 All commands referenced in the documentation are executed inside the nix-shell.
 
+## Development
+
+The dev shell includes pre-commit hooks that run automatically on
+`git commit`. See [`nix/git-hooks.nix`](./nix/git-hooks.nix) for the
+full list. To run them manually against all files:
+
+```bash
+nix fmt
+```
+
+To evaluate all Nix expressions and validate NixOS configurations without
+building derivations (catches syntax errors, type mismatches, and missing
+attributes):
+
+```bash
+nix flake check --no-build
+```
+
+To run the full check suite including builds:
+
+```bash
+nix flake check
+```
+
 ## Directory Structure
 
 ```
