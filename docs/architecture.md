@@ -28,14 +28,15 @@ ghaf-auth and exposes a public web UI over Caddy with ACME TLS.
 | `hetzci-dev` | ci-dev.vedenemo.dev | Development CI — for CI and hardware-test development |
 | `hetzci-release` | ci-release.vedenemo.dev | Release CI — ephemeral, re-installed per release cycle |
 | `hetzci-dbg` | ci-dbg.vedenemo.dev | Debug CI — isolated environment for troubleshooting |
-| `hetzci-vm` | localhost:8080 | Local QEMU VM for testing changes before deploying |
+
+A fifth configuration, `hetzci-vm`, is not deployed — it runs locally
+(`localhost:8080`) via `nix run .#run-hetzci-vm` as a QEMU VM for developing
+and testing CI changes before deploying to a real environment.
 
 GitHub webhooks deliver push and PR events to `hetzci-prod`. The release
 controller has no webhooks; its pipelines are triggered manually. Each
 controller dispatches Nix builds to its own set of remote builders and
-connects to test agents over the Nebula overlay. The `hetzci-vm` configuration
-runs locally via `nix run .#run-hetzci-vm` for developing and testing CI
-changes in an isolated QEMU VM before deploying to a real environment.
+connects to test agents over the Nebula overlay.
 
 ### Remote Builders
 
@@ -230,6 +231,8 @@ The ghaf-infra repository has its own GitHub Actions workflows
 
 - `update-robot-framework.yml` — daily automated PR to bump the
   robot-framework flake input.
+- `update-flake-inputs.yml` — weekly automated PR to update all flake inputs
+  and Jenkins plugin manifests.
 - Dependabot (`.github/dependabot.yml`) keeps GitHub Actions and Go module
   dependencies up to date.
 
