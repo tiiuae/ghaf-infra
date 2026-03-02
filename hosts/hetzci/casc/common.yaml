@@ -16,6 +16,8 @@ jenkins:
         level: "ALL"
       - name: "hudson.security.csrf.CrumbFilter"
         level: "SEVERE"
+      - name: "org.jenkinsci.plugins.workflow.support.steps.build.BuildTriggerListener"
+        level: "SEVERE"
       name: "Debug"
 
 unclassified:
