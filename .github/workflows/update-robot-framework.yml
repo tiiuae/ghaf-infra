@@ -20,6 +20,8 @@ concurrency:
 jobs:
   update-robot-framework:
     name: Update robot-framework input
+    # Skip running in forked repositories; this job needs AUTOMATION_TOKEN.
+    if: ${{ github.repository == 'tiiuae/ghaf-infra' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read # Only required for checkout; branch/PR writes use AUTOMATION_TOKEN.
