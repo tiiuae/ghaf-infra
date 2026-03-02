@@ -274,7 +274,7 @@ in
       script = # sh
         ''
           rm -f *.xml
-          rm -f nodes/*/config.xml
+          rm -rf nodes/*/
           rm -f jobs/*/config.xml
         '';
     };
