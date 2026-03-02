@@ -41,8 +41,8 @@
   networking.interfaces.enp89s0 = {
     ipv4.addresses = [
       {
-        address = "192.168.70.12";
-        prefixLength = 24;
+        address = "10.255.255.2";
+        prefixLength = 30;
       }
     ];
   };
@@ -70,7 +70,7 @@
     ];
   };
 
-  nethsm.host = "192.168.70.10";
+  nethsm.host = "10.255.255.1";
   pkcs11.proxy.listenAddr = machines.nethsm-gateway.nebula_ip;
 
   services.monitoring = {
