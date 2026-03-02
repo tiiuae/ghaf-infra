@@ -20,6 +20,8 @@ concurrency:
 jobs:
   update-flake-inputs:
     name: Update flake inputs and Jenkins plugins
+    # Skip running in forked repositories; this job needs AUTOMATION_TOKEN.
+    if: ${{ github.repository == 'tiiuae/ghaf-infra' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read # Only required for checkout; branch/PR writes use AUTOMATION_TOKEN.
