@@ -14,6 +14,10 @@ jenkins:
     - loggers:
       - name: "org.jenkinsci.plugins.github"
         level: "ALL"
+      - name: "hudson.security.csrf.CrumbFilter"
+        level: "SEVERE"
+      - name: "org.jenkinsci.plugins.workflow.support.steps.build.BuildTriggerListener"
+        level: "SEVERE"
       name: "Debug"
 
 unclassified:
@@ -30,6 +34,11 @@ unclassified:
 
 # https://plugins.jenkins.io/configuration-as-code-groovy/
 groovy:
+  # Keep stale-crumb polling noise out of systemd journal.
+  - script: |
+      import java.util.logging.Level
+      import java.util.logging.Logger
+      Logger.getLogger("hudson.security.csrf.CrumbFilter").setLevel(Level.SEVERE)
   # Load pipelines:
   - script: |
       import jenkins.model.*

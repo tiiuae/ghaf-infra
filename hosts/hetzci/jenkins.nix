@@ -250,6 +250,11 @@ in
     ];
 
     systemd.services.jenkins = {
+      # Ensure plugins dir exists before the module-generated preStart script
+      # runs `rm -r /var/lib/jenkins/plugins`, to avoid first-boot noise.
+      preStart = lib.mkBefore ''
+        mkdir -p /var/lib/jenkins/plugins
+      '';
       serviceConfig = {
         Restart = "on-failure";
       };
@@ -269,7 +274,7 @@ in
       script = # sh
         ''
           rm -f *.xml
-          rm -f nodes/*/config.xml
+          rm -rf nodes/*/
           rm -f jobs/*/config.xml
         '';
     };
