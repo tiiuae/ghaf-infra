@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 {
-  self,
   config,
   ...
 }:
@@ -9,21 +8,9 @@
   imports = [
     ../agents-common.nix
     ./disk-config.nix
-  ]
-  ++ (with self.nixosModules; [
-    service-nebula
-    team-devenv
-    team-testers
-  ]);
+  ];
 
-  sops = {
-    defaultSopsFile = ./secrets.yaml;
-    secrets = {
-      metrics_password.owner = "alloy";
-      nebula-cert.owner = config.nebula.user;
-      nebula-key.owner = config.nebula.user;
-    };
-  };
+  sops.defaultSopsFile = ./secrets.yaml;
 
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "testagent-dev";
@@ -55,22 +42,6 @@
     "sg"
   ];
 
-  nebula = {
-    enable = true;
-    cert = config.sops.secrets.nebula-cert.path;
-    key = config.sops.secrets.nebula-key.path;
-  };
-
-  services.nebula.networks."vedenemo".firewall = {
-    inbound = [
-      {
-        port = 8000;
-        proto = "tcp";
-        groups = [ "scraper" ];
-      }
-    ];
-  };
-
   # udev rules for test devices serial connections and SSD-drives
   services.udev.extraRules = ''
     # Orin nx
@@ -101,13 +72,6 @@
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B72838C5549", SYMLINK+="ssdDARTER", MODE="0666", GROUP="dialout"
 
-  '';
-
-  # Trigger UDEV rules
-  system.activationScripts.udevTrigger = ''
-    echo "==> Triggering udev rules..."
-    /run/current-system/sw/bin/udevadm trigger --subsystem-match=tty
-    /run/current-system/sw/bin/udevadm trigger --subsystem-match=block
   '';
 
   # Details of the hardware devices connected to this host

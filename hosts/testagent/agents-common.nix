@@ -78,7 +78,10 @@ in
   ]
   ++ (with self.nixosModules; [
     common
+    service-nebula
     service-openssh
+    team-devenv
+    team-testers
   ]);
 
   sops.secrets =
@@ -103,6 +106,11 @@ in
 
       fleetdm_enroll_secret = credential;
       fleetdm_api_token = credential;
+
+      # Per-host secrets sourced via defaultSopsFile
+      metrics_password.owner = "alloy";
+      nebula-cert.owner = config.nebula.user;
+      nebula-key.owner = config.nebula.user;
     };
 
   networking.useDHCP = true;
@@ -150,6 +158,29 @@ in
   # This server is only exposed to the internal network
   # fail2ban only causes issues here
   services.fail2ban.enable = lib.mkForce false;
+
+  nebula = {
+    enable = true;
+    cert = config.sops.secrets.nebula-cert.path;
+    key = config.sops.secrets.nebula-key.path;
+  };
+
+  services.nebula.networks."vedenemo".firewall = {
+    inbound = [
+      {
+        port = 8000;
+        proto = "tcp";
+        groups = [ "scraper" ];
+      }
+    ];
+  };
+
+  # Trigger UDEV rules
+  system.activationScripts.udevTrigger = ''
+    echo "==> Triggering udev rules..."
+    /run/current-system/sw/bin/udevadm trigger --subsystem-match=tty
+    /run/current-system/sw/bin/udevadm trigger --subsystem-match=block
+  '';
 
   services.monitoring = {
     metrics.enable = true;
