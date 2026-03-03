@@ -93,19 +93,22 @@ ghaf-example = {
 The `publicKey` field is populated after the first install (see
 [print-keys](./tasks.md#print-keys)).
 
-### 4. Add NixOS module to `hosts/default.nix`
+### 4. Register host in `hosts/default.nix`
 
-In the `flake.nixosModules` attrset, add:
+In `hosts/default.nix`, add the host to the `hostModules` attrset:
 
 ```nix
-nixos-ghaf-example = ./ghaf-example/configuration.nix;
+hostModules = {
+  # ...
+  ghaf-example = ./ghaf-example/configuration.nix;
+};
 ```
 
-### 5. Add to nixosConfigurations list
+`flake.nixosModules.nixos-ghaf-example` and
+`flake.nixosConfigurations.ghaf-example` are generated from this entry
+automatically.
 
-In the same file, add `"ghaf-example"` to the list passed to `builtins.map`.
-
-### 6. Add deploy-rs node to `nix/deployments.nix`
+### 5. Add deploy-rs node to `nix/deployments.nix`
 
 Add the host to the appropriate node set (`x86-nodes` or `aarch64-nodes`):
 
@@ -135,7 +138,7 @@ After the first install the host has generated its SSH host key. The
 following steps retrieve that key, add it to sops, and redeploy so the
 host receives its encrypted secrets.
 
-### 7. Add host age key to `.sops.yaml`
+### 6. Add host age key to `.sops.yaml`
 
 Retrieve the host's SSH public key and convert it to an age key:
 
@@ -149,7 +152,7 @@ Add the resulting age key to the `keys` section of `.sops.yaml`:
 - &ghaf-example age1...
 ```
 
-### 8. Add creation rule in `.sops.yaml`
+### 7. Add creation rule in `.sops.yaml`
 
 Add a `creation_rules` entry so sops knows which keys can decrypt the
 host's secrets:
@@ -162,7 +165,7 @@ host's secrets:
     - *your-admin-anchor
 ```
 
-### 9. Create secrets file
+### 8. Create secrets file
 
 Copy the host's private SSH key from the remote host and store it as
 a sops secret:
@@ -180,7 +183,7 @@ rm /tmp/host-key
 
 At minimum, the secrets file must contain the `ssh_host_ed25519_key`.
 
-### 10. Run `inv update-sops-files`
+### 9. Run `inv update-sops-files`
 
 Re-encrypt all sops files to reflect the updated `.sops.yaml` rules:
 
@@ -188,7 +191,7 @@ Re-encrypt all sops files to reflect the updated `.sops.yaml` rules:
 inv update-sops-files
 ```
 
-### 11. Redeploy with secrets
+### 10. Redeploy with secrets
 
 Deploy the configuration again so the host receives its secrets
 (see [deploy-rs.md](./deploy-rs.md)):
