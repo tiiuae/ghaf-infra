@@ -14,6 +14,28 @@ PURGE_DU_PCT="${PURGE_DU_PCT:=85}"
 # pipeline, always keeping at least the newest build.
 PURGE_BUILD_PCT="${PURGE_BUILD_PCT:=20}"
 
+# Sort by build timestamp in dir name; fall back to mtime for non-matching dirs.
+build_sort_key() {
+  local entry="$1"
+  local base ts datepart timepart secpart mspart epoch_s mtime_s
+
+  base=$(basename "$entry")
+  if [[ $base =~ ^([0-9]{8}_[0-9]{9})-commit_[0-9a-fA-F]{40}$ ]]; then
+    ts="${BASH_REMATCH[1]}"
+    datepart="${ts%_*}"
+    timepart="${ts#*_}"
+    secpart="${timepart:0:6}"
+    mspart="${timepart:6:3}"
+    if epoch_s=$(date -d "${datepart:0:4}-${datepart:4:2}-${datepart:6:2} ${secpart:0:2}:${secpart:2:2}:${secpart:4:2}" +%s 2>/dev/null); then
+      echo "$((epoch_s * 1000 + 10#$mspart))"
+      return 0
+    fi
+  fi
+
+  mtime_s=$(stat -c %Y "$entry" 2>/dev/null || echo 0)
+  echo "$((mtime_s * 1000))"
+}
+
 purge() {
   # Cleanup /tmp: delete large files owned by jenkins modified at least 24 hours ago
   echo "Cleanup files from /tmp"
@@ -47,7 +69,14 @@ purge() {
       if ((deleted >= remove_count)); then
         break
       fi
-    done < <(find "$path" -maxdepth 1 -mindepth 1 -type d -printf '%T@ %p\0' | sort -z -n)
+    done < <(
+      find "$path" -maxdepth 1 -mindepth 1 -type d -print0 |
+        while IFS= read -r -d '' entry; do
+          key=$(build_sort_key "$entry")
+          printf '%s %s\0' "$key" "$entry"
+        done |
+        sort -z -n
+    )
   done < <(find /var/lib/jenkins/artifacts -maxdepth 1 -mindepth 1 -type d)
 }
 
