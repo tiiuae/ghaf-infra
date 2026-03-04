@@ -27,6 +27,7 @@ in
 
   system.stateVersion = lib.mkForce "25.11";
   networking.hostName = "hetzci-dbg";
+  ghaf.nix-cache.caches = [ "nixos-org" ];
 
   hetzci = {
     jenkins = {
@@ -63,17 +64,6 @@ in
       "x-systemd.growfs"
     ];
   };
-
-  # Ensure only the nixos.org cache is trusted
-  nix.settings.trusted-public-keys = lib.mkForce [
-    "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-  ];
-  nix.settings.substituters = lib.mkForce [
-    "https://cache.nixos.org/"
-  ];
-  nix.settings.extra-trusted-public-keys = lib.mkForce [ "" ];
-  nix.settings.extra-substituters = lib.mkForce [ "" ];
-  nix.settings.trusted-substituters = lib.mkForce [ "" ];
 
   nix = {
     distributedBuilds = true;
