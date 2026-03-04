@@ -12,6 +12,15 @@ let
   asGB = size: toString (size * 1024 * 1024 * 1024);
 in
 {
+  imports = [
+    ./nix-cache.nix
+  ];
+
+  ghaf.nix-cache.caches = lib.mkDefault [
+    "nixos-org"
+    "ghaf-dev"
+  ];
+
   # revision of the flake the configuration was built from.
   # $ nixos-version --configuration-revision
   system.configurationRevision = toString (
@@ -36,13 +45,6 @@ in
       ];
       # Enable flakes and new 'nix' command
       experimental-features = "nix-command flakes";
-      # Subsituters
-      trusted-public-keys = [
-        "ghaf-dev.cachix.org-1:S3M8x3no8LFQPBfHw1jl6nmP8A7cVWKntoMKN3IsEQY="
-      ];
-      substituters = [
-        "https://ghaf-dev.cachix.org?priority=20"
-      ];
       # Avoid copying unnecessary stuff over SSH
       builders-use-substitutes = true;
       # Auto-free the /nix/store:
