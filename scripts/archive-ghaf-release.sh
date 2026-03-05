@@ -88,26 +88,26 @@ argparse() {
     esac
   done
   shift $((OPTIND - 1))
-  if [ -n "$*" ]; then
+  if [[ -n $* ]]; then
     print_err "unsupported positional argument(s): '$*'"
     exit 1
   fi
-  if [ -z "$ARTIFACTS" ]; then
+  if [[ -z $ARTIFACTS ]]; then
     print_err "missing mandatory option (-a)"
     usage
     exit 1
   fi
-  if [ -z "$GHAF_VERSION" ]; then
+  if [[ -z $GHAF_VERSION ]]; then
     echo "missing mandatory option (-t)"
     usage
     exit 1
   fi
-  if [ -z "$ACCESS_KEY" ] || [ -z "$SECRET_KEY" ]; then
+  if [[ -z $ACCESS_KEY || -z $SECRET_KEY ]]; then
     print_err "missing storage credential environment variables"
     usage
     exit 1
   fi
-  if [ ! -d "$ARTIFACTS" ]; then
+  if [[ ! -d $ARTIFACTS ]]; then
     print_err "invalid ARTIFACTS directory path (-a)"
     usage
     exit 1
@@ -123,24 +123,46 @@ exit_unless_command_exists() {
 
 verify_signatures() {
   dir="$1"
-  img=$(find -L "$dir" -regextype egrep -regex '.*\.(img|iso|zst)' -print -quit)
-  if [ -z "$img" ]; then
+  manifest="$dir/manifest.json"
+
+  if [[ ! -f $manifest ]]; then
+    print_err "missing manifest: $dir"
+    exit 1
+  fi
+  if ! img_rel=$(jq -re '.image' "$manifest"); then
+    print_err "missing image entry in manifest: $manifest"
+    exit 1
+  fi
+  img="$dir/$img_rel"
+  if [[ -z $img_rel ]]; then
     print_err "missing image: $dir"
     exit 1
   fi
-  img_sig=$(find -L "$dir" -name "$(basename "$img").sig" -print -quit)
-  if [ -z "$img_sig" ]; then
+  if ! img_sig_rel=$(jq -re '.signatures.image.path' "$manifest"); then
+    print_err "missing image signature entry in manifest: $manifest"
+    exit 1
+  fi
+  img_sig="$dir/$img_sig_rel"
+  if [[ -z $img_sig_rel ]]; then
     print_err "missing image signature: $dir"
     exit 1
   fi
-  prov=$(find -L "$dir" -name "provenance.json" -print -quit)
-  if [ -z "$prov" ]; then
-    print_err "missing provenance file: $dir"
+  if ! prov_rel=$(jq -re '.attestations.provenance.nix_build' "$manifest"); then
+    print_err "missing nix_build provenance entry in manifest: $manifest"
     exit 1
   fi
-  prov_sig=$(find -L "$dir" -name "provenance.json.sig" -print -quit)
-  if [ -z "$prov_sig" ]; then
-    print_err "missing provenance esignature: $dir"
+  prov="$dir/$prov_rel"
+  if [[ -z $prov_rel ]]; then
+    print_err "missing nix_build provenance file: $dir"
+    exit 1
+  fi
+  if ! prov_sig_rel=$(jq -re '.signatures.provenance.nix_build.path' "$manifest"); then
+    print_err "missing nix_build provenance signature entry in manifest: $manifest"
+    exit 1
+  fi
+  prov_sig="$dir/$prov_sig_rel"
+  if [[ -z $prov_sig_rel ]]; then
+    print_err "missing nix_build provenance signature: $dir"
     exit 1
   fi
   echo "[+] Verifying: $img"
@@ -178,23 +200,37 @@ prepare_artifacts() {
       continue
     fi
     echo "[+] Release artifact: $target_name"
-    # build output
-    mkdir -p "$TMPDIR/$target_name"
-    ln -s "$dir" "$TMPDIR/$target_name/build"
-    # scs output
-    if [ -d "$artifactsdir/scs/$target_name" ]; then
-      ln -s "$artifactsdir/scs/$target_name" "$TMPDIR/$target_name/scs"
-    fi
+    manifest="$dir/manifest.json"
+
     # verify signatures
-    verify_signatures "$TMPDIR/$target_name"
+    verify_signatures "$dir"
+
+    mkdir -p "$TMPDIR/$target_name"
+    ln -s "$manifest" "$TMPDIR/$target_name/manifest.json"
+
+    if ! image=$(jq -re '.image' "$manifest"); then
+      print_err "missing image entry in manifest: $manifest"
+      exit 1
+    fi
+    if ! image_sig=$(jq -re '.signatures.image.path' "$manifest"); then
+      print_err "missing image signature entry in manifest: $manifest"
+      exit 1
+    fi
+
+    # build output
+    ln -s "$dir/$image" "$TMPDIR/$target_name/$image"
+    ln -s "$dir/$image_sig" "$TMPDIR/$target_name/$image_sig"
+
+    # attestations
+    if [[ -d "$dir/attestations" ]]; then
+      ln -s "$dir/attestations" "$TMPDIR/$target_name/attestations"
+    fi
+
     # test-results output
-    if [ -d "$artifactsdir/test-results/$target_name" ]; then
-      ln -s "$artifactsdir/test-results/$target_name" "$TMPDIR/$target_name/test-results"
+    if [[ -d "$dir/test-results" ]]; then
+      ln -s "$dir/test-results" "$TMPDIR/$target_name/test-results"
     fi
-    # uefisigned output
-    if [ -d "$artifactsdir/uefisigned/$target_name" ]; then
-      ln -s "$artifactsdir/uefisigned/$target_name" "$TMPDIR/$target_name/uefisigned"
-    fi
+
     # Create a release tarball
     tarball=${target_name#"packages."} # strip possible 'packages.' prefix
     mkdir -p "$TMPDIR/archived"
@@ -204,7 +240,7 @@ prepare_artifacts() {
   tree --noreport -I archived -l "$TMPDIR"
   echo "[+] Release archive:"
   tree --noreport "$TMPDIR/archived"
-  if [ ! -d "$TMPDIR/archived" ]; then
+  if [[ ! -d "$TMPDIR/archived" ]]; then
     print_err "nothing to archive"
     exit 1
   fi
@@ -214,17 +250,18 @@ prepare_artifacts() {
 
 main() {
   # Colorize output if stdout is to a terminal (and not to pipe or file)
-  if [ -t 1 ]; then
+  if [[ -t 1 ]]; then
     RED='\033[1;31m'
     NONE='\033[0m'
   fi
   argparse "$@"
-  if [ "$DEBUG" = "true" ]; then set -x; fi
+  if [[ $DEBUG == "true" ]]; then set -x; fi
   trap on_exit EXIT
   exit_unless_command_exists mc
   exit_unless_command_exists tar
   exit_unless_command_exists realpath
   exit_unless_command_exists tree
+  exit_unless_command_exists jq
 
   # Prepare the release archive from artifacts
   prepare_artifacts "$(realpath "$ARTIFACTS")"
