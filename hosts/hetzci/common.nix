@@ -69,12 +69,6 @@
       "kvm"
     ];
     max-jobs = 0;
-    extra-trusted-public-keys = [
-      "ghaf-dev.cachix.org-1:S3M8x3no8LFQPBfHw1jl6nmP8A7cVWKntoMKN3IsEQY="
-    ];
-    extra-substituters = [
-      "https://ghaf-dev.cachix.org"
-    ];
     builders-use-substitutes = true;
 
     min-free = lib.mkForce (70 * 1024 * 1024 * 1024);
