@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Declarative binary cache configuration. Each host specifies which caches
-# it needs by name and is force-restricted to exactly that set.
+# it needs by name.
 #
 # Usage:
 #   ghaf.nix-cache.caches = [ "nixos-org" ];
@@ -32,14 +32,11 @@ in
 {
   options.ghaf.nix-cache.caches = lib.mkOption {
     type = lib.types.nonEmptyListOf (lib.types.enum (builtins.attrNames knownCaches));
-    description = "Binary caches to use. The host is force-restricted to exactly this set.";
+    description = "Binary caches to use.";
   };
 
   config.nix.settings = {
-    trusted-public-keys = lib.mkForce (map (c: c.publicKey) selectedCaches);
-    substituters = lib.mkForce (map (c: c.url) selectedCaches);
-    extra-trusted-public-keys = lib.mkForce [ "" ];
-    extra-substituters = lib.mkForce [ "" ];
-    trusted-substituters = lib.mkForce [ "" ];
+    trusted-public-keys = map (c: c.publicKey) selectedCaches;
+    substituters = map (c: c.url) selectedCaches;
   };
 }
