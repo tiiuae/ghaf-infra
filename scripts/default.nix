@@ -26,6 +26,7 @@
           (with pkgs; [
             minio-client
             tree
+            jq
           ])
           ++ [
             verify-signature
