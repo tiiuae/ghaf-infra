@@ -119,14 +119,3 @@ Jenkins controllers have the following UEFI signing tools available
 
 These tools use the same PKCS#11 proxy connection as SLSA signing to access
 the HSM keys.
-
-### Key enrollment
-
-To enroll the Secure Boot keys on a target device, the
-`scripts/enroll-secureboot-keys.sh` script writes the DB, KEK, and PK
-certificates into the UEFI firmware variables. It is deployed to
-`/etc/jenkins/enroll-secureboot-keys.sh` on Jenkins controllers.
-
-The script expects `DB.pem`, `KEK.pem`, and `auth/PK.auth` in the current
-directory (as produced by `get-secureboot-keys`) and requires the `efi-updatevar`
-tool from `efitools`.

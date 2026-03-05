@@ -109,7 +109,6 @@ in
     {
       environment.etc = {
         "jenkins/keys/secboot".source = "${keySourceUefi}/share/ghaf-infra-pki/uefi";
-        "jenkins/enroll-secureboot-keys.sh".source = "${self.outPath}/scripts/enroll-secureboot-keys.sh";
       };
 
       environment.systemPackages = signingPackages;

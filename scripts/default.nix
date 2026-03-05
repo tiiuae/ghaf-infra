@@ -33,17 +33,10 @@
           ];
         text = builtins.readFile ./archive-ghaf-release.sh;
       };
-      enroll-secure-boot = pkgs.writeShellApplication {
-        name = "enroll-secure-boot";
-        runtimeInputs = with pkgs; [
-          efitools
-        ];
-        text = builtins.readFile ./enroll-secureboot-keys.sh;
-      };
     in
     {
       packages = {
-        inherit verify-signature archive-ghaf-release enroll-secure-boot;
+        inherit verify-signature archive-ghaf-release;
       };
     };
 }
