@@ -42,8 +42,12 @@ purge() {
     while IFS= read -r -d '' entry; do
       entry_path=${entry#* }
       echo "Removing '$entry_path'"
-      rm -fr "$entry_path"
-      deleted=$((deleted + 1))
+      if rm -fr "$entry_path"; then
+        deleted=$((deleted + 1))
+      else
+        echo "Warning: failed to remove '$entry_path', skipping" >&2
+        continue
+      fi
       if ((deleted >= remove_count)); then
         break
       fi
