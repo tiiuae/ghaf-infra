@@ -10,7 +10,7 @@ This repository declaratively defines the NixOS configuration for the [Ghaf](htt
 ## Overview
 
 The infrastructure includes:
-- **Jenkins CI environments** (prod, dev, release) hosted at Hetzner
+- **Jenkins CI environments** (prod, dev, release, dbg) hosted at Hetzner
 - **Multi-architecture remote builders** for x86_64 and aarch64
 - **On-prem test agents** with connected hardware devices
 - **Supporting services**: monitoring, logging, authentication, [Nebula](./docs/nebula.md) overlay network, [NetHSM](./docs/nethsm.md) hardware signing, and an OCI container registry
