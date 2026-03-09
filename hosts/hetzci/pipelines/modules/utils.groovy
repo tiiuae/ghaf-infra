@@ -181,7 +181,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
       // Signing stages
       // Skip signing stages in vm and dbg environments, where NetHSM is not available
       if (signing_possible && it.get('provenance', true)) {
-        stage("Sign provenance ${shortname}") {
+        stage("Sign (SLSA) provenance ${shortname}") {
           lock('signing') {
             sh """
               openssl pkeyutl -sign -rawin \
@@ -204,7 +204,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
         }
         if (signing_possible) {
           if (it.get('uefisign', false) || it.get('uefisigniso', false)) {
-            stage("Sign UEFI ${shortname}") {
+            stage("Sign (UEFI) ${shortname}") {
               def tmpdir = run_cmd("mktemp -d")
               def img_name = path_basename(manifest.image)
 
@@ -230,7 +230,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
               manifest.uefi.signing_key = "pkcs11:token=${signingToken};object=uefi-ghaf-db"
             }
           }
-          stage("Sign image ${shortname}") {
+          stage("Sign (SLSA) image ${shortname}") {
             lock('signing') {
               def img_name = path_basename(manifest.image)
               // sign the current main image be it unsigned or uefisigned
