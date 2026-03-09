@@ -37,6 +37,13 @@ let
       ];
     }
     {
+      desc = "Bogdan Chifor";
+      name = "bogdan";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMOjgCnP/Z3UanD+SP17zndq2RXOP3VSf77xbqKit0CR"
+      ];
+    }
+    {
       desc = "Emrah Billur";
       name = "emrah";
       keys = [
@@ -171,6 +178,13 @@ let
       name = "renzo";
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ/e7vfzx0Sma0BtchhpQAlmAuIUiC11eWi7hOQiItZR renzo.bruzzone@tii.ae"
+      ];
+    }
+    {
+      desc = "Roman Borusiak";
+      name = "roman";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIEQPRBkpitGD4BEMDTtWqlExAYh+plIJuG4LOkLiZZu"
       ];
     }
     {
