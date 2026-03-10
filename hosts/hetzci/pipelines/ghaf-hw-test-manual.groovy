@@ -35,7 +35,7 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
       description: '''
         Select the target device. If DEVICE_TAG is selected and IMG_URL is left empty, the target device is not flashed.
         Instead, tests will be run against the image flashed on the target device at the time of triggering this job.
-        If both IMG_URL and DEVICE_TAG are selected, IMG_URL takes precedence.'''.stripIndent(),
+        If both IMG_URL and DEVICE_TAG are selected, the selected device is flashed with the given image.'''.stripIndent(),
       script: [
         $class: 'GroovyScript',
         script: [
@@ -119,6 +119,10 @@ def init() {
   } else if(params.IMG_URL.contains("system76-darp11-b-")) {
     env.DEVICE_NAME = 'DarterPRO'
     env.DEVICE_TAG = 'darter-pro'
+  }
+  if (params.IMG_URL && params.DEVICE_TAG) {
+    env.DEVICE_TAG = params.DEVICE_TAG
+    env.DEVICE_NAME = deviceMap[env.DEVICE_TAG].name
   }
   if (!env.DEVICE_TAG || env.DEVICE_TAG == null) {
     error("DEVICE_TAG is not defined and could not be derived from IMG_URL ${env.IMG_URL}")
@@ -393,7 +397,7 @@ pipeline {
       when { expression { env.TARGET.contains("installer")} }
       steps {
         script {
-          if (env.TARGET.contains("system76-darp11-b-storeDisk-debug-installer")) {
+          if (env.TARGET.contains("installer") && env.DEVICE_TAG == "darter-pro") {
             ghaf_robot_test('break')
           }
           ghaf_robot_test('turnoff')
