@@ -401,7 +401,7 @@ pipeline {
       when { expression { env.TARGET.contains("installer")} }
       steps {
         script {
-          if (env.TARGET.contains("system76-darp11-b-storeDisk-debug-installer")) {
+          if (env.TARGET.contains("installer") && env.DEVICE_TAG == "darter-pro") {
             ghaf_robot_test('break')
           }
           ghaf_robot_test('turnoff')
