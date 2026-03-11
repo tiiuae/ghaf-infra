@@ -21,6 +21,8 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
     string(name: 'CI_TEST_REPO_URL', defaultValue: 'https://github.com/tiiuae/ci-test-automation.git', description: 'Select ci-test-automation repository.'),
     string(name: 'CI_TEST_REPO_BRANCH', defaultValue: 'main', description: 'Select ci-test-automation branch to checkout.'),
     string(name: 'IMG_URL', defaultValue: '', description: 'Target image url.'),
+    string(name: 'FLASH_CACHE_URL', defaultValue: '', description: 'URL to nix binary cache containing Ghaf flash-script. When empty, uses legacy inline flashing.'),
+    string(name: 'FLASH_STORE_PATH', defaultValue: '', description: 'Nix store path of flash-script in the cache.'),
     string(name: 'TESTSET', defaultValue: '_relayboot_', description: 'Target testset, e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.'),
     string(name: 'TESTAGENT_HOST', defaultValue: null, description: 'Target testagent host, e.g.: dev, prod, release'),
     booleanParam(name: 'SECUREBOOT', defaultValue: false, description: 'Test on secure boot enabled hardware'),
@@ -272,22 +274,27 @@ pipeline {
           println "Downloaded SLSA signature file to workspace: ${sig_path}"
           sh "verify-signature image ${img_path} ${sig_path}"
 
-          // Uncompress
-          if(img_path.endsWith(".zst")) {
-            sh "zstd -dfv ${img_path}"
-            // env.IMG_PATH stores the path to the uncompressed image
-            env.IMG_PATH = img_path.substring(0, img_path.lastIndexOf('.'))
+          def use_delegated = params.FLASH_CACHE_URL && params.FLASH_STORE_PATH
+          if (use_delegated) {
+            // flash-script handles .zst natively; pass original downloaded path
+            env.FLASH_INPUT_PATH = img_path
           } else {
-            env.IMG_PATH = img_path
+            // Legacy: decompress for inline dd
+            if (img_path.endsWith(".zst")) {
+              sh "zstd -dfv ${img_path}"
+              env.FLASH_INPUT_PATH = img_path.substring(0, img_path.lastIndexOf('.'))
+            } else {
+              env.FLASH_INPUT_PATH = img_path
+            }
           }
-          println "Uncompressed image at: ${env.IMG_PATH}"
+          println "Flash input: ${env.FLASH_INPUT_PATH}"
         }
       }
     }
     stage('Flash') {
       steps {
-        // TODO: We should use ghaf flashing scripts or installers.
-        // We don't want to maintain these flashing details here:
+        // Delegated flashing uses ghaf flash-script when FLASH_CACHE_URL
+        // and FLASH_STORE_PATH are provided; otherwise falls back to legacy dd:
         script {
           // Determine mount commands
           if(params.IMG_URL.contains("microchip-icicle-")) {
@@ -316,23 +323,37 @@ pipeline {
               exit 1
             fi
           """
-          // Wipe possible ZFS leftovers, more details here:
-          // https://github.com/tiiuae/ghaf/blob/454b18bc/packages/installer/ghaf-installer.sh#L75
-          if(params.IMG_URL.contains("lenovo-x1-")) {
-            echo "Wiping filesystem..."
-            def SECTOR = 512
-            def MIB_TO_SECTORS = 20480
-            // Disk size in 512-byte sectors
-            def SECTORS = sh(script: "/run/wrappers/bin/sudo blockdev --getsz ${dev}", returnStdout: true).trim()
-            // Unmount possible mounted filesystems
-            sh "sync; /run/wrappers/bin/sudo umount -q ${dev}* || true"
-            // Wipe first 10MiB of disk
-            sh "/run/wrappers/bin/sudo dd if=/dev/zero of=${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} conv=fsync status=none"
-            // Wipe last 10MiB of disk
-            sh "/run/wrappers/bin/sudo dd if=/dev/zero of=${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} seek=\$(( ${SECTORS} - ${MIB_TO_SECTORS} )) conv=fsync status=none"
+          if (params.FLASH_CACHE_URL && params.FLASH_STORE_PATH) {
+            // --- Delegated flashing via Ghaf flash-script ---
+            // Import flash-script and its dependencies from the nix binary
+            // cache that the build pipeline exported to the artifacts directory.
+            // Uses --no-check-sigs because the ad-hoc cache is not signed with
+            // a key trusted by the test agent; the cache is served over HTTPS
+            // from the same internal build server that produced the artifacts.
+            sh "nix copy --from '${params.FLASH_CACHE_URL}' '${params.FLASH_STORE_PATH}' --no-check-sigs"
+            // flash-script validates /dev/sdX format; resolve the by-id symlink
+            def resolved_dev = sh_ret_out("/run/wrappers/bin/sudo readlink -f ${dev}")
+            sh "/run/wrappers/bin/sudo ${params.FLASH_STORE_PATH}/bin/flash-script -d ${resolved_dev} -i ${env.FLASH_INPUT_PATH} -f"
+          } else {
+            // --- Legacy inline flashing ---
+            // Wipe possible ZFS leftovers, more details here:
+            // https://github.com/tiiuae/ghaf/blob/454b18bc/packages/installer/ghaf-installer.sh#L75
+            if(params.IMG_URL.contains("lenovo-x1-")) {
+              echo "Wiping filesystem..."
+              def SECTOR = 512
+              def MIB_TO_SECTORS = 20480
+              // Disk size in 512-byte sectors
+              def SECTORS = sh(script: "/run/wrappers/bin/sudo blockdev --getsz ${dev}", returnStdout: true).trim()
+              // Unmount possible mounted filesystems
+              sh "sync; /run/wrappers/bin/sudo umount -q ${dev}* || true"
+              // Wipe first 10MiB of disk
+              sh "/run/wrappers/bin/sudo dd if=/dev/zero of=${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} conv=fsync status=none"
+              // Wipe last 10MiB of disk
+              sh "/run/wrappers/bin/sudo dd if=/dev/zero of=${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} seek=\$(( ${SECTORS} - ${MIB_TO_SECTORS} )) conv=fsync status=none"
+            }
+            // Write the image
+            sh "/run/wrappers/bin/sudo dd if=${env.FLASH_INPUT_PATH} of=${dev} bs=1M status=progress conv=fsync"
           }
-          // Write the image
-          sh "/run/wrappers/bin/sudo dd if=${env.IMG_PATH} of=${dev} bs=1M status=progress conv=fsync"
           // Unmount
           sh "${env.UNMOUNT_CMD}"
           sh """
