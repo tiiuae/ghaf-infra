@@ -19,7 +19,7 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
       description: 'Use ci-test-automation source pinned in ghaf-infra flake. Defaults to enabled in release environment.'
     ),
     string(name: 'CI_TEST_REPO_URL', defaultValue: 'https://github.com/tiiuae/ci-test-automation.git', description: 'Select ci-test-automation repository.'),
-    string(name: 'CI_TEST_REPO_BRANCH', defaultValue: 'main', description: 'Select ci-test-automation branch to checkout.'),
+    string(name: 'CI_TEST_REPO_BRANCH', defaultValue: 'SSRCSP-8156', description: 'Select ci-test-automation branch to checkout.'),
     string(name: 'IMG_URL', defaultValue: '', description: 'Target image url.'),
     string(name: 'TESTSET', defaultValue: '_relayboot_', description: 'Target testset, e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.'),
     string(name: 'TESTAGENT_HOST', defaultValue: null, description: 'Target testagent host, e.g.: dev, prod, release'),
@@ -49,6 +49,28 @@ def init() {
   } else {
     error("Unexpected IMG_URL: ${params.IMG_URL}")
   }
+  def tagFilters = []
+  if (env.TARGET.contains("lenovo-x1") || env.TARGET.contains("darp11-b")) {
+    if (env.TARGET.contains("storeDisk")) {
+      tagFilters.add('NOTexcl-storeDisk')
+    } else {
+      tagFilters.add('NOTstoreDisk-only')
+    }
+    if (env.TARGET.contains("installer")) {
+      tagFilters.add('NOTexcl-installer')
+    } else {
+      tagFilters.add('NOTinstaller-only')
+    }
+  }
+  if (env.TARGET.contains("lenovo-x1")) {
+    if (params.SECUREBOOT) {
+      tagFilters.add('NOTexcl-secboot')
+    } else {
+      tagFilters.add('NOTsecboot-only')
+    }
+  }
+  env.EXTRATAG = tagFilters.unique().join('AND')
+
   // Determine the device name
   if(params.IMG_URL.contains("orin-agx-")) {
     env.DEVICE_NAME = 'OrinAGX1'
@@ -385,7 +407,7 @@ pipeline {
       when { expression { env.BOOT_PASSED == 'true' && env.TESTSET.contains('_regression_')} }
       steps {
         script {
-          ghaf_robot_test('regression')
+          ghaf_robot_test('regressionAND${env.EXTRATAG}')
         }
       }
     }
