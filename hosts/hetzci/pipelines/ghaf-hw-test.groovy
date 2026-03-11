@@ -79,6 +79,33 @@ def init() {
   }
   println("Using DEVICE_NAME: ${env.DEVICE_NAME}")
   println("Using DEVICE_TAG: ${env.DEVICE_TAG}")
+  // Determine additional test tags based on target
+  def tagFilters = []
+  if (env.TARGET.contains("lenovo-x1") || env.TARGET.contains("darp11-b")) {
+    if (env.TARGET.contains("storeDisk")) {
+      tagFilters.add('NOTexcl-storeDisk')
+    } else {
+      tagFilters.add('NOTstoreDisk-only')
+    }
+    if (env.TARGET.contains("installer")) {
+      tagFilters.add('NOTexcl-installer')
+    } else {
+      tagFilters.add('NOTinstaller-only')
+    }
+  }
+  if (env.TARGET.contains("lenovo-x1")) {
+    if (params.SECUREBOOT) {
+      tagFilters.add('NOTexcl-secboot')
+    } else {
+      tagFilters.add('NOTsecboot-only')
+    }
+  }
+  env.EXTRATAG = tagFilters.unique().join('')
+  if (env.EXTRATAG) {
+    println("Using additional test tags: ${tagFilters}")
+  } else {
+    println("No additional test tags are used")
+  }
   if(params.containsKey('DESC')) {
     currentBuild.description = "${params.DESC}"
   } else {
@@ -145,7 +172,7 @@ def ghaf_robot_test(String testname='relayboot') {
   if (testname.contains('turnoff')) {
     env.INCLUDE_TEST_TAGS = "${testname}"
   } else {
-    env.INCLUDE_TEST_TAGS = "${testname}AND${env.DEVICE_TEST_TAG}"
+    env.INCLUDE_TEST_TAGS = "${env.DEVICE_TEST_TAG}AND${testname}${env.EXTRATAG}"
   }
   dir("Robot-Framework/test-suites") {
     sh 'rm -f *.txt *.png *.mp4 *.wav output.xml report.html log.html'
