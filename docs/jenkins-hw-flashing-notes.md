@@ -14,6 +14,24 @@ The goal is to document what the current pipeline actually does, what it
 assumes about image artifacts, and where those assumptions conflict with the
 new Orin flashing model introduced in the PR.
 
+## Table of Contents
+
+- [Executive Summary](#executive-summary)
+- [Scope](#scope)
+- [Current Jenkins Flashing Flow](#current-jenkins-flashing-flow)
+- [What Ghaf Already Provides Today](#what-ghaf-already-provides-today)
+- [What PR #1787 Changes in Ghaf](#what-pr-1787-changes-in-ghaf)
+- [Findings From The PR Review](#findings-from-the-pr-review)
+- [Detailed Pipeline Constraints](#detailed-pipeline-constraints)
+- [Likely Directions For Follow-Up Work](#likely-directions-for-follow-up-work)
+- [Recommended Immediate Next Steps](#recommended-immediate-next-steps)
+- [Expanding Option C](#expanding-option-c)
+  - [What Ghaf Needs To Provide Next](#what-ghaf-needs-to-provide-next)
+  - [What ghaf-infra Needs To Change](#what-ghaf-infra-needs-to-change)
+  - [Suggested Phased Rollout](#suggested-phased-rollout)
+  - [Proposed Immediate Work Split](#proposed-immediate-work-split)
+- [Summary](#summary)
+
 ## Executive Summary
 
 Today, `ghaf-infra` hardware testing assumes one downloadable image file and
