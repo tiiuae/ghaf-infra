@@ -56,6 +56,7 @@ in
       nodes.testagentHosts = [ "release" ];
       pipelines = [
         "ghaf-hw-test"
+        "ghaf-manual" # TODO: remove after delegated flashing prototype is validated
         "ghaf-release-candidate"
         "ghaf-release-publish"
       ];

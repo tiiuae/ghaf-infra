@@ -334,7 +334,16 @@ pipeline {
             sh "nix copy --from '${params.FLASH_CACHE_URL}' '${params.FLASH_STORE_PATH}' --no-check-sigs"
             // flash-script validates /dev/sdX format; resolve the by-id symlink
             def resolved_dev = sh_ret_out("/run/wrappers/bin/sudo readlink -f ${dev}")
-            sh "/run/wrappers/bin/sudo ${params.FLASH_STORE_PATH}/bin/flash-script -d ${resolved_dev} -i ${env.FLASH_INPUT_PATH} -f"
+            // Workaround: flash-script needs awk but doesn't include it in its
+            // nix closure. Inject via env. Remove after ghaf#flash-script is fixed.
+            def gawk_path = sh_ret_out("nix build --no-link --print-out-paths 'nixpkgs#gawk' | grep -v man")
+            writeFile(file: 'run-flash.sh', text: """\
+              |#!/usr/bin/env bash
+              |export PATH=${gawk_path}/bin:\$PATH
+              |exec ${params.FLASH_STORE_PATH}/bin/flash-script "\$@"
+              |""".stripMargin())
+            sh "chmod +x run-flash.sh"
+            sh "/run/wrappers/bin/sudo ./run-flash.sh -d ${resolved_dev} -i ${env.FLASH_INPUT_PATH} -f"
           } else {
             // --- Legacy inline flashing ---
             // Wipe possible ZFS leftovers, more details here:
