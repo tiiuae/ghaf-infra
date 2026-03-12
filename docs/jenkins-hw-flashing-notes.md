@@ -30,6 +30,11 @@ new Orin flashing model introduced in the PR.
   - [What ghaf-infra Needs To Change](#what-ghaf-infra-needs-to-change)
   - [Suggested Phased Rollout](#suggested-phased-rollout)
   - [Proposed Immediate Work Split](#proposed-immediate-work-split)
+- [Phase 1 Prototype Validation](#phase-1-prototype-validation)
+  - [What Was Tested](#what-was-tested)
+  - [Results](#results)
+  - [Known Issues (Upstream)](#known-issues-upstream)
+  - [Remaining Work](#remaining-work)
 - [Summary](#summary)
 
 ## Executive Summary
@@ -62,6 +67,10 @@ See [What Ghaf Already Provides Today](#what-ghaf-already-provides-today).
 The best first step is to prototype delegated flashing on one current
 single-image target such as Lenovo X1, then extend the same contract to Orin
 (see [Suggested Phased Rollout](#suggested-phased-rollout)).
+
+**Update (2026-03-12):** A Phase 1 prototype has been implemented and
+validated on real hardware. See
+[Phase 1 Prototype Validation](#phase-1-prototype-validation) for results.
 
 ## Scope
 
@@ -917,6 +926,84 @@ That lets us test the hard parts that actually belong to `ghaf-infra`:
 
 before we add the Orin-specific complexity introduced by PR #1787.
 
+## Phase 1 Prototype Validation
+
+A prototype of delegated flashing (Option C, Phase 1) has been implemented on
+branch `improve-jenkins-hw-flash` and validated on the release environment
+(`ci-release.vedenemo.dev`).
+
+### What Was Tested
+
+The prototype uses Ghaf's existing `packages.x86_64-linux.flash-script` as the
+delegated flasher for the Lenovo X1 Carbon Gen11 target, enabled only in the
+`ghaf-manual` pipeline.
+
+The implementation:
+
+1. The build pipeline (`utils.groovy`) builds flash-script and exports its nix
+   closure as a local binary cache in the artifacts directory
+2. The hardware test job (`ghaf-hw-test.groovy`) imports the closure on the
+   test agent via `nix copy --from` over HTTPS
+3. flash-script handles `.zst` decompression, disk wiping, and image writing
+4. The legacy `dd` path is preserved as a fallback when the delegated flash
+   parameters are not provided
+
+### Results
+
+Delegated flashing (Lenovo X1):
+
+- flash-script closure transfer via nix binary cache over HTTPS works
+  (39 store paths, ~2 seconds)
+- flash-script successfully flashed the target device (~6 minutes for a
+  full disk image)
+- flash-script handles `.zst` decompression natively via streaming
+  (`zstdcat | pv | dd`), avoiding an intermediate raw file on the test agent
+- flash-script performs ZFS wipe internally, eliminating the inline wipe
+  logic currently duplicated in Jenkins for Lenovo X1
+- Acroname USB hub mount/unmount and symlink verification work correctly
+- Relay boot test passes after delegated flash
+- Relay turn-off test passes
+- Full pipeline result: SUCCESS (multiple builds validated)
+
+Legacy fallback (System76 Darter Pro):
+
+- The legacy `dd` path remains functional when delegated flash parameters
+  are absent
+- Full pipeline result: SUCCESS
+
+### Known Issues (Upstream)
+
+Two issues were found in Ghaf's `flash-script` package
+(`packages/pkgs-by-name/flash-script/package.nix`):
+
+1. **Missing `gawk` in nix closure.** flash-script declares `awk` as a
+   dependency and checks for it at runtime with `command -v`, but `package.nix`
+   does not include `gawk` in `runtimeInputs`. The prototype works around this
+   with a wrapper script that injects `gawk` into `PATH`. The upstream fix is
+   to add `gawk` to the `runtimeInputs` list alongside `coreutils`,
+   `util-linux`, `zstd`, and `pv`.
+
+2. **Unconditional ANSI escape codes.** flash-script emits terminal control
+   sequences (cursor movement, color codes) regardless of whether stdout is a
+   terminal. In Jenkins console output these appear as raw escape sequences.
+   The fix is to guard ANSI output with `[ -t 1 ]` or equivalent.
+
+### Remaining Work
+
+Before merging:
+
+- File upstream issue in `tiiuae/ghaf` for the two flash-script fixes above
+- Remove temporary `"ghaf-manual"` entry from `release/configuration.nix`
+
+Phase 1 completion:
+
+- Enable delegated flashing in `ghaf-pre-merge.groovy` for Lenovo X1
+- Enable delegated flashing in `ghaf-main.groovy` for Lenovo X1
+- Remove the `gawk` workaround once the upstream fix lands
+
+Phase 2 and beyond follow the plan in
+[Suggested Phased Rollout](#suggested-phased-rollout).
+
 ## Summary
 
 Today, Jenkins hardware testing in `ghaf-infra` is built around one flashable
@@ -932,11 +1019,18 @@ targets. This suggests that the long-term fix should not be to duplicate more
 target-specific flashing logic in Jenkins, but to define a clean interface for
 passing Ghaf-provided flashing logic and artifacts into the hw-test pipeline.
 
-The main conclusion so far is simple:
+The main conclusions so far:
 
 - current Jenkins hw flashing is single-image oriented
 - PR #1787 makes Orin multi-artifact by default
-- Ghaf already has some same-revision flasher outputs, but `ghaf-infra` does
-  not consume them
-- integration work is required in either `ghaf`, `ghaf-infra`, or both before
-  that change can be safely used in Jenkins hardware testing
+- Ghaf already has same-revision flasher outputs, but `ghaf-infra` did not
+  previously consume them
+- a Phase 1 prototype of delegated flashing using Ghaf's `flash-script` has
+  been validated on real hardware (Lenovo X1), confirming that the Option C
+  approach works for single-image targets
+- the delegated path eliminates duplicated flashing logic (`.zst`
+  decompression, ZFS wipe) and avoids writing intermediate raw files to disk
+- two minor upstream fixes are needed in flash-script before the workaround
+  can be removed (`gawk` in closure, ANSI output guard)
+- the next steps are to extend delegated flashing to production pipelines and
+  other single-image targets, then tackle Orin split-image support
