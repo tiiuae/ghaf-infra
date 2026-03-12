@@ -8,23 +8,104 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 This is the authoritative source for the current operational status and active
 design constraints of Jenkins hardware flashing in `ghaf-infra`.
 
-For the full investigative background — pipeline walkthrough, PR #1787 impact
-analysis, option comparison, and detailed Option C expansion — see the
-companion [Jenkins Hardware Flashing Analysis](jenkins-hw-flashing-analysis.md).
+For the full investigative background, pipeline walkthrough,
+[PR#1787](https://github.com/tiiuae/ghaf/pull/1787) impact analysis,
+integration-path comparison, and detailed
+[Path A](jenkins-hw-flashing-analysis.md#path-a-delegate-flashing-to-ghaf-provided-tooling)
+expansion, see the companion
+[Jenkins Hardware Flashing Analysis](jenkins-hw-flashing-analysis.md).
 
 ## Table of Contents
 
+- [Current Recommendation](#current-recommendation)
+- [Phased Rollout Plan](#phased-rollout-plan)
 - [Current Production Behavior](#current-production-behavior)
 - [Prototype Status](#prototype-status)
   - [What Was Tested](#what-was-tested)
   - [Results](#results)
-  - [Known Issues (Upstream)](#known-issues-upstream)
+  - [Ghaf flash-script issues](#ghaf-flash-script-issues)
   - [Remaining Work](#remaining-work)
 - [Active Design Constraints](#active-design-constraints)
   - [Single `IMG_URL` contract](#single-img_url-contract)
   - [Signature and provenance handling](#signature-and-provenance-handling)
   - [Test agent execution model](#test-agent-execution-model)
-- [Phased Rollout Plan](#phased-rollout-plan)
+
+## Current Recommendation
+
+The recommended direction is
+[Path A: Delegate flashing to Ghaf-provided tooling](jenkins-hw-flashing-analysis.md#path-a-delegate-flashing-to-ghaf-provided-tooling):
+move target-specific flashing logic out of Jenkins Groovy and have Ghaf provide
+a stable flashing contract.
+
+Current status:
+
+- [Path A](jenkins-hw-flashing-analysis.md#path-a-delegate-flashing-to-ghaf-provided-tooling)
+  is the selected integration direction
+- [Phase 1](#phase-1-define-the-contract-on-a-single-image-target--validated)
+  has been validated on Lenovo X1 in `ghaf-manual`
+- [Phase 3](#phase-3-add-orin-split-image-support--not-started) is where
+  Orin split-image and multi-artifact signing work begins
+
+For the full integration-path comparison and the signing model for split-image
+artifacts, see the companion
+[Jenkins Hardware Flashing Analysis](jenkins-hw-flashing-analysis.md).
+
+## Phased Rollout Plan
+
+This rollout plan assumes
+[Path A](jenkins-hw-flashing-analysis.md#path-a-delegate-flashing-to-ghaf-provided-tooling):
+delegated flashing via Ghaf-provided tooling.
+
+For the split-image signing choices that become relevant once
+[Phase 3](#phase-3-add-orin-split-image-support--not-started) begins, see
+[Multi-Artifact Signing Options](jenkins-hw-flashing-analysis.md#multi-artifact-signing-options)
+in the analysis document.
+
+| Phase | Focus | Status | Notes |
+| --- | --- | --- | --- |
+| [Phase&nbsp;1](#phase-1-define-the-contract-on-a-single-image-target--validated) | Single-image delegated flashing | Validated | Lenovo X1 prototype complete in `ghaf-manual` |
+| [Phase&nbsp;2](#phase-2-generalize-for-other-current-single-image-targets--not-started) | Generalize delegated flashing to other single-image targets | Not&nbsp;started | Dell Latitude and System76 Darter Pro next |
+| [Phase&nbsp;3](#phase-3-add-orin-split-image-support--not-started) | Add Orin split-image support | Not&nbsp;started | Introduces multi-artifact flashing and split-image signing decisions |
+| [Phase&nbsp;4](#phase-4-retire-inline-flashing-logic--not-started) | Retire inline Jenkins flashing logic | Not&nbsp;started | Remove legacy `dd`-based paths after delegated flashing is proven |
+
+<a id="phase-1-define-the-contract-on-a-single-image-target--validated"></a>
+### Phase 1: Define the contract on a single-image target (VALIDATED)
+
+Prototype validated on Lenovo X1 (see [Prototype Status](#prototype-status)).
+
+- Ghaf's
+  [`flash-script`](https://github.com/tiiuae/ghaf/tree/b3436f8ecf50dbbe1146ab70896517c64d324651/packages/pkgs-by-name/flash-script)
+  used as delegated flasher
+- Closure transferred to test agent at runtime via nix binary cache
+- Validated in `ghaf-manual` pipeline on release Jenkins
+
+Remaining: enable in relevant pipelines, drive fixes for upstream issues,
+remove workarounds.
+
+<a id="phase-2-generalize-for-other-current-single-image-targets--not-started"></a>
+### Phase 2: Generalize for other current single-image targets (NOT STARTED)
+
+- Extend delegated flashing to Dell Latitude and System76 Darter Pro
+- Remove target-specific assumptions from the delegated path
+- Keep legacy fallback until confidence is high
+
+<a id="phase-3-add-orin-split-image-support--not-started"></a>
+### Phase 3: Add Orin split-image support (NOT STARTED)
+
+- Connect the same contract to Orin split-image targets
+- Teach the Ghaf flasher to consume split-image manifests
+- Validate hardware boot and resize behavior
+
+<a id="phase-4-retire-inline-flashing-logic--not-started"></a>
+### Phase 4: Retire inline flashing logic (NOT STARTED)
+
+- Remove inline `dd`-based flashing from `ghaf-hw-test.groovy` and
+  `ghaf-hw-test-manual.groovy`
+- Simplify image-discovery assumptions in `utils.groovy`
+
+For detailed phase descriptions, see
+[Suggested Phased Rollout](jenkins-hw-flashing-analysis.md#suggested-phased-rollout)
+in the analysis document.
 
 ## Current Production Behavior
 
@@ -47,18 +128,13 @@ For a detailed walkthrough, see
 [Current Jenkins Flashing Flow](jenkins-hw-flashing-analysis.md#current-jenkins-flashing-flow)
 in the analysis document.
 
-The recommended direction is
-[Option C: Delegate flashing to Ghaf-provided tooling](jenkins-hw-flashing-analysis.md#option-c-delegate-flashing-to-ghaf-provided-tooling) —
-move target-specific flashing logic out of Jenkins Groovy and have Ghaf provide
-a stable flashing contract. See the
-[analysis document](jenkins-hw-flashing-analysis.md) for the full option
-comparison and detailed expansion of Option C.
-
 ## Prototype Status
 
-A prototype of delegated flashing (Option C, Phase 1) has been implemented on
-branch `improve-jenkins-hw-flash` and validated on the release environment
-(`ci-release.vedenemo.dev`).
+A prototype of delegated flashing
+([Path A](jenkins-hw-flashing-analysis.md#path-a-delegate-flashing-to-ghaf-provided-tooling),
+[Phase 1](#phase-1-define-the-contract-on-a-single-image-target--validated))
+has been implemented on branch `improve-jenkins-hw-flash` and validated on the
+release environment (`ci-release.vedenemo.dev`).
 
 ### What Was Tested
 
@@ -99,9 +175,9 @@ Legacy fallback (System76 Darter Pro):
   are absent
 - Full pipeline result: SUCCESS
 
-### Known Issues (Upstream)
+### Ghaf flash-script issues
 
-Two issues were found in Ghaf's `flash-script` package
+Initial testing found two issues in Ghaf's `flash-script` package
 (`packages/pkgs-by-name/flash-script/package.nix`):
 
 1. **Missing `gawk` in nix closure.** flash-script declares `awk` as a
@@ -120,17 +196,12 @@ Two issues were found in Ghaf's `flash-script` package
 
 Before merging:
 
-- File upstream issue in `tiiuae/ghaf` for the two flash-script fixes above
+- Drive fixes for `tiiuae/ghaf` `flash-script` issues identified (see above)
 - Remove temporary `"ghaf-manual"` entry from `release/configuration.nix`
-
-Phase 1 completion:
-
-- Enable delegated flashing in `ghaf-pre-merge.groovy` for Lenovo X1
-- Enable delegated flashing in `ghaf-main.groovy` for Lenovo X1
 - Remove the `gawk` workaround once the upstream fix lands
 
 Phase 2 and beyond follow the [Phased Rollout Plan](#phased-rollout-plan)
-below.
+above.
 
 ## Active Design Constraints
 
@@ -191,9 +262,10 @@ containing relevant metadata such as:
 - signing key identifiers
 - signature file paths
 
-This existing manifest is important prior art for Option C. A future flash
-manifest does not need to start from zero; it can build on the current
-artifact/signing metadata model and extend it with flash semantics.
+This existing manifest is important prior art for
+[Path A](jenkins-hw-flashing-analysis.md#path-a-delegate-flashing-to-ghaf-provided-tooling).
+A future flash manifest does not need to start from zero; it can build on the
+current artifact/signing metadata model and extend it with flash semantics.
 
 Security gap to keep in mind:
 
@@ -240,38 +312,3 @@ Whichever route is chosen, the contract must be stable enough for:
 - prod/dev/release Jenkins
 - different target families
 - existing non-Orin single-image targets
-
-## Phased Rollout Plan
-
-### Phase 1: Define the contract on a single-image target — VALIDATED
-
-Prototype validated on Lenovo X1 (see [Prototype Status](#prototype-status)).
-
-- Ghaf's `flash-script` used as delegated flasher
-- Closure transferred to test agent at runtime via nix binary cache
-- Validated in `ghaf-manual` pipeline on release Jenkins
-
-Remaining: enable in `ghaf-pre-merge` and `ghaf-main` pipelines, file upstream
-issues, remove workarounds.
-
-### Phase 2: Generalize for other current single-image targets — NOT STARTED
-
-- Extend delegated flashing to Dell Latitude and System76 Darter Pro
-- Remove target-specific assumptions from the delegated path
-- Keep legacy fallback until confidence is high
-
-### Phase 3: Add Orin split-image support — NOT STARTED
-
-- Connect the same contract to Orin split-image targets
-- Teach the Ghaf flasher to consume split-image manifests
-- Validate hardware boot and resize behavior
-
-### Phase 4: Retire inline flashing logic — NOT STARTED
-
-- Remove inline `dd`-based flashing from `ghaf-hw-test.groovy` and
-  `ghaf-hw-test-manual.groovy`
-- Simplify image-discovery assumptions in `utils.groovy`
-
-For detailed phase descriptions, see
-[Suggested Phased Rollout](jenkins-hw-flashing-analysis.md#suggested-phased-rollout)
-in the analysis document.
