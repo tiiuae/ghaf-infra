@@ -574,43 +574,34 @@ provenance attestation per build regardless of whether the build produces one
 image or several. The options below address only the SLSA **image-artifact**
 signature step and the UEFI signing step.
 
-### Option 1: Build-time merge (sign a single merged image)
+Based on the current PR #1787 artifact shape, the options do not look equally
+strong. The preferred order below reflects the current understanding from the
+PR diff, the Jenkins prototype work, and the NVIDIA flashing model.
 
-The build pipeline merges split images into one disk image (via
-`makediskimage.sh`) before any signing. UEFI sign and SLSA image-sign the
-merged image exactly as today. The pipeline API is unchanged (single
-`IMG_URL`).
+Recommended UEFI signing order:
 
-Pros:
+| UEFI Option | Status | Why |
+|---|---|---|
+| `U1` sign ESP directly | Preferred | Matches the native artifact model: `esp.img.zst` already contains the EFI payloads |
+| `U2` sign before splitting | Viable but unnatural | Not supported by the current PR shape; would need an extra compatibility stage |
+| `U3` defer until after merge | Not recommended | Operationally expensive and breaks today's trust ordering |
 
-- zero verification changes
-- zero trust model changes
-- provenance attestation unchanged
+Recommended SLSA signing order:
 
-Cons:
+| SLSA Option | Status | Why |
+|---|---|---|
+| `S1` signed manifest | Preferred long-term | Best fit for delegated flashing and any future multi-artifact target |
+| `S2` per-artifact signatures | Viable | Simple, direct, split-artifact-native model |
+| `S3` build-time merge | Compatibility bridge | Useful for today's Jenkins contract and `ghafdd.sh`, but weaker as the native end-state |
+| `S4` bundle archive | Viable but weaker | Preserves single download but hides artifact roles and adds repackaging |
 
-- requires merge tooling in build environment
-- may diverge from upstream artifact direction
-- duplicates merge if split images are the canonical output
+Taken together, the current recommendation is:
 
-### Option 2: Per-artifact SLSA image signatures
+- long-term native direction: `U1` + `S1`
+- simpler split-artifact variant: `U1` + `S2`
+- transitional Jenkins-compatible bridge: `S3`
 
-Each flash artifact gets its own `.sig` (`esp.img.zst.sig`,
-`root.img.zst.sig`). Verification: `ghaf-hw-test` downloads and verifies each
-artifact+sig pair.
-
-Pros:
-
-- each artifact independently verifiable
-- aligns with split-image model
-
-Cons:
-
-- multiple verification steps
-- pipeline API must accept multiple URLs
-- `verify-signature image` would need to run once per artifact
-
-### Option 3: Signed flash manifest with per-artifact checksums
+### S1: Signed flash manifest with per-artifact checksums
 
 The build produces a flash manifest listing all artifacts with sha256
 checksums. SLSA image-sign only the manifest — one signature covers the whole
@@ -622,13 +613,60 @@ Pros:
 - single signature verification step
 - naturally extensible to any number of artifacts
 - fits the flash manifest design from Option C
+- models artifact roles explicitly instead of hiding them behind a repackaged blob
 
 Cons:
 
 - indirect trust chain (signature → manifest → checksums → artifacts)
 - requires new manifest schema
+- requires `ghaf-hw-test` to understand manifest-driven downloads
 
-### Option 4: Bundle archive (single downloadable)
+### S2: Per-artifact SLSA image signatures
+
+Each flash artifact gets its own `.sig` (`esp.img.zst.sig`,
+`root.img.zst.sig`). Verification: `ghaf-hw-test` downloads and verifies each
+artifact+sig pair.
+
+Pros:
+
+- each artifact independently verifiable
+- aligns directly with the split-image model produced by PR #1787
+- no need to invent an extra wrapper artifact
+
+Cons:
+
+- multiple verification steps
+- pipeline API must accept multiple URLs
+- `verify-signature image` would need to run once per artifact
+
+### S3: Build-time merge (sign a single merged image)
+
+The build pipeline merges split images into one disk image (via
+`makediskimage.sh`) before any signing. UEFI sign and SLSA image-sign the
+merged image exactly as today. The pipeline API is unchanged (single
+`IMG_URL`).
+
+This option is weaker as the long-term native Orin model, because PR #1787
+builds `esp.img.zst` and `root.img.zst` directly and the NVIDIA/Ghaf initrd
+flow is fundamentally partition-oriented. But it remains a valid compatibility
+bridge for `ghaf-infra`, because `ghafdd.sh` already merges those split images
+into a real flashable disk image for today's external-disk workflow.
+
+Pros:
+
+- zero verification changes
+- zero trust model changes
+- provenance attestation unchanged
+- directly compatible with the current single-`IMG_URL` Jenkins contract
+
+Cons:
+
+- requires merge tooling in build environment
+- diverges from the native split-artifact direction
+- creates a compatibility artifact rather than using the canonical PR #1787
+  outputs directly
+
+### S4: Bundle archive (single downloadable)
 
 Package all flash artifacts into a single archive (tarball or nar). SLSA
 image-sign the archive — single artifact, single signature. Preserves
@@ -644,22 +682,25 @@ Cons:
 - new archive format
 - unpack overhead
 - opaque until extracted
+- weaker fit than a signed manifest because artifact roles remain implicit
 
 ### UEFI signing and split images
 
-This is a cross-cutting concern that applies to Options 2–4.
+This is a cross-cutting concern that applies primarily to `S1`, `S2`, and `S4`. `S3`
+sidesteps most of the timing question by merging first and then signing one
+compatibility artifact.
 
-Option 1 avoids the question by merging first. For Options 2–4, `uefisign`
-today operates on a full disk image (`utils.groovy:230`) — it finds EFI
-binaries in the ESP partition and signs them with the Secure Boot DB key. For
-split images, UEFI signing must still happen; the question is when:
+For split images, the key fact from PR #1787 is that `flash-images.nix` builds
+`esp.img` and `root.img` as independent derivations. There is no intermediate
+full-disk image that later gets split. The artifacts are born separate.
 
 Comparison with today's single-image flow:
 
 - **Current single-image model**: Jenkins passes one full disk image into
-  `uefisign` or `uefisign-simple`, the signer updates the EFI binaries inside
-  the ESP, replaces the image artifact in place, and then the pipeline applies
-  the SLSA image signature to that final disk image.
+  `uefisign` or `uefisign-simple` in the `Sign (UEFI)` stage
+  (`utils.groovy:219-234`), the signer updates the EFI binaries inside the
+  ESP, replaces the image artifact in place, and then the pipeline applies the
+  SLSA image signature to that final disk image.
 - **Split-image model**: the UEFI-executed content lives in the ESP artifact,
   not in `root.img.zst`. So the natural equivalent is to sign the EFI binaries
   carried by `esp.img.zst`, while `root.img.zst` remains a normal flash
@@ -690,47 +731,46 @@ certificate for UEFI-loaded artifacts. That is conceptually the same role that
 `DB.pem` plus the HSM-backed db key plays in the current `uefisign-simple`
 pipeline step.
 
-This is also why option (a) is attractive. NVIDIA's documented
-`l4t_initrd_flash.sh --uefi-keys ...` flow already combines low-level secure
-flash inputs (`-u <pkc_keyfile>`, optional `-v <sbk_keyfile>`) with UEFI key
-enrollment and external-device flashing in one command. So "sign before
-splitting" most closely matches the vendor model: produce the secured boot
-artifacts first, and only then expose the flashable payloads that Jenkins
-publishes or verifies.
+There is no evidence in PR #1787 that the published `esp.img.zst` artifact is
+already UEFI-signed before Jenkins sees it. `flash-images.nix` constructs the
+ESP with `mkfs.vfat` and `mcopy`, while the secure-boot-related logic in
+`initrd-flash.nix` signs boot images and firmware-side artifacts. So "the ESP
+may already be signed" remains an open question for future Ghaf integration,
+not a conclusion from the PR as it stands.
 
-- a) **Sign before splitting** — build produces full image → UEFI sign →
-  split into `esp.img.zst` + `root.img.zst`. The signed EFI binaries end up
-  inside the ESP artifact. Works with any of Options 2–4.
-- b) **Sign the ESP partition image directly** — requires `uefisign` (or a
-  replacement) to handle a raw partition image instead of a full disk image.
-- c) **Defer UEFI signing until after merge** — artifacts are merged into a
-  full disk image first, then UEFI-signed. This raises the question of
-  *where* the merge and signing happen. Today, UEFI signing tools and HSM
-  access are provisioned on the Jenkins controller side
-  (`hosts/hetzci/signing.nix`); test agents do not carry these tools
-  (`hosts/testagent/agents-common.nix`). If the delegated flasher merges on
-  the test agent, UEFI signing under option (c) would require either
-  provisioning HSM access and signing tools on every test agent, or an extra
-  round-trip where the merged image is sent back to Jenkins for signing
-  before being transferred to the test agent for flashing. Either way, this
-  also inverts today's trust ordering: the SLSA image signature would cover
-  the pre-UEFI-signed artifacts, not the final signed image.
+### U1: Sign the ESP partition image directly
 
-Options (a) and (b) preserve today's invariant that UEFI signing happens
-before SLSA image signing. Option (c) is significantly more expensive to
-implement and changes the trust model.
+This is the preferred native direction. It matches the actual artifact model
+and keeps UEFI signing tied to the EFI payloads. It likely requires `uefisign`
+or a replacement to handle a raw FAT32 ESP image instead of a full GPT disk
+image.
+
+### U2: Sign before splitting
+
+This remains possible in principle, but it is no longer natural. Since PR
+#1787 does not build a full disk image first, this would require an extra
+compatibility stage to merge, sign, and then re-expose split outputs. That
+makes it materially less attractive than `U1`.
+
+### U3: Defer UEFI signing until after merge
+
+This is not recommended. If the delegated flasher merges on the test agent,
+this would require HSM access and signing tools on test agents or an extra
+controller-side round-trip. It also inverts today's trust ordering: the SLSA
+image signature would cover the pre-UEFI-signed artifacts, not the final signed
+image.
 
 For `ghaf-infra`, the practical comparison is:
 
 - in the single-image pipeline, one artifact is both the flash payload and the
   SLSA image-signing target after UEFI signing
 - in a split-image pipeline, either the ESP alone must be UEFI-signed before
-  publication, or the two artifacts must be merged and then signed on the
-  Jenkins side before any downstream verification
+  publication, or a compatibility-only merged artifact must be created and
+  signed explicitly for Jenkins consumption
 
-The first shape is closer to the current trust model and operational setup,
-because Jenkins controllers already hold the HSM-backed UEFI signing tools,
-while test agents do not.
+The first shape is the better long-term fit for Orin. The second remains
+useful only as a transitional bridge while Jenkins still depends on the
+single-image contract.
 
 ## Expanding Option C
 
