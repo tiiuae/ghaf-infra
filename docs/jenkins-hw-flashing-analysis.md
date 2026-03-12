@@ -576,8 +576,8 @@ multi-artifact Orin path.
 The current pipeline performs three distinct signing operations in order: SLSA
 provenance signing (per-build, covers `provenance.json`), optional UEFI image
 signing, and SLSA image signing (covers the final image artifact). See
-[Signature and provenance handling](jenkins-hw-flashing-current-state.md#signature-and-provenance-handling)
-for the full description of today's model.
+[Current Integration Constraints](jenkins-hw-flashing-current-state.md#current-integration-constraints)
+for a summary of today's model.
 
 SLSA provenance signing is a per-build attestation (`utils.groovy:150,196`).
 It is not image-specific and is unaffected by the artifact shape: one
@@ -836,6 +836,11 @@ Minimum requirements for the entrypoint:
 #### 2. A machine-readable flash manifest
 
 Ghaf should emit a manifest describing how a target is meant to be flashed.
+
+The build pipeline already writes a per-target `manifest.json` containing the
+selected image path, UEFI signing status, key identifiers, and signature file
+paths. A future flash manifest can build on this existing metadata model and
+extend it with flash semantics.
 
 That manifest should be produced from the same target configuration and same
 revision as the build artifacts.
