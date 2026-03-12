@@ -10,26 +10,26 @@ This document is a companion to
 authoritative for current operational status and active design constraints.
 
 This document captures the investigative background gathered while reviewing
-[`tiiuae/ghaf` PR #1787](https://github.com/tiiuae/ghaf/pull/1787),
+[`tiiuae/ghaf` PR#1787](https://github.com/tiiuae/ghaf/pull/1787),
 "NVidia AGX: 2 stage initrd install", including the current pipeline
-walkthrough, impact analysis, option comparison, and the detailed Option C
-expansion plan.
+walkthrough, impact analysis, integration-path comparison, and the detailed
+[Path A](#path-a-delegate-flashing-to-ghaf-provided-tooling) expansion plan.
 
 ## Table of Contents
 
 - [Scope](#scope)
 - [Current Jenkins Flashing Flow](#current-jenkins-flashing-flow)
 - [What Ghaf Already Provides Today](#what-ghaf-already-provides-today)
-- [What PR #1787 Changes in Ghaf](#what-pr-1787-changes-in-ghaf)
+- [What PR#1787 Changes in Ghaf](#what-pr-1787-changes-in-ghaf)
 - [Why Orin Moved From One Image to Two](#why-orin-moved-from-one-image-to-two)
 - [Findings From The PR Review](#findings-from-the-pr-review)
 - [Likely Directions For Follow-Up Work](#likely-directions-for-follow-up-work)
 - [Recommended Immediate Next Steps](#recommended-immediate-next-steps)
 - [Multi-Artifact Signing Options](#multi-artifact-signing-options)
-- [Expanding Option C](#expanding-option-c)
+- [Expanding Path A](#expanding-path-a)
   - [What Ghaf Needs To Provide Next](#what-ghaf-needs-to-provide-next)
   - [What ghaf-infra Needs To Change](#what-ghaf-infra-needs-to-change)
-  - [Can We Start Before PR #1787 Lands?](#can-we-start-before-pr-1787-lands)
+  - [Can We Start Before PR#1787 Lands?](#can-we-start-before-pr-1787-lands)
   - [Suggested Phased Rollout](#suggested-phased-rollout)
   - [Proposed Immediate Work Split](#proposed-immediate-work-split)
   - [Main Recommendation](#main-recommendation)
@@ -46,7 +46,8 @@ This document is based on the current state of:
 - `hosts/testagent/agent.nix`
 - `hosts/testagent/agents-common.nix`
 - `.github/skills/ghaf-hw-test/`
-- the discussion and diff of `tiiuae/ghaf` PR #1787
+- the discussion and diff of `tiiuae/ghaf`
+  [PR#1787](https://github.com/tiiuae/ghaf/pull/1787)
 
 This is a code-reading document. It does not claim that all cases have been
 validated on hardware.
@@ -141,13 +142,14 @@ The test-agent service environment includes:
 - standard shell/network tooling
 
 The agent definitions do not currently install Ghaf's new helper scripts from
-PR #1787. The existing pipeline also does not try to fetch or run them from a
-Ghaf checkout.
+[PR#1787](https://github.com/tiiuae/ghaf/pull/1787). The existing pipeline
+also does not try to fetch or run them from a Ghaf checkout.
 
 ## What Ghaf Already Provides Today
 
-Before PR #1787, the Ghaf repository already exposed flasher-related outputs
-from the same revision as the target build.
+Before [PR#1787](https://github.com/tiiuae/ghaf/pull/1787), the Ghaf
+repository already exposed flasher-related outputs from the same revision as the
+target build.
 
 ### 1. Orin targets already have target-coupled `*-flash-script` outputs
 
@@ -206,7 +208,8 @@ Relevant pieces:
   the device profile and dispatches to either `ghaf-flash` or the Orin flash
   script flow
 
-This matters for Option C because it shows that Ghaf already has an existing
+This matters for [Path A](#path-a-delegate-flashing-to-ghaf-provided-tooling)
+because it shows that Ghaf already has an existing
 consumer-facing abstraction for delegated flashing, even if it currently
 targets local operator workflows rather than Jenkins integration.
 
@@ -230,7 +233,8 @@ Missing pieces include:
 - a manifest describing required flash inputs
 - a stable handoff format for hardware-test jobs
 - a generalized approach covering both single-image and multi-artifact targets
-- current-main equivalents of the PR #1787 helper scripts
+- current-main equivalents of the
+  [PR#1787](https://github.com/tiiuae/ghaf/pull/1787) helper scripts
 
 So the statement "the flasher lives in the same Ghaf revision as the image
 artifacts" is already true for Orin `*-flash-script` outputs and for the
@@ -238,7 +242,8 @@ generic `flash-script`, and Ghaf already has local delegated flashing prior art
 via `.github/skills/ghaf-hw-test/`. It is still only partially true as a
 complete CI integration story.
 
-## What PR #1787 Changes in Ghaf
+<a id="what-pr-1787-changes-in-ghaf"></a>
+## What PR#1787 Changes in Ghaf
 
 The PR changes Orin handling in two important ways.
 
@@ -283,13 +288,14 @@ From the `ghaf-infra` Jenkins viewpoint, the important root cause is that Orin
 is moving from a **whole-disk image contract** to a
 **partition-payload contract**.
 
-Before PR #1787, Orin used `sdimage.nix` and exported one disk image through
-`system.build.sdImage`. That image already contained the GPT layout, the ESP,
-and the root partition contents, so Jenkins could treat it like any other
-single artifact and write it directly to a block device with `dd`.
+Before [PR#1787](https://github.com/tiiuae/ghaf/pull/1787), Orin used
+`sdimage.nix` and exported one disk image through `system.build.sdImage`. That
+image already contained the GPT layout, the ESP, and the root partition
+contents, so Jenkins could treat it like any other single artifact and write it
+directly to a block device with `dd`.
 
-PR #1787 changes the default Orin output to `system.build.ghafFlashImages`,
-which contains:
+[PR#1787](https://github.com/tiiuae/ghaf/pull/1787) changes the default Orin
+output to `system.build.ghafFlashImages`, which contains:
 
 - `esp.img.zst`
 - `root.img.zst`
@@ -339,8 +345,9 @@ layout and is not suitable for OTA.
 
 That matters because `l4t_initrd_flash.sh` is naturally partition-oriented: it
 creates or applies the target storage layout and writes partition payloads,
-rather than assuming one prebuilt whole-disk image. Ghaf PR #1787 is
-effectively adapting Orin output to that vendor contract.
+Rather than assuming one prebuilt whole-disk image, Ghaf
+[PR#1787](https://github.com/tiiuae/ghaf/pull/1787) is effectively adapting
+Orin output to that vendor contract.
 
 Security is the other driver. NVIDIA's Secure Boot guidance for Orin external
 storage flows uses `l4t_initrd_flash.sh --uefi-keys ...` together with the
@@ -349,11 +356,12 @@ secure-flash commands use `flash.sh --uefi-keys` for AGX/internal-storage
 targets and `l4t_initrd_flash.sh --uefi-keys` for Orin NX/Nano external-storage
 targets.
 
-From that command split, plus the PR #1787 rationale, the working
-`ghaf-infra` constraint is: the old `flash.sh` path is not the secure external-
-storage signing flow Ghaf needs for NX/Nano systems rooted on NVMe/USB media.
-That is the practical forcing function behind the switch away from the old
-single-image publishing model.
+From that command split, plus the
+[PR#1787](https://github.com/tiiuae/ghaf/pull/1787) rationale, the working
+`ghaf-infra` constraint is: the old `flash.sh` path is not the secure
+external-storage signing flow Ghaf needs for NX/Nano systems rooted on NVMe/USB
+media. That is the practical forcing function behind the switch away from the
+old single-image publishing model.
 
 This matters to `ghaf-infra` because the current Jenkins integration is still
 built around the older contract:
@@ -368,8 +376,9 @@ partition-payload output.
 
 ## Findings From The PR Review
 
-The items below summarize the findings gathered so far while comparing PR #1787
-to the current `ghaf-infra` flashing design.
+The items below summarize the findings gathered so far while comparing
+[PR#1787](https://github.com/tiiuae/ghaf/pull/1787) to the current
+`ghaf-infra` flashing design.
 
 ### Finding 1: Jenkins hardware testing is currently incompatible with split Orin images
 
@@ -382,7 +391,8 @@ This is the clearest result.
 - decompresses one file
 - writes one file to the target device
 
-PR #1787 changes Orin builds to produce two images by default.
+[PR#1787](https://github.com/tiiuae/ghaf/pull/1787) changes Orin builds to
+produce two images by default.
 
 Without additional changes, the Jenkins flow cannot correctly flash Orin
 artifacts produced by the PR.
@@ -417,9 +427,10 @@ Related nuance:
 - Ghaf already exports same-revision Orin flash-script outputs today
 - Jenkins does not consume those outputs either
 
-So the integration gap is not only about the new helper scripts from PR #1787.
-It is also that `ghaf-infra` currently ignores Ghaf-provided flasher outputs in
-general and only consumes the image artifact.
+So the integration gap is not only about the new helper scripts from
+[PR#1787](https://github.com/tiiuae/ghaf/pull/1787). It is also that
+`ghaf-infra` currently ignores Ghaf-provided flasher outputs in general and
+only consumes the image artifact.
 
 ### Finding 3: The split-image path had already shown boot problems during PR discussion
 
@@ -469,17 +480,45 @@ For Jenkins integration, this suggests:
 - artifact inputs should be explicit rather than inferred from working
   directory layout
 
-For the practical constraints that any implementation must respect — the
-single `IMG_URL` contract, signature and provenance handling, and the test
-agent execution model — see
+For the practical constraints that any implementation must respect, including
+the single `IMG_URL` contract, signature and provenance handling, and the test
+agent execution model, see
 [Active Design Constraints](jenkins-hw-flashing-notes.md#active-design-constraints)
 in the main document.
 
 ## Likely Directions For Follow-Up Work
 
-Based on current findings, the most plausible approaches are:
+Based on current findings, the most plausible integration paths are below.
+These are a separate decision axis from `U1`-`U3` and `S1`-`S4`:
+[Path A](#path-a-delegate-flashing-to-ghaf-provided-tooling),
+[Path B](#path-b-preserve-a-single-ready-to-flash-artifact-for-jenkins), and
+[Path C](#path-c-teach-jenkinstest-agents-to-handle-split-images) describe
+where flashing behavior lives in the Jenkins-to-Ghaf integration, while `U*`
+and `S*` describe how signing works once the artifact model is chosen.
 
-### Option A: Preserve a single ready-to-flash artifact for Jenkins
+### Path A: Delegate flashing to Ghaf-provided tooling
+
+This path assumes Jenkins uses a flasher produced from the same Ghaf revision
+as the target image, transfers that exact flasher to the test agent during the
+job, and avoids separately pinned or preinstalled flasher logic. That avoids
+drift between image layout, flashing logic, target-specific behavior, and
+helper-script expectations.
+
+Pros:
+
+- reduces duplicated flashing logic in Jenkins Groovy
+- lets Ghaf own target-specific flash behavior and the maintenance burden that
+  comes with it
+- matches the [TODO already present](https://github.com/tiiuae/ghaf-infra/blob/ad53845f2f80606b5553efbe9e28a52cfc9f09ce/hosts/hetzci/pipelines/ghaf-hw-test.groovy#L289-L290) in the pipeline
+
+Cons:
+
+- needs a robust interface between `ghaf-infra` and Ghaf tooling
+- artifact discovery and parameter passing still need to be designed
+- current Ghaf flasher outputs are not yet exposed through a single CI-facing
+  manifest/contract
+
+### Path B: Preserve a single ready-to-flash artifact for Jenkins
 
 Pros:
 
@@ -494,7 +533,7 @@ Cons:
 - may duplicate work if the new split-image model is the desired long-term
   format
 
-### Option B: Teach Jenkins/test agents to handle split images
+### Path C: Teach Jenkins/test agents to handle split images
 
 Pros:
 
@@ -505,36 +544,9 @@ Cons:
 
 - requires pipeline API changes
 - requires new signature-handling decisions
-- introduces more target-specific flashing logic into `ghaf-infra`, which the
-  current TODO already says should be avoided
-
-### Option C: Delegate flashing to Ghaf-provided tooling
-
-Pros:
-
-- matches the [TODO already present](https://github.com/tiiuae/ghaf-infra/blob/ad53845f2f80606b5553efbe9e28a52cfc9f09ce/hosts/hetzci/pipelines/ghaf-hw-test.groovy#L289-L290) in the pipeline
-- reduces duplicated flashing logic in Jenkins Groovy
-- lets Ghaf own target-specific flash behavior
-
-Cons:
-
-- needs a robust interface between `ghaf-infra` and Ghaf tooling
-- artifact discovery and parameter passing still need to be designed
-- current Ghaf flasher outputs are not yet exposed through a single CI-facing
-  manifest/contract
-
-Preferred variant of Option C:
-
-- use a flasher produced from the same Ghaf revision as the target image
-- transfer that exact flasher to the test agent during the job
-- avoid separately pinned or preinstalled flasher logic on the test agent
-
-This avoids drift between:
-
-- image layout
-- flashing logic
-- target-specific behavior
-- helper-script expectations
+- introduces more target-specific flashing logic and maintenance burden into
+  `ghaf-infra`, even though that behavior should live in Ghaf rather than be
+  implemented in Jenkins Groovy
 
 ## Recommended Immediate Next Steps
 
@@ -569,14 +581,16 @@ signing, and SLSA image signing (covers the final image artifact). See
 for the full description of today's model.
 
 SLSA provenance signing is a per-build attestation (`utils.groovy:150,196`).
-It is not image-specific and is unaffected by the artifact shape — one
+It is not image-specific and is unaffected by the artifact shape: one
 provenance attestation per build regardless of whether the build produces one
 image or several. The options below address only the SLSA **image-artifact**
 signature step and the UEFI signing step.
 
-Based on the current PR #1787 artifact shape, the options do not look equally
-strong. The preferred order below reflects the current understanding from the
-PR diff, the Jenkins prototype work, and the NVIDIA flashing model.
+Based on the current
+[PR#1787](https://github.com/tiiuae/ghaf/pull/1787) artifact shape, the
+options do not look equally strong. The preferred order below reflects the
+current understanding from the PR diff, the Jenkins prototype work, and the
+NVIDIA flashing model.
 
 Recommended UEFI signing order:
 
@@ -604,7 +618,7 @@ Taken together, the current recommendation is:
 ### S1: Signed flash manifest with per-artifact checksums
 
 The build produces a flash manifest listing all artifacts with sha256
-checksums. SLSA image-sign only the manifest — one signature covers the whole
+checksums. SLSA image-sign only the manifest: one signature covers the whole
 artifact set. Verification: check manifest signature, then verify each
 downloaded artifact against its manifest checksum.
 
@@ -612,7 +626,8 @@ Pros:
 
 - single signature verification step
 - naturally extensible to any number of artifacts
-- fits the flash manifest design from Option C
+- fits the flash manifest design from
+  [Path A](#path-a-delegate-flashing-to-ghaf-provided-tooling)
 - models artifact roles explicitly instead of hiding them behind a repackaged blob
 
 Cons:
@@ -630,7 +645,8 @@ artifact+sig pair.
 Pros:
 
 - each artifact independently verifiable
-- aligns directly with the split-image model produced by PR #1787
+- aligns directly with the split-image model produced by
+  [PR#1787](https://github.com/tiiuae/ghaf/pull/1787)
 - no need to invent an extra wrapper artifact
 
 Cons:
@@ -646,11 +662,12 @@ The build pipeline merges split images into one disk image (via
 merged image exactly as today. The pipeline API is unchanged (single
 `IMG_URL`).
 
-This option is weaker as the long-term native Orin model, because PR #1787
-builds `esp.img.zst` and `root.img.zst` directly and the NVIDIA/Ghaf initrd
-flow is fundamentally partition-oriented. But it remains a valid compatibility
-bridge for `ghaf-infra`, because `ghafdd.sh` already merges those split images
-into a real flashable disk image for today's external-disk workflow.
+This option is weaker as the long-term native Orin model, because
+[PR#1787](https://github.com/tiiuae/ghaf/pull/1787) builds `esp.img.zst` and
+`root.img.zst` directly and the NVIDIA/Ghaf initrd flow is fundamentally
+partition-oriented. But it remains a valid compatibility bridge for
+`ghaf-infra`, because `ghafdd.sh` already merges those split images into a real
+flashable disk image for today's external-disk workflow.
 
 Pros:
 
@@ -663,13 +680,13 @@ Cons:
 
 - requires merge tooling in build environment
 - diverges from the native split-artifact direction
-- creates a compatibility artifact rather than using the canonical PR #1787
-  outputs directly
+- creates a compatibility artifact rather than using the canonical
+  [PR#1787](https://github.com/tiiuae/ghaf/pull/1787) outputs directly
 
 ### S4: Bundle archive (single downloadable)
 
 Package all flash artifacts into a single archive (tarball or nar). SLSA
-image-sign the archive — single artifact, single signature. Preserves
+image-sign the archive: single artifact, single signature. Preserves
 single-URL model.
 
 Pros:
@@ -690,9 +707,11 @@ This is a cross-cutting concern that applies primarily to `S1`, `S2`, and `S4`. 
 sidesteps most of the timing question by merging first and then signing one
 compatibility artifact.
 
-For split images, the key fact from PR #1787 is that `flash-images.nix` builds
-`esp.img` and `root.img` as independent derivations. There is no intermediate
-full-disk image that later gets split. The artifacts are born separate.
+For split images, the key fact from
+[PR#1787](https://github.com/tiiuae/ghaf/pull/1787) is that `flash-images.nix`
+builds `esp.img` and `root.img` as independent derivations. There is no
+intermediate full-disk image that later gets split. The artifacts are born
+separate.
 
 Comparison with today's single-image flow:
 
@@ -731,12 +750,14 @@ certificate for UEFI-loaded artifacts. That is conceptually the same role that
 `DB.pem` plus the HSM-backed db key plays in the current `uefisign-simple`
 pipeline step.
 
-There is no evidence in PR #1787 that the published `esp.img.zst` artifact is
-already UEFI-signed before Jenkins sees it. `flash-images.nix` constructs the
-ESP with `mkfs.vfat` and `mcopy`, while the secure-boot-related logic in
-`initrd-flash.nix` signs boot images and firmware-side artifacts. So "the ESP
-may already be signed" remains an open question for future Ghaf integration,
-not a conclusion from the PR as it stands.
+There is no evidence in
+[PR#1787](https://github.com/tiiuae/ghaf/pull/1787) that the published
+`esp.img.zst` artifact is already UEFI-signed before Jenkins sees it.
+`flash-images.nix` constructs the ESP with `mkfs.vfat` and `mcopy`, while the
+secure-boot-related logic in `initrd-flash.nix` signs boot images and
+firmware-side artifacts. So "the ESP may already be signed" remains an open
+question for future Ghaf integration, not a conclusion from the PR as it
+stands.
 
 ### U1: Sign the ESP partition image directly
 
@@ -747,10 +768,11 @@ image.
 
 ### U2: Sign before splitting
 
-This remains possible in principle, but it is no longer natural. Since PR
-#1787 does not build a full disk image first, this would require an extra
-compatibility stage to merge, sign, and then re-expose split outputs. That
-makes it materially less attractive than `U1`.
+This remains possible in principle, but it is no longer natural. Since
+[PR#1787](https://github.com/tiiuae/ghaf/pull/1787) does not build a full disk
+image first, this would require an extra compatibility stage to merge, sign,
+and then re-expose split outputs. That makes it materially less attractive than
+`U1`.
 
 ### U3: Defer UEFI signing until after merge
 
@@ -772,9 +794,11 @@ The first shape is the better long-term fit for Orin. The second remains
 useful only as a transitional bridge while Jenkins still depends on the
 single-image contract.
 
-## Expanding Option C
+## Expanding Path A
 
-This section turns Option C into a more concrete implementation plan.
+This section turns
+[Path A](#path-a-delegate-flashing-to-ghaf-provided-tooling) into a more
+concrete implementation plan.
 
 The core idea is:
 
@@ -892,8 +916,9 @@ contract than "first matching `*.img|*.zst|*.iso` wins".
 
 #### 5. Backward-compatible support for current single-image targets
 
-To start Option C before PR #1787 lands, Ghaf should support the same manifest
-and flasher entrypoint for existing single-image targets.
+To start [Path A](#path-a-delegate-flashing-to-ghaf-provided-tooling) before
+[PR#1787](https://github.com/tiiuae/ghaf/pull/1787) lands, Ghaf should support
+the same manifest and flasher entrypoint for existing single-image targets.
 
 That allows `ghaf-infra` to adopt the new interface without waiting for Orin.
 
@@ -976,7 +1001,8 @@ During rollout, `ghaf-infra` should support both:
 
 That reduces risk while the new Ghaf interface is still settling.
 
-### Can We Start Before PR #1787 Lands?
+<a id="can-we-start-before-pr-1787-lands"></a>
+### Can We Start Before PR#1787 Lands?
 
 Yes. In fact, we probably should.
 
@@ -1002,6 +1028,14 @@ For current status of each phase, see
 [Phased Rollout Plan](jenkins-hw-flashing-notes.md#phased-rollout-plan) in the
 main document.
 
+This phased rollout is specifically the rollout of
+[Path A](#path-a-delegate-flashing-to-ghaf-provided-tooling), not a neutral
+plan covering all integration paths.
+
+For the split-image signing choices that become relevant in
+[Phase 3](#phase-3-add-orin-split-image-support), see
+[Multi-Artifact Signing Options](#multi-artifact-signing-options).
+
 #### Phase 1: Define the contract on a single-image target
 
 In Ghaf:
@@ -1018,9 +1052,11 @@ In `ghaf-infra`:
 - add one optional delegated-flash path behind a switch
 
 This was the original investigative direction. The validated prototype later
-simplified Phase 1 by passing `FLASH_CACHE_URL` and `FLASH_STORE_PATH`
-directly, without a manifest, because Lenovo X1 still uses a single image. A
-flash manifest remains the likely direction for Phase 3, where Orin needs true
+simplified [Phase 1](#phase-1-define-the-contract-on-a-single-image-target) by
+passing `FLASH_CACHE_URL` and `FLASH_STORE_PATH` directly, without a manifest,
+because Lenovo X1 still uses a single image. A flash manifest remains the
+likely direction for
+[Phase 3](#phase-3-add-orin-split-image-support), where Orin needs true
 multi-artifact inputs.
 
 Target for first validation:
@@ -1097,11 +1133,13 @@ After the delegated path is proven:
 
 The prototype has since validated the laptop-target subset of this plan using a
 cache URL plus store path instead of a manifest. The manifest-oriented version
-remains the more likely endpoint once split-image Orin support is added.
+remains the more likely endpoint once
+[Phase 3](#phase-3-add-orin-split-image-support) adds split-image Orin support.
 
 ### Main Recommendation
 
-Option C should begin with non-Orin targets.
+[Path A](#path-a-delegate-flashing-to-ghaf-provided-tooling) should begin with
+non-Orin targets.
 
 That lets us test the hard parts that actually belong to `ghaf-infra`:
 
@@ -1110,17 +1148,19 @@ That lets us test the hard parts that actually belong to `ghaf-infra`:
 - runtime transfer of Ghaf-provided flasher outputs
 - delegated flashing on test agents
 
-before we add the Orin-specific complexity introduced by PR #1787.
+before we add the Orin-specific complexity introduced by
+[PR#1787](https://github.com/tiiuae/ghaf/pull/1787).
 
 ## Primary Sources
 
-These are the main sources used for the PR #1787 analysis and for the Orin
+These are the main sources used for the
+[PR#1787](https://github.com/tiiuae/ghaf/pull/1787) analysis and for the Orin
 split-image signing discussion. Keep this list as the seed set for any future
 runbook or design document.
 
-- [`tiiuae/ghaf` PR #1787, "NVidia AGX: 2 stage initrd install"](https://github.com/tiiuae/ghaf/pull/1787)
-- Ghaf PR #1787 diff for `flash-images.nix`, `initrd-flash.nix`,
-  `makediskimage.sh`, and `ghafdd.sh`
+- [`tiiuae/ghaf` PR#1787, "NVidia AGX: 2 stage initrd install"](https://github.com/tiiuae/ghaf/pull/1787)
+- Ghaf [PR#1787](https://github.com/tiiuae/ghaf/pull/1787) diff for
+  `flash-images.nix`, `initrd-flash.nix`, `makediskimage.sh`, and `ghafdd.sh`
 - [anduril/jetpack-nixos](https://github.com/anduril/jetpack-nixos)
 - [NVIDIA Jetson AGX Orin Boot Flow (r35.1)](https://docs.nvidia.com/jetson/archives/r35.1/DeveloperGuide/text/AR/BootArchitecture/JetsonAgxOrinBootFlow.html)
 - [NVIDIA Jetson Linux Developer Guide, Quick Start (r36.2)](https://docs.nvidia.com/jetson/archives/r36.2/DeveloperGuide/IN/QuickStart.html)
@@ -1139,10 +1179,10 @@ runbook or design document.
 Today, Jenkins hardware testing in `ghaf-infra` is built around one flashable
 image file and a direct `dd` write to the target drive.
 
-PR #1787 in `ghaf` changes Orin to a split-image model and introduces helper
-scripts intended to reconstruct or abstract that detail away. The current
-`ghaf-infra` pipeline does not use those helpers and cannot correctly consume
-the new artifact shape as-is.
+[PR#1787](https://github.com/tiiuae/ghaf/pull/1787) in `ghaf` changes Orin to
+a split-image model and introduces helper scripts intended to reconstruct or
+abstract that detail away. The current `ghaf-infra` pipeline does not use those
+helpers and cannot correctly consume the new artifact shape as-is.
 
 At the same time, Ghaf already exposes same-revision flasher outputs for Orin
 targets. This suggests that the long-term fix should not be to duplicate more
