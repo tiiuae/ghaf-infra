@@ -1,0 +1,75 @@
+{
+    "uid": "cffsiwmyz2ebkc",
+    "title": "Nebula no hosts",
+    "condition": "C",
+    "data": [
+        {
+            "refId": "A",
+            "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+            },
+            "datasourceUid": "prometheus",
+            "model": {
+                "editorMode": "builder",
+                "expr": "nebula_hostmap_main_hosts",
+                "instant": true,
+                "intervalMs": 1000,
+                "legendFormat": "__auto",
+                "maxDataPoints": 43200,
+                "range": false,
+                "refId": "A"
+            }
+        },
+        {
+            "refId": "C",
+            "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+            },
+            "datasourceUid": "__expr__",
+            "model": {
+                "conditions": [
+                    {
+                        "evaluator": {
+                            "params": [
+                                1
+                            ],
+                            "type": "lt"
+                        },
+                        "operator": {
+                            "type": "and"
+                        },
+                        "query": {
+                            "params": [
+                                "C"
+                            ]
+                        },
+                        "reducer": {
+                            "params": [],
+                            "type": "last"
+                        },
+                        "type": "query"
+                    }
+                ],
+                "datasource": {
+                    "type": "__expr__",
+                    "uid": "__expr__"
+                },
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+            }
+        }
+    ],
+    "noDataState": "NoData",
+    "execErrState": "Error",
+    "for": "1m",
+    "annotations": {
+        "summary": "{{ $labels.machine_name }} has 0 connected nebula nodes! (connection down?)"
+    },
+    "labels": {},
+    "isPaused": false
+}
