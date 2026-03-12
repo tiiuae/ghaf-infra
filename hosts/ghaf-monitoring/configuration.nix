@@ -23,6 +23,20 @@ let
       hetz86-rel-2
       ;
   };
+
+  # these hosts will be monitored through internal hetzner network
+  hetznerCloudHosts = {
+    inherit (machines)
+      ghaf-log
+      ghaf-auth
+      ghaf-monitoring
+      ghaf-lighthouse
+      hetzci-dev
+      hetzci-prod
+      hetzci-release
+      hetzarm-rel-1
+      ;
+  };
 in
 {
   imports = [
@@ -228,6 +242,13 @@ in
             "\${DS_PROMETHEUS}" = "prometheus";
           };
         })
+        (dashboard {
+          name = "Nebula";
+          src = ./provision/dashboards/nebula.json;
+          replacements = {
+            "\${DS_PROMETHEUS}" = "prometheus";
+          };
+        })
       ];
 
     provision.alerting = {
@@ -295,6 +316,16 @@ in
           interval = "60s";
           rules = [
             (builtins.fromJSON (builtins.readFile ./provision/alert-rules/earlyoom.json))
+          ];
+        }
+        {
+          name = "Nebula";
+          folder = "Alerts";
+          interval = "60s";
+          rules = [
+            (builtins.fromJSON (builtins.readFile ./provision/alert-rules/nebula_up.json))
+            (builtins.fromJSON (builtins.readFile ./provision/alert-rules/nebula_cert_ttl.json))
+            (builtins.fromJSON (builtins.readFile ./provision/alert-rules/nebula_hostmap.json))
           ];
         }
       ];
@@ -373,31 +404,39 @@ in
 
     scrapeConfigs = [
       {
+        # this job scrapes within the hetzner internal network
         job_name = "hetzner-cloud";
-        static_configs =
-          lib.mapAttrsToList
-            (name: value: {
-              targets = [ "${value.internal_ip}:9100" ];
-              labels = {
-                machine_name = name;
-              };
-            })
-            {
-              inherit (machines)
-                ghaf-log
-                ghaf-auth
-                ghaf-monitoring
-                ghaf-lighthouse
-                hetzci-dev
-                hetzci-prod
-                hetzci-release
-                hetzarm-rel-1
-                ;
-            };
+        static_configs = lib.mapAttrsToList (name: value: {
+          targets = [
+            "${value.internal_ip}:9100" # node exporter
+          ];
+          labels = {
+            machine_name = name;
+          };
+        }) hetznerCloudHosts;
       }
       {
+        # scrape nebula metrics if host has nebula ip address defined
+        # use internal hetzner network only for hetzner cloud hosts, otherwise scrape via nebula
+        job_name = "nebula";
+        static_configs = lib.mapAttrsToList (name: value: {
+          targets = [
+            "${
+              # internal_ip is only reachable from monitoring for Hetzner cloud hosts
+              if builtins.hasAttr name hetznerCloudHosts && value ? internal_ip then
+                value.internal_ip
+              else
+                value.nebula_ip
+            }:9101"
+          ];
+          labels = {
+            machine_name = name;
+          };
+        }) (lib.filterAttrs (_: host: host ? nebula_ip) machines);
+      }
+      {
+        # this job proxies the requests through an ssh tunnel
         job_name = "hetzner-robot";
-        # proxy the requests through our ssh tunnel
         proxy_url = "http://127.0.0.1:8888";
         static_configs = lib.mapAttrsToList (name: value: {
           targets = [ "${value.ip}:9100" ];
@@ -407,22 +446,27 @@ in
         }) hetznerRobotHosts;
       }
       {
+        # this job monitors through the nebula tunnel
         job_name = "office";
         static_configs =
-          map
-            (name: {
-              targets = [ "${name}.sumu.vedenemo.dev:9100" ];
+          lib.mapAttrsToList
+            (name: value: {
+              targets = [
+                "${value.nebula_ip}:9100" # node exporter
+              ];
               labels = {
                 machine_name = name;
               };
             })
-            [
-              "testagent-dev"
-              "testagent-prod"
-              "testagent2-prod"
-              "testagent-release"
-              "nethsm-gateway"
-            ];
+            {
+              inherit (machines)
+                testagent-dev
+                testagent-prod
+                testagent2-prod
+                testagent-release
+                nethsm-gateway
+                ;
+            };
       }
       {
         job_name = "relay-board";

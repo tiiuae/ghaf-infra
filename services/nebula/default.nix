@@ -82,6 +82,16 @@ in
         respond = true;
       };
 
+      settings.stats = {
+        type = "prometheus";
+        interval = "60s";
+        message_metrics = true;
+        lighthouse_metrics = cfg.isLighthouse;
+        listen = "0.0.0.0:9101";
+        path = "/metrics";
+        namespace = "nebula";
+      };
+
       firewall = {
         outbound = [
           # allow any outbound connections
@@ -100,7 +110,12 @@ in
           }
           # allow monitoring server to scrape metrics
           {
-            port = 9100;
+            port = 9100; # node exporter
+            proto = "tcp";
+            groups = [ "scraper" ];
+          }
+          {
+            port = 9101; # nebula metrics
             proto = "tcp";
             groups = [ "scraper" ];
           }
