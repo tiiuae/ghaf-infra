@@ -15,6 +15,11 @@ This document captures the investigative background gathered while reviewing
 walkthrough, impact analysis, integration-path comparison, and the detailed
 [Path A](#path-a-delegate-flashing-to-ghaf-provided-tooling) expansion plan.
 
+In this document, references to the **current Jenkins flashing flow** and
+**current implementation** mean the current mainline (`main`) production
+behavior unless stated otherwise. Prototype delegated-flashing behavior on
+branch `improve-jenkins-hw-flash` is called out explicitly when relevant.
+
 ## Table of Contents
 
 - [Scope](#scope)
@@ -38,14 +43,15 @@ walkthrough, impact analysis, integration-path comparison, and the detailed
 
 ## Scope
 
-This document is based on the current state of:
+This document is based on code reading of the current mainline production
+implementation in `ghaf-infra`, plus these `tiiuae/ghaf` sources:
 
 - `hosts/hetzci/pipelines/ghaf-hw-test.groovy`
 - `hosts/hetzci/pipelines/ghaf-hw-test-manual.groovy`
 - `hosts/hetzci/pipelines/modules/utils.groovy`
 - `hosts/testagent/agent.nix`
 - `hosts/testagent/agents-common.nix`
-- `.github/skills/ghaf-hw-test/`
+- `tiiuae/ghaf` `.github/skills/ghaf-hw-test/`
 - the discussion and diff of `tiiuae/ghaf`
   [PR#1787](https://github.com/tiiuae/ghaf/pull/1787)
 
@@ -53,6 +59,9 @@ This is a code-reading document. It does not claim that all cases have been
 validated on hardware.
 
 ## Current Jenkins Flashing Flow
+
+This section describes the current mainline (`main`) production flow, not the
+delegated-flashing prototype on branch `improve-jenkins-hw-flash`.
 
 ### 1. Build pipeline selects exactly one image artifact
 
@@ -1044,22 +1053,21 @@ For the split-image signing choices that become relevant in
 
 In Ghaf:
 
-- add a flash manifest for one existing single-image target
 - expose a CI-consumable flasher package/app for that target
 - make sure the flasher can consume explicit file paths
 
 In `ghaf-infra`:
 
-- add support for `FLASH_MANIFEST_URL`
-- download the manifest in `ghaf-hw-test`
+- add support for `FLASH_CACHE_URL` and `FLASH_STORE_PATH`
+- import the flasher closure in `ghaf-hw-test`
 - keep existing `dd` path as fallback
 - add one optional delegated-flash path behind a switch
 
-This was the original investigative direction. The validated prototype later
-simplified [Phase 1](#phase-1-define-the-contract-on-a-single-image-target) by
-passing `FLASH_CACHE_URL` and `FLASH_STORE_PATH` directly, without a manifest,
-because Lenovo X1 still uses a single image. A flash manifest remains the
-likely direction for
+The original investigative direction considered a flash manifest even for
+single-image targets. The validated prototype instead uses
+`FLASH_CACHE_URL` and `FLASH_STORE_PATH` directly, because Lenovo X1 still uses
+one image and does not yet need multi-artifact handoff. A flash manifest
+remains the likely direction for
 [Phase 3](#phase-3-add-orin-split-image-support), where Orin needs true
 multi-artifact inputs.
 
@@ -1069,7 +1077,7 @@ Target for first validation:
 
 This would prove:
 
-- build-to-test manifest handoff
+- build-to-test flasher handoff
 - runtime flasher transfer
 - delegated flasher execution on test agent
 - no regression in current signature/provenance verification

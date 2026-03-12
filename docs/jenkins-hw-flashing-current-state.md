@@ -8,6 +8,11 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 This is the authoritative source for the current operational status and active
 design constraints of Jenkins hardware flashing in `ghaf-infra`.
 
+In this document, **production** means the current mainline (`main`) Jenkins
+hardware-flashing behavior. **Prototype** means the delegated-flashing changes
+validated on branch `improve-jenkins-hw-flash`, which are not yet merged to
+main.
+
 For the full investigative background, pipeline walkthrough,
 [PR#1787](https://github.com/tiiuae/ghaf/pull/1787) impact analysis,
 integration-path comparison, and detailed
@@ -41,7 +46,7 @@ Current status:
 - [Path A](jenkins-hw-flashing-analysis.md#path-a-delegate-flashing-to-ghaf-provided-tooling)
   is the selected integration direction
 - [Phase 1](#phase-1-define-the-contract-on-a-single-image-target--validated)
-  has been validated on Lenovo X1 in `ghaf-manual`
+  has been validated as a prototype on Lenovo X1 in `ghaf-manual`
 - [Phase 3](#phase-3-add-orin-split-image-support--not-started) is where
   Orin split-image and multi-artifact signing work begins
 
@@ -108,9 +113,9 @@ in the analysis document.
 
 ## Current Production Behavior
 
-Jenkins hardware testing currently assumes one downloadable image file per
-target and flashes it with inline Jenkins logic using raw `dd`. Delegated
-flashing is not yet the default for any pipeline.
+In the current mainline Jenkins hardware-test flow, Jenkins assumes one
+downloadable image file per target and flashes it with inline Jenkins logic
+using raw `dd`.
 
 The production flow:
 
@@ -123,6 +128,10 @@ The production flow:
 There is no representation in the manifest or trigger parameters for a target
 that needs multiple image artifacts to be flashed together.
 
+The delegated Lenovo X1 flashing path described in
+[Prototype Status](#prototype-status) is branch-only validation work and is not
+yet part of mainline production behavior.
+
 For a detailed walkthrough, see
 [Current Jenkins Flashing Flow](jenkins-hw-flashing-analysis.md#current-jenkins-flashing-flow)
 in the analysis document.
@@ -133,7 +142,9 @@ A prototype of delegated flashing
 ([Path A](jenkins-hw-flashing-analysis.md#path-a-delegate-flashing-to-ghaf-provided-tooling),
 [Phase 1](#phase-1-define-the-contract-on-a-single-image-target--validated))
 has been implemented on branch `improve-jenkins-hw-flash` and validated on the
-release environment (`ci-release.vedenemo.dev`).
+release environment (`ci-release.vedenemo.dev`). This prototype has not yet
+been merged to main and does not change the current production behavior
+described above.
 
 ### What Was Tested
 
@@ -196,7 +207,7 @@ Initial testing found two issues in Ghaf's `flash-script` package
 Before merging:
 
 - Drive fixes for `tiiuae/ghaf` `flash-script` issues identified (see above)
-- Remove temporary `"ghaf-manual"` entry from `release/configuration.nix`
+- Remove temporary `"ghaf-manual"` entry from `hosts/hetzci/release/configuration.nix`
 - Remove the `gawk` workaround once the upstream fix lands
 
 Phase 2 and beyond follow the [Phased Rollout Plan](#phased-rollout-plan)
