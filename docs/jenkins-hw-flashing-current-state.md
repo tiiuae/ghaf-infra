@@ -210,88 +210,28 @@ These are the practical constraints any `ghaf-infra` changes must respect.
 ### Single `IMG_URL` contract
 
 The current trigger from the build pipeline into `ghaf-hw-test` is a single
-string parameter:
+`IMG_URL` string parameter. There is no representation in the manifest or
+trigger parameters for a target that needs multiple image artifacts.
 
-- `IMG_URL`
-
-If we need multiple image inputs, options include:
-
-- keep one downloadable merged disk image as the main artifact
-- extend the manifest and test job API to accept multiple URLs
-- keep one URL but point it to a wrapper artifact that knows how to fetch or
-  reconstruct the split images
+For options on extending this contract for split-image targets, see
+[Likely Directions For Follow-Up Work](jenkins-hw-flashing-analysis.md#likely-directions-for-follow-up-work)
+in the analysis document.
 
 ### Signature and provenance handling
 
-The current build pipeline performs three distinct signing operations:
+The current build pipeline performs three distinct signing operations in order:
 
-1. SLSA provenance signing
-2. optional UEFI signing of the image
-3. SLSA image signing
+1. SLSA provenance signing (per-build attestation)
+2. Optional UEFI signing of the image (replaces artifact in place)
+3. SLSA image signing (covers the final post-UEFI artifact)
 
-The important ordering detail is:
+Non-manual `ghaf-hw-test` verifies both provenance and image signature.
+`ghaf-hw-test-manual` currently performs no verification.
 
-- UEFI signing happens before SLSA image signing
-- the UEFI step replaces the image artifact in place
-- the SLSA image signature therefore covers the final image artifact that
-  Jenkins publishes and passes to hardware testing
+The build pipeline also writes a per-target `manifest.json` containing the
+selected image path, UEFI signing status, key identifiers, and signature file
+paths.
 
-In other words, the chain is:
-
-- raw image
-- optional UEFI signing
-- SLSA image signing of the resulting artifact
-
-Current non-manual `ghaf-hw-test` behavior verifies:
-
-- one SLSA provenance file and its signature for the target build via
-  `policy-checker`
-- one SLSA image signature for the selected main image artifact via
-  `verify-signature image`
-
-UEFI Secure Boot is not separately verified during the flashing stage. It is
-enforced later by the target device firmware at boot time. In practice, the
-pipeline routes UEFI-signed builds to the secure-boot-capable hardware path
-when available.
-
-The current build pipeline also already writes a per-target `manifest.json`
-containing relevant metadata such as:
-
-- selected image path
-- whether UEFI signing was applied
-- signing key identifiers
-- signature file paths
-
-This existing manifest is important prior art for
-[Path A](jenkins-hw-flashing-analysis.md#path-a-delegate-flashing-to-ghaf-provided-tooling).
-A future flash manifest does not need to start from zero; it can build on the
-current artifact/signing metadata model and extend it with flash semantics.
-
-Security gap to keep in mind:
-
-- `ghaf-hw-test` performs provenance and image-signature verification
-- `ghaf-hw-test-manual` currently performs no provenance or signature
-  verification at all
-
-If Orin produces multiple flash artifacts, the signing model needs to remain
-clear:
-
-- is the signed artifact the merged disk image?
-- or are `esp.img.zst` and `root.img.zst` individually signed?
-- if they are separate, how does the pipeline verify and compose them without
-  weakening the trust model?
-
-For current single-image targets, the simplest delegated-flash model is to keep
-the same security shape:
-
-- Jenkins publishes one already-final image artifact
-- any required UEFI signing has already happened
-- SLSA image signing already covers that final artifact
-- the delegated flasher receives the already-verified local artifact
-
-The split-image signing question becomes a real design problem only once the
-pipeline starts consuming true multi-artifact flash inputs. For concrete
-options on how UEFI signing and SLSA image signing could work with
-split-image artifacts, see
+For how this signing model extends to split-image artifacts, see
 [Multi-Artifact Signing Options](jenkins-hw-flashing-analysis.md#multi-artifact-signing-options)
 in the analysis document.
