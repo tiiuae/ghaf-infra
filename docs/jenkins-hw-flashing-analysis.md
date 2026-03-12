@@ -21,6 +21,7 @@ expansion plan.
 - [Current Jenkins Flashing Flow](#current-jenkins-flashing-flow)
 - [What Ghaf Already Provides Today](#what-ghaf-already-provides-today)
 - [What PR #1787 Changes in Ghaf](#what-pr-1787-changes-in-ghaf)
+- [Why Orin Moved From One Image to Two](#why-orin-moved-from-one-image-to-two)
 - [Findings From The PR Review](#findings-from-the-pr-review)
 - [Likely Directions For Follow-Up Work](#likely-directions-for-follow-up-work)
 - [Recommended Immediate Next Steps](#recommended-immediate-next-steps)
@@ -32,6 +33,7 @@ expansion plan.
   - [Suggested Phased Rollout](#suggested-phased-rollout)
   - [Proposed Immediate Work Split](#proposed-immediate-work-split)
   - [Main Recommendation](#main-recommendation)
+- [Primary Sources](#primary-sources)
 - [Summary](#summary)
 
 ## Scope
@@ -275,6 +277,95 @@ That intent is compatible with the Jenkins pipeline only if Jenkins starts
 calling one of those helpers, or if Ghaf again publishes one single ready-to-
 flash artifact for hw testing.
 
+## Why Orin Moved From One Image to Two
+
+From the `ghaf-infra` Jenkins viewpoint, the important root cause is that Orin
+is moving from a **whole-disk image contract** to a
+**partition-payload contract**.
+
+Before PR #1787, Orin used `sdimage.nix` and exported one disk image through
+`system.build.sdImage`. That image already contained the GPT layout, the ESP,
+and the root partition contents, so Jenkins could treat it like any other
+single artifact and write it directly to a block device with `dd`.
+
+PR #1787 changes the default Orin output to `system.build.ghafFlashImages`,
+which contains:
+
+- `esp.img.zst`
+- `root.img.zst`
+
+This is not just a packaging change. It follows the model used by NVIDIA's
+`l4t_initrd_flash.sh` flow: the flashing logic owns partition creation and
+device-specific layout, while the build side provides the payloads for the
+individual partitions. In the PR implementation:
+
+- `esp.img.zst` is a standalone FAT32 ESP containing the UEFI boot content
+- `root.img.zst` is a standalone ext4 root filesystem image
+- the target disk layout is recreated later by Ghaf helper tooling such as
+  `makediskimage.sh` or by the initrd flashing logic itself
+
+So the reason there are now two files is that Orin is no longer published as a
+preassembled flashable disk image by default. It is published as the two
+partition images that the initrd-flash path expects.
+
+There is also a hardware and vendor-tooling reason for this change, not just a
+Ghaf packaging refactor.
+
+For the NVIDIA reference configurations documented in Jetson Linux, Orin NX and
+Orin Nano are flashed as **QSPI-NOR plus external storage**:
+
+- QSPI-NOR carries the early boot firmware
+- USB, NVMe, or microSD carries the OS storage, depending on the module and
+  carrier-board combination
+
+This is a real storage split, not just a software packaging choice. On these
+NX/Nano reference paths there is no eMMC-backed internal rootfs flow analogous
+to AGX Orin's documented "QSPI-NOR and eMMC" path. NVIDIA's own Quick Start
+tables reflect that distinction directly.
+
+That hardware split also maps onto the boot chain. BootROM loads the early boot
+components, MB1 loads MB2, and MB2 hands off to UEFI. On the NX/Nano reference
+paths, those bootloader stages are tied to the QSPI-resident boot firmware,
+while UEFI then boots the OS payloads from the ESP on external storage. From a
+flashing perspective, that means QSPI firmware and OS partitions are separate
+concerns because they live on different media and are handled by different
+stages of the boot chain.
+
+NVIDIA documents that the external-storage NX/Nano path is only supported
+through `l4t_initrd_flash.sh`. NVIDIA also states that for Orin NX and Nano,
+initrd flashing is the official method and that production systems must use it
+because the memory layout produced by `flash.sh` differs from the initrd-flash
+layout and is not suitable for OTA.
+
+That matters because `l4t_initrd_flash.sh` is naturally partition-oriented: it
+creates or applies the target storage layout and writes partition payloads,
+rather than assuming one prebuilt whole-disk image. Ghaf PR #1787 is
+effectively adapting Orin output to that vendor contract.
+
+Security is the other driver. NVIDIA's Secure Boot guidance for Orin external
+storage flows uses `l4t_initrd_flash.sh --uefi-keys ...` together with the
+external NVMe partition XML and QSPI layout. NVIDIA's documented one-step
+secure-flash commands use `flash.sh --uefi-keys` for AGX/internal-storage
+targets and `l4t_initrd_flash.sh --uefi-keys` for Orin NX/Nano external-storage
+targets.
+
+From that command split, plus the PR #1787 rationale, the working
+`ghaf-infra` constraint is: the old `flash.sh` path is not the secure external-
+storage signing flow Ghaf needs for NX/Nano systems rooted on NVMe/USB media.
+That is the practical forcing function behind the switch away from the old
+single-image publishing model.
+
+This matters to `ghaf-infra` because the current Jenkins integration is still
+built around the older contract:
+
+- one discovered image artifact
+- one image signature
+- one `IMG_URL`
+- one local file passed to the flash step
+
+That contract matched `sdImage`. It does not match the new Orin
+partition-payload output.
+
 ## Findings From The PR Review
 
 The items below summarize the findings gathered so far while comparing PR #1787
@@ -463,6 +554,12 @@ Before changing pipeline code, the following should be answered explicitly:
 Based on current findings, runtime transfer from the same Ghaf build is likely
 better than separately pinning a flasher in the test-agent configuration.
 
+Historical note: the validated prototype described in
+[Jenkins Hardware Flashing Notes](jenkins-hw-flashing-notes.md) has since
+answered part of this for single-image targets by transferring the Ghaf flasher
+closure directly via Nix. The unresolved parts now mainly concern the future
+multi-artifact Orin path.
+
 ## Multi-Artifact Signing Options
 
 The current pipeline performs three distinct signing operations in order: SLSA
@@ -471,7 +568,7 @@ signing, and SLSA image signing (covers the final image artifact). See
 [Signature and provenance handling](jenkins-hw-flashing-notes.md#signature-and-provenance-handling)
 for the full description of today's model.
 
-SLSA provenance signing is a per-build attestation (`utils.groovy:147,196`).
+SLSA provenance signing is a per-build attestation (`utils.groovy:150,196`).
 It is not image-specific and is unaffected by the artifact shape — one
 provenance attestation per build regardless of whether the build produces one
 image or several. The options below address only the SLSA **image-artifact**
@@ -557,6 +654,50 @@ today operates on a full disk image (`utils.groovy:230`) — it finds EFI
 binaries in the ESP partition and signs them with the Secure Boot DB key. For
 split images, UEFI signing must still happen; the question is when:
 
+Comparison with today's single-image flow:
+
+- **Current single-image model**: Jenkins passes one full disk image into
+  `uefisign` or `uefisign-simple`, the signer updates the EFI binaries inside
+  the ESP, replaces the image artifact in place, and then the pipeline applies
+  the SLSA image signature to that final disk image.
+- **Split-image model**: the UEFI-executed content lives in the ESP artifact,
+  not in `root.img.zst`. So the natural equivalent is to sign the EFI binaries
+  carried by `esp.img.zst`, while `root.img.zst` remains a normal flash
+  artifact but not a UEFI-signing target by itself.
+
+This distinction is the key design point: for split images, UEFI signing is
+about the ESP payload, not about applying an equivalent signature operation to
+every artifact in the set.
+
+NVIDIA's own Secure Boot model also splits the problem into two layers:
+
+- low-level boot-chain trust starts at BootROM and authenticates boot code
+  using fused PKC keys; on Orin, NVIDIA documents RSA 3K, ECDSA P-256, and
+  ECDSA P-521 as the supported PKC types, and on supported platforms SBK is
+  additionally used to encrypt bootloader components
+- after that point, UEFI Secure Boot uses the PK/KEK/db hierarchy, where the
+  db keys sign the UEFI payloads that firmware loads
+
+From the Jenkins perspective, this is why "UEFI signing" should not be confused
+with signing the whole flash set. The UEFI db keys protect the EFI payloads in
+the ESP, while the lower boot-chain trust for QSPI firmware belongs to the
+NVIDIA secure-flash flow.
+
+NVIDIA's UEFI key config also makes the correspondence with today's Jenkins
+signing model explicit. In `uefi_keys.conf`, NVIDIA uses
+`UEFI_DB_1_KEY_FILE` and `UEFI_DB_1_CERT_FILE` as the payload-signing key and
+certificate for UEFI-loaded artifacts. That is conceptually the same role that
+`DB.pem` plus the HSM-backed db key plays in the current `uefisign-simple`
+pipeline step.
+
+This is also why option (a) is attractive. NVIDIA's documented
+`l4t_initrd_flash.sh --uefi-keys ...` flow already combines low-level secure
+flash inputs (`-u <pkc_keyfile>`, optional `-v <sbk_keyfile>`) with UEFI key
+enrollment and external-device flashing in one command. So "sign before
+splitting" most closely matches the vendor model: produce the secured boot
+artifacts first, and only then expose the flashable payloads that Jenkins
+publishes or verifies.
+
 - a) **Sign before splitting** — build produces full image → UEFI sign →
   split into `esp.img.zst` + `root.img.zst`. The signed EFI binaries end up
   inside the ESP artifact. Works with any of Options 2–4.
@@ -578,6 +719,18 @@ split images, UEFI signing must still happen; the question is when:
 Options (a) and (b) preserve today's invariant that UEFI signing happens
 before SLSA image signing. Option (c) is significantly more expensive to
 implement and changes the trust model.
+
+For `ghaf-infra`, the practical comparison is:
+
+- in the single-image pipeline, one artifact is both the flash payload and the
+  SLSA image-signing target after UEFI signing
+- in a split-image pipeline, either the ESP alone must be UEFI-signed before
+  publication, or the two artifacts must be merged and then signed on the
+  Jenkins side before any downstream verification
+
+The first shape is closer to the current trust model and operational setup,
+because Jenkins controllers already hold the HSM-backed UEFI signing tools,
+while test agents do not.
 
 ## Expanding Option C
 
@@ -824,6 +977,12 @@ In `ghaf-infra`:
 - keep existing `dd` path as fallback
 - add one optional delegated-flash path behind a switch
 
+This was the original investigative direction. The validated prototype later
+simplified Phase 1 by passing `FLASH_CACHE_URL` and `FLASH_STORE_PATH`
+directly, without a manifest, because Lenovo X1 still uses a single image. A
+flash manifest remains the likely direction for Phase 3, where Orin needs true
+multi-artifact inputs.
+
 Target for first validation:
 
 - `lenovo-x1-carbon-gen11-debug`
@@ -896,6 +1055,10 @@ After the delegated path is proven:
 4. Keep legacy `dd` fallback for all targets during early rollout
 5. Validate the path on one laptop target first
 
+The prototype has since validated the laptop-target subset of this plan using a
+cache URL plus store path instead of a manifest. The manifest-oriented version
+remains the more likely endpoint once split-image Orin support is added.
+
 ### Main Recommendation
 
 Option C should begin with non-Orin targets.
@@ -908,6 +1071,28 @@ That lets us test the hard parts that actually belong to `ghaf-infra`:
 - delegated flashing on test agents
 
 before we add the Orin-specific complexity introduced by PR #1787.
+
+## Primary Sources
+
+These are the main sources used for the PR #1787 analysis and for the Orin
+split-image signing discussion. Keep this list as the seed set for any future
+runbook or design document.
+
+- [`tiiuae/ghaf` PR #1787, "NVidia AGX: 2 stage initrd install"](https://github.com/tiiuae/ghaf/pull/1787)
+- Ghaf PR #1787 diff for `flash-images.nix`, `initrd-flash.nix`,
+  `makediskimage.sh`, and `ghafdd.sh`
+- [anduril/jetpack-nixos](https://github.com/anduril/jetpack-nixos)
+- [NVIDIA Jetson AGX Orin Boot Flow (r35.1)](https://docs.nvidia.com/jetson/archives/r35.1/DeveloperGuide/text/AR/BootArchitecture/JetsonAgxOrinBootFlow.html)
+- [NVIDIA Jetson Linux Developer Guide, Quick Start (r36.2)](https://docs.nvidia.com/jetson/archives/r36.2/DeveloperGuide/IN/QuickStart.html)
+- [NVIDIA Jetson Linux Developer Guide, Flashing Support (r35.4.1)](https://docs.nvidia.com/jetson/archives/r35.4.1/DeveloperGuide/text/SD/FlashingSupport.html)
+- [NVIDIA Jetson Linux Developer Guide, Flashing Support (r36.4.3)](https://docs.nvidia.com/jetson/archives/r36.4.3/DeveloperGuide/SD/FlashingSupport.html)
+- [NVIDIA Jetson Linux Developer Guide, Flashing Support (r38.2)](https://docs.nvidia.com/jetson/archives/r38.2/DeveloperGuide/SD/FlashingSupport.html)
+- [NVIDIA Jetson Linux Developer Guide, Partition Configuration (r36.4.3)](https://docs.nvidia.com/jetson/archives/r36.4.3/DeveloperGuide/AR/BootArchitecture/PartitionConfiguration.html)
+- [NVIDIA Jetson Linux Developer Guide, Update and Redundancy (r36.2)](https://docs.nvidia.com/jetson/archives/r36.2/DeveloperGuide/SD/Bootloader/UpdateAndRedundancy.html)
+- [NVIDIA Jetson Linux Developer Guide, Secure Boot (r36.4.3)](https://docs.nvidia.com/jetson/archives/r36.4.3/DeveloperGuide/SD/Security/SecureBoot.html)
+- [NVIDIA Jetson Linux Developer Guide, Secure Boot (r38.2)](https://docs.nvidia.com/jetson/archives/r38.2/DeveloperGuide/SD/Security/SecureBoot.html)
+- [Jenkins Hardware Flashing Notes](jenkins-hw-flashing-notes.md)
+- [NetHSM hardware signing notes](nethsm.md)
 
 ## Summary
 
