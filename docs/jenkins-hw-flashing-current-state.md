@@ -3,7 +3,7 @@ SPDX-FileCopyrightText: 2026 TII (SSRC) and the Ghaf contributors
 SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 
-# Jenkins Hardware Flashing Notes
+# Jenkins Hardware Flashing Current State
 
 This is the authoritative source for the current operational status and active
 design constraints of Jenkins hardware flashing in `ghaf-infra`.
@@ -25,10 +25,9 @@ expansion, see the companion
   - [Results](#results)
   - [Ghaf flash-script issues](#ghaf-flash-script-issues)
   - [Remaining Work](#remaining-work)
-- [Active Design Constraints](#active-design-constraints)
+- [Current Integration Constraints](#current-integration-constraints)
   - [Single `IMG_URL` contract](#single-img_url-contract)
   - [Signature and provenance handling](#signature-and-provenance-handling)
-  - [Test agent execution model](#test-agent-execution-model)
 
 ## Current Recommendation
 
@@ -203,7 +202,8 @@ Before merging:
 Phase 2 and beyond follow the [Phased Rollout Plan](#phased-rollout-plan)
 above.
 
-## Active Design Constraints
+<a id="active-design-constraints"></a>
+## Current Integration Constraints
 
 These are the practical constraints any `ghaf-infra` changes must respect.
 
@@ -295,20 +295,3 @@ options on how UEFI signing and SLSA image signing could work with
 split-image artifacts, see
 [Multi-Artifact Signing Options](jenkins-hw-flashing-analysis.md#multi-artifact-signing-options)
 in the analysis document.
-
-### Test agent execution model
-
-The pipeline currently performs the flashing logic inline in Jenkins Groovy and
-shell.
-
-Possible integration directions:
-
-- move the logic into a script shipped by `ghaf-infra`
-- call a Ghaf-provided flasher script from a checked-out Ghaf tree
-- install the needed Ghaf flasher package on test agents
-
-Whichever route is chosen, the contract must be stable enough for:
-
-- prod/dev/release Jenkins
-- different target families
-- existing non-Orin single-image targets

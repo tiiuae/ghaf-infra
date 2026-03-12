@@ -6,7 +6,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 # Jenkins Hardware Flashing Analysis
 
 This document is a companion to
-[Jenkins Hardware Flashing Notes](jenkins-hw-flashing-notes.md), which is
+[Jenkins Hardware Flashing Current State](jenkins-hw-flashing-current-state.md), which is
 authoritative for current operational status and active design constraints.
 
 This document captures the investigative background gathered while reviewing
@@ -481,9 +481,8 @@ For Jenkins integration, this suggests:
   directory layout
 
 For the practical constraints that any implementation must respect, including
-the single `IMG_URL` contract, signature and provenance handling, and the test
-agent execution model, see
-[Active Design Constraints](jenkins-hw-flashing-notes.md#active-design-constraints)
+the single `IMG_URL` contract and signature/provenance handling, see
+[Current Integration Constraints](jenkins-hw-flashing-current-state.md#current-integration-constraints)
 in the main document.
 
 ## Likely Directions For Follow-Up Work
@@ -567,7 +566,7 @@ Based on current findings, runtime transfer from the same Ghaf build is likely
 better than separately pinning a flasher in the test-agent configuration.
 
 Historical note: the validated prototype described in
-[Jenkins Hardware Flashing Notes](jenkins-hw-flashing-notes.md) has since
+[Jenkins Hardware Flashing Current State](jenkins-hw-flashing-current-state.md) has since
 answered part of this for single-image targets by transferring the Ghaf flasher
 closure directly via Nix. The unresolved parts now mainly concern the future
 multi-artifact Orin path.
@@ -577,7 +576,7 @@ multi-artifact Orin path.
 The current pipeline performs three distinct signing operations in order: SLSA
 provenance signing (per-build, covers `provenance.json`), optional UEFI image
 signing, and SLSA image signing (covers the final image artifact). See
-[Signature and provenance handling](jenkins-hw-flashing-notes.md#signature-and-provenance-handling)
+[Signature and provenance handling](jenkins-hw-flashing-current-state.md#signature-and-provenance-handling)
 for the full description of today's model.
 
 SLSA provenance signing is a per-build attestation (`utils.groovy:150,196`).
@@ -1025,7 +1024,7 @@ Reasons:
 ### Suggested Phased Rollout
 
 For current status of each phase, see
-[Phased Rollout Plan](jenkins-hw-flashing-notes.md#phased-rollout-plan) in the
+[Phased Rollout Plan](jenkins-hw-flashing-current-state.md#phased-rollout-plan) in the
 main document.
 
 This phased rollout is specifically the rollout of
@@ -1171,7 +1170,7 @@ runbook or design document.
 - [NVIDIA Jetson Linux Developer Guide, Update and Redundancy (r36.2)](https://docs.nvidia.com/jetson/archives/r36.2/DeveloperGuide/SD/Bootloader/UpdateAndRedundancy.html)
 - [NVIDIA Jetson Linux Developer Guide, Secure Boot (r36.4.3)](https://docs.nvidia.com/jetson/archives/r36.4.3/DeveloperGuide/SD/Security/SecureBoot.html)
 - [NVIDIA Jetson Linux Developer Guide, Secure Boot (r38.2)](https://docs.nvidia.com/jetson/archives/r38.2/DeveloperGuide/SD/Security/SecureBoot.html)
-- [Jenkins Hardware Flashing Notes](jenkins-hw-flashing-notes.md)
+- [Jenkins Hardware Flashing Current State](jenkins-hw-flashing-current-state.md)
 - [NetHSM hardware signing notes](nethsm.md)
 
 ## Summary
@@ -1191,4 +1190,4 @@ passing Ghaf-provided flashing logic and artifacts into the hw-test pipeline.
 
 For current operational status, prototype validation results, and the active
 rollout plan, see
-[Jenkins Hardware Flashing Notes](jenkins-hw-flashing-notes.md).
+[Jenkins Hardware Flashing Current State](jenkins-hw-flashing-current-state.md).
