@@ -42,5 +42,9 @@
     "--noclear"
     "--noreset"
   ];
+  # The VM runs headless (`-display none`), so tty1 is unused. Disabling its
+  # autovt avoids a boot-time race where tty1 and ttyS0 both autologin root and
+  # contend on lastlog2.db.
+  virtualisation.vmVariant.systemd.services."autovt@tty1".enable = false;
   virtualisation.vmVariant.services.getty.autologinUser = "root";
 }
