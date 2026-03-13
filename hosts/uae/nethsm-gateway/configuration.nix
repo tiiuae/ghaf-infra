@@ -122,6 +122,11 @@
     key = config.sops.secrets.nebula-key.path;
   };
 
+  services.nebula.networks."vedenemo".settings = {
+    punch = true;
+    respond = true;
+  };
+
   services.nebula.networks."vedenemo".firewall = {
     outbound = lib.mkForce [
       # allow udp outbound only to hetzner, uae-lab

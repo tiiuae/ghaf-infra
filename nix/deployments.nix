@@ -46,8 +46,8 @@ let
     hetz86-rel-2 = mkDeployment "hetz86-rel-2" machines.hetz86-rel-2.ip;
     uae-lab-node1 = mkDeployment "uae-lab-node1" machines.uae-lab-node1.ip;
     uae-nethsm-gateway = mkDeployment "uae-nethsm-gateway" machines.uae-nethsm-gateway.ip;
-    uae-azureci-prod = mkDeployment "uae-azureci-prod" machines.uae-azureci-prod.ip;
-    uae-azureci-az86-1 = mkDeployment "uae-azureci-az86-1" machines.uae-azureci-az86-1.ip;
+    uae-azureci-prod = mkDeployment "uae-azureci-prod" machines.uae-azureci-prod.internal_ip;
+    uae-azureci-az86-1 = mkDeployment "uae-azureci-az86-1" machines.uae-azureci-az86-1.internal_ip;
     uae-testagent-prod = mkDeployment "uae-testagent-prod" machines.uae-testagent-prod.ip;
   };
 
