@@ -60,7 +60,8 @@ def init() {
     env.DEVICE_NAME = 'OrinNX1'
     env.DEVICE_TAG = 'orin-nx'
   } else if(params.IMG_URL.contains("lenovo-x1-")) {
-    if (params.SECUREBOOT) {
+    // we don't support running installer tests on secure boot hardware
+    if (params.SECUREBOOT && !params.IMG_URL.contains("installer")) {
       env.DEVICE_NAME = 'X1-Secure-Boot'
       env.DEVICE_TAG = 'x1-sec-boot'
     } else {
