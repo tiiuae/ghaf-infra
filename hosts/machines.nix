@@ -169,4 +169,9 @@
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHO30maPQbVUqURaur8ze2S0vrrUivj2QdItIHsK75RS";
   };
 
+  uae-azureci-hetzarm-1 = {
+    ip = "91.98.90.243";
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBM3zxG++iSjFGkQ6Kqghwm5mcbo+KM4vAzH1Cqftoew";
+  };
+
 }

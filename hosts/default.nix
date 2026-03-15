@@ -96,6 +96,7 @@ let
     uae-azureci-prod = ./uae/azureci/prod/configuration.nix;
     uae-azureci-az86-1 = ./uae/azureci/builders/az86-1/configuration.nix;
     uae-testagent-prod = ./uae/testagent/prod/configuration.nix;
+    uae-azureci-hetzarm-1 = ./uae/azureci/builders/hetzarm-1/configuration.nix;
   };
 
   nixosModulesFromHosts = lib.mapAttrs' (

@@ -8,7 +8,7 @@
 }:
 {
   imports = [
-    ../nebula.nix
+    ../common.nix
     ./disk-config.nix
     ../azure-common.nix
     ../remote-builders.nix
