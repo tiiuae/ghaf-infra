@@ -36,6 +36,7 @@ let
         git
         bashInteractive
         coreutils
+        gawk
         util-linux
         nix
         zstd
