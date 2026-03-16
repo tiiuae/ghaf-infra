@@ -10,3 +10,4 @@ result-*
 .pre-commit-config.yaml
 /*.qcow2
 ca.key
+**/__pycache__/*

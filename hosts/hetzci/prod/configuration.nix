@@ -37,6 +37,7 @@ in
         "ghaf-pre-merge"
       ];
       withCachix = false;
+      withRegistryPublish = true;
     };
     auth = {
       clientID = "hetzci-prod";

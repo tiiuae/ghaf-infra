@@ -129,7 +129,7 @@ verify_signatures() {
     print_err "missing manifest: $dir"
     exit 1
   fi
-  if ! img_rel=$(jq -re '.image' "$manifest"); then
+  if ! img_rel=$(jq -re '.image.path' "$manifest"); then
     print_err "missing image entry in manifest: $manifest"
     exit 1
   fi
@@ -138,7 +138,7 @@ verify_signatures() {
     print_err "missing image: $dir"
     exit 1
   fi
-  if ! img_sig_rel=$(jq -re '.signatures.image.path' "$manifest"); then
+  if ! img_sig_rel=$(jq -re '.image.signature.path' "$manifest"); then
     print_err "missing image signature entry in manifest: $manifest"
     exit 1
   fi
@@ -147,8 +147,8 @@ verify_signatures() {
     print_err "missing image signature: $dir"
     exit 1
   fi
-  if ! prov_rel=$(jq -re '.attestations.provenance.nix_build' "$manifest"); then
-    print_err "missing nix_build provenance entry in manifest: $manifest"
+  if ! prov_rel=$(jq -re '.attestations.provenance.path' "$manifest"); then
+    print_err "missing provenance entry in manifest: $manifest"
     exit 1
   fi
   prov="$dir/$prov_rel"
@@ -156,8 +156,8 @@ verify_signatures() {
     print_err "missing nix_build provenance file: $dir"
     exit 1
   fi
-  if ! prov_sig_rel=$(jq -re '.signatures.provenance.nix_build.path' "$manifest"); then
-    print_err "missing nix_build provenance signature entry in manifest: $manifest"
+  if ! prov_sig_rel=$(jq -re '.attestations.provenance.signature.path' "$manifest"); then
+    print_err "missing provenance signature entry in manifest: $manifest"
     exit 1
   fi
   prov_sig="$dir/$prov_sig_rel"
@@ -208,11 +208,11 @@ prepare_artifacts() {
     mkdir -p "$TMPDIR/$target_name"
     ln -s "$manifest" "$TMPDIR/$target_name/manifest.json"
 
-    if ! image=$(jq -re '.image' "$manifest"); then
+    if ! image=$(jq -re '.image.path' "$manifest"); then
       print_err "missing image entry in manifest: $manifest"
       exit 1
     fi
-    if ! image_sig=$(jq -re '.signatures.image.path' "$manifest"); then
+    if ! image_sig=$(jq -re '.image.signature.path' "$manifest"); then
       print_err "missing image signature entry in manifest: $manifest"
       exit 1
     fi
