@@ -104,6 +104,18 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
         sh "nix build --fallback -v .#${it.target} --out-link ${output}/nix"
         manifest.build.ts_finished = run_cmd('date +%s')
       }
+      // Build Ghaf flash-script
+      if (!it.no_image && it.get('ghaf_flash', false)) {
+        stage("Build flash-script ${shortname}") {
+          sh "nix build .#packages.x86_64-linux.flash-script --out-link ${output}/flash-script-nix"
+          def flash_store_path = run_cmd("readlink -f ${output}/flash-script-nix")
+          // Export flash-script's nix closure as a local binary cache.
+          // The test agent will import it with 'nix copy --from' over HTTPS
+          // (served by Caddy as static files from the artifacts directory).
+          sh "nix copy --to 'file://${output}/flash-script-cache' ${flash_store_path}"
+          writeFile(file: "${output}/flash-script-store-path", text: flash_store_path)
+        }
+      }
       // Provenance
       if (it.get('provenance', true)) {
         stage("Provenance ${shortname}") {
@@ -271,8 +283,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
           def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
           // x1-sec-boot is available only in prod
           def secboot = manifest.uefi.signed && env.CI_ENV == "prod"
-          def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
-            parameters: [
+          def test_params = [
               string(name: "IMG_URL", value: img_url),
               string(name: "TESTSET", value: it.testset),
               string(name: "DESC", value: "Triggered by ${build_href}<br>(${shortname})"),
@@ -280,7 +291,16 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
               booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: env.CI_ENV == "release"),
               booleanParam(name: "RELOAD_ONLY", value: false),
               booleanParam(name: "SECUREBOOT", value: secboot),
-            ],
+          ]
+          if (it.get('ghaf_flash', false)) {
+            def flash_store_path = readFile("${output}/flash-script-store-path").trim()
+            test_params.add(string(name: "FLASH_CACHE_URL",
+              value: "${env.JENKINS_URL}/${artifacts}/${it.target}/flash-script-cache"))
+            test_params.add(string(name: "FLASH_STORE_PATH",
+              value: flash_store_path))
+          }
+          def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
+            parameters: test_params,
           )
           println("ghaf-hw-test log '${shortname}:")
           sh "cat /var/lib/jenkins/jobs/ghaf-hw-test/builds/${job.number}/log | sed 's/^/    /'"
