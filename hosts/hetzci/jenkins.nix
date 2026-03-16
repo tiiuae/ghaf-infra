@@ -191,7 +191,7 @@ in
         # Disable the initial setup wizard, and the creation of initialAdminPassword.
         "-Djenkins.install.runSetupWizard=false"
         # Allow setting the following possibly undefined parameters
-        "-Dhudson.model.ParametersAction.safeParameters=DESC,RELOAD_ONLY"
+        "-Dhudson.model.ParametersAction.safeParameters=DESC,RELOAD_ONLY,GHAF_FLAKE_REF"
         # Ensure workspace root dir is what we expect
         ''-Djenkins.model.Jenkins.workspacesDir=$JENKINS_HOME/workspace/\$ITEM_FULL_NAME''
       ];

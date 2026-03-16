@@ -24,11 +24,23 @@ def append_to_build_description(String text) {
   }
 }
 
+def ghaf_flake_ref(String repo, String rev) {
+  def normalizedRepo = repo.trim()
+  if (!normalizedRepo.startsWith("https://")) {
+    error("Unsupported Ghaf repository URL '${repo}': expected an HTTPS remote")
+  }
+  normalizedRepo = "git+${normalizedRepo}"
+  normalizedRepo = normalizedRepo.replaceAll('/+$', '')
+  def separator = normalizedRepo.contains('?') ? '&' : '?'
+  return "${normalizedRepo}${separator}rev=${rev}"
+}
+
 def create_pipeline(List<Map> targets, String testagent_host = null) {
   def pipeline = [:]
   def stamp = run_cmd('date +"%Y%m%d_%H%M%S%3N"')
   def target_commit = run_cmd('git rev-parse HEAD')
   def target_repo = run_cmd('git remote get-url origin || git remote get-url pr_origin')
+  def target_flake_ref = ghaf_flake_ref(target_repo, target_commit)
   def host_name = run_cmd('hostname')
   def host_revision = run_cmd('/run/current-system/sw/bin/nixos-version --configuration-revision')
   def artifacts = "artifacts/${env.JOB_BASE_NAME}/${stamp}-commit_${target_commit}"
@@ -271,16 +283,18 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
           def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
           // x1-sec-boot is available only in prod
           def secboot = manifest.uefi.signed && env.CI_ENV == "prod"
-          def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
-            parameters: [
+          def test_params = [
               string(name: "IMG_URL", value: img_url),
+              string(name: "GHAF_FLAKE_REF", value: target_flake_ref),
               string(name: "TESTSET", value: it.testset),
               string(name: "DESC", value: "Triggered by ${build_href}<br>(${shortname})"),
               string(name: "TESTAGENT_HOST", value: testagent_host),
               booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: env.CI_ENV == "release"),
               booleanParam(name: "RELOAD_ONLY", value: false),
               booleanParam(name: "SECUREBOOT", value: secboot),
-            ],
+          ]
+          def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
+            parameters: test_params,
           )
           println("ghaf-hw-test log '${shortname}:")
           sh "cat /var/lib/jenkins/jobs/ghaf-hw-test/builds/${job.number}/log | sed 's/^/    /'"
