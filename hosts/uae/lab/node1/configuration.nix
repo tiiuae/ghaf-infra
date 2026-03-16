@@ -6,7 +6,6 @@
   inputs,
   modulesPath,
   lib,
-  config,
   ...
 }:
 {
@@ -20,7 +19,6 @@
   ++ (with self.nixosModules; [
     common
     service-openssh
-    service-nebula
     user-bmg
     user-fayad
     team-devenv
@@ -28,16 +26,6 @@
 
   sops = {
     defaultSopsFile = ./secrets.yaml;
-    secrets = {
-      nebula-cert.owner = config.nebula.user;
-      nebula-key.owner = config.nebula.user;
-    };
-  };
-
-  nebula = {
-    enable = true;
-    cert = config.sops.secrets.nebula-cert.path;
-    key = config.sops.secrets.nebula-key.path;
   };
 
   users.groups.tsusers = { };
@@ -47,10 +35,6 @@
 
   nixpkgs.hostPlatform = "x86_64-linux";
   hardware.enableRedistributableFirmware = true;
-
-  # Bootloader.
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
 
   networking = {
     hostName = "uae-lab-node1";
@@ -90,35 +74,5 @@
     k9s
   ];
 
-  services.nebula.networks."vedenemo".firewall = {
-    outbound = lib.mkForce [
-      # allow udp outbound only to hetzner
-      {
-        port = 4242;
-        proto = "udp";
-        groups = [ "hetzner" ];
-      }
-      # allow any tcp or icmp outbound (between nebula hosts)
-      {
-        port = "any";
-        proto = "tcp";
-        host = "any";
-      }
-      {
-        port = "any";
-        proto = "icmp";
-        host = "any";
-      }
-    ];
-    inbound = [
-      {
-        port = 2244;
-        proto = "tcp";
-        groups = [ "hetzner" ];
-      }
-    ];
-  };
-
   services.fail2ban.enable = lib.mkForce false;
-
 }
