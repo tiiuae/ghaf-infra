@@ -76,7 +76,7 @@ pipeline {
             }
             if (params.lenovo_x1_carbon_gen11_debug_installer) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-installer", uefisigniso: params.UEFISIGN, testset: params.TESTSET ])
+                [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-installer", uefisigniso: params.UEFISIGN, testset: params.TESTSET, delegated_flash: true ])
             }
             if (params.dell_latitude_7230_debug) {
               TARGETS.push(
@@ -84,39 +84,39 @@ pipeline {
             }
             if (params.dell_latitude_7330_debug) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.dell-latitude-7330-debug", testset: params.TESTSET ])
+                [ target: "packages.x86_64-linux.dell-latitude-7330-debug", testset: params.TESTSET, delegated_flash: true ])
             }
             if (params.nvidia_jetson_orin_agx_debug_from_x86_64) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64", testset: params.TESTSET ])
+                [ target: "packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64", testset: params.TESTSET, delegated_flash: true ])
             }
             if (params.nvidia_jetson_orin_nx_debug_from_x86_64) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.nvidia-jetson-orin-nx-debug-from-x86_64", testset: params.TESTSET ])
+                [ target: "packages.x86_64-linux.nvidia-jetson-orin-nx-debug-from-x86_64", testset: params.TESTSET, delegated_flash: true ])
             }
             if (params.nvidia_jetson_orin_agx_debug) {
               TARGETS.push(
-                [ target: "packages.aarch64-linux.nvidia-jetson-orin-agx-debug", uefisign: params.UEFISIGN, testset: params.TESTSET ])
+                [ target: "packages.aarch64-linux.nvidia-jetson-orin-agx-debug", uefisign: params.UEFISIGN, testset: params.TESTSET, delegated_flash: true ])
             }
             if (params.nvidia_jetson_orin_nx_debug) {
               TARGETS.push(
-                [ target: "packages.aarch64-linux.nvidia-jetson-orin-nx-debug", uefisign: params.UEFISIGN, testset: params.TESTSET ])
+                [ target: "packages.aarch64-linux.nvidia-jetson-orin-nx-debug", uefisign: params.UEFISIGN, testset: params.TESTSET, delegated_flash: true ])
             }
             if (params.system76_darp11_b_debug) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.system76-darp11-b-debug", uefisign: params.UEFISIGN, testset: params.TESTSET  ])
+                [ target: "packages.x86_64-linux.system76-darp11-b-debug", uefisign: params.UEFISIGN, testset: params.TESTSET, delegated_flash: true ])
             }
             if (params.system76_darp11_b_debug_installer) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.system76-darp11-b-debug-installer", uefisigniso: params.UEFISIGN, testset: params.TESTSET  ])
+                [ target: "packages.x86_64-linux.system76-darp11-b-debug-installer", uefisigniso: params.UEFISIGN, testset: params.TESTSET, delegated_flash: true ])
             }
             if (params.system76_darp11_b_storeDisk_debug) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.system76-darp11-b-storeDisk-debug", uefisign: params.UEFISIGN, testset: params.TESTSET  ])
+                [ target: "packages.x86_64-linux.system76-darp11-b-storeDisk-debug", uefisign: params.UEFISIGN, testset: params.TESTSET, delegated_flash: true ])
             }
             if (params.system76_darp11_b_storeDisk_debug_installer) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.system76-darp11-b-storeDisk-debug-installer", uefisigniso: params.UEFISIGN, testset: params.TESTSET  ])
+                [ target: "packages.x86_64-linux.system76-darp11-b-storeDisk-debug-installer", uefisigniso: params.UEFISIGN, testset: params.TESTSET, delegated_flash: true ])
             }
             if (params.intel_laptop_debug) {
               TARGETS.push(

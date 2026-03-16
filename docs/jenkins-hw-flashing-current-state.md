@@ -47,6 +47,8 @@ Current status:
   is the selected integration direction
 - [Phase 1](#phase-1-define-the-contract-on-a-single-image-target--validated)
   has been validated as a prototype on Lenovo X1 in `ghaf-manual`
+- [Phase 2](#phase-2-generalize-for-all-current-single-image-targets--in-progress)
+  is in progress — all disk-image targets enabled in `ghaf-manual`
 - [Phase 3](#phase-3-add-orin-split-image-support--not-started) is where
   Orin split-image and multi-artifact signing work begins
 
@@ -68,7 +70,7 @@ in the analysis document.
 | Phase | Focus | Status | Notes |
 | --- | --- | --- | --- |
 | [Phase&nbsp;1](#phase-1-define-the-contract-on-a-single-image-target--validated) | Single-image delegated flashing | Validated | Lenovo X1 prototype complete in `ghaf-manual` |
-| [Phase&nbsp;2](#phase-2-generalize-for-other-current-single-image-targets--not-started) | Generalize delegated flashing to other single-image targets | Not&nbsp;started | Dell Latitude and System76 Darter Pro next |
+| [Phase&nbsp;2](#phase-2-generalize-for-all-current-single-image-targets--in-progress) | Generalize delegated flashing to all single-image targets | In&nbsp;progress | All disk-image targets enabled in `ghaf-manual` |
 | [Phase&nbsp;3](#phase-3-add-orin-split-image-support--not-started) | Add Orin split-image support | Not&nbsp;started | Introduces multi-artifact flashing and split-image signing decisions |
 | [Phase&nbsp;4](#phase-4-retire-inline-flashing-logic--not-started) | Retire inline Jenkins flashing logic | Not&nbsp;started | Remove legacy `dd`-based paths after delegated flashing is proven |
 
@@ -86,11 +88,19 @@ Prototype validated on Lenovo X1 (see [Prototype Status](#prototype-status)).
 Remaining: enable delegated flashing in the relevant pipelines and remove the
 temporary `ghaf-manual` release-pipeline entry.
 
-<a id="phase-2-generalize-for-other-current-single-image-targets--not-started"></a>
-### Phase 2: Generalize for other current single-image targets (NOT STARTED)
+<a id="phase-2-generalize-for-all-current-single-image-targets--in-progress"></a>
+### Phase 2: Generalize for all current single-image targets (IN PROGRESS)
 
-- Extend delegated flashing to Dell Latitude and System76 Darter Pro
-- Remove target-specific assumptions from the delegated path
+All current testable targets now have `delegated_flash: true` in
+`ghaf-manual`, covering Dell Latitude 7330, System76 Darter Pro (both
+variants), Orin AGX/NX (both native aarch64 and cross-built x86_64), and
+installer images (Lenovo X1, System76 Darter Pro). Ghaf's `flash-script`
+explicitly supports both `.img` and `.iso` formats.
+
+Remaining:
+
+- Validate each target via `ghaf-manual` in the release environment
+- Once validated, enable `delegated_flash` in `ghaf-release-candidate`
 - Keep legacy fallback until confidence is high
 
 <a id="phase-3-add-orin-split-image-support--not-started"></a>
