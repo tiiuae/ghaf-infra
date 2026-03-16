@@ -33,7 +33,6 @@ in
     buildMachines =
       let
         commonOptions = {
-          maxJobs = 8;
           speedFactor = 10;
           supportedFeatures = [
             "kvm"

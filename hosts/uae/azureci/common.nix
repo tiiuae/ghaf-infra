@@ -32,7 +32,10 @@ in
 
   services.monitoring = {
     metrics.enable = lib.mkDefault true;
-    logs.enable = lib.mkDefault true;
+    logs = {
+      enable = lib.mkDefault true;
+      auth.password_file = config.sops.secrets.loki_password.path;
+    };
   };
 
   nebula = {
