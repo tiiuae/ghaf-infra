@@ -176,7 +176,7 @@ def ghaf_robot_test(String tags) {
   env.ROBOT_EXECUTED = 'true'
   env.INCLUDE_TEST_TAGS = "${tags}"
   dir("Robot-Framework/test-suites") {
-    sh 'rm -f *.txt *.png *.mp4 *.wav output.xml report.html log.html'
+    sh 'rm -f *.txt *.png *.jpeg *.mp4 *.mkv *.wav output.xml report.html log.html'
     try {
       // Pass variables as environment variables to shell.
       // Ref: https://www.jenkins.io/doc/book/pipeline/jenkinsfile/#string-interpolation
@@ -201,7 +201,7 @@ def ghaf_robot_test(String tags) {
       // Move the test output (if any) to a subdirectory
       sh """
         rm -fr $tags; mkdir -p $tags
-        mv -f *.txt *.png *.mp4 *.wav output.xml report.html log.html $tags/ || true
+        mv -f *.txt *.png *.jpeg *.mp4 *.mkv *.wav output.xml report.html log.html $tags/ || true
       """
     }
   }
@@ -425,7 +425,9 @@ pipeline {
             'Robot-Framework/test-suites/**/*.html, ' +
             'Robot-Framework/test-suites/**/*.xml, ' +
             'Robot-Framework/test-suites/**/*.png, ' +
+            'Robot-Framework/test-suites/**/*.jpeg, ' +
             'Robot-Framework/test-suites/**/*.mp4, ' +
+            'Robot-Framework/test-suites/**/*.mkv, ' +
             'Robot-Framework/test-suites/**/*.wav, ' +
             'Robot-Framework/test-suites/**/*.txt'
           archiveArtifacts allowEmptyArchive: true, artifacts: test_artifacts

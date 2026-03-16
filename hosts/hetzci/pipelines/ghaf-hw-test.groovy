@@ -189,7 +189,7 @@ def ghaf_robot_test(String testname='relayboot') {
     env.INCLUDE_TEST_TAGS = "${env.DEVICE_TEST_TAG}AND${testname}${env.EXTRATAG}"
   }
   dir("Robot-Framework/test-suites") {
-    sh 'rm -f *.txt *.png *.mp4 *.wav output.xml report.html log.html'
+    sh 'rm -f *.txt *.png *.jpeg *.mp4 *.mkv *.wav output.xml report.html log.html'
     // On failure, continue the pipeline execution
     env.COMMIT_HASH = (params.IMG_URL =~ /commit_([a-f0-9]{40})/)[0][1]
     try {
@@ -214,7 +214,7 @@ def ghaf_robot_test(String testname='relayboot') {
       // Move the test output (if any) to a subdirectory
       sh """
         rm -fr $testname; mkdir -p $testname
-        mv -f *.txt *.png *.mp4 *.wav output.xml report.html log.html $testname/ || true
+        mv -f *.txt *.png *.jpeg *.mp4 *.mkv *.wav output.xml report.html log.html $testname/ || true
       """
     }
   }
@@ -455,7 +455,9 @@ pipeline {
             'Robot-Framework/test-suites/**/*.html, ' +
             'Robot-Framework/test-suites/**/*.xml, ' +
             'Robot-Framework/test-suites/**/*.png, ' +
+            'Robot-Framework/test-suites/**/*.jpeg, ' +
             'Robot-Framework/test-suites/**/*.mp4, ' +
+            'Robot-Framework/test-suites/**/*.mkv, ' +
             'Robot-Framework/test-suites/**/*.wav, ' +
             'Robot-Framework/test-suites/**/*.txt'
           archiveArtifacts allowEmptyArchive: true, artifacts: test_artifacts
