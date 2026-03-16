@@ -39,14 +39,6 @@ in
 
   sops.defaultSopsFile = ./secrets.yaml;
 
-  services.monitoring = {
-    metrics = {
-      enable = true;
-      ssh = true;
-    };
-    logs.enable = true;
-  };
-
   # uae-azureci-az86 builder can use this as remote builder
   users.users.uae-azureci-az86-1 = {
     isNormalUser = true;

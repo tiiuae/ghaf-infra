@@ -8,7 +8,7 @@
   ...
 }:
 let
-  defaultLoki = "http://${machines.ghaf-monitoring.internal_ip}:3100";
+  defaultLoki = "http://${machines.ghaf-monitoring.nebula_ip}:3100";
 in
 {
   imports = [
