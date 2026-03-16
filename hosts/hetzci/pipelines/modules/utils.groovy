@@ -14,6 +14,14 @@ def path_basename(String path) {
   return idx >= 0 ? path.substring(idx + 1) : path
 }
 
+def image_role(String path) {
+  def basename = path_basename(path)
+  if (basename == null) {
+    return null
+  }
+  return basename.endsWith(".iso") ? "installer" : "disk"
+}
+
 def append_to_build_description(String text) {
   lock('build-description') {
     if(!currentBuild.description) {
@@ -48,6 +56,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
   def artifacts = "artifacts/${env.JOB_BASE_NAME}/${stamp}-commit_${target_commit}"
   def artifacts_local_dir = "/var/lib/jenkins/${artifacts}"
   def artifacts_href = "<a href=\"/${artifacts}\">📦 Artifacts</a>"
+  def immutable_tag = "${env.CI_ENV}-${stamp}-${target_commit}"
   def signingToken = "YubiHSM"
   def signing_possible = env.CI_ENV != 'vm'
 
@@ -62,42 +71,51 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
     def output = "${artifacts_local_dir}/${it.target}"
 
     def manifest = [
+      ci_env: env.CI_ENV,
+      job: [
+        name: env.JOB_NAME,
+        build_id: env.BUILD_ID,
+        build_url: env.BUILD_URL,
+      ],
+      source: [
+        repository: target_repo,
+        ref: target_commit,
+        revision: target_commit,
+      ],
       target: it.target,
       build: [
         ts_begin: null,
         ts_finished: null,
       ],
-      image: null,
+      image: [
+        path: null,
+        role: null,
+        signature: [
+          path: null,
+          signing_key: null,
+        ],
+      ],
       uefi: [
         signed: false,
         reason: null,
         signing_key: null,
       ],
       attestations: [
-        sbom: [
-          csv: null,
-          cdx: null,
-          spdx: null,
-        ],
         provenance: [
-          nix_build: null,
-          secureboot: null,
-        ],
-      ],
-      signatures: [
-        image: [
           path: null,
-          signing_key: null,
+          signature: [
+            path: null,
+            signing_key: null,
+          ],
         ],
-        provenance: [
-          nix_build: [
-            path: null,
-            signing_key: null,
-          ],
-          secureboot: [
-            path: null,
-            signing_key: null,
-          ],
+        sbom_csv: [
+          path: null,
+        ],
+        sbom_cyclonedx: [
+          path: null,
+        ],
+        sbom_spdx: [
+          path: null,
         ],
       ],
     ]
@@ -161,7 +179,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
               done
               echo "provenance attempt=\$attempt passed"
             """
-            manifest.attestations.provenance.nix_build = "attestations/provenance.json"
+            manifest.attestations.provenance.path = "attestations/provenance.json"
           }
         }
       }
@@ -189,9 +207,9 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
               --cdx ${outdir}/sbom.cdx.json \
               --spdx ${outdir}/sbom.spdx.json
           """
-          manifest.attestations.sbom.csv = "attestations/sbom.csv"
-          manifest.attestations.sbom.cdx = "attestations/sbom.cdx.json"
-          manifest.attestations.sbom.spdx = "attestations/sbom.spdx.json"
+          manifest.attestations.sbom_csv.path = "attestations/sbom.csv"
+          manifest.attestations.sbom_cyclonedx.path = "attestations/sbom.cdx.json"
+          manifest.attestations.sbom_spdx.path = "attestations/sbom.spdx.json"
         }
       }
       // Signing stages
@@ -206,8 +224,8 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
                 -in ${output}/attestations/provenance.json
             """
           }
-          manifest.signatures.provenance.nix_build.path = "attestations/provenance.json.sig"
-          manifest.signatures.provenance.nix_build.signing_key = "pkcs11:token=${signingToken};object=GhafInfraSignProv"
+          manifest.attestations.provenance.signature.path = "attestations/provenance.json.sig"
+          manifest.attestations.provenance.signature.signing_key = "pkcs11:token=${signingToken};object=GhafInfraSignProv"
         }
       }
       if (!it.no_image) {
@@ -216,13 +234,14 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
           if (!img_path) {
             error("No image found!")
           }
-          manifest.image = img_path - "${output}/"
+          manifest.image.path = img_path - "${output}/"
+          manifest.image.role = image_role(manifest.image.path)
         }
         if (signing_possible) {
           if (it.get('uefisign', false) || it.get('uefisigniso', false)) {
             stage("Sign (UEFI) ${shortname}") {
               def tmpdir = run_cmd("mktemp -d")
-              def img_name = path_basename(manifest.image)
+              def img_name = path_basename(manifest.image.path)
 
               def signer = "uefisign"
               if (it.target.contains("nvidia-jetson-orin")) {
@@ -233,14 +252,14 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
                 sh """
                   ${signer} /etc/jenkins/keys/secboot/DB.pem \
                     'pkcs11:token=${signingToken};object=uefi-ghaf-db' \
-                    ${output}/${manifest.image} \
+                    ${output}/${manifest.image.path} \
                     ${tmpdir}
                 """
               }
 
               sh "mv ${tmpdir}/signed_${img_name} ${output}/${img_name}"
               // replace original image with uefisigned one
-              manifest.image = img_name
+              manifest.image.path = img_name
               manifest.uefi.signed = true;
               manifest.uefi.reason = null
               manifest.uefi.signing_key = "pkcs11:token=${signingToken};object=uefi-ghaf-db"
@@ -248,27 +267,27 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
           }
           stage("Sign (SLSA) image ${shortname}") {
             lock('signing') {
-              def img_name = path_basename(manifest.image)
+              def img_name = path_basename(manifest.image.path)
               // sign the current main image be it unsigned or uefisigned
               sh """
                 openssl dgst -sha256 -sign \
                   'pkcs11:token=${signingToken};object=GhafInfraSignECP256' \
                   -out ${output}/${img_name}.sig \
-                  ${output}/${manifest.image}
+                  ${output}/${manifest.image.path}
               """
             }
-            manifest.signatures.image.path = "${path_basename(manifest.image)}.sig"
-            manifest.signatures.image.signing_key = "pkcs11:token=${signingToken};object=GhafInfraSignECP256"
+            manifest.image.signature.path = "${path_basename(manifest.image.path)}.sig"
+            manifest.image.signature.signing_key = "pkcs11:token=${signingToken};object=GhafInfraSignECP256"
           }
         }
       }
       // Link artifacts
       stage("Link artifacts ${shortname}") {
-        if (manifest.image && !manifest.uefi.signed) {
-          def img_name = path_basename(manifest.image)
+        if (manifest.image.path && !manifest.uefi.signed) {
+          def img_name = path_basename(manifest.image.path)
           // make symlink from output root to original image if not using uefisigned
-          sh "ln -s ${output}/${manifest.image} ${output}/${img_name}"
-          manifest.image = img_name
+          sh "ln -s ${output}/${manifest.image.path} ${output}/${img_name}"
+          manifest.image.path = img_name
         }
 
         writeFile(
@@ -280,10 +299,34 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
           append_to_build_description(artifacts_href)
         }
       }
+      if (!it.no_image) {
+        stage("Publish OCI ${shortname}") {
+          if (sh(
+            script: 'command -v oci-publish >/dev/null 2>&1',
+            returnStatus: true
+          ) != 0) {
+            println("Skipping OCI publish ${shortname}: oci-publish is not installed")
+          } else {
+            withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
+              def job_name = env.JOB_BASE_NAME.replaceFirst('^ghaf-', '')
+              def target_name = it.target.replaceFirst('^packages\\.', '')
+              def oci_repository = "ghaf/${job_name}/${target_name}"
+              def oci_result_json = "${output}/oci-result.json"
+              sh """
+                oci-publish target \
+                  -d '${output}' \
+                  -r '${oci_repository}' \
+                  -t '${immutable_tag}' \
+                  -o '${oci_result_json}'
+              """
+            }
+          }
+        }
+      }
       // Test
       if (it.testset != null && !it.testset.isEmpty()) {
         stage("Test ${shortname}") {
-          def img_url = "${env.JENKINS_URL}/${artifacts}/${it.target}/${manifest.image}"
+          def img_url = "${env.JENKINS_URL}/${artifacts}/${it.target}/${manifest.image.path}"
           def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
           def test_params = [
               string(name: "IMG_URL", value: img_url),
@@ -318,7 +361,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
         // regular test run cannot be replaced with a secure boot-only run.
         if (it.test_secboot && manifest.uefi.signed && env.CI_ENV == "prod") {
           stage("Test SB ${shortname}") {
-            def img_url = "${env.JENKINS_URL}/${artifacts}/${it.target}/${manifest.image}"
+            def img_url = "${env.JENKINS_URL}/${artifacts}/${it.target}/${manifest.image.path}"
             def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
             def test_params = [
               string(name: "IMG_URL", value: img_url),

@@ -63,6 +63,7 @@ in
       withGithubStatus = false;
       withGithubWebhook = false;
       withArchiveArtifacts = true;
+      withRegistryPublish = true;
     };
     auth = {
       clientID = "hetzci-release";

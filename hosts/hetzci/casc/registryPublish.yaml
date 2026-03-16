@@ -1,0 +1,9 @@
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - string:
+              scope: GLOBAL
+              id: "oci_registry_password"
+              secret: "${file:/run/secrets/oci_registry_password}"
+              description: "OCI registry writer password"

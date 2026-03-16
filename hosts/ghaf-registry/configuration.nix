@@ -39,13 +39,24 @@ let
       };
       accessControl = {
         repositories = {
-          "**" = {
-            defaultPolicy = [
-              "read"
-              "create"
-              "update"
-              "delete"
+          "ghaf/**" = {
+            policies = [
+              {
+                users = [ "jenkins" ];
+                actions = [
+                  "read"
+                  "create"
+                  "update"
+                  "delete"
+                ];
+              }
             ];
+            defaultPolicy = [ "read" ];
+            anonymousPolicy = [ "read" ];
+          };
+          "**" = {
+            defaultPolicy = [ "read" ];
+            anonymousPolicy = [ "read" ];
           };
         };
       };

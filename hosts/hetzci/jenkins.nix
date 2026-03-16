@@ -123,6 +123,11 @@ in
       description = "Add capability to archive artifacts to permanent storage";
       default = false;
     };
+    withRegistryPublish = lib.mkOption {
+      type = lib.types.bool;
+      description = "Add capability to publish build artifacts to the OCI registry";
+      default = false;
+    };
   };
   config = {
     sops = {
@@ -139,6 +144,9 @@ in
         (lib.mkIf cfg.withArchiveArtifacts {
           jenkins_archive_access_key.owner = "jenkins";
           jenkins_archive_secret_key.owner = "jenkins";
+        })
+        (lib.mkIf cfg.withRegistryPublish {
+          oci_registry_password.owner = "jenkins";
         })
       ];
     };
@@ -174,6 +182,10 @@ in
         ++ lib.optionals cfg.withArchiveArtifacts [
           pkgs.tree
           self.packages.${pkgs.stdenv.hostPlatform.system}.archive-ghaf-release
+        ]
+        ++ lib.optionals cfg.withRegistryPublish [
+          pkgs.oras
+          self.packages.${pkgs.stdenv.hostPlatform.system}.oci-publish
         ];
 
       environment = {
@@ -246,6 +258,9 @@ in
       })
       (lib.mkIf cfg.withArchiveArtifacts {
         "jenkins/casc/archiveArtifacts.yaml".source = ./casc/archiveArtifacts.yaml;
+      })
+      (lib.mkIf cfg.withRegistryPublish {
+        "jenkins/casc/registryPublish.yaml".source = ./casc/registryPublish.yaml;
       })
     ];
 

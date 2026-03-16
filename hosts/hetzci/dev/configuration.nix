@@ -37,6 +37,7 @@ in
         "ghaf-pre-merge-manual"
         "ghaf-pre-merge"
       ];
+      withRegistryPublish = true;
     };
     auth = {
       clientID = "hetzci-dev";

@@ -64,6 +64,7 @@
             gnutls
             minio-client
             tree
+            oras
           ])
           ++ (with inputs'; [
             deploy-rs.packages.default

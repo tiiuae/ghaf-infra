@@ -13,6 +13,7 @@
           selfPkgs = self'.packages;
         };
         nethsm-exporter = pkgs.callPackage ../pkgs/nethsm-exporter { };
+        oci-publish = pkgs.callPackage ../pkgs/oci-publish { };
         pkcs11-proxy = pkgs.callPackage ../pkgs/pkcs11-proxy { };
         systemd-sbsign = pkgs.callPackage ../pkgs/systemd-sbsign { };
         nethsm-pkcs11 = pkgs.callPackage ../pkgs/nethsm-pkcs11 { };
