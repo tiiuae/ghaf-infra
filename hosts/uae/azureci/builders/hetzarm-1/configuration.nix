@@ -34,23 +34,14 @@ in
     user-uae-remote-build
   ]);
 
+  # this server has been initialized with 25.05 with nixos-anywhere
+  system.stateVersion = lib.mkForce "25.05";
   nixpkgs.hostPlatform = "aarch64-linux";
+
   networking.hostName = "uae-azureci-hetzarm-1";
 
   sops.defaultSopsFile = ./secrets.yaml;
 
-  # uae-azureci-az86 builder can use this as remote builder
-  users.users.uae-azureci-az86-1 = {
-    isNormalUser = true;
-    openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFZVnXp7IosGUWb0xj5NSJKAUcTIO9VIfbRD6K28eLxc"
-    ];
-  };
-
-  nix.settings.trusted-users = [
-    "@wheel"
-    "uae-azureci-az86-1"
-  ];
   nix.settings.max-jobs = lib.mkForce jobs;
   nix.settings.cores = lib.mkForce 2;
   nix.settings.min-free = lib.mkForce disk.minFreeBytes;
