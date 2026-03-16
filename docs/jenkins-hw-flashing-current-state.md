@@ -28,7 +28,7 @@ expansion, see the companion
 - [Prototype Status](#prototype-status)
   - [What Was Tested](#what-was-tested)
   - [Results](#results)
-  - [Ghaf flash-script issues](#ghaf-flash-script-issues)
+  - [Ghaf flash-script follow-up](#ghaf-flash-script-follow-up)
   - [Remaining Work](#remaining-work)
 - [Current Integration Constraints](#current-integration-constraints)
   - [Single `IMG_URL` contract](#single-img_url-contract)
@@ -83,8 +83,8 @@ Prototype validated on Lenovo X1 (see [Prototype Status](#prototype-status)).
 - Closure transferred to test agent at runtime via nix binary cache
 - Validated in `ghaf-manual` pipeline on release Jenkins
 
-Remaining: enable in relevant pipelines, drive fixes for upstream issues,
-remove workarounds.
+Remaining: enable delegated flashing in the relevant pipelines and remove the
+temporary `ghaf-manual` release-pipeline entry.
 
 <a id="phase-2-generalize-for-other-current-single-image-targets--not-started"></a>
 ### Phase 2: Generalize for other current single-image targets (NOT STARTED)
@@ -185,30 +185,23 @@ Legacy fallback (System76 Darter Pro):
   are absent
 - Full pipeline result: SUCCESS
 
-### Ghaf flash-script issues
+### Ghaf flash-script follow-up
 
-Initial testing found two issues in Ghaf's `flash-script` package
-(`packages/pkgs-by-name/flash-script/package.nix`):
+Initial testing found two issues in Ghaf's `flash-script` package:
 
-1. **Missing `gawk` in nix closure.** flash-script declares `awk` as a
-   dependency and checks for it at runtime with `command -v`, but `package.nix`
-   does not include `gawk` in `runtimeInputs`. The prototype works around this
-   with a wrapper script that injects `gawk` into `PATH`. The upstream fix is
-   to add `gawk` to the `runtimeInputs` list alongside `coreutils`,
-   `util-linux`, `zstd`, and `pv`.
+- missing `gawk` in the nix closure
+- unconditional ANSI escape codes in non-interactive Jenkins logs
 
-2. **Unconditional ANSI escape codes.** flash-script emits terminal control
-   sequences (cursor movement, color codes) regardless of whether stdout is a
-   terminal. In Jenkins console output these appear as raw escape sequences.
-   The fix is to guard ANSI output with `[ -t 1 ]` or equivalent.
+Those issues were fixed upstream in
+[`tiiuae/ghaf` PR#1823](https://github.com/tiiuae/ghaf/pull/1823), merged on
+2026-03-15. This branch no longer needs the temporary Jenkins-side `gawk`
+wrapper when building a Ghaf revision that includes that merge.
 
 ### Remaining Work
 
 Before merging:
 
-- Drive fixes for `tiiuae/ghaf` `flash-script` issues identified (see above)
 - Remove temporary `"ghaf-manual"` entry from `hosts/hetzci/release/configuration.nix`
-- Remove the `gawk` workaround once the upstream fix lands
 
 Phase 2 and beyond follow the [Phased Rollout Plan](#phased-rollout-plan)
 above.
