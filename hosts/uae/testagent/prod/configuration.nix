@@ -13,15 +13,12 @@
   ++ (with self.nixosModules; [
     team-devenv
     team-testers
-    service-nebula
   ]);
 
   sops = {
     defaultSopsFile = ./secrets.yaml;
     secrets = {
       metrics_password.owner = "alloy";
-      nebula-cert.owner = config.nebula.user;
-      nebula-key.owner = config.nebula.user;
     };
   };
 
@@ -33,12 +30,6 @@
       "lenovo-x1"
       "darter-pro"
     ];
-  };
-
-  nebula = {
-    enable = true;
-    cert = config.sops.secrets.nebula-cert.path;
-    key = config.sops.secrets.nebula-key.path;
   };
 
   boot.initrd.availableKernelModules = [
