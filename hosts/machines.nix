@@ -147,7 +147,6 @@
 
   uae-lab-node1 = {
     ip = "172.19.16.37";
-    nebula_ip = "10.42.42.33";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGKZYL60TIQDoLwUwuZvzOdw/yikC181su5Cm1LAplcj";
   };
 
