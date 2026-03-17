@@ -270,6 +270,13 @@ let
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH7MQKZ4CCzQ3aLm6Orh0NM+rTz8ykcmZdJg14yI0Rkc"
       ];
     }
+    {
+      desc = "Veikko Nopanen";
+      name = "vnopanen";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKm50s8rzgArRqbYjqqGSwmfgnMMLjkmC+FrUhidAV44 veikko.nopanen@unikie.com"
+      ];
+    }
   ];
 in
 {
