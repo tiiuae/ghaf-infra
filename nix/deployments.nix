@@ -56,6 +56,7 @@ let
     hetzarm = mkDeployment "hetzarm" machines.hetzarm.ip;
     hetzarm-dbg-1 = mkDeployment "hetzarm-dbg-1" machines.hetzarm-dbg-1.ip;
     hetzarm-rel-1 = mkDeployment "hetzarm-rel-1" machines.hetzarm-rel-1.ip;
+    uae-azureci-hetzarm-1 = mkDeployment "uae-azureci-hetzarm-1" machines.uae-azureci-hetzarm-1.ip;
   };
 
   nodes = x86-nodes // aarch64-nodes;

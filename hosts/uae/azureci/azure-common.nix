@@ -78,6 +78,7 @@ in
       "hv_netvsc"
       "hv_utils"
       "hv_storvsc"
+      "virtio_gpu"
     ];
 
     # EFI configurations for boot
