@@ -94,7 +94,7 @@ def init() {
     }
   }
   if (env.TARGET.contains("lenovo-x1")) {
-    if (params.SECUREBOOT) {
+    if (env.DEVICE_TAG == 'x1-sec-boot') {
       tagFilters.add('NOTexcl-secboot')
     } else {
       tagFilters.add('NOTsecboot-only')
