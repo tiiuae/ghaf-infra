@@ -35,12 +35,14 @@ def ghaf_flake_ref(String repo, String rev) {
   return "${normalizedRepo}${separator}rev=${rev}"
 }
 
-def create_pipeline(List<Map> targets, String testagent_host = null) {
+def create_pipeline(List<Map> targets, String testagent_host = null, String target_flake_ref = null) {
   def pipeline = [:]
   def stamp = run_cmd('date +"%Y%m%d_%H%M%S%3N"')
   def target_commit = run_cmd('git rev-parse HEAD')
   def target_repo = run_cmd('git remote get-url origin || git remote get-url pr_origin')
-  def target_flake_ref = ghaf_flake_ref(target_repo, target_commit)
+  // Pre-merge jobs can override this with a PR merge ref, which is required
+  // to make GitHub's synthetic merge commit fetchable on downstream test agents.
+  target_flake_ref = target_flake_ref ?: ghaf_flake_ref(target_repo, target_commit)
   def host_name = run_cmd('hostname')
   def host_revision = run_cmd('/run/current-system/sw/bin/nixos-version --configuration-revision')
   def artifacts = "artifacts/${env.JOB_BASE_NAME}/${stamp}-commit_${target_commit}"
