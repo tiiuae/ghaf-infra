@@ -492,9 +492,33 @@ in
         static_configs = [
           {
             # nethsm-exporter is running on the gateway, on port 8000
-            targets = [ "nethsm-gateway.sumu.vedenemo.dev:8000" ];
+            targets = [
+              "nethsm-gateway.sumu.vedenemo.dev:8000"
+              "uae-nethsm-gateway.sumu.vedenemo.dev:8000"
+            ];
           }
         ];
+      }
+      {
+        # this job monitors the UAE hosts through nebula tunnel
+        job_name = "uae";
+        static_configs =
+          lib.mapAttrsToList
+            (name: value: {
+              targets = [
+                "${value.nebula_ip}:9100" # node exporter
+              ];
+              labels = {
+                machine_name = name;
+              };
+            })
+            {
+              inherit (machines)
+                uae-testagent-prod
+                uae-azureci-prod
+                uae-nethsm-gateway
+                ;
+            };
       }
     ];
   };
