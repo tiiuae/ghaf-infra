@@ -269,8 +269,6 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
         stage("Test ${shortname}") {
           def img_url = "${env.JENKINS_URL}/${artifacts}/${it.target}/${manifest.image}"
           def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
-          // x1-sec-boot is available only in prod
-          def secboot = manifest.uefi.signed && env.CI_ENV == "prod"
           def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
             parameters: [
               string(name: "IMG_URL", value: img_url),
@@ -279,7 +277,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
               string(name: "TESTAGENT_HOST", value: testagent_host),
               booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: env.CI_ENV == "release"),
               booleanParam(name: "RELOAD_ONLY", value: false),
-              booleanParam(name: "SECUREBOOT", value: secboot),
+              booleanParam(name: "SECUREBOOT", value: false),
             ],
           )
           println("ghaf-hw-test log '${shortname}:")
@@ -295,6 +293,37 @@ def create_pipeline(List<Map> targets, String testagent_host = null) {
             target: "${output}/test-results",
             optional: true,
           )
+        }
+        // Run separate secure boot enabled test when the hardware is available and target requests it
+        if (it.test_secboot && manifest.uefi.signed && env.CI_ENV == "prod") {
+          stage("Test SB ${shortname}") {
+            def img_url = "${env.JENKINS_URL}/${artifacts}/${it.target}/${manifest.image}"
+            def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
+            def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
+              parameters: [
+                string(name: "IMG_URL", value: img_url),
+                string(name: "TESTSET", value: it.testset),
+                string(name: "DESC", value: "Triggered by ${build_href}<br>(${shortname})"),
+                string(name: "TESTAGENT_HOST", value: testagent_host),
+                booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: env.CI_ENV == "release"),
+                booleanParam(name: "RELOAD_ONLY", value: false),
+                booleanParam(name: "SECUREBOOT", value: true),
+              ],
+            )
+            println("ghaf-hw-test log SB '${shortname}:")
+            sh "cat /var/lib/jenkins/jobs/ghaf-hw-test/builds/${job.number}/log | sed 's/^/    /'"
+            if (job.result != "SUCCESS") {
+              unstable("FAILED: ${shortname} ${it.testset}")
+              currentBuild.result = "FAILURE"
+              append_to_build_description("<a href=\"${job.absoluteUrl}\">⛔ ${shortname} (SB)</a>")
+            }
+            copyArtifacts(
+              projectName: "ghaf-hw-test",
+              selector: specific("${job.number}"),
+              target: "${output}/test-results/secureboot",
+              optional: true,
+            )
+          }
         }
       }
     }

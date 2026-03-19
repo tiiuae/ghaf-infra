@@ -11,6 +11,7 @@ properties([
   githubProjectProperty(displayName: ''),
   parameters([
     booleanParam(name: 'UEFISIGN', defaultValue: false, description: 'Enable secure boot signing (for supported targets)'),
+    booleanParam(name: 'SECUREBOOT', defaultValue: false, description: 'Run tests also on secureboot enabled hardware, if available'),
     string(name: 'REPO_URL', defaultValue: DEFAULT_REPO_URL, description: 'Git repository URL'),
     string(name: 'GITREF', defaultValue: 'main', description: 'Ghaf git reference (Commit/Branch/Tag)'),
     string(name: 'TESTSET', defaultValue: null, description: 'By default tests are skipped. To run hw-tests, define the target testset here; e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.)'),
@@ -31,7 +32,6 @@ properties([
     booleanParam(name: 'intel_laptop_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug-installer'),
     booleanParam(name: 'intel_laptop_low_mem_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-low-mem-debug'),
     booleanParam(name: 'intel_laptop_low_mem_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-low-mem-debug-installer'),
-
   ])
 ])
 pipeline {
@@ -72,7 +72,7 @@ pipeline {
             }
             if (params.lenovo_x1_carbon_gen11_debug) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug", uefisign: params.UEFISIGN, testset: params.TESTSET ])
+                [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug", uefisign: params.UEFISIGN, testset: params.TESTSET, test_secboot: params.SECUREBOOT ])
             }
             if (params.lenovo_x1_carbon_gen11_debug_installer) {
               TARGETS.push(
