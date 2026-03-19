@@ -9,9 +9,9 @@ criteria:
     cel: predicate.buildDefinition.externalParameters.target.repository == 'https://github.com/tiiuae/ghaf/'
 
   - id: built-recently
-    description: Build was finished less than 3 hours ago
+    description: Build was finished less than 6 hours ago
     required: true
-    cel: now - timestamp(predicate.runDetails.metadata.finishedOn) < duration('3h')
+    cel: now - timestamp(predicate.runDetails.metadata.finishedOn) < duration('6h')
 
   - id: builder-id-hetzner
     description: Built on Hetzner CI dev, prod, release or UAE Azure CI dev, prod, release
