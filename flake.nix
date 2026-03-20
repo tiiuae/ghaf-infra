@@ -77,7 +77,7 @@
     };
 
     sbomnix = {
-      url = "github:tiiuae/sbomnix";
+      url = "github:tiiuae/sbomnix?ref=fix-provenance-e2big";
       inputs = {
         flake-parts.follows = "flake-parts";
         flake-compat.follows = "flake-compat";
