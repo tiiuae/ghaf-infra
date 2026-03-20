@@ -371,11 +371,11 @@
     },
     "nixpkgs_4": {
       "locked": {
-        "lastModified": 1761114652,
-        "narHash": "sha256-f/QCJM/YhrV/lavyCVz8iU3rlZun6d+dAiC3H+CDle4=",
+        "lastModified": 1772624091,
+        "narHash": "sha256-QKyJ0QGWBn6r0invrMAK8dmJoBYWoOWy7lN+UHzW1jc=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "01f116e4df6a15f4ccdffb1bcd41096869fb385c",
+        "rev": "80bdc1e5ce51f56b19791b52b2901187931f5353",
         "type": "github"
       },
       "original": {
@@ -441,15 +441,16 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1762923401,
-        "narHash": "sha256-FMtgP0ejCsfRSNxjKRaog6+SzeahpkR+Hd8DlR56NyY=",
+        "lastModified": 1774249419,
+        "narHash": "sha256-hd3C81I/EmJQa8c5MW0aNxtm5ZXTg4QRImgG/ttAV30=",
         "owner": "tiiuae",
         "repo": "sbomnix",
-        "rev": "0abce31bdf01223d66b43c77b97c33547120bc68",
+        "rev": "b4bcda18d123e4ad138af700adbd5b7bfb939c57",
         "type": "github"
       },
       "original": {
         "owner": "tiiuae",
+        "ref": "main",
         "repo": "sbomnix",
         "type": "github"
       }
