@@ -77,7 +77,7 @@
     };
 
     sbomnix = {
-      url = "github:tiiuae/sbomnix";
+      url = "github:tiiuae/sbomnix?ref=main";
       inputs = {
         flake-parts.follows = "flake-parts";
         flake-compat.follows = "flake-compat";
