@@ -8,6 +8,7 @@
 }:
 let
   tuning = import ../../lib/nix-tuning.nix { inherit lib; };
+  trustedBuilderHost = host: "${host}?trusted=true";
 
   # Current host sizing: 16 vCPU, 30 GiB RAM, ~300 GiB root disk.
   controllerDisk = tuning.mkDiskThresholds 300;
@@ -88,7 +89,7 @@ in
       [
         (
           {
-            hostName = machines.hetzarm-dbg-1.ip;
+            hostName = trustedBuilderHost machines.hetzarm-dbg-1.ip;
             system = "aarch64-linux";
             maxJobs = builderMaxJobs;
           }
@@ -96,7 +97,7 @@ in
         )
         (
           {
-            hostName = machines.hetz86-dbg-1.ip;
+            hostName = trustedBuilderHost machines.hetz86-dbg-1.ip;
             system = "x86_64-linux";
             maxJobs = builderMaxJobs;
           }
