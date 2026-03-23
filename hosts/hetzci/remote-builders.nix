@@ -8,6 +8,7 @@
 }:
 let
   tuning = import ../lib/nix-tuning.nix { inherit lib; };
+  trustedBuilderHost = host: "${host}?trusted=true";
 
   # Current shared builder sizing:
   # - hetz86-1: 96 vCPU, 251 GiB RAM
@@ -45,7 +46,7 @@ in
       [
         (
           {
-            hostName = "hetzarm.vedenemo.dev";
+            hostName = trustedBuilderHost "hetzarm.vedenemo.dev";
             system = "aarch64-linux";
             maxJobs = armBuilderMaxJobs;
           }
@@ -53,7 +54,7 @@ in
         )
         (
           {
-            hostName = "hetz86-1.vedenemo.dev";
+            hostName = trustedBuilderHost "hetz86-1.vedenemo.dev";
             system = "x86_64-linux";
             maxJobs = x86BuilderMaxJobs;
           }
