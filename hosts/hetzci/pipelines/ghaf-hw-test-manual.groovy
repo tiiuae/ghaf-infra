@@ -400,7 +400,7 @@ pipeline {
           if (env.TARGET.contains("installer") && env.DEVICE_TAG == "darter-pro") {
             ghaf_robot_test('break')
           }
-          ghaf_robot_test('turnoff')
+          ghaf_robot_test('relay-turnoff')
           println "Connect SSD to the laptop"
           sh "${env.UNMOUNT_CMD}; sleep 10"
           println "Wipe the internal memory of the laptop"
