@@ -18,17 +18,31 @@ in
   };
   config = {
     systemd.services.cachix-push = {
-      after = [ "network.target" ];
+      wants = [ "network-online.target" ];
+      after = [
+        "network-online.target"
+        "nss-lookup.target"
+      ];
       wantedBy = [ "multi-user.target" ];
       path = with pkgs; [
         cachix
-        diffutils
+        coreutils
+        findutils
+        gnugrep
       ];
       serviceConfig = {
         Type = "simple";
         Restart = "always";
         # Try re-start at 30 second intervals.
         RestartSec = 30;
+        # Do not loop forever on permanent startup misconfiguration such as a
+        # missing or unusable cachix auth token.
+        RestartPreventExitStatus = [
+          10
+          11
+          12
+        ];
+        StateDirectory = "cachix-push";
       };
       # Allow unlimited restart attempts
       unitConfig.StartLimitBurst = 0;
@@ -36,6 +50,7 @@ in
       environment = {
         CACHIX_AUTH_TOKEN_FILE = "${config.sops.secrets.cachix-auth-token.path}";
         CACHIX_CACHE_NAME = cfg.cacheName;
+        CACHIX_STATE_DIR = "/var/lib/cachix-push";
       };
     };
   };
