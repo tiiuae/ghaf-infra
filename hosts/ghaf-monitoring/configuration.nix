@@ -308,6 +308,7 @@ in
           rules = [
             (builtins.fromJSON (builtins.readFile ./provision/alert-rules/low-disk-space-ext4.json))
             (builtins.fromJSON (builtins.readFile ./provision/alert-rules/low-disk-space-boot.json))
+            (builtins.fromJSON (builtins.readFile ./provision/alert-rules/low-disk-space-xfs.json))
           ];
         }
         {
