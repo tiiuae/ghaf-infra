@@ -32,13 +32,22 @@
         };
       };
     };
+    data1 = {
+      device = "/dev/disk/by-id/scsi-0HC_Volume_105201000";
+      type = "disk";
+      content = {
+        type = "filesystem";
+        format = "xfs";
+        mountpoint = "/data";
+      };
+    };
     data = {
       device = "/dev/disk/by-id/scsi-0HC_Volume_103952564";
       type = "disk";
       content = {
         type = "filesystem";
         format = "ext4";
-        mountpoint = "/data";
+        mountpoint = "/data-old";
       };
     };
   };
