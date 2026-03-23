@@ -28,7 +28,10 @@ in
 
   system.stateVersion = lib.mkForce "25.11";
   networking.hostName = "hetzci-dbg";
-  ghaf.nix-cache.caches = [ "nixos-org" ];
+  ghaf.nix-cache.caches = [
+    "nixos-org"
+    "ghaf-dev"
+  ];
 
   hetzci = {
     jenkins = {
