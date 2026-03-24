@@ -56,8 +56,8 @@
         relay_serial_port = "NONE";
         OrinNX1 = {
           inherit location;
-          device_id = "00-28-62-e3-9e";
-          netvm_hostname = "ghaf-0677569438";
+          device_id = "00-82-90-53-d5";
+          netvm_hostname = "ghaf-2190496725";
           serial_port = "/dev/ttyORINNX1";
           relay_number = "NONE";
           device_ip_address = "172.18.16.30";

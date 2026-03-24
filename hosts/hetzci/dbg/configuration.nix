@@ -24,6 +24,7 @@ in
     ../jenkins.nix
     ../cloud.nix
     ../auth.nix
+    ../signing.nix
   ];
 
   system.stateVersion = lib.mkForce "25.11";
@@ -56,6 +57,7 @@ in
       clientID = "hetzci-dbg";
       domain = "ci-dbg.vedenemo.dev";
     };
+    signing.proxy.enable = true;
   };
 
   sops = {
