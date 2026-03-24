@@ -294,7 +294,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
               booleanParam(name: "SECUREBOOT", value: false),
           ]
           def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
-            parameters: test_params,
+            parameters: test_params
           )
           println("ghaf-hw-test log '${shortname}:")
           sh "cat /var/lib/jenkins/jobs/ghaf-hw-test/builds/${job.number}/log | sed 's/^/    /'"
@@ -307,7 +307,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
             projectName: "ghaf-hw-test",
             selector: specific("${job.number}"),
             target: "${output}/test-results",
-            optional: true,
+            optional: true
           )
         }
         // Run an additional secure boot test only when the target requests it and
@@ -325,11 +325,11 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
                 string(name: "TESTAGENT_HOST", value: testagent_host),
                 booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: env.CI_ENV == "release"),
                 booleanParam(name: "RELOAD_ONLY", value: false),
-                booleanParam(name: "SECUREBOOT", value: true),
-              ],
-            )
+                booleanParam(name: "SECUREBOOT", value: true)
+              ]
+
             def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
-              parameters: test_params,
+              parameters: test_params
             )
             println("ghaf-hw-test log SB '${shortname}:")
             sh "cat /var/lib/jenkins/jobs/ghaf-hw-test/builds/${job.number}/log | sed 's/^/    /'"
@@ -342,7 +342,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
               projectName: "ghaf-hw-test",
               selector: specific("${job.number}"),
               target: "${output}/test-results/secureboot",
-              optional: true,
+              optional: true
             )
           }
         }
