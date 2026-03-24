@@ -460,6 +460,7 @@ in
             })
             {
               inherit (machines)
+                testagent-dbg
                 testagent-dev
                 testagent-prod
                 testagent2-prod

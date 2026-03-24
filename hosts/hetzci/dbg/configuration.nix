@@ -37,6 +37,12 @@ in
     jenkins = {
       envType = "dbg";
       url = "https://ci-dbg.vedenemo.dev";
+      nodes.testagentHosts = [
+        "dev"
+        "prod"
+        "release"
+        "dbg"
+      ];
       pipelines = [
         "ghaf-hw-test"
         "ghaf-manual"

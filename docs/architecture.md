@@ -72,6 +72,7 @@ device, effectively acting as a lock for each piece of hardware.
 
 | Host | Variant | Hardware |
 |---|---|---|
+| `testagent-dbg` | dbg | Orin NX |
 | `testagent-dev` | dev | Orin AGX, Orin NX, Orin AGX-64, Lenovo X1, Dell 7330, Darter Pro |
 | `testagent-prod` | prod | Lenovo X1, Dell 7330, Darter Pro |
 | `testagent2-prod` | prod | (secondary prod agent) |
