@@ -514,7 +514,6 @@ in
             })
             {
               inherit (machines)
-                uae-testagent-prod
                 uae-azureci-prod
                 uae-nethsm-gateway
                 ;

@@ -141,7 +141,7 @@
 
   uae-nethsm-gateway = {
     ip = "172.31.141.51";
-    nebula_ip = "10.42.42.30";
+    nebula_ip = "10.42.42.33";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ69aPBjri8UJi1KbVDEUYW5YeHzAkQ86acQNHzqyrD0";
   };
 
@@ -165,7 +165,6 @@
 
   uae-testagent-prod = {
     ip = "172.20.16.24";
-    nebula_ip = "10.42.42.35";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHO30maPQbVUqURaur8ze2S0vrrUivj2QdItIHsK75RS";
   };
 

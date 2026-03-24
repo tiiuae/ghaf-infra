@@ -48,6 +48,14 @@
         }
       ];
     };
+    interfaces.eno1 = {
+      ipv4.addresses = [
+        {
+          address = "192.168.70.2";
+          prefixLength = 24;
+        }
+      ];
+    };
     defaultGateway = {
       address = "172.31.141.1";
       interface = "enp3s0";
@@ -81,7 +89,7 @@
     ];
   };
 
-  nethsm.host = "192.168.70.11";
+  nethsm.host = "192.168.70.20";
   pkcs11.proxy.listenAddr = machines.uae-nethsm-gateway.nebula_ip;
 
   services.monitoring = {
@@ -118,13 +126,14 @@
 
   services.nebula.networks."vedenemo".firewall = {
     outbound = lib.mkForce [
-      # allow udp outbound only to hetzner, uae-lab
+      # allow udp outbound only to hetzner, uae-lab and azureci
       {
         port = 4242;
         proto = "udp";
         groups = [
           "hetzner"
           "uae-lab"
+          "azureci"
         ];
       }
       # allow dns requests
@@ -152,13 +161,14 @@
         proto = "tcp";
         groups = [ "scraper" ];
       }
-      # allow hetzner and uae-lab servers to connect
+      # allow hetzner, azureci and uae-lab servers to connect
       {
         port = 22;
         proto = "tcp";
         groups = [
           "hetzner"
           "uae-lab"
+          "azureci"
         ];
       }
     ];
