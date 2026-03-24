@@ -115,6 +115,12 @@
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDVZVd2ZBBHBYCJVOhjhfVXi4lrVYtcH5CkQjTqBfg/4";
   };
 
+  testagent-dbg = {
+    ip = "172.18.16.26";
+    nebula_ip = "10.42.42.15";
+    publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP3w98CfNka5zctBY5NJfOjKuvCjB7rJ8mSqg8EHoh/F";
+  };
+
   testagent2-prod = {
     ip = "172.18.16.25";
     nebula_ip = "10.42.42.14";

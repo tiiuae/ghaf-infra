@@ -91,7 +91,7 @@ in
 {
   options = with lib.types; {
     services.testagent = {
-      # variant such as dev, prod or release
+      # variant such as dbg, dev, prod or release
       # used in the naming of jenkins slaves
       variant = lib.mkOption { type = str; };
 

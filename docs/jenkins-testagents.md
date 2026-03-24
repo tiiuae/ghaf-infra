@@ -7,7 +7,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 "testagents" are machines located on-prem which house the hardware required for testing.
 Each machine is running one jenkins slave service for each test device, effectively acting as a lock.
 
-One controller is capable of utilizing multiple agents, if they are different variants (currently `dev`, `prod` or `release` are the possible variants).
+One controller is capable of utilizing multiple agents, if they are different variants (currently `dbg`, `dev`, `prod` and `release` are the possible variants).
 This is configured in the nix config of the testagent with the `services.testagent.variant` attribute.
 
 ## Agent tooling

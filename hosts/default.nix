@@ -70,6 +70,7 @@ let
     hetzarm = ./builders/hetzarm/configuration.nix;
     hetzarm-dbg-1 = ./builders/hetzarm-dbg-1/configuration.nix;
     hetzarm-rel-1 = ./builders/hetzarm-rel-1/configuration.nix;
+    testagent-dbg = ./testagent/dbg/configuration.nix;
     testagent-prod = ./testagent/prod/configuration.nix;
     testagent-dev = ./testagent/dev/configuration.nix;
     testagent2-prod = ./testagent/prod2/configuration.nix;
