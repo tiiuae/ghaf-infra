@@ -307,6 +307,10 @@ in
         isNormalUser = true;
         openssh.authorizedKeys.keys = [ machines.testagent-dev.publicKey ];
       };
+      testagent-dbg = {
+        isNormalUser = true;
+        openssh.authorizedKeys.keys = [ machines.testagent-dbg.publicKey ];
+      };
       testagent2-prod = {
         isNormalUser = true;
         openssh.authorizedKeys.keys = [ machines.testagent2-prod.publicKey ];
