@@ -96,7 +96,7 @@
     metrics.enable = true;
     logs = {
       enable = true;
-      lokiAddress = "http://${machines.ghaf-monitoring.nebula_ip}:3100";
+      lokiAddress = "https://monitoring.vedenemo.dev";
       auth.password_file = config.sops.secrets.loki_password.path;
     };
 
