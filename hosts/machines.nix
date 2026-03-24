@@ -85,6 +85,7 @@
   hetzci-dbg = {
     ip = "95.216.200.85";
     internal_ip = "10.0.0.3";
+    nebula_ip = "10.42.42.6";
     publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIALs+OQDrCKRIKkwTwI4MI+oYC3RTEus9cXCBcIyRHzl";
   };
 

@@ -257,6 +257,7 @@ creation_rules:
       - *testagent-release
       - *nethsm-gateway
       - *hetzci-dev
+      - *hetzci-dbg
       - *hetzci-prod
       - *hetzci-release
       - *uae-lab-node1

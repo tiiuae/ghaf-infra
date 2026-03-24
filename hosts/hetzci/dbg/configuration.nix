@@ -22,8 +22,8 @@ in
     ./disk-config.nix
     ../common.nix
     ../jenkins.nix
+    ../cloud.nix
     ../auth.nix
-    ../../hetzner-cloud.nix
   ];
 
   system.stateVersion = lib.mkForce "25.11";
@@ -63,6 +63,11 @@ in
     secrets = {
       vedenemo_builder_ssh_key.owner = "root";
     };
+  };
+
+  services.monitoring = {
+    metrics.enable = lib.mkForce false;
+    logs.enable = lib.mkForce false;
   };
 
   # Configure /var/lib/caddy in /etc/fstab for persistent caddy state.
