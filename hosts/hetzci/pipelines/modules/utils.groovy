@@ -49,7 +49,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
   def artifacts_local_dir = "/var/lib/jenkins/${artifacts}"
   def artifacts_href = "<a href=\"/${artifacts}\">📦 Artifacts</a>"
   def signingToken = "YubiHSM"
-  def signing_possible = env.CI_ENV != 'vm' && env.CI_ENV != 'dbg'
+  def signing_possible = env.CI_ENV != 'vm'
 
   // Evaluate
   stage("Eval") {
@@ -193,7 +193,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
         }
       }
       // Signing stages
-      // Skip signing stages in vm and dbg environments, where NetHSM is not available
+      // Skip signing stages only in vm, where the signing proxy is not configured.
       if (signing_possible && it.get('provenance', true)) {
         stage("Sign (SLSA) provenance ${shortname}") {
           lock('signing') {
