@@ -84,8 +84,8 @@
         relay_serial_port = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A10KYI3B-if00-port0";
         OrinAGX1 = {
           inherit location;
-          device_id = "00-e2-3f-61-5b";
-          netvm_hostname = "ghaf-3795804507";
+          device_id = "00-e6-b4-c2-de";
+          netvm_hostname = "ghaf-3870606046";
           serial_port = "/dev/ttyAGX1";
           relay_number = 4;
           device_ip_address = "172.18.16.54";
@@ -98,8 +98,8 @@
         };
         OrinNX1 = {
           inherit location;
-          device_id = "00-80-d4-2b-81";
-          netvm_hostname = "ghaf-2161388417";
+          device_id = "00-fd-ea-2e-b5";
+          netvm_hostname = "ghaf-4259983029";
           serial_port = "/dev/ttyORINNX1";
           relay_number = 3;
           device_ip_address = "172.18.16.61";
@@ -112,8 +112,8 @@
         };
         OrinAGX64 = {
           inherit location;
-          device_id = "00-45-7c-2b-8c";
-          netvm_hostname = "ghaf-1165765516";
+          device_id = "00-5a-9c-7c-50";
+          netvm_hostname = "ghaf-1520204880";
           relay_number = 1;
           serial_port = "/dev/ttyAGX64";
           device_ip_address = "172.18.16.16";
