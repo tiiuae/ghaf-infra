@@ -82,8 +82,8 @@
         relay_serial_port = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A10KZMAN-if00-port0";
         OrinAGX1 = {
           inherit location;
-          device_id = "00-f6-e8-89-30";
-          netvm_hostname = "ghaf-4142434608";
+          device_id = "00-9e-4c-f5-1c";
+          netvm_hostname = "ghaf-2655843612";
           serial_port = "/dev/ttyAGX1";
           relay_number = 2;
           device_ip_address = "172.18.16.51";
@@ -92,20 +92,6 @@
           switch_bot = "NONE";
           usbhub_serial = "EBBBCDD4";
           ext_drive_by-id = "/dev/ssdORINAGX1";
-          threads = 12;
-        };
-        OrinAGX64 = {
-          inherit location;
-          device_id = "";
-          netvm_hostname = "";
-          serial_port = "/dev/ttyAGX64";
-          relay_number = 1;
-          device_ip_address = "172.18.16.4";
-          socket_ip_address = "NONE";
-          plug_type = "NONE";
-          switch_bot = "NONE";
-          usbhub_serial = "6B780E17";
-          ext_drive_by-id = "/dev/ssdORINAGX64";
           threads = 12;
         };
         LenovoX1-1 = {
@@ -123,8 +109,8 @@
         };
         OrinNX1 = {
           inherit location;
-          device_id = "00-58-d5-f7-96";
-          netvm_hostname = "ghaf-1490417558";
+          device_id = "00-bf-2e-64-84";
+          netvm_hostname = "ghaf-3207488644";
           serial_port = "/dev/ttyORINNX1";
           relay_number = 3;
           device_ip_address = "172.18.16.46";
