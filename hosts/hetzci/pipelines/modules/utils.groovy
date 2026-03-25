@@ -319,15 +319,14 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
             def img_url = "${env.JENKINS_URL}/${artifacts}/${it.target}/${manifest.image}"
             def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
             def test_params = [
-                string(name: "IMG_URL", value: img_url),
-                string(name: "TESTSET", value: it.testset),
-                string(name: "DESC", value: "Triggered by ${build_href}<br>(${shortname})"),
-                string(name: "TESTAGENT_HOST", value: testagent_host),
-                booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: env.CI_ENV == "release"),
-                booleanParam(name: "RELOAD_ONLY", value: false),
-                booleanParam(name: "SECUREBOOT", value: true)
-              ]
-
+              string(name: "IMG_URL", value: img_url),
+              string(name: "TESTSET", value: it.testset),
+              string(name: "DESC", value: "Triggered by ${build_href}<br>(${shortname})"),
+              string(name: "TESTAGENT_HOST", value: testagent_host),
+              booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: env.CI_ENV == "release"),
+              booleanParam(name: "RELOAD_ONLY", value: false),
+              booleanParam(name: "SECUREBOOT", value: true)
+            ]
             def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
               parameters: test_params
             )
