@@ -7,6 +7,37 @@
   ];
   perSystem =
     { pkgs, ... }:
+    let
+      # Stubbed Jenkins specific classes so they don't prevent groovy from compiling
+      # Add more classes here if they block compilation
+      jenkins-groovy-stubs = pkgs.writeText "stubs.groovy" ''
+        @interface NonCPS {}
+      '';
+
+      jenkins-groovy =
+        pkgs.runCommand "jenkins-groovy-stubs"
+          {
+            nativeBuildInputs = [
+              pkgs.groovy
+            ];
+          }
+          ''
+            mkdir -p "$out"
+            groovyc -d "$out" ${jenkins-groovy-stubs}
+          '';
+
+      groovyc-check = pkgs.writeShellApplication {
+        name = "groovyc-check";
+        runtimeInputs = [
+          pkgs.groovy
+        ];
+        text = ''
+          tmpdir="$(mktemp -d)"
+          trap 'rm -rf "$tmpdir"' EXIT
+          exec groovyc --classpath "${jenkins-groovy}" -d "$tmpdir" "$@"
+        '';
+      };
+    in
     {
       # See https://flake.parts/options/pre-commit-hooks-nix
       # for all the available hooks and options
@@ -66,22 +97,26 @@
               "--enable=useless-suppression"
               "--fail-on=useless-suppression"
             ];
-            package = (
-              pkgs.python3.withPackages (
-                pp: with pp; [
-                  aiohttp
-                  deploykit
-                  invoke
-                  loguru
-                  prometheus-client
-                  pycodestyle
-                  pylint
-                  requests
-                  tabulate
-                  urllib3
-                ]
-              )
+            package = pkgs.python3.withPackages (
+              pp: with pp; [
+                aiohttp
+                deploykit
+                invoke
+                loguru
+                prometheus-client
+                pycodestyle
+                pylint
+                requests
+                tabulate
+                urllib3
+              ]
             );
+          };
+          groovyc = {
+            enable = true;
+            name = "groovyc";
+            entry = "${pkgs.lib.getExe groovyc-check}";
+            files = "^hosts/hetzci/pipelines/.*\\.groovy$";
           };
         };
       };
