@@ -21,6 +21,7 @@ in
     ./disk-config.nix
     ../builders-common.nix
     ../cross-compilation.nix
+    ../cachix-push.nix
     ../../hetzner-cloud.nix
     ../../zramswap.nix
     inputs.sops-nix.nixosModules.sops
@@ -35,13 +36,23 @@ in
 
   sops = {
     defaultSopsFile = ./secrets.yaml;
+    secrets = {
+      cachix-auth-token.owner = "root";
+    };
   };
 
   nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "hetz86-dbg-1";
   boot.kernelModules = [ "kvm-amd" ];
 
-  ghaf.nix-cache.caches = [ "nixos-org" ];
+  cachix-push = {
+    cacheName = "ghaf-dbg";
+  };
+
+  ghaf.nix-cache.caches = [
+    "nixos-org"
+    "ghaf-dbg"
+  ];
   nix.settings.trusted-users = [ "@wheel" ];
   nix.settings.max-jobs = lib.mkForce jobs;
   nix.settings.cores = lib.mkForce 2;
