@@ -31,7 +31,7 @@ in
   networking.hostName = "hetzci-dbg";
   ghaf.nix-cache.caches = [
     "nixos-org"
-    "ghaf-dev"
+    "ghaf-dbg"
   ];
 
   hetzci = {

@@ -27,7 +27,7 @@ ghaf-auth and exposes a public web UI over Caddy with ACME TLS.
 | `hetzci-prod` | ci-prod.vedenemo.dev | Production CI — runs on every push and PR to Ghaf |
 | `hetzci-dev` | ci-dev.vedenemo.dev | Development CI — for CI and hardware-test development |
 | `hetzci-release` | ci-release.vedenemo.dev | Release CI — ephemeral, re-installed per release cycle |
-| `hetzci-dbg` | ci-dbg.vedenemo.dev | Debug CI — isolated environment for troubleshooting |
+| `hetzci-dbg` | ci-dbg.vedenemo.dev | Debug CI — isolated controller/builder environment for troubleshooting |
 
 A fifth configuration, `hetzci-vm`, is not deployed — it runs locally
 (`localhost:8080`) via `nix run .#run-hetzci-vm` as a QEMU VM for developing
@@ -54,11 +54,14 @@ Jenkins controller has a dedicated builder set to isolate workloads.
 | `hetz86-dbg-1` | x86_64 | `hetzci-dbg` |
 | `hetzarm-dbg-1` | aarch64 | `hetzci-dbg` |
 
-Build results are pushed to two Cachix binary caches:
+Build results are pushed to three Cachix binary caches:
 
 - **[`ghaf-dev`](https://app.cachix.org/organization/tiiuae/cache/ghaf-dev)** — populated by prod/dev CI on every PR authored by a `tiiuae`
   organization member. This is the main cache used during day-to-day
   development.
+- **[`ghaf-dbg`](https://app.cachix.org/organization/tiiuae/cache/ghaf-dbg)** — populated by the debug controller/builders and consumed by those
+  hosts, keeping dbg-published results isolated from the main development
+  cache.
 - **[`ghaf-release`](https://app.cachix.org/organization/tiiuae/cache/ghaf-release)** — populated exclusively by the release environment. The
   ephemeral release controller and builders pull earlier build results from this
   cache so that only changed derivations need to be rebuilt.
@@ -170,9 +173,10 @@ its own dedicated builders and test agents, and is the only environment
 authorized to push to the `ghaf-release` binary cache. Because the cache
 persists across re-installs, release builds can reuse earlier results and only
 rebuild what has changed. The **dev** environment mirrors prod for CI and test
-development. The **dbg** environment only trusts the upstream `cache.nixos.org`
-substituter (no `ghaf-dev` or `ghaf-release`), which enables testing fully
-clean builds from source.
+development. The **dbg** controller and its dedicated builders only trust
+their own `ghaf-dbg` cache alongside `cache.nixos.org`, and only publish into
+`ghaf-dbg`. The `testagent-dbg` host currently still inherits the default
+`ghaf-dev` cache configuration.
 
 Having a self-hosted CI solution alongside GitHub Actions ensures Ghaf
 is not fully dependent on a third-party service for build and test
