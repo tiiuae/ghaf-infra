@@ -283,6 +283,16 @@ pipeline {
             echo { \\\"Job\\\": \\\"${env.TARGET}\\\" } > ${TEST_CONFIG_DIR}/${BUILD_NUMBER}.json
             ls -la ${TEST_CONFIG_DIR}
           """
+          // Determine mount commands
+          if(params.IMG_URL.contains("microchip-icicle-")) {
+            def muxport = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'usb_sd_mux_port')
+            env.MOUNT_CMD = "/run/wrappers/bin/sudo usbsdmux ${muxport} host; sleep 10"
+            env.UNMOUNT_CMD = "/run/wrappers/bin/sudo usbsdmux ${muxport} dut"
+          } else {
+            def serial = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'usbhub_serial')
+            env.MOUNT_CMD = "/run/wrappers/bin/sudo AcronameHubCLI -u 0 -s ${serial}; sleep 10"
+            env.UNMOUNT_CMD = "/run/wrappers/bin/sudo AcronameHubCLI -u 1 -s ${serial}; sleep 10"
+          }
         }
       }
     }
@@ -310,16 +320,6 @@ pipeline {
         // TODO: We should use ghaf flashing scripts or installers.
         // We don't want to maintain these flashing details here:
         script {
-          // Determine mount commands
-          if(params.IMG_URL.contains("microchip-icicle-")) {
-            def muxport = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'usb_sd_mux_port')
-            env.MOUNT_CMD = "/run/wrappers/bin/sudo usbsdmux ${muxport} host; sleep 10"
-            env.UNMOUNT_CMD = "/run/wrappers/bin/sudo usbsdmux ${muxport} dut"
-          } else {
-            def serial = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'usbhub_serial')
-            env.MOUNT_CMD = "/run/wrappers/bin/sudo AcronameHubCLI -u 0 -s ${serial}; sleep 10"
-            env.UNMOUNT_CMD = "/run/wrappers/bin/sudo AcronameHubCLI -u 1 -s ${serial}; sleep 10"
-          }
           // Mount the target disk
           sh "${env.MOUNT_CMD}"
           // Read the device name
@@ -367,9 +367,10 @@ pipeline {
       }
     }
     stage('Run Ghaf-installer') {
-      when { expression { env.IMG_URL.contains("installer") && !params.WIPE_ONLY } }
+      when { expression { ( env.IMG_URL.contains("installer") || env.TARGET.contains("installer") ) && !params.WIPE_ONLY } }
       steps {
         script {
+          sh "${env.UNMOUNT_CMD}"
           println "Run ghaf-installer"
           ghaf_robot_test('installer')
           println "Disconnect SSD from the laptop"
