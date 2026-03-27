@@ -28,6 +28,16 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
       description: '''
         Target image url. If specified, the target device is flashed with the given image before running the tests.
         Can be left empty, in which case DEVICE_TAG must be specified. With installer image this is mandatory to give!'''.stripIndent()),
+    string(
+      name: 'GHAF_FLAKE_REF',
+      defaultValue: '',
+      description: '''
+        Optional pinned Ghaf flake reference for flash-script. Leave empty to derive the Ghaf revision from IMG_URL.
+        Set this explicitly for images built from refs that are not fetchable by commit SHA alone, such as PR merge refs.'''.stripIndent()),
+    booleanParam(
+      name: 'USE_LEGACY_DD_FLASH',
+      defaultValue: false,
+      description: 'Override flash-script usage and use the old-style dd flashing path instead. Intended for manual UI runs.'),
     [
       $class: 'ChoiceParameter',
       name: 'DEVICE_TAG',
@@ -162,6 +172,19 @@ def run_wget(String url, String to_dir) {
   // Re-run wget: this will not re-download anything, it's needed only to
   // get the local path to the downloaded file
   return sh_ret_out("wget --force-directories --timestamping -P ${to_dir} ${url} 2>&1 | grep -Po '${to_dir}[^’]+'")
+}
+
+@NonCPS
+def resolve_ghaf_flake_ref(String explicitFlakeRef, String imgUrl) {
+  def normalizedFlakeRef = explicitFlakeRef?.trim()
+  if (normalizedFlakeRef) {
+    return normalizedFlakeRef
+  }
+  def match = imgUrl =~ /commit_([a-f0-9]{40})/
+  if (match) {
+    return "git+https://github.com/tiiuae/ghaf?rev=${match[0][1]}"
+  }
+  return null
 }
 
 def get_test_conf_property(String file_path, String device, String property) {
@@ -302,23 +325,27 @@ pipeline {
         script {
           def img_path = run_wget(params.IMG_URL, TMP_IMG_DIR)
           println "Downloaded image to workspace: ${img_path}"
-          // Uncompress
-          if(img_path.endsWith(".zst")) {
-            sh "zstd -dfv ${img_path}"
-            // env.IMG_PATH stores the path to the uncompressed image
-            env.IMG_PATH = img_path.substring(0, img_path.lastIndexOf('.'))
+          if (params.USE_LEGACY_DD_FLASH) {
+            // Uncompress for the legacy dd flashing path.
+            if(img_path.endsWith(".zst")) {
+              sh "zstd -dfv ${img_path}"
+              // env.IMG_PATH stores the path to the uncompressed image
+              env.IMG_PATH = img_path.substring(0, img_path.lastIndexOf('.'))
+            } else {
+              env.IMG_PATH = img_path
+            }
+            println "Uncompressed image at: ${env.IMG_PATH}"
           } else {
-            env.IMG_PATH = img_path
+            // flash-script handles .zst natively; pass the original download path.
+            env.FLASH_INPUT_PATH = img_path
+            println "Flash input: ${env.FLASH_INPUT_PATH}"
           }
-          println "Uncompressed image at: ${env.IMG_PATH}"
         }
       }
     }
     stage('Flash') {
       when { expression { params && params.IMG_URL } }
       steps {
-        // TODO: We should use ghaf flashing scripts or installers.
-        // We don't want to maintain these flashing details here:
         script {
           // Mount the target disk
           sh "${env.MOUNT_CMD}"
@@ -337,23 +364,40 @@ pipeline {
               exit 1
             fi
           """
-          // Wipe possible ZFS leftovers, more details here:
-          // https://github.com/tiiuae/ghaf/blob/454b18bc/packages/installer/ghaf-installer.sh#L75
-          if(params.IMG_URL.contains("lenovo-x1-")) {
-            echo "Wiping filesystem..."
-            def SECTOR = 512
-            def MIB_TO_SECTORS = 20480
-            // Disk size in 512-byte sectors
-            def SECTORS = sh(script: "/run/wrappers/bin/sudo blockdev --getsz ${dev}", returnStdout: true).trim()
-            // Unmount possible mounted filesystems
-            sh "sync; /run/wrappers/bin/sudo umount -q ${dev}* || true"
-            // Wipe first 10MiB of disk
-            sh "/run/wrappers/bin/sudo dd if=/dev/zero of=${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} conv=fsync status=none"
-            // Wipe last 10MiB of disk
-            sh "/run/wrappers/bin/sudo dd if=/dev/zero of=${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} seek=\$(( ${SECTORS} - ${MIB_TO_SECTORS} )) conv=fsync status=none"
+          if (params.USE_LEGACY_DD_FLASH) {
+            // Wipe possible ZFS leftovers, more details here:
+            // https://github.com/tiiuae/ghaf/blob/454b18bc/packages/installer/ghaf-installer.sh#L75
+            if(params.IMG_URL.contains("lenovo-x1-")) {
+              echo "Wiping filesystem..."
+              def SECTOR = 512
+              def MIB_TO_SECTORS = 20480
+              // Disk size in 512-byte sectors
+              def SECTORS = sh(script: "/run/wrappers/bin/sudo blockdev --getsz ${dev}", returnStdout: true).trim()
+              // Unmount possible mounted filesystems
+              sh "sync; /run/wrappers/bin/sudo umount -q ${dev}* || true"
+              // Wipe first 10MiB of disk
+              sh "/run/wrappers/bin/sudo dd if=/dev/zero of=${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} conv=fsync status=none"
+              // Wipe last 10MiB of disk
+              sh "/run/wrappers/bin/sudo dd if=/dev/zero of=${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} seek=\$(( ${SECTORS} - ${MIB_TO_SECTORS} )) conv=fsync status=none"
+            }
+            // Write the image
+            sh "/run/wrappers/bin/sudo dd if=${env.IMG_PATH} of=${dev} bs=1M status=progress conv=fsync"
+          } else {
+            if (env.FLASH_INPUT_PATH.endsWith('.raw')) {
+              error("flash-script does not support '.raw' images. Enable USE_LEGACY_DD_FLASH to flash '${env.FLASH_INPUT_PATH}' with dd.")
+            }
+            def ghafFlakeRef = resolve_ghaf_flake_ref(params.GHAF_FLAKE_REF, params.IMG_URL)
+            if (!ghafFlakeRef) {
+              error("Missing GHAF_FLAKE_REF and unable to derive Ghaf commit from IMG_URL '${params.IMG_URL}'. Set GHAF_FLAKE_REF or enable USE_LEGACY_DD_FLASH.")
+            }
+            println "Building flash-script from GHAF_FLAKE_REF: ${ghafFlakeRef}"
+            def flashScriptPath = sh_ret_out(
+              "nix build --no-link --print-out-paths '${ghafFlakeRef}#packages.x86_64-linux.flash-script'"
+            )
+            // flash-script validates /dev/sdX format; resolve the by-id symlink.
+            def resolved_dev = sh_ret_out("/run/wrappers/bin/sudo readlink -f ${dev}")
+            sh "/run/wrappers/bin/sudo ${flashScriptPath}/bin/flash-script -d ${resolved_dev} -i ${env.FLASH_INPUT_PATH} -f"
           }
-          // Write the image
-          sh "/run/wrappers/bin/sudo dd if=${env.IMG_PATH} of=${dev} bs=1M status=progress conv=fsync"
           // Unmount
           sh "${env.UNMOUNT_CMD}"
           sh """
