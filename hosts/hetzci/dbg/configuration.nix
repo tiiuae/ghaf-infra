@@ -45,6 +45,7 @@ in
         "dbg"
       ];
       pipelines = [
+        "ghaf-hw-test-manual"
         "ghaf-hw-test"
         "ghaf-manual"
         "ghaf-release-candidate"
