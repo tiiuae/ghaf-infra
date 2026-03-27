@@ -117,7 +117,7 @@
   "noDataState": "KeepLast",
   "execErrState": "Error",
   "annotations": {
-    "summary": "{{ $labels.host }} is low on memory! below SIGTERM limits"
+    "summary": "{{ $labels.machine_name }} is low on memory! below SIGTERM limits"
   },
   "isPaused": false
 }
