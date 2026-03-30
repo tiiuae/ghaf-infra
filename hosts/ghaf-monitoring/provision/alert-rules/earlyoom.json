@@ -114,10 +114,10 @@
   ],
   "dashboardUid": "",
   "panelId": 0,
-  "noDataState": "KeepLast",
+  "noDataState": "OK",
   "execErrState": "Error",
   "annotations": {
-    "summary": "{{ $labels.machine_name }} is low on memory! below SIGTERM limits"
+    "summary": "{{ $labels.host }} is low on memory! below SIGTERM limits"
   },
   "isPaused": false
 }
