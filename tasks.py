@@ -371,7 +371,11 @@ def install(
         "hetz86-rel-2": (
             f"{nixos_images_url}/nixos-24.05/"
             "nixos-kexec-installer-noninteractive-x86_64-linux.tar.gz"
-        )
+        ),
+        "hetzarm-rel-1": (
+            f"{nixos_images_url}/nixos-25.11/"
+            "nixos-kexec-installer-noninteractive-aarch64-linux.tar.gz"
+        ),
     }
 
     if not yes:
