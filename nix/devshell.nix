@@ -43,6 +43,7 @@
             git
             jq
             nix
+            nix-eval-jobs
             nix-fast-build
             nixfmt
             nixos-rebuild

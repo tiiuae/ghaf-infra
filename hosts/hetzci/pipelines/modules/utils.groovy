@@ -1,7 +1,5 @@
 #!/usr/bin/env groovy
 
-import groovy.json.JsonOutput
-
 def run_cmd(String cmd) {
   return sh(script: cmd, returnStdout:true).trim()
 }
@@ -50,11 +48,18 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
   def artifacts_href = "<a href=\"/${artifacts}\">📦 Artifacts</a>"
   def signingToken = "YubiHSM"
   def signing_possible = env.CI_ENV != 'vm'
+  def evalTargetsFile = ".jenkins-eval-targets-${stamp}.txt"
+  def evalTargets = targets.collect { it.target }.join("\n") + "\n"
 
   // Evaluate
   stage("Eval") {
     lock('evaluator') {
-      sh 'nix flake show --all-systems | ansi2txt'
+      writeFile file: evalTargetsFile, text: evalTargets
+      try {
+        sh "/etc/jenkins/nix-eval-selected-targets.sh -t ${evalTargetsFile}"
+      } finally {
+        sh "rm -f ${evalTargetsFile}"
+      }
     }
   }
   targets.each {

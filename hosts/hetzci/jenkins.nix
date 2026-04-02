@@ -160,6 +160,7 @@ in
           hostname
           jq
           nix
+          nix-eval-jobs
           openssh
           wget
           zstd
@@ -228,6 +229,8 @@ in
     environment.etc = lib.mkMerge [
       {
         "jenkins/nix-fast-build.sh".source = "${self.outPath}/scripts/nix-fast-build.sh";
+        "jenkins/nix-eval-selected-targets.sh".source =
+          "${self.outPath}/scripts/nix-eval-selected-targets.sh";
         "jenkins/pipelines".source = filteredPipelines;
         "jenkins/casc/common.yaml".source = ./casc/common.yaml;
         "jenkins/casc/config.yaml".source = cascConfig;
