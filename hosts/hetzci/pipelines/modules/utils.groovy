@@ -115,7 +115,9 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
         sh "mkdir -v -p ${output}"
 
         manifest.build.ts_begin = run_cmd('date +%s')
-        sh "nix build --fallback -v .#${it.target} --out-link ${output}/nix"
+        lock(label: 'nix-build', quantity: 1) {
+          sh "nix build --fallback -v .#${it.target} --out-link ${output}/nix"
+        }
         manifest.build.ts_finished = run_cmd('date +%s')
       }
       // Provenance
