@@ -74,6 +74,7 @@ pipeline {
       steps {
         script {
           properties([
+            disableConcurrentBuilds(abortPrevious: true),
             githubProjectProperty(displayName: '', projectUrlStr: REPO_URL),
             pipelineTriggers([
               cron(env.CI_ENV == 'prod' ? '0 20 * * *' : '')
