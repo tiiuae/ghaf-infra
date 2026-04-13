@@ -134,7 +134,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
 
         manifest.build.ts_begin = run_cmd('date +%s')
         lock(label: 'nix-build', quantity: 1) {
-          sh "nix build --fallback -v .#${it.target} --out-link ${output}/nix"
+          sh "nix build --fallback -v .#${it.target} --out-link ${output}/unsigned-output"
         }
         manifest.build.ts_finished = run_cmd('date +%s')
       }
@@ -169,7 +169,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
             sh "mkdir -v -p ${output}/attestations"
             sh """
               attempt=1; max_attempts=5;
-              while ! provenance ${output}/nix --recursive --out ${output}/attestations/provenance.json; do
+              while ! provenance ${output}/unsigned-output --recursive --out ${output}/attestations/provenance.json; do
                 echo "provenance attempt=\$attempt failed"
                 if (( \$attempt >= \$max_attempts )); then
                   exit 1
@@ -202,7 +202,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
           def outdir = "${output}/attestations"
           sh """
             mkdir -v -p ${outdir}
-            sbomnix ${output}/nix \
+            sbomnix ${output}/unsigned-output \
               --csv ${outdir}/sbom.csv \
               --cdx ${outdir}/sbom.cdx.json \
               --spdx ${outdir}/sbom.spdx.json
@@ -230,7 +230,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
       }
       if (!it.no_image) {
         stage("Find image ${shortname}") {
-          def img_path = run_cmd("find -L ${output}/nix -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print -quit")
+          def img_path = run_cmd("find -L ${output}/unsigned-output -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print -quit")
           if (!img_path) {
             error("No image found!")
           }
