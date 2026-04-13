@@ -50,6 +50,7 @@ in
         "ghaf-manual"
         "ghaf-release-candidate"
       ];
+      withRegistryPublish = true;
       withCachix = false;
       withGithubStatus = false;
       withGithubWebhook = false;

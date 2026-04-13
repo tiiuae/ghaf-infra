@@ -28,6 +28,8 @@ REFERRER_MEDIA_TYPES = {
     "sbom_csv": "text/csv",
 }
 REPOSITORY_COMPONENT_PATTERN = re.compile(r"^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$")
+SOURCE_REF_ANNOTATION = "org.ghaf.source.ref"
+TARGET_ANNOTATION = "org.ghaf.target"
 
 
 def fail(message: str) -> NoReturn:
@@ -162,6 +164,14 @@ def publish_target_artifacts(
     image = manifest["image"]
     image_path = image["path"]
     image_signature = image["signature"]["path"]
+    source = manifest.get("source", {})
+    primary_annotations = {
+        "org.opencontainers.image.title": target,
+        "org.opencontainers.image.source": source.get("repository", ""),
+        "org.opencontainers.image.revision": source.get("revision", ""),
+        SOURCE_REF_ANNOTATION: source.get("flake_ref", ""),
+        TARGET_ANNOTATION: target,
+    }
 
     push_files = [f"{image_path}:application/octet-stream"]
     if image_signature:
@@ -171,7 +181,7 @@ def publish_target_artifacts(
         [
             "push",
             *common_args,
-            *annotation_args({"org.opencontainers.image.title": target}),
+            *annotation_args(primary_annotations),
             "--disable-path-validation",
             "--artifact-type",
             TARGET_ARTIFACT_TYPE,

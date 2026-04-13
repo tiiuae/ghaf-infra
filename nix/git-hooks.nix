@@ -10,9 +10,21 @@
     let
       # Stubbed Jenkins specific classes so they don't prevent groovy from compiling
       # Add more classes here if they block compilation
-      jenkins-groovy-stubs = pkgs.writeText "stubs.groovy" ''
-        @interface NonCPS {}
-      '';
+      jenkins-groovy-stubs = pkgs.symlinkJoin {
+        name = "jenkins-groovy-stubs-src";
+        paths = [
+          (pkgs.writeTextDir "NonCPS.groovy" ''
+            @interface NonCPS {}
+          '')
+          (pkgs.writeTextDir "org/jenkinsci/plugins/pipeline/modeldefinition/Utils.groovy" ''
+            package org.jenkinsci.plugins.pipeline.modeldefinition
+
+            class Utils {
+              static void markStageSkippedForConditional(String stageName) {}
+            }
+          '')
+        ];
+      };
 
       jenkins-groovy =
         pkgs.runCommand "jenkins-groovy-stubs"
@@ -23,7 +35,7 @@
           }
           ''
             mkdir -p "$out"
-            groovyc -d "$out" ${jenkins-groovy-stubs}
+            groovyc -d "$out" $(find ${jenkins-groovy-stubs} -name '*.groovy' -print)
           '';
 
       groovyc-check = pkgs.writeShellApplication {

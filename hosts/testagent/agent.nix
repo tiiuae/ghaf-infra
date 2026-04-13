@@ -32,6 +32,7 @@ let
       ++ (with pkgs; [
         curl
         wget
+        oras
         jdk
         git
         bashInteractive
