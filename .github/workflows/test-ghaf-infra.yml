@@ -44,7 +44,7 @@ jobs:
       cancel-in-progress: true
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@fe104658747b27e96e4f7e80cd0a94068e53901d
+        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176
         with:
           egress-policy: audit
       - uses: webfactory/ssh-agent@e83874834305fe9a4a2997156cb26c5de65a8555
