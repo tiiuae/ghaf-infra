@@ -5,6 +5,7 @@
   lib,
   inputs,
   config,
+  pkgs,
   ...
 }:
 {
@@ -37,6 +38,10 @@
     efiSupport = true;
     efiInstallAsRemovable = true;
   };
+
+  environment.systemPackages = with pkgs; [
+    efibootmgr
+  ];
 
   boot.initrd.availableKernelModules = [
     "ahci" # modern SATA devices
