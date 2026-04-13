@@ -1,6 +1,7 @@
 #!/usr/bin/env groovy
 
 import groovy.json.JsonOutput
+import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
 
 def run_cmd(String cmd) {
   return sh(script: cmd, returnStdout:true).trim()
@@ -81,6 +82,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
         repository: target_repo,
         ref: target_commit,
         revision: target_commit,
+        flake_ref: target_flake_ref,
       ],
       target: it.target,
       build: [
@@ -119,6 +121,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
         ],
       ],
     ]
+    def oci_result = null
     if (it.no_image) {
       manifest.uefi.reason = "no_image"
     } else if (!signing_possible) {
@@ -319,41 +322,51 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
                   -t '${immutable_tag}' \
                   -o '${oci_result_json}'
               """
+              oci_result = readJSON file: oci_result_json
             }
           }
         }
       }
       // Test
       if (it.testset != null && !it.testset.isEmpty()) {
-        stage("Test ${shortname}") {
-          def img_url = "${env.JENKINS_URL}/${artifacts}/${it.target}/${manifest.image.path}"
-          def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
-          def test_params = [
-              string(name: "IMG_URL", value: img_url),
-              string(name: "GHAF_FLAKE_REF", value: target_flake_ref),
-              string(name: "TESTSET", value: it.testset),
-              string(name: "DESC", value: "Triggered by ${build_href}<br>(${shortname})"),
-              string(name: "TESTAGENT_HOST", value: testagent_host),
-              booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: env.CI_ENV == "release"),
-              booleanParam(name: "RELOAD_ONLY", value: false),
-              booleanParam(name: "SECUREBOOT", value: false),
-          ]
-          def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
-            parameters: test_params
-          )
-          println("ghaf-hw-test log '${shortname}:")
-          sh "cat /var/lib/jenkins/jobs/ghaf-hw-test/builds/${job.number}/log | sed 's/^/    /'"
-          if (job.result != "SUCCESS") {
-            unstable("FAILED: ${shortname} ${it.testset}")
-            currentBuild.result = "FAILURE"
-            append_to_build_description("<a href=\"${job.absoluteUrl}\">⛔ ${shortname}</a>")
+        def testStageName = "Test ${shortname}"
+        stage(testStageName) {
+          if (env.CI_ENV == "vm") {
+            Utils.markStageSkippedForConditional(testStageName)
+            println("Skipping hardware tests for ${shortname}: CI_ENV is vm")
+          } else {
+            def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
+            def test_params = [
+                string(name: "TESTSET", value: it.testset),
+                string(name: "DESC", value: "Triggered by ${build_href}<br>(${shortname})"),
+                string(name: "TESTAGENT_HOST", value: testagent_host),
+                booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: env.CI_ENV == "release"),
+                booleanParam(name: "RELOAD_ONLY", value: false),
+                booleanParam(name: "SECUREBOOT", value: false),
+            ]
+            if (oci_result == null) {
+              error("Missing OCI publish result for ${shortname}; cannot trigger ghaf-hw-test")
+            }
+            test_params += [
+              string(name: "OCI_IMAGE_REF", value: oci_result.primary.reference),
+            ]
+            def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
+              parameters: test_params
+            )
+            println("ghaf-hw-test log '${shortname}:")
+            sh "cat /var/lib/jenkins/jobs/ghaf-hw-test/builds/${job.number}/log | sed 's/^/    /'"
+            if (job.result != "SUCCESS") {
+              unstable("FAILED: ${shortname} ${it.testset}")
+              currentBuild.result = "FAILURE"
+              append_to_build_description("<a href=\"${job.absoluteUrl}\">⛔ ${shortname}</a>")
+            }
+            copyArtifacts(
+              projectName: "ghaf-hw-test",
+              selector: specific("${job.number}"),
+              target: "${output}/test-results",
+              optional: true
+            )
           }
-          copyArtifacts(
-            projectName: "ghaf-hw-test",
-            selector: specific("${job.number}"),
-            target: "${output}/test-results",
-            optional: true
-          )
         }
         // Run an additional secure boot test only when the target requests it and
         // secure-boot-capable hardware is available in prod. X1 update tests
@@ -361,16 +374,20 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
         // regular test run cannot be replaced with a secure boot-only run.
         if (it.test_secboot && manifest.uefi.signed && env.CI_ENV == "prod") {
           stage("Test SB ${shortname}") {
-            def img_url = "${env.JENKINS_URL}/${artifacts}/${it.target}/${manifest.image.path}"
             def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
             def test_params = [
-              string(name: "IMG_URL", value: img_url),
               string(name: "TESTSET", value: it.testset),
               string(name: "DESC", value: "Triggered by ${build_href}<br>(${shortname})"),
               string(name: "TESTAGENT_HOST", value: testagent_host),
               booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: env.CI_ENV == "release"),
               booleanParam(name: "RELOAD_ONLY", value: false),
               booleanParam(name: "SECUREBOOT", value: true)
+            ]
+            if (oci_result == null) {
+              error("Missing OCI publish result for ${shortname}; cannot trigger ghaf-hw-test")
+            }
+            test_params += [
+              string(name: "OCI_IMAGE_REF", value: oci_result.primary.reference),
             ]
             def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
               parameters: test_params

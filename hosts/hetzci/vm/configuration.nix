@@ -32,6 +32,7 @@
       "ghaf-release-publish"
     ];
     withArchiveArtifacts = true;
+    withRegistryPublish = true;
     extraCasc = {
       jenkins.authorizationStrategy = "unsecured";
     };

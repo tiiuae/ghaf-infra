@@ -1,13 +1,18 @@
 #!/usr/bin/env groovy
 
+import groovy.transform.Field
+
 // SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 // SPDX-License-Identifier: Apache-2.0
 
 ////////////////////////////////////////////////////////////////////////////////
 
-def TMP_IMG_DIR = './image'
-def CONF_FILE_PATH = '/etc/jenkins/test_config.json'
-def CI_TEST_PINNED_SOURCE_FILE = '/etc/jenkins/ci-test-automation-pinned-source'
+@Field def TMP_IMG_DIR = './image'
+@Field def CONF_FILE_PATH = '/etc/jenkins/test_config.json'
+@Field def CI_TEST_PINNED_SOURCE_FILE = '/etc/jenkins/ci-test-automation-pinned-source'
+@Field def IMAGE_MEDIA_TYPE = 'application/octet-stream'
+@Field def SOURCE_REF_ANNOTATION = 'org.ghaf.source.ref'
+@Field def TARGET_ANNOTATION = 'org.ghaf.target'
 env.BOOT_PASSED = 'true'
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -23,6 +28,12 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
     string(name: 'CI_TEST_REPO_BRANCH', defaultValue: 'main', description: 'Select ci-test-automation branch to checkout.'),
     string(name: 'TEST_TAGS', defaultValue: '', description: 'Target test tags, e.g.: lenovo-x1ANDapps, SP-T140, SP-T45ORSP-T60, etc.'),
     string(
+      name: 'OCI_IMAGE_REF',
+      defaultValue: '',
+      description: '''
+        Published OCI image reference. If specified, the target device is flashed with the published image before running the tests.
+        Can be left empty, in which case IMG_URL or DEVICE_TAG may be used instead.'''.stripIndent()),
+    string(
       name: 'IMG_URL',
       defaultValue: '',
       description: '''
@@ -32,7 +43,7 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
       name: 'GHAF_FLAKE_REF',
       defaultValue: '',
       description: '''
-        Optional pinned Ghaf flake reference for flash-script. Leave empty to derive the Ghaf revision from IMG_URL.
+        Optional pinned Ghaf flake reference for flash-script. Leave empty to derive it from OCI metadata or IMG_URL.
         Set this explicitly for images built from refs that are not fetchable by commit SHA alone, such as PR merge refs.'''.stripIndent()),
     booleanParam(
       name: 'USE_LEGACY_DD_FLASH',
@@ -43,9 +54,9 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
       name: 'DEVICE_TAG',
       choiceType: 'PT_RADIO',
       description: '''
-        Select the target device. If DEVICE_TAG is selected and IMG_URL is left empty, the target device is not flashed.
+        Select the target device. If DEVICE_TAG is selected and both IMG_URL and OCI_IMAGE_REF are left empty, the target device is not flashed.
         Instead, tests will be run against the image flashed on the target device at the time of triggering this job.
-        If both IMG_URL and DEVICE_TAG are selected, the selected device is flashed with the given image.'''.stripIndent(),
+        If IMG_URL or OCI_IMAGE_REF is selected together with DEVICE_TAG, the selected device is flashed with the given image.'''.stripIndent(),
       script: [
         $class: 'GroovyScript',
         script: [
@@ -59,7 +70,8 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
       name: 'JOB_SELECTOR',
       defaultValue: '',
       description: '''
-        Select the job. If device is flashed, the job is taken from the IMG_URL and this selection is ignored.
+        Select the job. If device is flashed, the job is derived from OCI_IMAGE_REF or IMG_URL when available.
+        Otherwise this selection is used.
         For example system76-darp11-b-storeDisk-debug-installer or system76-darp11-b-storeDisk-debug.
         DEVICE_TAG is used as the job by default when not flashing.'''.stripIndent()),
     [
@@ -68,7 +80,7 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
       choiceType: 'PT_RADIO',
       description: '''
         Select the testagent-host. This parameter allows specifying the exact testagent in case Jenkins controller is
-        connected with multiple agents. Can be used together with both IMG_URL and DEVICE_TAG parameters.'''.stripIndent(),
+        connected with multiple agents. Can be used together with IMG_URL, OCI_IMAGE_REF, and DEVICE_TAG.'''.stripIndent(),
       script: [
         $class: 'GroovyScript',
         script: [
@@ -96,6 +108,16 @@ def init() {
   if(!params || params.RELOAD_ONLY) {
     return 'built-in'
   }
+  env.OCI_TARGET = ''
+  env.OCI_SOURCE_REF = ''
+  if (params.OCI_IMAGE_REF) {
+    def annotations = readJSON(
+      text: sh_ret_out("oras manifest fetch --format json '${params.OCI_IMAGE_REF}'")
+    ).content?.annotations ?: [:]
+    env.OCI_TARGET = annotations[TARGET_ANNOTATION] ?: ''
+    env.OCI_SOURCE_REF = annotations[SOURCE_REF_ANNOTATION] ?: ''
+  }
+  def flashTarget = derive_target_name(params.IMG_URL, env.OCI_TARGET)
   def deviceMap = [
     "orin-agx"           : [name: 'OrinAGX1'],
     "orin-agx-64"        : [name: 'OrinAGX64'],
@@ -105,39 +127,21 @@ def init() {
     "lenovo-x1"          : [name: 'LenovoX1-1'],
     "x1-sec-boot"        : [name: 'X1-Secure-Boot']
   ]
-  // Determine the device name
-  if(params.IMG_URL.contains("orin-agx-")) {
-    env.DEVICE_NAME = 'OrinAGX1'
-    env.DEVICE_TAG = 'orin-agx'
-  } else if(params.IMG_URL.contains("orin-agx64-")) {
-    env.DEVICE_NAME = 'OrinAGX64'
-    env.DEVICE_TAG = 'orin-agx-64'
-  } else if(params.IMG_URL.contains("orin-nx-")) {
-    env.DEVICE_NAME = 'OrinNX1'
-    env.DEVICE_TAG = 'orin-nx'
-  } else if(params.IMG_URL.contains("lenovo-x1-")) {
-    if (params.SECUREBOOT) {
-      env.DEVICE_NAME = 'X1-Secure-Boot'
-      env.DEVICE_TAG = 'x1-sec-boot'
-    } else {
-      env.DEVICE_NAME = 'LenovoX1-1'
-      env.DEVICE_TAG = 'lenovo-x1'
+  if (flashTarget) {
+    def deviceInfo = derive_device_info(flashTarget, params.SECUREBOOT)
+    if (deviceInfo) {
+      env.DEVICE_NAME = deviceInfo.name
+      env.DEVICE_TAG = deviceInfo.tag
     }
-  } else if(params.IMG_URL.contains("dell-latitude-7330-")) {
-    env.DEVICE_NAME = 'Dell7330'
-    env.DEVICE_TAG = 'dell-7330'
-  } else if(params.IMG_URL.contains("system76-darp11-b-")) {
-    env.DEVICE_NAME = 'DarterPRO'
-    env.DEVICE_TAG = 'darter-pro'
   }
-  if (params.IMG_URL && params.DEVICE_TAG) {
+  if ((params.IMG_URL || params.OCI_IMAGE_REF) && params.DEVICE_TAG) {
     env.DEVICE_TAG = params.DEVICE_TAG
     env.DEVICE_NAME = deviceMap[env.DEVICE_TAG].name
   }
   if (!env.DEVICE_TAG || env.DEVICE_TAG == null) {
-    error("DEVICE_TAG is not defined and could not be derived from IMG_URL ${env.IMG_URL}")
+    error("DEVICE_TAG is not defined and could not be derived from IMG_URL '${params.IMG_URL}', OCI_IMAGE_REF '${params.OCI_IMAGE_REF}', or explicit DEVICE_TAG")
   }
-  if (!params.IMG_URL || params.IMG_URL == null) {
+  if ((!params.IMG_URL && !params.OCI_IMAGE_REF) || params.DEVICE_TAG) {
     env.DEVICE_NAME = deviceMap[env.DEVICE_TAG].name
   }
   def label = env.DEVICE_TAG
@@ -174,11 +178,55 @@ def run_wget(String url, String to_dir) {
   return sh_ret_out("wget --force-directories --timestamping -P ${to_dir} ${url} 2>&1 | grep -Po '${to_dir}[^’]+'")
 }
 
+def derive_target_name(String imgUrl, String ociTarget) {
+  def normalizedTarget = ociTarget?.trim()
+  if (normalizedTarget) {
+    return normalizedTarget
+  }
+  if (!imgUrl) {
+    return null
+  }
+  def match = imgUrl =~ /commit_[0-9a-f]{5,40}\/([^\/]+)/
+  if (match) {
+    return match.group(1)
+  }
+  return null
+}
+
 @NonCPS
-def resolve_ghaf_flake_ref(String explicitFlakeRef, String imgUrl) {
+def derive_device_info(String target, boolean secureboot) {
+  if (target.contains("nvidia-jetson-orin-agx64")) {
+    return [name: 'OrinAGX64', tag: 'orin-agx-64']
+  }
+  if (target.contains("nvidia-jetson-orin-agx")) {
+    return [name: 'OrinAGX1', tag: 'orin-agx']
+  }
+  if (target.contains("nvidia-jetson-orin-nx")) {
+    return [name: 'OrinNX1', tag: 'orin-nx']
+  }
+  if (target.contains("lenovo-x1")) {
+    if (secureboot && !target.contains("installer")) {
+      return [name: 'X1-Secure-Boot', tag: 'x1-sec-boot']
+    }
+    return [name: 'LenovoX1-1', tag: 'lenovo-x1']
+  }
+  if (target.contains("dell-latitude-7330")) {
+    return [name: 'Dell7330', tag: 'dell-7330']
+  }
+  if (target.contains("system76-darp11-b")) {
+    return [name: 'DarterPRO', tag: 'darter-pro']
+  }
+  return null
+}
+
+def resolve_ghaf_flake_ref(String explicitFlakeRef, String imgUrl, String ociFlakeRef) {
   def normalizedFlakeRef = explicitFlakeRef?.trim()
   if (normalizedFlakeRef) {
     return normalizedFlakeRef
+  }
+  def normalizedOciFlakeRef = ociFlakeRef?.trim()
+  if (normalizedOciFlakeRef) {
+    return normalizedOciFlakeRef
   }
   def match = imgUrl =~ /commit_([a-f0-9]{40})/
   if (match) {
@@ -233,12 +281,13 @@ def ghaf_robot_test(String tags) {
 ////////////////////////////////////////////////////////////////////////////////
 
 pipeline {
-  agent { label init() }
+  agent none
   options {
     buildDiscarder(logRotator(numToKeepStr: '100'))
   }
   stages {
     stage('Set properties') {
+      agent { label 'built-in' }
       steps {
         script {
           properties([
@@ -248,6 +297,7 @@ pipeline {
       }
     }
     stage('Reload only') {
+      agent { label 'built-in' }
       when { expression { params && params.RELOAD_ONLY } }
       steps {
         script {
@@ -257,227 +307,252 @@ pipeline {
         }
       }
     }
-    stage('Checkout') {
+    stage('Initialize') {
+      agent { label 'built-in' }
       steps {
-        deleteDir()
         script {
-          if (params.USE_FLAKE_PINNED_CI_TEST) {
-            def pinned_src = sh_ret_out("cat ${CI_TEST_PINNED_SOURCE_FILE}")
-            println("Using flake-pinned ci-test-automation source: ${pinned_src}")
-            sh """
-              if [ ! -d "${pinned_src}/Robot-Framework/test-suites" ]; then
-                echo "ERROR: invalid ci-test-automation source path '${pinned_src}'"
-                exit 1
-              fi
-              cp -r "${pinned_src}/." .
-              chmod -R u+w .
-            """
-          } else {
-            checkout scmGit(
-              branches: [[name: "${params.CI_TEST_REPO_BRANCH}"]],
-              userRemoteConfigs: [[url: "${params.CI_TEST_REPO_URL}"]]
-            )
-          }
+          env.TEST_AGENT_LABEL = init()
         }
       }
     }
-    stage('Setup') {
-      steps {
-        script {
-          env.TARGET = env.DEVICE_TAG
-          if(params.IMG_URL) {
-            def match = params.IMG_URL =~ /commit_[0-9a-f]{5,40}\/([^\/]+)/
-            if(match) {
-              env.TARGET = "${match.group(1)}"
+    stage('Run on test agent') {
+      agent { label "${env.TEST_AGENT_LABEL}" }
+      stages {
+        stage('Checkout') {
+          steps {
+            deleteDir()
+            script {
+              if (params.USE_FLAKE_PINNED_CI_TEST) {
+                def pinned_src = sh_ret_out("cat ${CI_TEST_PINNED_SOURCE_FILE}")
+                println("Using flake-pinned ci-test-automation source: ${pinned_src}")
+                sh """
+                  if [ ! -d "${pinned_src}/Robot-Framework/test-suites" ]; then
+                    echo "ERROR: invalid ci-test-automation source path '${pinned_src}'"
+                    exit 1
+                  fi
+                  cp -r "${pinned_src}/." .
+                  chmod -R u+w .
+                """
+              } else {
+                checkout scmGit(
+                  branches: [[name: "${params.CI_TEST_REPO_BRANCH}"]],
+                  userRemoteConfigs: [[url: "${params.CI_TEST_REPO_URL}"]]
+                )
+              }
             }
-          } else {
-            def sel = params.JOB_SELECTOR
-            if (!sel) {
+          }
+        }
+        stage('Setup') {
+          steps {
+            script {
               env.TARGET = env.DEVICE_TAG
-            } else {
-              env.TARGET = sel
+              def explicitTarget = derive_target_name(params.IMG_URL, env.OCI_TARGET)
+              if (explicitTarget) {
+                env.TARGET = explicitTarget
+              } else {
+                def sel = params.JOB_SELECTOR
+                if (!sel) {
+                  env.TARGET = env.DEVICE_TAG
+                } else {
+                  env.TARGET = sel
+                }
+              }
+              env.TEST_CONFIG_DIR = 'Robot-Framework/config'
+              sh """
+                mkdir -p ${TEST_CONFIG_DIR}
+                rm -f ${TEST_CONFIG_DIR}/*.json
+                ln -sv ${CONF_FILE_PATH} ${TEST_CONFIG_DIR}
+                echo { \\\"Job\\\": \\\"${env.TARGET}\\\" } > ${TEST_CONFIG_DIR}/${BUILD_NUMBER}.json
+                ls -la ${TEST_CONFIG_DIR}
+              """
+              // Determine mount commands
+              if(env.TARGET.contains("microchip-icicle-")) {
+                def muxport = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'usb_sd_mux_port')
+                env.MOUNT_CMD = "/run/wrappers/bin/sudo usbsdmux ${muxport} host; sleep 10"
+                env.UNMOUNT_CMD = "/run/wrappers/bin/sudo usbsdmux ${muxport} dut"
+              } else {
+                def serial = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'usbhub_serial')
+                env.MOUNT_CMD = "/run/wrappers/bin/sudo AcronameHubCLI -u 0 -s ${serial}; sleep 10"
+                env.UNMOUNT_CMD = "/run/wrappers/bin/sudo AcronameHubCLI -u 1 -s ${serial}; sleep 10"
+              }
             }
           }
-          env.TEST_CONFIG_DIR = 'Robot-Framework/config'
-          sh """
-            mkdir -p ${TEST_CONFIG_DIR}
-            rm -f ${TEST_CONFIG_DIR}/*.json
-            ln -sv ${CONF_FILE_PATH} ${TEST_CONFIG_DIR}
-            echo { \\\"Job\\\": \\\"${env.TARGET}\\\" } > ${TEST_CONFIG_DIR}/${BUILD_NUMBER}.json
-            ls -la ${TEST_CONFIG_DIR}
-          """
-          // Determine mount commands
-          if(params.IMG_URL.contains("microchip-icicle-")) {
-            def muxport = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'usb_sd_mux_port')
-            env.MOUNT_CMD = "/run/wrappers/bin/sudo usbsdmux ${muxport} host; sleep 10"
-            env.UNMOUNT_CMD = "/run/wrappers/bin/sudo usbsdmux ${muxport} dut"
-          } else {
-            def serial = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'usbhub_serial')
-            env.MOUNT_CMD = "/run/wrappers/bin/sudo AcronameHubCLI -u 0 -s ${serial}; sleep 10"
-            env.UNMOUNT_CMD = "/run/wrappers/bin/sudo AcronameHubCLI -u 1 -s ${serial}; sleep 10"
+        }
+        stage('Image download') {
+          when { expression { params && (params.IMG_URL || params.OCI_IMAGE_REF) } }
+          steps {
+            script {
+              def img_path
+              if (params.OCI_IMAGE_REF) {
+                def pullResult = readJSON(
+                  text: sh_ret_out("oras pull --format json -o '${TMP_IMG_DIR}' '${params.OCI_IMAGE_REF}'")
+                )
+                img_path = pullResult.files?.find { it.mediaType == IMAGE_MEDIA_TYPE }?.path
+                if (!img_path) {
+                  error("Unable to derive image file from OCI image '${params.OCI_IMAGE_REF}'")
+                }
+              } else {
+                img_path = run_wget(params.IMG_URL, TMP_IMG_DIR)
+              }
+              println "Downloaded image to workspace: ${img_path}"
+              if (params.USE_LEGACY_DD_FLASH) {
+                // Uncompress for the legacy dd flashing path.
+                if(img_path.endsWith(".zst")) {
+                  sh "zstd -dfv ${img_path}"
+                  // env.IMG_PATH stores the path to the uncompressed image
+                  env.IMG_PATH = img_path.substring(0, img_path.lastIndexOf('.'))
+                } else {
+                  env.IMG_PATH = img_path
+                }
+                println "Uncompressed image at: ${env.IMG_PATH}"
+              } else {
+                // flash-script handles .zst natively; pass the original download path.
+                env.FLASH_INPUT_PATH = img_path
+                println "Flash input: ${env.FLASH_INPUT_PATH}"
+              }
+            }
+          }
+        }
+        stage('Flash') {
+          when { expression { params && (params.IMG_URL || params.OCI_IMAGE_REF) } }
+          steps {
+            script {
+              // Mount the target disk
+              sh "${env.MOUNT_CMD}"
+              // Read the device name
+              def dev = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'ext_drive_by-id')
+              println "Checking that flash target '$dev' is connected..."
+              sh """
+                if /run/wrappers/bin/sudo test -f ${dev}; then
+                  echo "dev ${dev} found as regular file, removing the file and trying re-mount"
+                  ${env.UNMOUNT_CMD}; /run/wrappers/bin/sudo rm ${dev}; ${env.MOUNT_CMD}
+                fi
+                if ! /run/wrappers/bin/sudo test -L ${dev}; then
+                  echo "Symlink ${dev} not found. Failed to connect target USB disk to test agent."
+                  echo "Check USB cables. Maybe need to reboot test agent or Acroname USB hub."
+                  echo "Aborting flashing ${env.DEVICE_NAME}"
+                  exit 1
+                fi
+              """
+              if (params.USE_LEGACY_DD_FLASH) {
+                // Wipe possible ZFS leftovers, more details here:
+                // https://github.com/tiiuae/ghaf/blob/454b18bc/packages/installer/ghaf-installer.sh#L75
+                if(env.TARGET.contains("lenovo-x1")) {
+                  echo "Wiping filesystem..."
+                  def SECTOR = 512
+                  def MIB_TO_SECTORS = 20480
+                  // Disk size in 512-byte sectors
+                  def SECTORS = sh(script: "/run/wrappers/bin/sudo blockdev --getsz ${dev}", returnStdout: true).trim()
+                  // Unmount possible mounted filesystems
+                  sh "sync; /run/wrappers/bin/sudo umount -q ${dev}* || true"
+                  // Wipe first 10MiB of disk
+                  sh "/run/wrappers/bin/sudo dd if=/dev/zero of=${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} conv=fsync status=none"
+                  // Wipe last 10MiB of disk
+                  sh "/run/wrappers/bin/sudo dd if=/dev/zero of=${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} seek=\$(( ${SECTORS} - ${MIB_TO_SECTORS} )) conv=fsync status=none"
+                }
+                // Write the image
+                sh "/run/wrappers/bin/sudo dd if=${env.IMG_PATH} of=${dev} bs=1M status=progress conv=fsync"
+              } else {
+                if (env.FLASH_INPUT_PATH.endsWith('.raw')) {
+                  error("flash-script does not support '.raw' images. Enable USE_LEGACY_DD_FLASH to flash '${env.FLASH_INPUT_PATH}' with dd.")
+                }
+                def ghafFlakeRef = resolve_ghaf_flake_ref(params.GHAF_FLAKE_REF, params.IMG_URL, env.OCI_SOURCE_REF)
+                if (!ghafFlakeRef) {
+                  if (params.OCI_IMAGE_REF) {
+                    error("Missing GHAF_FLAKE_REF and unable to derive it from OCI image '${params.OCI_IMAGE_REF}'. Set GHAF_FLAKE_REF or enable USE_LEGACY_DD_FLASH.")
+                  }
+                  error("Missing GHAF_FLAKE_REF and unable to derive Ghaf commit from IMG_URL '${params.IMG_URL}'. Set GHAF_FLAKE_REF or enable USE_LEGACY_DD_FLASH.")
+                }
+                println "Building flash-script from GHAF_FLAKE_REF: ${ghafFlakeRef}"
+                def flashScriptPath = sh_ret_out(
+                  "nix build --no-link --print-out-paths '${ghafFlakeRef}#packages.x86_64-linux.flash-script'"
+                )
+                // flash-script validates /dev/sdX format; resolve the by-id symlink.
+                def resolved_dev = sh_ret_out("/run/wrappers/bin/sudo readlink -f ${dev}")
+                sh "/run/wrappers/bin/sudo ${flashScriptPath}/bin/flash-script -d ${resolved_dev} -i ${env.FLASH_INPUT_PATH} -f"
+              }
+              // Unmount
+              sh "${env.UNMOUNT_CMD}"
+              sh """
+                if /run/wrappers/bin/sudo test -L ${dev}; then
+                  echo "Symlink ${dev} was found. Failed to unmount target USB disk from test agent."
+                  exit 1
+                fi
+              """
+              currentBuild.description = "${currentBuild.description}<br>✅ Device flashed"
+            }
+          }
+        }
+        stage('Run Ghaf-installer') {
+          when { expression { env.TARGET.contains("installer") && !params.WIPE_ONLY } }
+          steps {
+            script {
+              sh "${env.UNMOUNT_CMD}"
+              println "Run ghaf-installer"
+              ghaf_robot_test('installer')
+              println "Disconnect SSD from the laptop"
+              sh "${env.MOUNT_CMD}"
+            }
+          }
+        }
+        stage('Boot test') {
+          when { expression { params && params.BOOT && !params.WIPE_ONLY } }
+          steps {
+            script {
+              ghaf_robot_test("relaybootAND${env.DEVICE_BOOT_TAG}")
+            }
+          }
+        }
+        stage('HW test') {
+          when { expression { env.BOOT_PASSED == 'true' && params.TEST_TAGS && !params.WIPE_ONLY } }
+          steps {
+            script {
+              ghaf_robot_test("${params.TEST_TAGS}")
+            }
+          }
+        }
+        stage('Wipe system') {
+          when { expression { env.TARGET.contains("installer")} }
+          steps {
+            script {
+              if (env.TARGET.contains("installer") && env.DEVICE_TAG == "darter-pro") {
+                ghaf_robot_test('break')
+              }
+              ghaf_robot_test('relay-turnoff')
+              println "Connect SSD to the laptop"
+              sh "${env.UNMOUNT_CMD}; sleep 10"
+              println "Wipe the internal memory of the laptop"
+              ghaf_robot_test('wiping')
+            }
+          }
+        }
+        stage('Turn off') {
+          when { expression { params && params.TURN_OFF } }
+          steps {
+            script {
+              ghaf_robot_test("relay-turnoff")
+            }
           }
         }
       }
-    }
-    stage('Image download') {
-      when { expression { params && params.IMG_URL } }
-      steps {
-        script {
-          def img_path = run_wget(params.IMG_URL, TMP_IMG_DIR)
-          println "Downloaded image to workspace: ${img_path}"
-          if (params.USE_LEGACY_DD_FLASH) {
-            // Uncompress for the legacy dd flashing path.
-            if(img_path.endsWith(".zst")) {
-              sh "zstd -dfv ${img_path}"
-              // env.IMG_PATH stores the path to the uncompressed image
-              env.IMG_PATH = img_path.substring(0, img_path.lastIndexOf('.'))
-            } else {
-              env.IMG_PATH = img_path
+      post {
+        always {
+          script {
+            if (env.ROBOT_EXECUTED != null) {
+              def test_artifacts = '' +
+                'Robot-Framework/test-suites/**/*.html, ' +
+                'Robot-Framework/test-suites/**/*.xml, ' +
+                'Robot-Framework/test-suites/**/*.png, ' +
+                'Robot-Framework/test-suites/**/*.jpeg, ' +
+                'Robot-Framework/test-suites/**/*.mp4, ' +
+                'Robot-Framework/test-suites/**/*.mkv, ' +
+                'Robot-Framework/test-suites/**/*.wav, ' +
+                'Robot-Framework/test-suites/**/*.txt'
+              archiveArtifacts allowEmptyArchive: true, artifacts: test_artifacts
             }
-            println "Uncompressed image at: ${env.IMG_PATH}"
-          } else {
-            // flash-script handles .zst natively; pass the original download path.
-            env.FLASH_INPUT_PATH = img_path
-            println "Flash input: ${env.FLASH_INPUT_PATH}"
+            sh "rm -rf ${TMP_IMG_DIR} || true"
           }
         }
-      }
-    }
-    stage('Flash') {
-      when { expression { params && params.IMG_URL } }
-      steps {
-        script {
-          // Mount the target disk
-          sh "${env.MOUNT_CMD}"
-          // Read the device name
-          def dev = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'ext_drive_by-id')
-          println "Checking that flash target '$dev' is connected..."
-          sh """
-            if /run/wrappers/bin/sudo test -f ${dev}; then
-              echo "dev ${dev} found as regular file, removing the file and trying re-mount"
-              ${env.UNMOUNT_CMD}; /run/wrappers/bin/sudo rm ${dev}; ${env.MOUNT_CMD}
-            fi
-            if ! /run/wrappers/bin/sudo test -L ${dev}; then
-              echo "Symlink ${dev} not found. Failed to connect target USB disk to test agent."
-              echo "Check USB cables. Maybe need to reboot test agent or Acroname USB hub."
-              echo "Aborting flashing ${env.DEVICE_NAME}"
-              exit 1
-            fi
-          """
-          if (params.USE_LEGACY_DD_FLASH) {
-            // Wipe possible ZFS leftovers, more details here:
-            // https://github.com/tiiuae/ghaf/blob/454b18bc/packages/installer/ghaf-installer.sh#L75
-            if(params.IMG_URL.contains("lenovo-x1-")) {
-              echo "Wiping filesystem..."
-              def SECTOR = 512
-              def MIB_TO_SECTORS = 20480
-              // Disk size in 512-byte sectors
-              def SECTORS = sh(script: "/run/wrappers/bin/sudo blockdev --getsz ${dev}", returnStdout: true).trim()
-              // Unmount possible mounted filesystems
-              sh "sync; /run/wrappers/bin/sudo umount -q ${dev}* || true"
-              // Wipe first 10MiB of disk
-              sh "/run/wrappers/bin/sudo dd if=/dev/zero of=${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} conv=fsync status=none"
-              // Wipe last 10MiB of disk
-              sh "/run/wrappers/bin/sudo dd if=/dev/zero of=${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} seek=\$(( ${SECTORS} - ${MIB_TO_SECTORS} )) conv=fsync status=none"
-            }
-            // Write the image
-            sh "/run/wrappers/bin/sudo dd if=${env.IMG_PATH} of=${dev} bs=1M status=progress conv=fsync"
-          } else {
-            if (env.FLASH_INPUT_PATH.endsWith('.raw')) {
-              error("flash-script does not support '.raw' images. Enable USE_LEGACY_DD_FLASH to flash '${env.FLASH_INPUT_PATH}' with dd.")
-            }
-            def ghafFlakeRef = resolve_ghaf_flake_ref(params.GHAF_FLAKE_REF, params.IMG_URL)
-            if (!ghafFlakeRef) {
-              error("Missing GHAF_FLAKE_REF and unable to derive Ghaf commit from IMG_URL '${params.IMG_URL}'. Set GHAF_FLAKE_REF or enable USE_LEGACY_DD_FLASH.")
-            }
-            println "Building flash-script from GHAF_FLAKE_REF: ${ghafFlakeRef}"
-            def flashScriptPath = sh_ret_out(
-              "nix build --no-link --print-out-paths '${ghafFlakeRef}#packages.x86_64-linux.flash-script'"
-            )
-            // flash-script validates /dev/sdX format; resolve the by-id symlink.
-            def resolved_dev = sh_ret_out("/run/wrappers/bin/sudo readlink -f ${dev}")
-            sh "/run/wrappers/bin/sudo ${flashScriptPath}/bin/flash-script -d ${resolved_dev} -i ${env.FLASH_INPUT_PATH} -f"
-          }
-          // Unmount
-          sh "${env.UNMOUNT_CMD}"
-          sh """
-            if /run/wrappers/bin/sudo test -L ${dev}; then
-              echo "Symlink ${dev} was found. Failed to unmount target USB disk from test agent."
-              exit 1
-            fi
-          """
-          currentBuild.description = "${currentBuild.description}<br>✅ Device flashed"
-        }
-      }
-    }
-    stage('Run Ghaf-installer') {
-      when { expression { ( env.IMG_URL.contains("installer") || env.TARGET.contains("installer") ) && !params.WIPE_ONLY } }
-      steps {
-        script {
-          sh "${env.UNMOUNT_CMD}"
-          println "Run ghaf-installer"
-          ghaf_robot_test('installer')
-          println "Disconnect SSD from the laptop"
-          sh "${env.MOUNT_CMD}"
-        }
-      }
-    }
-    stage('Boot test') {
-      when { expression { params && params.BOOT && !params.WIPE_ONLY } }
-      steps {
-        script {
-          ghaf_robot_test("relaybootAND${env.DEVICE_BOOT_TAG}")
-        }
-      }
-    }
-    stage('HW test') {
-      when { expression { env.BOOT_PASSED == 'true' && params.TEST_TAGS && !params.WIPE_ONLY } }
-      steps {
-        script {
-          ghaf_robot_test("${params.TEST_TAGS}")
-        }
-      }
-    }
-    stage('Wipe system') {
-      when { expression { env.TARGET.contains("installer")} }
-      steps {
-        script {
-          if (env.TARGET.contains("installer") && env.DEVICE_TAG == "darter-pro") {
-            ghaf_robot_test('break')
-          }
-          ghaf_robot_test('relay-turnoff')
-          println "Connect SSD to the laptop"
-          sh "${env.UNMOUNT_CMD}; sleep 10"
-          println "Wipe the internal memory of the laptop"
-          ghaf_robot_test('wiping')
-        }
-      }
-    }
-    stage('Turn off') {
-      when { expression { params && params.TURN_OFF } }
-      steps {
-        script {
-          ghaf_robot_test("relay-turnoff")
-        }
-      }
-    }
-  }
-  post {
-    always {
-      script {
-        if (env.ROBOT_EXECUTED != null) {
-          def test_artifacts = '' +
-            'Robot-Framework/test-suites/**/*.html, ' +
-            'Robot-Framework/test-suites/**/*.xml, ' +
-            'Robot-Framework/test-suites/**/*.png, ' +
-            'Robot-Framework/test-suites/**/*.jpeg, ' +
-            'Robot-Framework/test-suites/**/*.mp4, ' +
-            'Robot-Framework/test-suites/**/*.mkv, ' +
-            'Robot-Framework/test-suites/**/*.wav, ' +
-            'Robot-Framework/test-suites/**/*.txt'
-          archiveArtifacts allowEmptyArchive: true, artifacts: test_artifacts
-        }
-        sh "rm -rf ${TMP_IMG_DIR} || true"
       }
     }
   }
