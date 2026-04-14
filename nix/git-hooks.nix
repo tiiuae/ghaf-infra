@@ -37,6 +37,22 @@
           exec groovyc --classpath "${jenkins-groovy}" -d "$tmpdir" "$@"
         '';
       };
+
+      python-env = pkgs.python3.withPackages (
+        pp: with pp; [
+          aiohttp
+          deploykit
+          invoke
+          loguru
+          prometheus-client
+          pycodestyle
+          pytest
+          pylint
+          requests
+          tabulate
+          urllib3
+        ]
+      );
     in
     {
       # See https://flake.parts/options/pre-commit-hooks-nix
@@ -87,6 +103,13 @@
           };
           # python formatter
           ruff-format.enable = true;
+          pytest-tasks = {
+            enable = true;
+            name = "pytest-tasks";
+            entry = "${pkgs.lib.getExe' python-env "pytest"} -q tests/test_tasks.py";
+            files = "^(tasks\\.py|tests/test_tasks\\.py)$";
+            pass_filenames = false;
+          };
           # github actions linter
           actionlint.enable = true;
           # python linter
@@ -97,21 +120,7 @@
               "--enable=useless-suppression"
               "--fail-on=useless-suppression"
             ];
-            package = pkgs.python3.withPackages (
-              pp: with pp; [
-                aiohttp
-                deploykit
-                invoke
-                loguru
-                prometheus-client
-                pycodestyle
-                pytest
-                pylint
-                requests
-                tabulate
-                urllib3
-              ]
-            );
+            package = python-env;
           };
           groovyc = {
             enable = true;
