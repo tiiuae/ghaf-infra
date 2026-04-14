@@ -13,7 +13,6 @@
 
   sops.defaultSopsFile = ./secrets.yaml;
 
-  nixpkgs.hostPlatform = "x86_64-linux";
   system.stateVersion = "25.11";
   networking.hostName = "testagent-dbg";
   services.testagent = {

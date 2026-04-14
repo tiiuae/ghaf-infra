@@ -36,7 +36,6 @@
   };
 
   system.stateVersion = lib.mkForce "24.05";
-  nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "ghaf-log";
 
   services.monitoring = {

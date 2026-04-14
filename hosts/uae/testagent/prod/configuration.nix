@@ -22,7 +22,6 @@
     };
   };
 
-  nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "uae-testagent-prod";
   services.testagent = {
     variant = "prod";

@@ -12,9 +12,10 @@ at the end.
 
 ## Host Overview
 
-The full host inventory (IPs, SSH keys, Nebula addresses) lives in
-[`hosts/machines.nix`](../hosts/machines.nix). The sections below group hosts
-by role and describe how they relate to one another.
+The canonical host inventory lives in
+[`hosts/machines.nix`](../hosts/machines.nix). It records host modules, target
+systems, and machine metadata such as IPs, SSH keys, and Nebula addresses. The
+sections below group hosts by role and describe how they relate to one another.
 
 ### Jenkins Controllers
 
@@ -346,4 +347,4 @@ See [Monitoring](./monitoring.md) for development and debugging details.
 - [Jenkins authentication](./jenkins-authentication.md) — OIDC auth flow
 - [Jenkins test agents](./jenkins-testagents.md) — on-prem test agent setup
 - [Jenkins CI development](../hosts/hetzci/README.md) — CI environments and pipeline overview
-- [`hosts/machines.nix`](../hosts/machines.nix) — host inventory (IPs, keys, Nebula addresses)
+- [`hosts/machines.nix`](../hosts/machines.nix) — canonical host inventory (modules, systems, deploy metadata, IPs, keys, Nebula addresses)

@@ -69,7 +69,7 @@ ghaf-infra
 │   ├── hetzci/         # Jenkins CI environments (see hetzci/README.md)
 │   ├── testagent/      # On-prem test agents
 │   ├── ghaf-*/         # Supporting services (monitoring, auth, registry, etc.)
-│   └── machines.nix    # Host inventory (IPs, keys, Nebula addresses)
+│   └── machines.nix    # Canonical host inventory (modules, systems, deploy metadata, IPs, keys)
 ├── nix/                # Flake plumbing (deployments, apps, git-hooks)
 ├── scripts/            # Operational scripts
 ├── services/           # Shared NixOS service modules

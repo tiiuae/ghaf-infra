@@ -41,7 +41,6 @@ in
     };
   };
 
-  nixpkgs.hostPlatform = "aarch64-linux";
   networking.hostName = "hetzarm-dbg-1";
 
   # Nixos-anywhere kexec switch fails on hetzner cloud arm VMs without this

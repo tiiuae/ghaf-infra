@@ -7,7 +7,8 @@
   ...
 }:
 let
-  machines = import ../hosts/machines.nix;
+  hostInventory = import ../hosts/machines.nix;
+  isDeployableHost = host: host ? machine;
 
   inherit (inputs) deploy-rs;
 
@@ -24,41 +25,14 @@ let
       };
   };
 
-  x86-nodes = {
-    testagent-prod = mkDeployment "testagent-prod" machines.testagent-prod.ip;
-    testagent-dev = mkDeployment "testagent-dev" machines.testagent-dev.ip;
-    testagent-dbg = mkDeployment "testagent-dbg" machines.testagent-dbg.ip;
-    testagent2-prod = mkDeployment "testagent2-prod" machines.testagent2-prod.ip;
-    testagent-release = mkDeployment "testagent-release" machines.testagent-release.ip;
-    nethsm-gateway = mkDeployment "nethsm-gateway" machines.nethsm-gateway.ip;
-    ghaf-log = mkDeployment "ghaf-log" machines.ghaf-log.ip;
-    ghaf-webserver = mkDeployment "ghaf-webserver" machines.ghaf-webserver.ip;
-    ghaf-auth = mkDeployment "ghaf-auth" machines.ghaf-auth.ip;
-    ghaf-monitoring = mkDeployment "ghaf-monitoring" machines.ghaf-monitoring.ip;
-    ghaf-lighthouse = mkDeployment "ghaf-lighthouse" machines.ghaf-lighthouse.ip;
-    ghaf-fleetdm = mkDeployment "ghaf-fleetdm" machines.ghaf-fleetdm.ip;
-    ghaf-registry = mkDeployment "ghaf-registry" machines.ghaf-registry.ip;
-    hetzci-release = mkDeployment "hetzci-release" machines.hetzci-release.ip;
-    hetzci-prod = mkDeployment "hetzci-prod" machines.hetzci-prod.ip;
-    hetzci-dbg = mkDeployment "hetzci-dbg" machines.hetzci-dbg.ip;
-    hetzci-dev = mkDeployment "hetzci-dev" machines.hetzci-dev.ip;
-    hetz86-1 = mkDeployment "hetz86-1" machines.hetz86-1.ip;
-    hetz86-builder = mkDeployment "hetz86-builder" machines.hetz86-builder.ip;
-    hetz86-dbg-1 = mkDeployment "hetz86-dbg-1" machines.hetz86-dbg-1.ip;
-    hetz86-rel-2 = mkDeployment "hetz86-rel-2" machines.hetz86-rel-2.ip;
-    uae-lab-node1 = mkDeployment "uae-lab-node1" machines.uae-lab-node1.ip;
-    uae-nethsm-gateway = mkDeployment "uae-nethsm-gateway" machines.uae-nethsm-gateway.ip;
-    uae-azureci-prod = mkDeployment "uae-azureci-prod" machines.uae-azureci-prod.ip;
-    uae-azureci-az86-1 = mkDeployment "uae-azureci-az86-1" machines.uae-azureci-az86-1.ip;
-    uae-testagent-prod = mkDeployment "uae-testagent-prod" machines.uae-testagent-prod.ip;
-  };
+  mkNodesFor =
+    system:
+    lib.mapAttrs (name: host: mkDeployment name host.machine.ip) (
+      lib.filterAttrs (_: host: isDeployableHost host && host.system == system) hostInventory
+    );
 
-  aarch64-nodes = {
-    hetzarm = mkDeployment "hetzarm" machines.hetzarm.ip;
-    hetzarm-dbg-1 = mkDeployment "hetzarm-dbg-1" machines.hetzarm-dbg-1.ip;
-    hetzarm-rel-1 = mkDeployment "hetzarm-rel-1" machines.hetzarm-rel-1.ip;
-    uae-azureci-hetzarm-1 = mkDeployment "uae-azureci-hetzarm-1" machines.uae-azureci-hetzarm-1.ip;
-  };
+  x86-nodes = mkNodesFor "x86_64-linux";
+  aarch64-nodes = mkNodesFor "aarch64-linux";
 
   nodes = x86-nodes // aarch64-nodes;
 in

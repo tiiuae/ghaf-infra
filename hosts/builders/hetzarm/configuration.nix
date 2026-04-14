@@ -40,7 +40,6 @@ in
     };
   };
 
-  nixpkgs.hostPlatform = "aarch64-linux";
   networking.hostName = "hetzarm";
 
   cachix-push = {

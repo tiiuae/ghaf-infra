@@ -89,7 +89,6 @@ in
 
   sops.defaultSopsFile = ./secrets.yaml;
   system.stateVersion = lib.mkForce "25.11";
-  nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "ghaf-registry";
 
   sops = {

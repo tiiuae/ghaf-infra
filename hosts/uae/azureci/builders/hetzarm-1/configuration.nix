@@ -36,7 +36,6 @@ in
 
   # this server has been initialized with 25.05 with nixos-anywhere
   system.stateVersion = lib.mkForce "25.05";
-  nixpkgs.hostPlatform = "aarch64-linux";
 
   networking.hostName = "uae-azureci-hetzarm-1";
 

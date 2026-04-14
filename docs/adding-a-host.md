@@ -45,7 +45,6 @@ service modules the host needs, and user modules:
   sops.defaultSopsFile = ./secrets.yaml;
 
   system.stateVersion = lib.mkForce "24.05";
-  nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "ghaf-example";
 }
 ```
@@ -80,41 +79,28 @@ partitioning for the target disk. Identify the disk device ID on the server
 }
 ```
 
-### 3. Add entry to `hosts/machines.nix`
+### 3. Add the host to `hosts/machines.nix`
 
-Add the host's IP (and optionally `internal_ip`, `nebula_ip`, `publicKey`):
+Add a new inventory entry with the module path, target system, and machine
+metadata such as the host IP (and optionally `internal_ip`, `nebula_ip`,
+`publicKey`):
 
 ```nix
 ghaf-example = {
-  ip = "1.2.3.4";
+  module = ./ghaf-example/configuration.nix;
+  system = "x86_64-linux";
+  machine = {
+    ip = "1.2.3.4";
+  };
 };
 ```
 
-The `publicKey` field is populated after the first install (see
-[print-keys](./tasks.md#print-keys)).
-
-### 4. Register host in `hosts/default.nix`
-
-In `hosts/default.nix`, add the host to the `hostModules` attrset:
-
-```nix
-hostModules = {
-  # ...
-  ghaf-example = ./ghaf-example/configuration.nix;
-};
-```
-
-`flake.nixosModules.nixos-ghaf-example` and
-`flake.nixosConfigurations.ghaf-example` are generated from this entry
-automatically.
-
-### 5. Add deploy-rs node to `nix/deployments.nix`
-
-Add the host to the appropriate node set (`x86-nodes` or `aarch64-nodes`):
-
-```nix
-ghaf-example = mkDeployment "ghaf-example" machines.ghaf-example.ip;
-```
+This file drives `flake.nixosConfigurations.*` and `nix/deployments.nix`
+automatically. For normal hosts, `system` also drives `nixpkgs.hostPlatform`,
+so it does not need to be restated in the host config. VMs or other
+non-deploy-rs hosts can omit the `machine` attrset; VM-style outliers should
+also set `kind = "vm"`. The `publicKey` field is populated after the first
+install (see [print-keys](./tasks.md#print-keys)).
 
 ## Provisioning (first install)
 
@@ -138,7 +124,7 @@ After the first install the host has generated its SSH host key. The
 following steps retrieve that key, add it to sops, and redeploy so the
 host receives its encrypted secrets.
 
-### 6. Add host age key to `.sops.yaml`
+### 4. Add host age key to `.sops.yaml`
 
 Retrieve the host's SSH public key and convert it to an age key:
 
@@ -152,7 +138,7 @@ Add the resulting age key to the `keys` section of `.sops.yaml`:
 - &ghaf-example age1...
 ```
 
-### 7. Add creation rule in `.sops.yaml`
+### 5. Add creation rule in `.sops.yaml`
 
 Add a `creation_rules` entry so sops knows which keys can decrypt the
 host's secrets:
@@ -165,7 +151,7 @@ host's secrets:
     - *your-admin-anchor
 ```
 
-### 8. Create secrets file
+### 6. Create secrets file
 
 Copy the host's private SSH key from the remote host and store it as
 a sops secret:
@@ -183,7 +169,7 @@ rm /tmp/host-key
 
 At minimum, the secrets file must contain the `ssh_host_ed25519_key`.
 
-### 9. Run `inv update-sops-files`
+### 7. Run `inv update-sops-files`
 
 Re-encrypt all sops files to reflect the updated `.sops.yaml` rules:
 
@@ -191,7 +177,7 @@ Re-encrypt all sops files to reflect the updated `.sops.yaml` rules:
 inv update-sops-files
 ```
 
-### 10. Redeploy with secrets
+### 8. Redeploy with secrets
 
 Deploy the configuration again so the host receives its secrets
 (see [deploy-rs.md](./deploy-rs.md)):

@@ -34,7 +34,6 @@
     };
   };
 
-  nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "uae-nethsm-gateway";
 
   # Assign IP configs because dhcp is disabled in network
