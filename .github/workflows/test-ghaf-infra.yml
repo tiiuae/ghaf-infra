@@ -68,14 +68,20 @@ jobs:
       - name: Build ${{ matrix.arch }}
         shell: bash
         run: |
+          # Derive the per-arch host list from flake.lib.hostsBySystem so the
+          # filter stays in sync with the canonical inventory (no name-based
+          # heuristics).
+          HOSTS=$(nix eval --raw \
+            ".#lib.hostsBySystem.${{ matrix.arch }}" \
+            --apply 'names: builtins.concatStringsSep "|" names')
           if [ "${{ matrix.arch }}" == "x86_64-linux" ]; then
             BUILDER="${BUILDER_X86}"
-            # x86 targets: all nixosConfigurations except hetzarm, devShell, pre-commit checks
-            FILTER='(^nixosConfigurations\.((?!hetzarm).)*$|^devShells.x86_64-linux.*$|x86_64-linux\.pre-commit)'
+            # x86 targets: all x86_64-linux nixosConfigurations, devShell, pre-commit checks
+            FILTER="(^nixosConfigurations\\.(${HOSTS})\\.|^devShells\\.x86_64-linux\\..*$|x86_64-linux\\.pre-commit)"
           elif [ "${{ matrix.arch }}" == "aarch64-linux" ]; then
             BUILDER="${BUILDER_AARCH}"
-            # aarch64 targets: hetzarm nixosConfiguration
-            FILTER='^nixosConfigurations.*hetzarm.*'
+            # aarch64 targets: aarch64-linux nixosConfigurations
+            FILTER="^nixosConfigurations\\.(${HOSTS})\\."
           else
             echo "::error::Unknown architecture: '${{ matrix.arch }}'"
             exit 1
