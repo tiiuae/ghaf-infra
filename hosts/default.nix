@@ -28,9 +28,8 @@ let
     inherit self inputs machines;
   };
 
-  # Calls nixosSystem with a toplevel config
-  # (needs to be a "nixos-"-prefixed module in `self.nixosModules`),
-  # and optional extra configuration.
+  # Calls nixosSystem with a host configuration module from the inventory and
+  # optional extra configuration.
   mkNixOS =
     {
       systemName,
@@ -39,7 +38,7 @@ let
     lib.nixosSystem {
       inherit specialArgs;
       modules = [
-        self.nixosModules."nixos-${systemName}"
+        hostInventory.${systemName}.module
         {
           nixpkgs.hostPlatform = hostInventory.${systemName}.system;
         }
@@ -60,7 +59,7 @@ let
           ram_gb = 20;
           mount_host_nix_store = mountHostNixStore;
         })
-        self.nixosModules.nixos-hetzci-vm
+        hostInventory.hetzci-vm.module
         {
           nixpkgs.hostPlatform = hostInventory.hetzci-vm.system;
           # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/virtualisation/qemu-vm.nix
@@ -80,10 +79,6 @@ let
       ];
     };
 
-  nixosModulesFromHosts = lib.mapAttrs' (
-    name: host: lib.nameValuePair "nixos-${name}" host.module
-  ) hostInventory;
-
   nixosConfigurationsFromHosts = builtins.mapAttrs (name: _host: mkNixOS { systemName = name; }) (
     lib.filterAttrs isAutoConfiguredHost hostInventory
   );
@@ -92,8 +87,7 @@ in
   flake.nixosModules = {
     # shared modules
     common = import ./common.nix;
-  }
-  // nixosModulesFromHosts;
+  };
 
   flake.lib = {
     inherit mkNixOS hostsBySystem;
