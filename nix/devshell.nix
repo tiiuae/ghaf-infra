@@ -52,6 +52,7 @@
             python3.pkgs.invoke
             python3.pkgs.loguru
             python3.pkgs.pycodestyle
+            python3.pkgs.pytest
             python3.pkgs.pylint
             python3.pkgs.tabulate
             reuse
