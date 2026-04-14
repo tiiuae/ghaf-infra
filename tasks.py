@@ -35,7 +35,9 @@ import socket
 import subprocess
 import sys
 import time
+from collections.abc import Iterable
 from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -504,17 +506,46 @@ def _wait_for_port(host: str, port: int, shutdown: bool = False) -> None:
     print("")
 
 
-def _git_revision_info() -> dict[str, list[str]]:
+def _git_revision_info(revisions: Iterable[str] | None = None) -> dict[str, list[str]]:
     """Read local git metadata used to annotate deployed revisions."""
-    proc = _run_checked(
-        ["git", "log", f"--pretty=format:%H{REVISION_DELIM}%cs{REVISION_DELIM}%s"],
-        capture_output=True,
-    )
+    cmd = ["git", "log", f"--pretty=format:%H{REVISION_DELIM}%cs{REVISION_DELIM}%s"]
+    if revisions is not None:
+        unique_revisions = list(dict.fromkeys(revisions))
+        if not unique_revisions:
+            return {}
+        cmd.insert(2, "--ignore-missing")
+        cmd.insert(2, "--no-walk")
+        cmd.extend(unique_revisions)
+
+    proc = _run_checked(cmd, capture_output=True)
     git_info: dict[str, list[str]] = {}
     for line in proc.stdout.splitlines():
         split_line = line.split(REVISION_DELIM)
         git_info[split_line[0]] = split_line
     return git_info
+
+
+def _read_deployed_revision(target_alias: str) -> tuple[str, str]:
+    """Read the currently deployed revision from one target host."""
+    host = _get_deploy_host(target_alias)
+    try:
+        return target_alias, _remote_stdout(
+            host,
+            "nixos-version --configuration-revision",
+            timeout=5,
+        )
+    except subprocess.TimeoutExpired:
+        return target_alias, "(unknown)"
+
+
+def _format_revision_link(rev: str) -> str:
+    """Format a revision as a terminal hyperlink when applicable."""
+    if "-dirty" in rev or rev == "(unknown)":
+        return rev
+
+    # Format as terminal link: https://github.com/Alhadis/OSC8-Adoption/
+    url = f"https://github.com/tiiuae/ghaf-infra/commit/{rev}"
+    return f"\033]8;;{url}\033\\{rev}\033]8;;\033\\"
 
 
 ################################################################################
@@ -689,32 +720,25 @@ def print_revision(_c: Context, alias: str = "") -> None:
     inv print-revision --alias=hetzci-release
     """
     header_row = ["alias", "revision", "revision date", "revision subject"]
-    git_info = _git_revision_info()
     git_info_def = ["", "", ""]
     target_aliases = [alias] if alias else list(TARGETS.all().keys())
+    max_workers = min(32, len(target_aliases))
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        deployed_revisions = list(executor.map(_read_deployed_revision, target_aliases))
+
+    git_info = _git_revision_info(
+        rev
+        for _, rev in deployed_revisions
+        if rev != "(unknown)" and "-dirty" not in rev
+    )
     table_rows = []
 
-    for target_alias in target_aliases:
-        host = _get_deploy_host(target_alias)
-        try:
-            rev = _remote_stdout(
-                host,
-                "nixos-version --configuration-revision",
-                timeout=5,
-            )
-            if "-dirty" not in rev:
-                # Format as terminal link: https://github.com/Alhadis/OSC8-Adoption/
-                url = f"https://github.com/tiiuae/ghaf-infra/commit/{rev}"
-                rev_link = f"\033]8;;{url}\033\\{rev}\033]8;;\033\\"
-            else:
-                rev_link = rev
-        except subprocess.TimeoutExpired:
-            rev = "(unknown)"
-            rev_link = rev
-
+    for target_alias, rev in deployed_revisions:
         git_date = git_info.get(rev, git_info_def)[1]
         git_subj = git_info.get(rev, git_info_def)[2]
-        table_rows.append([target_alias, rev_link, git_date, git_subj])
+        table_rows.append(
+            [target_alias, _format_revision_link(rev), git_date, git_subj]
+        )
 
     table_rows.sort(reverse=True, key=lambda row: row[2])  # sort by git_date
     table = tabulate(table_rows, headers=header_row, tablefmt="fancy_outline")

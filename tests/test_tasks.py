@@ -8,6 +8,7 @@
 import shlex
 import subprocess
 import sys
+from collections import OrderedDict
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -261,6 +262,103 @@ def test_git_revision_info_parses_log_output(
         "abc123": ["abc123", "2026-01-01", "initial commit"],
         "def456": ["def456", "2026-01-02", "fix bug"],
     }
+
+
+def test_git_revision_info_limits_lookup_to_selected_hashes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Filtered lookup should avoid traversing the full git history."""
+    calls: list[list[str]] = []
+    delim = tasks.REVISION_DELIM
+
+    def fake_run_checked(
+        cmd: list[str], **_kwargs: object
+    ) -> subprocess.CompletedProcess[str]:
+        calls.append(cmd)
+        return subprocess.CompletedProcess(
+            cmd,
+            0,
+            stdout=f"abc123{delim}2026-01-01{delim}initial commit\n",
+            stderr="",
+        )
+
+    monkeypatch.setattr(tasks, "_run_checked", fake_run_checked)
+
+    assert tasks._git_revision_info(["abc123", "abc123"]) == {
+        "abc123": ["abc123", "2026-01-01", "initial commit"],
+    }
+    assert calls == [
+        [
+            "git",
+            "log",
+            "--no-walk",
+            "--ignore-missing",
+            f"--pretty=format:%H{delim}%cs{delim}%s",
+            "abc123",
+        ]
+    ]
+
+
+def test_print_revision_collects_remote_hosts_before_git_lookup(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """print_revision should only ask git for clean deployed revisions."""
+
+    class FakeExecutor:
+        """Minimal executor stub for deterministic tests."""
+
+        def __init__(self, *, max_workers: int) -> None:
+            self.max_workers = max_workers
+
+        def __enter__(self) -> "FakeExecutor":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def map(self, func: object, aliases: list[str]) -> list[tuple[str, str]]:
+            """Apply the submitted function in-order for deterministic tests."""
+            assert self.max_workers == len(aliases)
+            assert func is tasks._read_deployed_revision
+            return [func(alias) for alias in aliases]
+
+    revisions = {
+        "alpha": "abc123",
+        "beta": "abc123",
+        "gamma": "dirtyrev-dirty",
+        "delta": "(unknown)",
+    }
+
+    monkeypatch.setattr(
+        tasks,
+        "TARGETS",
+        SimpleNamespace(
+            all=lambda: OrderedDict((alias, object()) for alias in revisions)
+        ),
+    )
+    monkeypatch.setattr(
+        tasks,
+        "_read_deployed_revision",
+        lambda alias: (alias, revisions[alias]),
+    )
+    monkeypatch.setattr(
+        tasks,
+        "_git_revision_info",
+        lambda selected: {"abc123": ["abc123", "2026-01-01", "initial commit"]}
+        if list(selected) == ["abc123", "abc123"]
+        else {},
+    )
+    monkeypatch.setattr(tasks, "ThreadPoolExecutor", FakeExecutor)
+
+    tasks.print_revision.body(None, alias="")
+
+    output = capsys.readouterr().out
+    assert "alpha" in output
+    assert "beta" in output
+    assert "gamma" in output
+    assert "delta" in output
+    assert "2026-01-01" in output
+    assert "initial commit" in output
 
 
 def test_targets_get_exits_on_unknown_alias(
