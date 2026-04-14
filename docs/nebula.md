@@ -65,7 +65,7 @@ and run `nebula-cert sign` with the arguments you provide. After exiting, the te
 ### Example usage
 
 create new host certificate for `testagent-dev` and assign it the ip address `10.42.42.11` on the nebula network
-(Check hosts/machines.nix so you don't pick already occupied address).
+(Check `hosts/machines.nix` so you don't pick an already occupied address).
 This host will be part of the groups `testagent` and `office`.
 The groups can be anything and are used to define firewall rules between hosts.
 
@@ -131,7 +131,8 @@ host already exists in the infrastructure (see
 7. **Configure NixOS** — import the `service-nebula` module in the host's
    `configuration.nix` and enable it (see [Nix configuration](#nix-configuration)
    above).
-8. **Add `nebula_ip`** — set the `nebula_ip` field in `hosts/machines.nix`.
+8. **Add `nebula_ip`** — set the `nebula_ip` field in `hosts/machines.nix`
+   under the host's `machine` attrset.
 9. **Deploy** — deploy the host with `deploy .#<name>`.
 
 ## Firewall groups

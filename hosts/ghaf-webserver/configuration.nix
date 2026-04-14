@@ -28,7 +28,6 @@
   environment.systemPackages = with pkgs; [ emacs ];
 
   system.stateVersion = lib.mkForce "24.05";
-  nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "ghaf-webserver";
 
   services.nginx.virtualHosts."vedenemo.dev" = {

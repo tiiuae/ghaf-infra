@@ -32,7 +32,6 @@ in
   };
 
   system.stateVersion = lib.mkForce "24.11";
-  nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "ghaf-auth";
 
   services.monitoring = {

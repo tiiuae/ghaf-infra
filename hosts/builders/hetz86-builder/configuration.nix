@@ -31,7 +31,6 @@
     };
   };
 
-  nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "hetz86-builder";
   boot.kernelModules = [ "kvm-amd" ];
 

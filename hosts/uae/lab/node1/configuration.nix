@@ -33,7 +33,6 @@
   # this server has been installed with 25.05
   system.stateVersion = lib.mkForce "25.05";
 
-  nixpkgs.hostPlatform = "x86_64-linux";
   hardware.enableRedistributableFirmware = true;
 
   networking = {

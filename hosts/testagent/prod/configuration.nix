@@ -13,7 +13,6 @@
 
   sops.defaultSopsFile = ./secrets.yaml;
 
-  nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "testagent-prod";
   services.testagent = {
     variant = "prod";

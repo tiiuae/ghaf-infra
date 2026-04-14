@@ -21,7 +21,6 @@
     user-vadikas
   ]);
 
-  nixpkgs.hostPlatform = "x86_64-linux";
   networking.hostName = "ghaf-fleetdm";
   system.stateVersion = lib.mkForce "25.05";
   sops.defaultSopsFile = ./secrets.yaml;

@@ -8,7 +8,11 @@
   ...
 }:
 let
-  machines = import ./machines.nix;
+  hostInventory = import ./machines.nix;
+  machines = lib.mapAttrs (_: host: host.machine) (
+    lib.filterAttrs (_: host: host ? machine) hostInventory
+  );
+  isAutoConfiguredHost = _: host: (host.kind or "host") != "vm";
 
   # make self and inputs available in nixos modules
   specialArgs = {
@@ -27,6 +31,9 @@ let
       inherit specialArgs;
       modules = [
         self.nixosModules."nixos-${systemName}"
+        {
+          nixpkgs.hostPlatform = hostInventory.${systemName}.system;
+        }
       ]
       ++ lib.optional (extraConfig != null) extraConfig;
     };
@@ -46,7 +53,7 @@ let
         })
         self.nixosModules.nixos-hetzci-vm
         {
-          nixpkgs.hostPlatform = "x86_64-linux";
+          nixpkgs.hostPlatform = hostInventory.hetzci-vm.system;
           # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/virtualisation/qemu-vm.nix
           virtualisation.vmVariant.virtualisation.forwardPorts = [
             {
@@ -64,48 +71,12 @@ let
       ];
     };
 
-  # All host module paths in one place.
-  # Most hosts can be instantiated with mkNixOS; hetzci-vm is created by mkHetzciVm.
-  hostModules = {
-    hetzarm = ./builders/hetzarm/configuration.nix;
-    hetzarm-dbg-1 = ./builders/hetzarm-dbg-1/configuration.nix;
-    hetzarm-rel-1 = ./builders/hetzarm-rel-1/configuration.nix;
-    testagent-dbg = ./testagent/dbg/configuration.nix;
-    testagent-prod = ./testagent/prod/configuration.nix;
-    testagent-dev = ./testagent/dev/configuration.nix;
-    testagent2-prod = ./testagent/prod2/configuration.nix;
-    testagent-release = ./testagent/release/configuration.nix;
-    nethsm-gateway = ./nethsm-gateway/configuration.nix;
-    ghaf-log = ./ghaf-log/configuration.nix;
-    ghaf-webserver = ./ghaf-webserver/configuration.nix;
-    ghaf-auth = ./ghaf-auth/configuration.nix;
-    ghaf-monitoring = ./ghaf-monitoring/configuration.nix;
-    ghaf-lighthouse = ./ghaf-lighthouse/configuration.nix;
-    ghaf-fleetdm = ./ghaf-fleetdm/configuration.nix;
-    ghaf-registry = ./ghaf-registry/configuration.nix;
-    hetzci-dbg = ./hetzci/dbg/configuration.nix;
-    hetzci-dev = ./hetzci/dev/configuration.nix;
-    hetzci-prod = ./hetzci/prod/configuration.nix;
-    hetzci-release = ./hetzci/release/configuration.nix;
-    hetzci-vm = ./hetzci/vm/configuration.nix;
-    hetz86-1 = ./builders/hetz86-1/configuration.nix;
-    hetz86-builder = ./builders/hetz86-builder/configuration.nix;
-    hetz86-dbg-1 = ./builders/hetz86-dbg-1/configuration.nix;
-    hetz86-rel-2 = ./builders/hetz86-rel-2/configuration.nix;
-    uae-lab-node1 = ./uae/lab/node1/configuration.nix;
-    uae-nethsm-gateway = ./uae/nethsm-gateway/configuration.nix;
-    uae-azureci-prod = ./uae/azureci/prod/configuration.nix;
-    uae-azureci-az86-1 = ./uae/azureci/builders/az86-1/configuration.nix;
-    uae-testagent-prod = ./uae/testagent/prod/configuration.nix;
-    uae-azureci-hetzarm-1 = ./uae/azureci/builders/hetzarm-1/configuration.nix;
-  };
-
   nixosModulesFromHosts = lib.mapAttrs' (
-    name: path: lib.nameValuePair "nixos-${name}" path
-  ) hostModules;
+    name: host: lib.nameValuePair "nixos-${name}" host.module
+  ) hostInventory;
 
-  nixosConfigurationsFromHosts = builtins.mapAttrs (name: _path: mkNixOS { systemName = name; }) (
-    lib.removeAttrs hostModules [ "hetzci-vm" ]
+  nixosConfigurationsFromHosts = builtins.mapAttrs (name: _host: mkNixOS { systemName = name; }) (
+    lib.filterAttrs isAutoConfiguredHost hostInventory
   );
 in
 {
