@@ -45,20 +45,21 @@ in
       aarch64-linux = deploy-rs.lib.aarch64-linux.deployChecks { nodes = aarch64-nodes; };
     };
 
-    # used by tasks.py
-    installationTargets = lib.attrsets.mapAttrs (
+    # Split between metadata (cheap) and secrets (forces nixosConfigurations eval)
+    # so tasks.py can list aliases without materialising every host config.
+    installationTargets = lib.attrsets.mapAttrs (_: node: {
+      inherit (node) hostname config;
+    }) nodes;
+
+    installationTargetSecrets = lib.attrsets.mapAttrs (
       _: node:
       let
         cnf = self.nixosConfigurations.${node.config}.config;
       in
-      {
-        inherit (node) hostname config;
-        secrets =
-          if (lib.attrsets.hasAttrByPath [ "sops" "defaultSopsFile" ] cnf) then
-            cnf.sops.defaultSopsFile
-          else
-            null;
-      }
+      if (lib.attrsets.hasAttrByPath [ "sops" "defaultSopsFile" ] cnf) then
+        cnf.sops.defaultSopsFile
+      else
+        null
     ) nodes;
   };
 }

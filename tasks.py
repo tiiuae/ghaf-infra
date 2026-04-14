@@ -95,6 +95,7 @@ class TargetHost:
     hostname: str
     nixosconfig: str
     secretspath: str | None = None
+    secrets_resolved: bool = False
 
 
 class Targets:
@@ -118,7 +119,6 @@ class Targets:
                 name: TargetHost(
                     hostname=node["hostname"],
                     nixosconfig=node["config"],
-                    secretspath=node["secrets"],
                 )
                 for name, node in _run_json(
                     ["nix", "eval", "--json", f"{ROOT}#installationTargets"]
@@ -136,6 +136,18 @@ class Targets:
             logger.error(f"Unknown alias '{alias}'")
             sys.exit(1)
         return self.target_dict[alias]
+
+    def resolve_secrets(self, alias: str) -> TargetHost:
+        """Populate the secret path for one target on demand."""
+        target = self.get(alias)
+        if target.secrets_resolved:
+            return target
+
+        target.secretspath = _run_json(
+            ["nix", "eval", "--json", f"{ROOT}#installationTargetSecrets.{alias}"]
+        )
+        target.secrets_resolved = True
+        return target
 
 
 ################################################################################
@@ -249,6 +261,12 @@ def _get_deploy_host(alias: str, user: str | None = None) -> DeployHost:
 
 def _decrypt_host_key(target: TargetHost, tmpdir: str, yes: bool) -> None:
     """Run sops to extract `nixosconfig` secret `ssh_host_ed25519_key`."""
+
+    if target.secretspath is None:
+        logger.error(
+            f"Missing sops secret path for '{target.nixosconfig}'; cannot decrypt host key"
+        )
+        sys.exit(1)
 
     def opener(path: str, flags: int) -> int:
         return os.open(path, flags, 0o400)
@@ -545,7 +563,7 @@ def print_keys(_c: Context, alias: str) -> None:
     Example usage:
     inv print-keys hetzci-release
     """
-    target = TARGETS.get(alias)
+    target = TARGETS.resolve_secrets(alias)
     with TemporaryDirectory() as tmpdir:
         _decrypt_host_key(target, tmpdir, yes=False)
         pub_key = Path(tmpdir) / "etc/ssh/ssh_host_ed25519_key.pub"
@@ -610,7 +628,7 @@ def install(
     if not _confirm(f"Install configuration '{alias}'? [y/N] ", yes):
         return
 
-    target = TARGETS.get(alias)
+    target = TARGETS.resolve_secrets(alias)
     host = _get_deploy_host(alias, user)
 
     _assert_stateversion(alias, yes)
