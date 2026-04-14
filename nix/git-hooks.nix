@@ -105,6 +105,7 @@
                 loguru
                 prometheus-client
                 pycodestyle
+                pytest
                 pylint
                 requests
                 tabulate
