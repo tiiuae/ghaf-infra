@@ -1,10 +1,11 @@
-#!/usr/bin/env groovy
+// SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
+// SPDX-License-Identifier: Apache-2.0
 
 import groovy.json.JsonOutput
 import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
 
 def run_cmd(String cmd) {
-  return sh(script: cmd, returnStdout:true).trim()
+  return sh(script: cmd, returnStdout: true).trim()
 }
 
 def path_basename(String path) {
@@ -25,7 +26,7 @@ def image_role(String path) {
 
 def append_to_build_description(String text) {
   lock('build-description') {
-    if(!currentBuild.description) {
+    if (!currentBuild.description) {
       currentBuild.description = text
     } else {
       currentBuild.description = "${currentBuild.description}<br>${text}"
@@ -439,5 +440,3 @@ def set_github_commit_status(
     """
   }
 }
-
-return this

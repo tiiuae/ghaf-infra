@@ -1,7 +1,6 @@
 #!/usr/bin/env groovy
 
-import groovy.transform.Field
-@Field def MODULES = [:]
+@Library('ghafInfra') _
 
 def DEFAULT_REPO_URL = 'https://github.com/tiiuae/ghaf/'
 def WORKDIR  = 'checkout'
@@ -135,8 +134,7 @@ pipeline {
                 [ target: "packages.x86_64-linux.intel-laptop-low-mem-debug-installer", uefisigniso: params.UEFISIGN, testset: null ])
             }
 
-            MODULES.utils = load "/etc/jenkins/pipelines/modules/utils.groovy"
-            PIPELINE = MODULES.utils.create_pipeline(TARGETS)
+            PIPELINE = utils.create_pipeline(TARGETS)
           }
         }
       }

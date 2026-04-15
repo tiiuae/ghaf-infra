@@ -15,11 +15,27 @@ let
   # copies only pipelines declared in cfg.pipelines
   filteredPipelines = pkgs.runCommand "pipelines" { } ''
     mkdir -p $out
-    cp -r ${./pipelines}/modules $out/
-
     ${pkgs.lib.concatMapStringsSep "\n" (name: ''
       cp ${./pipelines}/${name}.groovy "$out/"
     '') cfg.pipelines}
+  '';
+
+  # Jenkins shared libraries expect a Git repository. Turn the repository-local
+  # pipeline-library sources into a tiny synthetic repo and expose it as
+  # /etc/jenkins/pipeline-library for the file:// retriever configured in CasC.
+  pipelineSharedLibrary = pkgs.runCommand "pipeline-library" { nativeBuildInputs = [ pkgs.git ]; } ''
+    mkdir -p "$out"
+    cp -r ${./pipeline-library}/. "$out/"
+    chmod -R u+w "$out"
+    cd "$out"
+    # Create a single deterministic commit so the Nix output is reproducible
+    # while still looking like a normal Git repository to Jenkins.
+    git init --initial-branch=main
+    git add .
+    GIT_AUTHOR_DATE="@''${SOURCE_DATE_EPOCH} +0000" \
+    GIT_COMMITTER_DATE="@''${SOURCE_DATE_EPOCH} +0000" \
+    git -c user.email=nix@example.invalid -c user.name=Nix \
+      commit -m "Provision Jenkins shared library"
   '';
 
   cascConfig = pkgs.writeText "config.yaml" (
@@ -202,6 +218,8 @@ in
         "-Dcasc.jenkins.config=/etc/jenkins/casc"
         # Disable the initial setup wizard, and the creation of initialAdminPassword.
         "-Djenkins.install.runSetupWizard=false"
+        # Shared library retrieval uses file:///etc/jenkins/pipeline-library.
+        "-Dhudson.plugins.git.GitSCM.ALLOW_LOCAL_CHECKOUT=true"
         # Allow setting the following possibly undefined parameters
         "-Dhudson.model.ParametersAction.safeParameters=DESC,RELOAD_ONLY,GHAF_FLAKE_REF"
         # Ensure workspace root dir is what we expect
@@ -241,6 +259,7 @@ in
       {
         "jenkins/nix-fast-build.sh".source = "${self.outPath}/scripts/nix-fast-build.sh";
         "jenkins/pipelines".source = filteredPipelines;
+        "jenkins/pipeline-library".source = pipelineSharedLibrary;
         "jenkins/casc/common.yaml".source = ./casc/common.yaml;
         "jenkins/casc/config.yaml".source = cascConfig;
         "jenkins/casc/extraConfig.yaml".source = pkgs.writeText "extraConfig.yaml" (
