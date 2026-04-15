@@ -533,6 +533,7 @@ def _read_deployed_revision(target_alias: str) -> tuple[str, str]:
             host,
             "nixos-version --configuration-revision",
             timeout=5,
+            suppress_stderr=True,
         )
     except subprocess.TimeoutExpired:
         return target_alias, "(unknown)"
@@ -723,6 +724,7 @@ def print_revision(_c: Context, alias: str = "") -> None:
     git_info_def = ["", "", ""]
     target_aliases = [alias] if alias else list(TARGETS.all().keys())
     max_workers = min(32, len(target_aliases))
+    logger.info(f"Probing {len(target_aliases)} host(s) (up to 5s each)")
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         deployed_revisions = list(executor.map(_read_deployed_revision, target_aliases))
 
@@ -753,7 +755,7 @@ def print_revision(_c: Context, alias: str = "") -> None:
 def init() -> None:
     """Module initialization."""
     logger.remove(0)
-    logger.add(sys.stderr, level="DEBUG")
+    logger.add(sys.stderr, level="INFO")
 
     global ROOT, TARGETS  # pylint: disable=global-statement
     ROOT = Path(__file__).parent.resolve()
