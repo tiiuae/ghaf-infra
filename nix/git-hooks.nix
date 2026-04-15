@@ -116,6 +116,7 @@
           pylint = {
             enable = true;
             args = [
+              "--init-hook=import sys; sys.path.insert(0, \".\")"
               "--jobs=0"
               "--enable=useless-suppression"
               "--fail-on=useless-suppression"
