@@ -16,6 +16,9 @@
           (pkgs.writeTextDir "NonCPS.groovy" ''
             @interface NonCPS {}
           '')
+          (pkgs.writeTextDir "Library.groovy" ''
+            @interface Library { String[] value() }
+          '')
           (pkgs.writeTextDir "org/jenkinsci/plugins/pipeline/modeldefinition/Utils.groovy" ''
             package org.jenkinsci.plugins.pipeline.modeldefinition
 
@@ -139,7 +142,7 @@
             enable = true;
             name = "groovyc";
             entry = "${pkgs.lib.getExe groovyc-check}";
-            files = "^hosts/hetzci/pipelines/.*\\.groovy$";
+            files = "^hosts/hetzci/(pipelines|pipeline-library)/.*\\.groovy$";
           };
         };
       };

@@ -1,7 +1,6 @@
 #!/usr/bin/env groovy
 
-import groovy.transform.Field
-@Field def MODULES = [:]
+@Library('ghafInfra') _
 
 def REPO_URL = 'https://github.com/tiiuae/ghaf/'
 def WORKDIR  = 'checkout'
@@ -96,11 +95,10 @@ pipeline {
       steps {
         dir(WORKDIR) {
           script {
-            MODULES.utils = load "/etc/jenkins/pipelines/modules/utils.groovy"
             if (params.SET_TESTAGENT_HOST && params.TESTAGENT_HOST) {
-              PIPELINE = MODULES.utils.create_pipeline(TARGETS, params.TESTAGENT_HOST)
+              PIPELINE = utils.create_pipeline(TARGETS, params.TESTAGENT_HOST)
             } else {
-              PIPELINE = MODULES.utils.create_pipeline(TARGETS, env.CI_ENV)
+              PIPELINE = utils.create_pipeline(TARGETS, env.CI_ENV)
             }
           }
         }

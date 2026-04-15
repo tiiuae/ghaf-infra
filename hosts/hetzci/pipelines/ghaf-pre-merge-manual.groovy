@@ -1,7 +1,6 @@
 #!/usr/bin/env groovy
 
-import groovy.transform.Field
-@Field def MODULES = [:]
+@Library('ghafInfra') _
 
 def REPO_URL = 'https://github.com/tiiuae/ghaf/'
 def WORKDIR  = 'checkout'
@@ -94,18 +93,17 @@ pipeline {
       steps {
         dir(WORKDIR) {
           script {
-            MODULES.utils = load "/etc/jenkins/pipelines/modules/utils.groovy"
             if (params.SET_PR_STATUS) {
-              MODULES.utils.set_github_commit_status("Manual trigger: pending", "pending", env.TARGET_COMMIT)
+              utils.set_github_commit_status("Manual trigger: pending", "pending", env.TARGET_COMMIT)
             }
             def pr_href = "<a href=\"${REPO_URL}/pull/${params.GITHUB_PR_NUMBER}\">🧩 PR#${params.GITHUB_PR_NUMBER}</a>"
-            MODULES.utils.append_to_build_description(pr_href)
+            utils.append_to_build_description(pr_href)
             def merge_commit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
             // The downstream hw-test job needs the PR merge ref as well as the
             // merge SHA, otherwise it cannot refetch GitHub's synthetic merge commit.
             def normalizedRepoUrl = REPO_URL.replaceAll('/+$', '')
             def merge_flake_ref = "git+${normalizedRepoUrl}?ref=refs/pull/${params.GITHUB_PR_NUMBER}/merge&rev=${merge_commit}"
-            PIPELINE = MODULES.utils.create_pipeline(TARGETS, null, merge_flake_ref)
+            PIPELINE = utils.create_pipeline(TARGETS, null, merge_flake_ref)
           }
         }
       }
@@ -124,14 +122,14 @@ pipeline {
     success {
       script {
         if (params.SET_PR_STATUS) {
-          MODULES.utils.set_github_commit_status("Manual trigger: success", "success", env.TARGET_COMMIT)
+          utils.set_github_commit_status("Manual trigger: success", "success", env.TARGET_COMMIT)
         }
       }
     }
     unsuccessful {
       script {
         if (params.SET_PR_STATUS) {
-          MODULES.utils.set_github_commit_status("Manual trigger: failure", "failure", env.TARGET_COMMIT)
+          utils.set_github_commit_status("Manual trigger: failure", "failure", env.TARGET_COMMIT)
         }
       }
     }

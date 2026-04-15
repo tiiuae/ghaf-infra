@@ -1,7 +1,6 @@
 #!/usr/bin/env groovy
 
-import groovy.transform.Field
-@Field def MODULES = [:]
+@Library('ghafInfra') _
 
 def REPO_URL = 'https://github.com/tiiuae/ghaf/'
 def WORKDIR  = 'checkout'
@@ -119,16 +118,15 @@ pipeline {
       steps {
         dir(WORKDIR) {
           script {
-            MODULES.utils = load "/etc/jenkins/pipelines/modules/utils.groovy"
             if (params.RELEASE_TARGETS_SET.contains('All targets')) {
               println('All release targets selected')
-              PIPELINE = MODULES.utils.create_pipeline(ALL_RELEASE_TARGETS)
+              PIPELINE = utils.create_pipeline(ALL_RELEASE_TARGETS)
             } else if (params.RELEASE_TARGETS_SET.contains('Only laptop targets')){
               println('Only laptop release targets selected')
-              PIPELINE = MODULES.utils.create_pipeline(LAPTOP_RELEASE_TARGETS)
+              PIPELINE = utils.create_pipeline(LAPTOP_RELEASE_TARGETS)
             } else if (params.RELEASE_TARGETS_SET.contains('Minimal build targets')){
               println('Minimal build targets selected')
-              PIPELINE = MODULES.utils.create_pipeline(MINIMAL_BUILD_TARGETS)
+              PIPELINE = utils.create_pipeline(MINIMAL_BUILD_TARGETS)
             } else {
               error('Release targets pre-set was not selected')
             }

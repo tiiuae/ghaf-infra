@@ -1,7 +1,6 @@
 #!/usr/bin/env groovy
 
-import groovy.transform.Field
-@Field def MODULES = [:]
+@Library('ghafInfra') _
 
 def REPO_URL = 'https://github.com/tiiuae/ghaf/'
 def WORKDIR  = 'checkout'
@@ -121,14 +120,13 @@ pipeline {
       steps {
         dir(WORKDIR) {
           script {
-            MODULES.utils = load "/etc/jenkins/pipelines/modules/utils.groovy"
-            MODULES.utils.set_github_commit_status("Pending", "pending", env.TARGET_COMMIT)
+            utils.set_github_commit_status("Pending", "pending", env.TARGET_COMMIT)
             def merge_commit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
             // The downstream hw-test job needs the PR merge ref as well as the
             // merge SHA, otherwise it cannot refetch GitHub's synthetic merge commit.
             def normalizedRepoUrl = REPO_URL.replaceAll('/+$', '')
             def merge_flake_ref = "git+${normalizedRepoUrl}?ref=refs/pull/${GITHUB_PR_NUMBER}/merge&rev=${merge_commit}"
-            PIPELINE = MODULES.utils.create_pipeline(TARGETS, null, merge_flake_ref)
+            PIPELINE = utils.create_pipeline(TARGETS, null, merge_flake_ref)
           }
         }
       }
@@ -146,12 +144,12 @@ pipeline {
   post {
     success {
       script {
-        MODULES.utils.set_github_commit_status("Successful", "success", env.TARGET_COMMIT)
+        utils.set_github_commit_status("Successful", "success", env.TARGET_COMMIT)
       }
     }
     unsuccessful {
       script {
-        MODULES.utils.set_github_commit_status("Failure", "failure", env.TARGET_COMMIT)
+        utils.set_github_commit_status("Failure", "failure", env.TARGET_COMMIT)
       }
     }
   }
