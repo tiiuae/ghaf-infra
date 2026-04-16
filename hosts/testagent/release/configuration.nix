@@ -61,6 +61,7 @@
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S5T4NJ0NB10775R", SYMLINK+="ssdORINAGX64", MODE="0666", GROUP="dialout"
 
     # Lenovo X1
+    SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTDMABO5", SYMLINK+="ttyX1", MODE="0666", GROUP="dialout"
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S6XNNS0W500889K", SYMLINK+="ssdX1", MODE="0666", GROUP="dialout"
 
@@ -97,7 +98,7 @@
           inherit location;
           device_id = "00-29-66-d5-30";
           netvm_hostname = "ghaf-0694605104";
-          serial_port = "NONE";
+          serial_port = "/dev/ttyX1";
           device_ip_address = "172.18.16.64";
           socket_ip_address = "NONE";
           plug_type = "NONE";

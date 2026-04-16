@@ -27,6 +27,7 @@
   # udev rules for test devices serial connections
   services.udev.extraRules = ''
     # Lenovo X1
+    SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTEOH72L", SYMLINK+="ttyX1", MODE="0666", GROUP="dialout"
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S7MLNS0X532696T", SYMLINK+="ssdX1", MODE="0666", GROUP="dialout"
 
@@ -40,6 +41,7 @@
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B72838C556F", SYMLINK+="ssdDARTER", MODE="0666", GROUP="dialout"
 
     # Lenovo X1 Secure Boot
+    SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTEOG7I4", SYMLINK+="ttyX1SB", MODE="0666", GROUP="dialout"
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B72838C560C", SYMLINK+="ssdSecBoot", MODE="0666", GROUP="dialout"
 
@@ -60,7 +62,7 @@
           inherit location;
           device_id = "00-ed-ea-96-fb";
           netvm_hostname = "ghaf-3991574267";
-          serial_port = "NONE";
+          serial_port = "/dev/ttyX1";
           device_ip_address = "172.18.16.66";
           socket_ip_address = "NONE";
           rpi_ip_address = "172.18.16.10";
@@ -100,7 +102,7 @@
           inherit location;
           device_id = "00-5e-3c-a5-01";
           netvm_hostname = "ghaf-1581032705";
-          serial_port = "NONE";
+          serial_port = "/dev/ttyX1SB";
           device_ip_address = "172.18.16.15";
           socket_ip_address = "NONE";
           plug_type = "NONE";
