@@ -356,33 +356,10 @@ pipeline {
         stage('Flash') {
           steps {
             script {
-              // Determine mount commands
-              if(env.TARGET.contains("microchip-icicle-")) {
-                def muxport = utils.get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'usb_sd_mux_port')
-                env.MOUNT_CMD = "/run/wrappers/bin/sudo usbsdmux ${muxport} host; sleep 10"
-                env.UNMOUNT_CMD = "/run/wrappers/bin/sudo usbsdmux ${muxport} dut"
-              } else {
-                def serial = utils.get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'usbhub_serial')
-                env.MOUNT_CMD = "/run/wrappers/bin/sudo AcronameHubCLI -u 0 -s ${serial}; sleep 10"
-                env.UNMOUNT_CMD = "/run/wrappers/bin/sudo AcronameHubCLI -u 1 -s ${serial}; sleep 10"
-              }
-              // Mount the target disk
-              sh "${env.MOUNT_CMD}"
-              // Read the device name
-              def dev = utils.get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'ext_drive_by-id')
-              println "Checking that flash target '$dev' is connected..."
-              sh """
-                if /run/wrappers/bin/sudo test -f ${dev}; then
-                  echo "dev ${dev} found as regular file, removing the file and trying re-mount"
-                  ${env.UNMOUNT_CMD}; /run/wrappers/bin/sudo rm ${dev}; ${env.MOUNT_CMD}
-                fi
-                if ! /run/wrappers/bin/sudo test -L ${dev}; then
-                  echo "Symlink ${dev} not found. Failed to connect target USB disk to test agent."
-                  echo "Check USB cables. Maybe need to reboot test agent or Acroname USB hub."
-                  echo "Aborting flashing ${env.DEVICE_NAME}"
-                  exit 1
-                fi
-              """
+              def mountCommands = utils.setup_mount_commands(CONF_FILE_PATH, env.TARGET, env.DEVICE_NAME)
+              env.MOUNT_CMD = mountCommands.mount_cmd
+              env.UNMOUNT_CMD = mountCommands.unmount_cmd
+              def dev = utils.resolve_flash_target(CONF_FILE_PATH, env.DEVICE_NAME, env.MOUNT_CMD, env.UNMOUNT_CMD)
               def ghafFlakeRef = utils.resolve_ghaf_flake_ref(params.GHAF_FLAKE_REF, params.IMG_URL, env.OCI_SOURCE_REF)
               if (!ghafFlakeRef) {
                 if (params.OCI_IMAGE_REF) {
@@ -400,12 +377,7 @@ pipeline {
               sh "/run/wrappers/bin/sudo ${flashScriptPath}/bin/flash-script -d ${resolved_dev} -i ${env.FLASH_INPUT_PATH} -f"
               // Unmount
               sh "${env.UNMOUNT_CMD}"
-              sh """
-                if /run/wrappers/bin/sudo test -L ${dev}; then
-                  echo "Symlink ${dev} was found. Failed to unmount target USB disk from test agent."
-                  exit 1
-                fi
-              """
+              utils.assert_flash_target_unmounted(dev)
             }
           }
         }
