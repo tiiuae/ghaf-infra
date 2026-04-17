@@ -173,6 +173,49 @@ def archive_robot_artifacts(String tmp_img_dir, boolean should_archive) {
   sh "rm -rf ${tmp_img_dir} || true"
 }
 
+def setup_mount_commands(String conf_file_path, String target, String device_name) {
+  if (target.contains("microchip-icicle-")) {
+    def muxport = get_test_conf_property(conf_file_path, device_name, 'usb_sd_mux_port')
+    return [
+      mount_cmd: "/run/wrappers/bin/sudo usbsdmux ${muxport} host; sleep 10",
+      unmount_cmd: "/run/wrappers/bin/sudo usbsdmux ${muxport} dut",
+    ]
+  }
+  def serial = get_test_conf_property(conf_file_path, device_name, 'usbhub_serial')
+  return [
+    mount_cmd: "/run/wrappers/bin/sudo AcronameHubCLI -u 0 -s ${serial}; sleep 10",
+    unmount_cmd: "/run/wrappers/bin/sudo AcronameHubCLI -u 1 -s ${serial}; sleep 10",
+  ]
+}
+
+def resolve_flash_target(String conf_file_path, String device_name, String mount_cmd, String unmount_cmd) {
+  sh mount_cmd
+  def dev = get_test_conf_property(conf_file_path, device_name, 'ext_drive_by-id')
+  println "Checking that flash target '${dev}' is connected..."
+  sh """
+    if /run/wrappers/bin/sudo test -f ${dev}; then
+      echo "dev ${dev} found as regular file, removing the file and trying re-mount"
+      ${unmount_cmd}; /run/wrappers/bin/sudo rm ${dev}; ${mount_cmd}
+    fi
+    if ! /run/wrappers/bin/sudo test -L ${dev}; then
+      echo "Symlink ${dev} not found. Failed to connect target USB disk to test agent."
+      echo "Check USB cables. Maybe need to reboot test agent or Acroname USB hub."
+      echo "Aborting flashing ${device_name}"
+      exit 1
+    fi
+  """
+  return dev
+}
+
+def assert_flash_target_unmounted(String dev) {
+  sh """
+    if /run/wrappers/bin/sudo test -L ${dev}; then
+      echo "Symlink ${dev} was found. Failed to unmount target USB disk from test agent."
+      exit 1
+    fi
+  """
+}
+
 def resolve_ghaf_flake_ref(String explicitFlakeRef, String imgUrl, String ociFlakeRef) {
   def normalizedFlakeRef = explicitFlakeRef?.trim()
   if (normalizedFlakeRef) {
