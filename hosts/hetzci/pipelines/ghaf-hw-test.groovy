@@ -65,63 +65,26 @@ def init() {
   if (!ociImageRef && !imgUrl) {
     error("Missing OCI_IMAGE_REF or IMG_URL parameter")
   }
-  env.TARGET = utils.derive_target_name(imgUrl, env.OCI_TARGET)
-  if (!env.TARGET) {
+  // Resolve the target here as well for controller-side fail-fast validation and
+  // device/agent selection. The agent-side Resolve target stage repeats this so
+  // it can initialize runtime state after node allocation.
+  def target = utils.derive_target_name(imgUrl, env.OCI_TARGET)
+  if (!target) {
     if (ociImageRef) {
       error("Unable to derive target name from OCI image '${ociImageRef}'")
     }
     error("Unexpected IMG_URL: ${params.IMG_URL}")
   }
-  println("Using TARGET: ${env.TARGET}")
-
-  def deviceInfo = utils.derive_device_info(env.TARGET, params.SECUREBOOT)
+  def deviceInfo = utils.derive_device_info(target, params.SECUREBOOT)
   if (!deviceInfo) {
-    error("Unable to parse device config for target '${env.TARGET}'")
+    error("Unable to parse device config for target '${target}'")
   }
   env.DEVICE_NAME = deviceInfo.name
   env.DEVICE_TAG = deviceInfo.tag
-  println("Using DEVICE_NAME: ${env.DEVICE_NAME}")
-  println("Using DEVICE_TAG: ${env.DEVICE_TAG}")
-  // Determine additional test tags based on target
-  def tagFilters = []
-  if (env.TARGET.contains("lenovo-x1") || env.TARGET.contains("darp11-b")) {
-    if (env.TARGET.contains("storeDisk")) {
-      tagFilters.add('NOTexcl-storeDisk')
-    } else {
-      tagFilters.add('NOTstoreDisk-only')
-    }
-    if (env.TARGET.contains("installer")) {
-      tagFilters.add('NOTexcl-installer')
-    } else {
-      tagFilters.add('NOTinstaller-only')
-    }
-  }
-  if (env.TARGET.contains("lenovo-x1")) {
-    if (env.DEVICE_TAG == 'x1-sec-boot') {
-      tagFilters.add('NOTexcl-secboot')
-    } else {
-      tagFilters.add('NOTsecboot-only')
-    }
-  }
-  env.EXTRATAG = tagFilters.unique().join('')
-  if (env.EXTRATAG) {
-    println("Using additional test tags: ${tagFilters}")
-  } else {
-    println("No additional test tags are used")
-  }
-  if(params.containsKey('DESC')) {
-    currentBuild.description = "${params.DESC}"
-  } else {
-    currentBuild.description = "${env.TARGET}"
-  }
-  def testagent_nodes = nodesByLabel(label: env.DEVICE_TAG, offline: false)
+  def label = params.TESTAGENT_HOST ? "${params.TESTAGENT_HOST}-${env.DEVICE_TAG}" : env.DEVICE_TAG
+  def testagent_nodes = nodesByLabel(label: label, offline: false)
   if (!testagent_nodes) {
     error("No test agents online")
-  }
-  def label = env.DEVICE_TAG
-  if (params.TESTAGENT_HOST) {
-    println("Using specific TESTAGENT_HOST: ${TESTAGENT_HOST}")
-    label = "${params.TESTAGENT_HOST}-${env.DEVICE_TAG}"
   }
   return label
 }
@@ -200,6 +163,13 @@ def get_test_conf_property(String file_path, String device, String property) {
   return property_data
 }
 
+def automated_test_tags(String testname) {
+  if (testname.contains('turnoff')) {
+    return testname
+  }
+  return "${utils.boot_tag_for(env.DEVICE_TAG)}AND${testname}${env.EXTRATAG}"
+}
+
 def ghaf_robot_test(String testname='relayboot') {
   if (!env.DEVICE_TAG) {
     error("DEVICE_TAG not set")
@@ -207,16 +177,7 @@ def ghaf_robot_test(String testname='relayboot') {
   if (!env.DEVICE_NAME) {
     error("DEVICE_NAME not set")
   }
-  if (env.DEVICE_TAG == "x1-sec-boot") {
-    env.DEVICE_TEST_TAG = "lenovo-x1"
-  } else {
-    env.DEVICE_TEST_TAG = env.DEVICE_TAG
-  }
-  if (testname.contains('turnoff')) {
-    env.INCLUDE_TEST_TAGS = "${testname}"
-  } else {
-    env.INCLUDE_TEST_TAGS = "${env.DEVICE_TEST_TAG}AND${testname}${env.EXTRATAG}"
-  }
+  env.INCLUDE_TEST_TAGS = automated_test_tags(testname)
   dir("Robot-Framework/test-suites") {
     sh 'rm -f *.txt *.png *.jpeg *.mp4 *.mkv *.wav output.xml report.html log.html'
     // On failure, continue the pipeline execution
@@ -297,6 +258,29 @@ pipeline {
     stage('Run on test agent') {
       agent { label "${env.TEST_AGENT_LABEL}" }
       stages {
+        stage('Resolve target') {
+          steps {
+            script {
+              env.TARGET = utils.derive_target_name(params.IMG_URL, env.OCI_TARGET)
+              if (!env.TARGET) {
+                if (params.OCI_IMAGE_REF) {
+                  error("Unable to derive target name from OCI image '${params.OCI_IMAGE_REF}'")
+                }
+                error("Unexpected IMG_URL: ${params.IMG_URL}")
+              }
+              env.EXTRATAG = utils.extra_tag_suffix(env.TARGET, env.DEVICE_TAG)
+              currentBuild.description = params.containsKey('DESC') ? "${params.DESC}" : "${env.TARGET}"
+              println("Using TARGET: ${env.TARGET}")
+              println("Using DEVICE_NAME: ${env.DEVICE_NAME}")
+              println("Using DEVICE_TAG: ${env.DEVICE_TAG}")
+              if (env.EXTRATAG) {
+                println("Using additional test tags: ${env.EXTRATAG}")
+              } else {
+                println("No additional test tags are used")
+              }
+            }
+          }
+        }
         stage('Checkout') {
           steps {
             deleteDir()
