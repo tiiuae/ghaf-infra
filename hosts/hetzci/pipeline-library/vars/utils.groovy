@@ -84,6 +84,19 @@ def ghaf_flake_ref(String repo, String rev) {
 }
 
 @NonCPS
+def device_catalog() {
+  return [
+    [target_substring: "nvidia-jetson-orin-agx64", name: 'OrinAGX64', tag: 'orin-agx-64'],
+    [target_substring: "nvidia-jetson-orin-agx", name: 'OrinAGX1', tag: 'orin-agx'],
+    [target_substring: "nvidia-jetson-orin-nx", name: 'OrinNX1', tag: 'orin-nx'],
+    [target_substring: "lenovo-x1", name: 'LenovoX1-1', tag: 'lenovo-x1'],
+    [target_substring: null, name: 'X1-Secure-Boot', tag: 'x1-sec-boot'],
+    [target_substring: "dell-latitude-7330", name: 'Dell7330', tag: 'dell-7330'],
+    [target_substring: "system76-darp11-b", name: 'DarterPRO', tag: 'darter-pro'],
+  ]
+}
+
+@NonCPS
 // Why NonCPS? Jenkins CPS does not handle regex matchers reliably.
 // See: https://stackoverflow.com/a/48465528
 def derive_target_name(String imgUrl, String ociTarget) {
@@ -103,42 +116,23 @@ def derive_target_name(String imgUrl, String ociTarget) {
 
 @NonCPS
 def derive_device_info(String target, boolean secureboot) {
-  if (target.contains("nvidia-jetson-orin-agx64")) {
-    return [name: 'OrinAGX64', tag: 'orin-agx-64']
-  }
-  if (target.contains("nvidia-jetson-orin-agx")) {
-    return [name: 'OrinAGX1', tag: 'orin-agx']
-  }
-  if (target.contains("nvidia-jetson-orin-nx")) {
-    return [name: 'OrinNX1', tag: 'orin-nx']
-  }
+  def devices = device_catalog()
   if (target.contains("lenovo-x1")) {
     if (secureboot && !target.contains("installer")) {
-      return [name: 'X1-Secure-Boot', tag: 'x1-sec-boot']
+      def securebootDevice = devices.find { it.tag == 'x1-sec-boot' }
+      return securebootDevice ? [name: securebootDevice.name, tag: securebootDevice.tag] : null
     }
-    return [name: 'LenovoX1-1', tag: 'lenovo-x1']
   }
-  if (target.contains("dell-latitude-7330")) {
-    return [name: 'Dell7330', tag: 'dell-7330']
-  }
-  if (target.contains("system76-darp11-b")) {
-    return [name: 'DarterPRO', tag: 'darter-pro']
+  def device = devices.find { it.target_substring && target.contains(it.target_substring) }
+  if (device) {
+    return [name: device.name, tag: device.tag]
   }
   return null
 }
 
 @NonCPS
 def device_name_from_tag(String deviceTag) {
-  def deviceInfo = [
-    'orin-agx': 'OrinAGX1',
-    'orin-agx-64': 'OrinAGX64',
-    'orin-nx': 'OrinNX1',
-    'lenovo-x1': 'LenovoX1-1',
-    'x1-sec-boot': 'X1-Secure-Boot',
-    'dell-7330': 'Dell7330',
-    'darter-pro': 'DarterPRO',
-  ]
-  return deviceInfo[deviceTag]
+  return device_catalog().find { it.tag == deviceTag }?.name
 }
 
 def extra_tag_suffix(String target, String deviceTag) {
@@ -216,6 +210,9 @@ def assert_flash_target_unmounted(String dev) {
   """
 }
 
+@NonCPS
+// Why NonCPS? Jenkins CPS does not handle regex matchers reliably.
+// See: https://stackoverflow.com/a/48465528
 def resolve_ghaf_flake_ref(String explicitFlakeRef, String imgUrl, String ociFlakeRef) {
   def normalizedFlakeRef = explicitFlakeRef?.trim()
   if (normalizedFlakeRef) {
@@ -230,6 +227,49 @@ def resolve_ghaf_flake_ref(String explicitFlakeRef, String imgUrl, String ociFla
     return "git+https://github.com/tiiuae/ghaf?rev=${match[0][1]}"
   }
   return null
+}
+
+def trigger_hw_test(
+  String shortname,
+  String testset,
+  String testagent_host,
+  Map oci_result,
+  String output,
+  boolean secureboot) {
+  def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
+  def test_params = [
+    string(name: "TESTSET", value: testset),
+    string(name: "DESC", value: "Triggered by ${build_href}<br>(${shortname})"),
+    string(name: "TESTAGENT_HOST", value: testagent_host),
+    booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: env.CI_ENV == "release"),
+    booleanParam(name: "RELOAD_ONLY", value: false),
+    booleanParam(name: "SECUREBOOT", value: secureboot),
+  ]
+  if (oci_result == null) {
+    error("Missing OCI publish result for ${shortname}; cannot trigger ghaf-hw-test")
+  }
+  test_params += [
+    string(name: "OCI_IMAGE_REF", value: oci_result.primary.reference),
+  ]
+  def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
+    parameters: test_params
+  )
+  def logPrefix = secureboot ? "ghaf-hw-test log SB '${shortname}:" : "ghaf-hw-test log '${shortname}:"
+  println(logPrefix)
+  sh "cat /var/lib/jenkins/jobs/ghaf-hw-test/builds/${job.number}/log | sed 's/^/    /'"
+  if (job.result != "SUCCESS") {
+    unstable("FAILED: ${shortname} ${testset}")
+    currentBuild.result = "FAILURE"
+    def buildDescriptionName = secureboot ? "${shortname} (SB)" : shortname
+    append_to_build_description("<a href=\"${job.absoluteUrl}\">⛔ ${buildDescriptionName}</a>")
+  }
+  def artifactsTarget = secureboot ? "${output}/test-results/secureboot" : "${output}/test-results"
+  copyArtifacts(
+    projectName: "ghaf-hw-test",
+    selector: specific("${job.number}"),
+    target: artifactsTarget,
+    optional: true
+  )
 }
 
 def create_pipeline(List<Map> targets, String testagent_host = null, String target_flake_ref = null) {
@@ -523,37 +563,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
             Utils.markStageSkippedForConditional(testStageName)
             println("Skipping hardware tests for ${shortname}: CI_ENV is vm")
           } else {
-            def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
-            def test_params = [
-                string(name: "TESTSET", value: it.testset),
-                string(name: "DESC", value: "Triggered by ${build_href}<br>(${shortname})"),
-                string(name: "TESTAGENT_HOST", value: testagent_host),
-                booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: env.CI_ENV == "release"),
-                booleanParam(name: "RELOAD_ONLY", value: false),
-                booleanParam(name: "SECUREBOOT", value: false),
-            ]
-            if (oci_result == null) {
-              error("Missing OCI publish result for ${shortname}; cannot trigger ghaf-hw-test")
-            }
-            test_params += [
-              string(name: "OCI_IMAGE_REF", value: oci_result.primary.reference),
-            ]
-            def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
-              parameters: test_params
-            )
-            println("ghaf-hw-test log '${shortname}:")
-            sh "cat /var/lib/jenkins/jobs/ghaf-hw-test/builds/${job.number}/log | sed 's/^/    /'"
-            if (job.result != "SUCCESS") {
-              unstable("FAILED: ${shortname} ${it.testset}")
-              currentBuild.result = "FAILURE"
-              append_to_build_description("<a href=\"${job.absoluteUrl}\">⛔ ${shortname}</a>")
-            }
-            copyArtifacts(
-              projectName: "ghaf-hw-test",
-              selector: specific("${job.number}"),
-              target: "${output}/test-results",
-              optional: true
-            )
+            trigger_hw_test(shortname, it.testset, testagent_host, oci_result, output, false)
           }
         }
         // Run an additional secure boot test only when the target requests it and
@@ -562,37 +572,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
         // regular test run cannot be replaced with a secure boot-only run.
         if (it.test_secboot && manifest.uefi.signed && env.CI_ENV == "prod") {
           stage("Test SB ${shortname}") {
-            def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
-            def test_params = [
-              string(name: "TESTSET", value: it.testset),
-              string(name: "DESC", value: "Triggered by ${build_href}<br>(${shortname})"),
-              string(name: "TESTAGENT_HOST", value: testagent_host),
-              booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: env.CI_ENV == "release"),
-              booleanParam(name: "RELOAD_ONLY", value: false),
-              booleanParam(name: "SECUREBOOT", value: true)
-            ]
-            if (oci_result == null) {
-              error("Missing OCI publish result for ${shortname}; cannot trigger ghaf-hw-test")
-            }
-            test_params += [
-              string(name: "OCI_IMAGE_REF", value: oci_result.primary.reference),
-            ]
-            def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
-              parameters: test_params
-            )
-            println("ghaf-hw-test log SB '${shortname}:")
-            sh "cat /var/lib/jenkins/jobs/ghaf-hw-test/builds/${job.number}/log | sed 's/^/    /'"
-            if (job.result != "SUCCESS") {
-              unstable("FAILED: ${shortname} ${it.testset}")
-              currentBuild.result = "FAILURE"
-              append_to_build_description("<a href=\"${job.absoluteUrl}\">⛔ ${shortname} (SB)</a>")
-            }
-            copyArtifacts(
-              projectName: "ghaf-hw-test",
-              selector: specific("${job.number}"),
-              target: "${output}/test-results/secureboot",
-              optional: true
-            )
+            trigger_hw_test(shortname, it.testset, testagent_host, oci_result, output, true)
           }
         }
       }
