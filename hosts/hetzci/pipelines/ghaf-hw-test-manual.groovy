@@ -1,5 +1,7 @@
 #!/usr/bin/env groovy
 
+@Library('ghafInfra') _
+
 import groovy.transform.Field
 
 // SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
@@ -117,7 +119,7 @@ def init() {
     env.OCI_TARGET = annotations[TARGET_ANNOTATION] ?: ''
     env.OCI_SOURCE_REF = annotations[SOURCE_REF_ANNOTATION] ?: ''
   }
-  def flashTarget = derive_target_name(params.IMG_URL, env.OCI_TARGET)
+  def flashTarget = utils.derive_target_name(params.IMG_URL, env.OCI_TARGET)
   def deviceMap = [
     "orin-agx"           : [name: 'OrinAGX1'],
     "orin-agx-64"        : [name: 'OrinAGX64'],
@@ -128,7 +130,7 @@ def init() {
     "x1-sec-boot"        : [name: 'X1-Secure-Boot']
   ]
   if (flashTarget) {
-    def deviceInfo = derive_device_info(flashTarget, params.SECUREBOOT)
+    def deviceInfo = utils.derive_device_info(flashTarget, params.SECUREBOOT)
     if (deviceInfo) {
       env.DEVICE_NAME = deviceInfo.name
       env.DEVICE_TAG = deviceInfo.tag
@@ -176,63 +178,6 @@ def run_wget(String url, String to_dir) {
   // Re-run wget: this will not re-download anything, it's needed only to
   // get the local path to the downloaded file
   return sh_ret_out("wget --force-directories --timestamping -P ${to_dir} ${url} 2>&1 | grep -Po '${to_dir}[^’]+'")
-}
-
-def derive_target_name(String imgUrl, String ociTarget) {
-  def normalizedTarget = ociTarget?.trim()
-  if (normalizedTarget) {
-    return normalizedTarget
-  }
-  if (!imgUrl) {
-    return null
-  }
-  def match = imgUrl =~ /commit_[0-9a-f]{5,40}\/([^\/]+)/
-  if (match) {
-    return match.group(1)
-  }
-  return null
-}
-
-@NonCPS
-def derive_device_info(String target, boolean secureboot) {
-  if (target.contains("nvidia-jetson-orin-agx64")) {
-    return [name: 'OrinAGX64', tag: 'orin-agx-64']
-  }
-  if (target.contains("nvidia-jetson-orin-agx")) {
-    return [name: 'OrinAGX1', tag: 'orin-agx']
-  }
-  if (target.contains("nvidia-jetson-orin-nx")) {
-    return [name: 'OrinNX1', tag: 'orin-nx']
-  }
-  if (target.contains("lenovo-x1")) {
-    if (secureboot && !target.contains("installer")) {
-      return [name: 'X1-Secure-Boot', tag: 'x1-sec-boot']
-    }
-    return [name: 'LenovoX1-1', tag: 'lenovo-x1']
-  }
-  if (target.contains("dell-latitude-7330")) {
-    return [name: 'Dell7330', tag: 'dell-7330']
-  }
-  if (target.contains("system76-darp11-b")) {
-    return [name: 'DarterPRO', tag: 'darter-pro']
-  }
-  return null
-}
-
-def resolve_ghaf_flake_ref(String explicitFlakeRef, String imgUrl, String ociFlakeRef) {
-  def normalizedFlakeRef = explicitFlakeRef?.trim()
-  if (normalizedFlakeRef) {
-    return normalizedFlakeRef
-  }
-  def normalizedOciFlakeRef = ociFlakeRef?.trim()
-  if (normalizedOciFlakeRef) {
-    return normalizedOciFlakeRef
-  }
-  def match = imgUrl =~ /commit_([a-f0-9]{40})/
-  if (match) {
-    return "git+https://github.com/tiiuae/ghaf?rev=${match[0][1]}"
-  }
-  return null
 }
 
 def get_test_conf_property(String file_path, String device, String property) {
@@ -346,7 +291,7 @@ pipeline {
           steps {
             script {
               env.TARGET = env.DEVICE_TAG
-              def explicitTarget = derive_target_name(params.IMG_URL, env.OCI_TARGET)
+              def explicitTarget = utils.derive_target_name(params.IMG_URL, env.OCI_TARGET)
               if (explicitTarget) {
                 env.TARGET = explicitTarget
               } else {
@@ -456,7 +401,7 @@ pipeline {
                 if (env.FLASH_INPUT_PATH.endsWith('.raw')) {
                   error("flash-script does not support '.raw' images. Enable USE_LEGACY_DD_FLASH to flash '${env.FLASH_INPUT_PATH}' with dd.")
                 }
-                def ghafFlakeRef = resolve_ghaf_flake_ref(params.GHAF_FLAKE_REF, params.IMG_URL, env.OCI_SOURCE_REF)
+                def ghafFlakeRef = utils.resolve_ghaf_flake_ref(params.GHAF_FLAKE_REF, params.IMG_URL, env.OCI_SOURCE_REF)
                 if (!ghafFlakeRef) {
                   if (params.OCI_IMAGE_REF) {
                     error("Missing GHAF_FLAKE_REF and unable to derive it from OCI image '${params.OCI_IMAGE_REF}'. Set GHAF_FLAKE_REF or enable USE_LEGACY_DD_FLASH.")
