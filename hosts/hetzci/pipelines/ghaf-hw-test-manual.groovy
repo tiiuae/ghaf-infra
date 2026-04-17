@@ -106,7 +106,6 @@ properties([
 ////////////////////////////////////////////////////////////////////////////////
 
 def init() {
-  println(params)
   if(!params || params.RELOAD_ONLY) {
     return 'built-in'
   }
@@ -120,45 +119,26 @@ def init() {
     env.OCI_SOURCE_REF = annotations[SOURCE_REF_ANNOTATION] ?: ''
   }
   def flashTarget = utils.derive_target_name(params.IMG_URL, env.OCI_TARGET)
-  def deviceMap = [
-    "orin-agx"           : [name: 'OrinAGX1'],
-    "orin-agx-64"        : [name: 'OrinAGX64'],
-    "orin-nx"            : [name: 'OrinNX1'],
-    "dell-7330"          : [name: 'Dell7330'],
-    "darter-pro"         : [name: 'DarterPRO'],
-    "lenovo-x1"          : [name: 'LenovoX1-1'],
-    "x1-sec-boot"        : [name: 'X1-Secure-Boot']
-  ]
+  def deviceInfo = null
   if (flashTarget) {
-    def deviceInfo = utils.derive_device_info(flashTarget, params.SECUREBOOT)
-    if (deviceInfo) {
-      env.DEVICE_NAME = deviceInfo.name
-      env.DEVICE_TAG = deviceInfo.tag
+    deviceInfo = utils.derive_device_info(flashTarget, params.SECUREBOOT)
+    if (!deviceInfo) {
+      error("Unable to parse device config for target '${flashTarget}'")
     }
   }
-  if ((params.IMG_URL || params.OCI_IMAGE_REF) && params.DEVICE_TAG) {
-    env.DEVICE_TAG = params.DEVICE_TAG
-    env.DEVICE_NAME = deviceMap[env.DEVICE_TAG].name
+  if (params.DEVICE_TAG) {
+    def deviceName = utils.device_name_from_tag(params.DEVICE_TAG)
+    if (!deviceName) {
+      error("Unknown DEVICE_TAG '${params.DEVICE_TAG}'")
+    }
+    deviceInfo = [name: deviceName, tag: params.DEVICE_TAG]
   }
-  if (!env.DEVICE_TAG || env.DEVICE_TAG == null) {
+  if (!deviceInfo) {
     error("DEVICE_TAG is not defined and could not be derived from IMG_URL '${params.IMG_URL}', OCI_IMAGE_REF '${params.OCI_IMAGE_REF}', or explicit DEVICE_TAG")
   }
-  if ((!params.IMG_URL && !params.OCI_IMAGE_REF) || params.DEVICE_TAG) {
-    env.DEVICE_NAME = deviceMap[env.DEVICE_TAG].name
-  }
-  def label = env.DEVICE_TAG
-  if (params.TESTAGENT_HOST) {
-    label = "${params.TESTAGENT_HOST}-${env.DEVICE_TAG}"
-  }
-  println("Using DEVICE_NAME: ${env.DEVICE_NAME}")
-  println("Using DEVICE_TAG: ${env.DEVICE_TAG}")
-  currentBuild.description = "${label}"
-
-  if (env.DEVICE_TAG == "x1-sec-boot") {
-    env.DEVICE_BOOT_TAG = "lenovo-x1"
-  } else {
-    env.DEVICE_BOOT_TAG = env.DEVICE_TAG
-  }
+  env.DEVICE_NAME = deviceInfo.name
+  env.DEVICE_TAG = deviceInfo.tag
+  def label = params.TESTAGENT_HOST ? "${params.TESTAGENT_HOST}-${env.DEVICE_TAG}" : env.DEVICE_TAG
   def testagent_nodes = nodesByLabel(label: label, offline: false)
   if (!testagent_nodes) {
     error("No test agents online")
@@ -263,6 +243,26 @@ pipeline {
     stage('Run on test agent') {
       agent { label "${env.TEST_AGENT_LABEL}" }
       stages {
+        stage('Resolve target') {
+          steps {
+            script {
+              def explicitTarget = utils.derive_target_name(params.IMG_URL, env.OCI_TARGET)
+              def jobSelector = params.JOB_SELECTOR?.trim()
+              if (explicitTarget) {
+                env.TARGET = explicitTarget
+              } else if (jobSelector) {
+                env.TARGET = jobSelector
+              } else {
+                env.TARGET = env.DEVICE_TAG
+              }
+              env.DEVICE_BOOT_TAG = utils.boot_tag_for(env.DEVICE_TAG)
+              currentBuild.description = "${env.TEST_AGENT_LABEL}"
+              println("Using TARGET: ${env.TARGET}")
+              println("Using DEVICE_NAME: ${env.DEVICE_NAME}")
+              println("Using DEVICE_TAG: ${env.DEVICE_TAG}")
+            }
+          }
+        }
         stage('Checkout') {
           steps {
             deleteDir()
@@ -290,18 +290,6 @@ pipeline {
         stage('Setup') {
           steps {
             script {
-              env.TARGET = env.DEVICE_TAG
-              def explicitTarget = utils.derive_target_name(params.IMG_URL, env.OCI_TARGET)
-              if (explicitTarget) {
-                env.TARGET = explicitTarget
-              } else {
-                def sel = params.JOB_SELECTOR
-                if (!sel) {
-                  env.TARGET = env.DEVICE_TAG
-                } else {
-                  env.TARGET = sel
-                }
-              }
               env.TEST_CONFIG_DIR = 'Robot-Framework/config'
               sh """
                 mkdir -p ${TEST_CONFIG_DIR}

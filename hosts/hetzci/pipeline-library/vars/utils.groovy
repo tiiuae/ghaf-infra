@@ -89,6 +89,36 @@ def derive_device_info(String target, boolean secureboot) {
   return null
 }
 
+@NonCPS
+def device_name_from_tag(String deviceTag) {
+  def deviceInfo = [
+    'orin-agx': 'OrinAGX1',
+    'orin-agx-64': 'OrinAGX64',
+    'orin-nx': 'OrinNX1',
+    'lenovo-x1': 'LenovoX1-1',
+    'x1-sec-boot': 'X1-Secure-Boot',
+    'dell-7330': 'Dell7330',
+    'darter-pro': 'DarterPRO',
+  ]
+  return deviceInfo[deviceTag]
+}
+
+def extra_tag_suffix(String target, String deviceTag) {
+  def filters = []
+  if (target.contains("lenovo-x1") || target.contains("darp11-b")) {
+    filters.add(target.contains("storeDisk") ? 'NOTexcl-storeDisk' : 'NOTstoreDisk-only')
+    filters.add(target.contains("installer") ? 'NOTexcl-installer' : 'NOTinstaller-only')
+  }
+  if (target.contains("lenovo-x1")) {
+    filters.add(deviceTag == 'x1-sec-boot' ? 'NOTexcl-secboot' : 'NOTsecboot-only')
+  }
+  return filters.unique().join('')
+}
+
+def boot_tag_for(String deviceTag) {
+  return deviceTag == 'x1-sec-boot' ? 'lenovo-x1' : deviceTag
+}
+
 def resolve_ghaf_flake_ref(String explicitFlakeRef, String imgUrl, String ociFlakeRef) {
   def normalizedFlakeRef = explicitFlakeRef?.trim()
   if (normalizedFlakeRef) {
