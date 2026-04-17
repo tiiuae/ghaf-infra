@@ -113,7 +113,7 @@ def init() {
   env.OCI_SOURCE_REF = ''
   if (params.OCI_IMAGE_REF) {
     def annotations = readJSON(
-      text: sh_ret_out("oras manifest fetch --format json '${params.OCI_IMAGE_REF}'")
+      text: utils.run_cmd("oras manifest fetch --format json '${params.OCI_IMAGE_REF}'")
     ).content?.annotations ?: [:]
     env.OCI_TARGET = annotations[TARGET_ANNOTATION] ?: ''
     env.OCI_SOURCE_REF = annotations[SOURCE_REF_ANNOTATION] ?: ''
@@ -144,28 +144,6 @@ def init() {
     error("No test agents online")
   }
   return label
-}
-
-def sh_ret_out(String cmd) {
-  // Run cmd returning stdout
-  return sh(script: cmd, returnStdout:true).trim()
-}
-
-def run_wget(String url, String to_dir) {
-  // Download `url` setting the directory prefix `to_dir` preserving
-  // the hierarchy of directories locally.
-  sh "wget --show-progress --progress=dot:giga --force-directories --timestamping -P ${to_dir} ${url}"
-  // Re-run wget: this will not re-download anything, it's needed only to
-  // get the local path to the downloaded file
-  return sh_ret_out("wget --force-directories --timestamping -P ${to_dir} ${url} 2>&1 | grep -Po '${to_dir}[^’]+'")
-}
-
-def get_test_conf_property(String file_path, String device, String property) {
-  // Get the requested device property data from test_config.json file
-  def device_data = readJSON file: file_path
-  def property_data = "${device_data['addresses'][device][property]}"
-  println "Got device '${device}' property '${property}' value: '${property_data}'"
-  return property_data
 }
 
 def ghaf_robot_test(String tags) {
@@ -267,23 +245,12 @@ pipeline {
           steps {
             deleteDir()
             script {
-              if (params.USE_FLAKE_PINNED_CI_TEST) {
-                def pinned_src = sh_ret_out("cat ${CI_TEST_PINNED_SOURCE_FILE}")
-                println("Using flake-pinned ci-test-automation source: ${pinned_src}")
-                sh """
-                  if [ ! -d "${pinned_src}/Robot-Framework/test-suites" ]; then
-                    echo "ERROR: invalid ci-test-automation source path '${pinned_src}'"
-                    exit 1
-                  fi
-                  cp -r "${pinned_src}/." .
-                  chmod -R u+w .
-                """
-              } else {
-                checkout scmGit(
-                  branches: [[name: "${params.CI_TEST_REPO_BRANCH}"]],
-                  userRemoteConfigs: [[url: "${params.CI_TEST_REPO_URL}"]]
-                )
-              }
+              utils.checkout_ci_test_sources(
+                CI_TEST_PINNED_SOURCE_FILE,
+                params.USE_FLAKE_PINNED_CI_TEST,
+                params.CI_TEST_REPO_BRANCH,
+                params.CI_TEST_REPO_URL
+              )
             }
           }
         }
@@ -300,11 +267,11 @@ pipeline {
               """
               // Determine mount commands
               if(env.TARGET.contains("microchip-icicle-")) {
-                def muxport = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'usb_sd_mux_port')
+                def muxport = utils.get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'usb_sd_mux_port')
                 env.MOUNT_CMD = "/run/wrappers/bin/sudo usbsdmux ${muxport} host; sleep 10"
                 env.UNMOUNT_CMD = "/run/wrappers/bin/sudo usbsdmux ${muxport} dut"
               } else {
-                def serial = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'usbhub_serial')
+                def serial = utils.get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'usbhub_serial')
                 env.MOUNT_CMD = "/run/wrappers/bin/sudo AcronameHubCLI -u 0 -s ${serial}; sleep 10"
                 env.UNMOUNT_CMD = "/run/wrappers/bin/sudo AcronameHubCLI -u 1 -s ${serial}; sleep 10"
               }
@@ -318,14 +285,14 @@ pipeline {
               def img_path
               if (params.OCI_IMAGE_REF) {
                 def pullResult = readJSON(
-                  text: sh_ret_out("oras pull --format json -o '${TMP_IMG_DIR}' '${params.OCI_IMAGE_REF}'")
+                  text: utils.run_cmd("oras pull --format json -o '${TMP_IMG_DIR}' '${params.OCI_IMAGE_REF}'")
                 )
                 img_path = pullResult.files?.find { it.mediaType == IMAGE_MEDIA_TYPE }?.path
                 if (!img_path) {
                   error("Unable to derive image file from OCI image '${params.OCI_IMAGE_REF}'")
                 }
               } else {
-                img_path = run_wget(params.IMG_URL, TMP_IMG_DIR)
+                img_path = utils.run_wget(params.IMG_URL, TMP_IMG_DIR)
               }
               println "Downloaded image to workspace: ${img_path}"
               if (params.USE_LEGACY_DD_FLASH) {
@@ -353,7 +320,7 @@ pipeline {
               // Mount the target disk
               sh "${env.MOUNT_CMD}"
               // Read the device name
-              def dev = get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'ext_drive_by-id')
+              def dev = utils.get_test_conf_property(CONF_FILE_PATH, env.DEVICE_NAME, 'ext_drive_by-id')
               println "Checking that flash target '$dev' is connected..."
               sh """
                 if /run/wrappers/bin/sudo test -f ${dev}; then
@@ -397,11 +364,11 @@ pipeline {
                   error("Missing GHAF_FLAKE_REF and unable to derive Ghaf commit from IMG_URL '${params.IMG_URL}'. Set GHAF_FLAKE_REF or enable USE_LEGACY_DD_FLASH.")
                 }
                 println "Building flash-script from GHAF_FLAKE_REF: ${ghafFlakeRef}"
-                def flashScriptPath = sh_ret_out(
+                def flashScriptPath = utils.run_cmd(
                   "nix build --no-link --print-out-paths '${ghafFlakeRef}#packages.x86_64-linux.flash-script'"
                 )
                 // flash-script validates /dev/sdX format; resolve the by-id symlink.
-                def resolved_dev = sh_ret_out("/run/wrappers/bin/sudo readlink -f ${dev}")
+                def resolved_dev = utils.run_cmd("/run/wrappers/bin/sudo readlink -f ${dev}")
                 sh "/run/wrappers/bin/sudo ${flashScriptPath}/bin/flash-script -d ${resolved_dev} -i ${env.FLASH_INPUT_PATH} -f"
               }
               // Unmount
@@ -471,19 +438,7 @@ pipeline {
       post {
         always {
           script {
-            if (env.ROBOT_EXECUTED != null) {
-              def test_artifacts = '' +
-                'Robot-Framework/test-suites/**/*.html, ' +
-                'Robot-Framework/test-suites/**/*.xml, ' +
-                'Robot-Framework/test-suites/**/*.png, ' +
-                'Robot-Framework/test-suites/**/*.jpeg, ' +
-                'Robot-Framework/test-suites/**/*.mp4, ' +
-                'Robot-Framework/test-suites/**/*.mkv, ' +
-                'Robot-Framework/test-suites/**/*.wav, ' +
-                'Robot-Framework/test-suites/**/*.txt'
-              archiveArtifacts allowEmptyArchive: true, artifacts: test_artifacts
-            }
-            sh "rm -rf ${TMP_IMG_DIR} || true"
+            utils.archive_robot_artifacts(TMP_IMG_DIR, env.ROBOT_EXECUTED != null)
           }
         }
       }

@@ -8,6 +8,44 @@ def run_cmd(String cmd) {
   return sh(script: cmd, returnStdout: true).trim()
 }
 
+def run_wget(String url, String to_dir) {
+  sh "wget --show-progress --progress=dot:giga --force-directories --timestamping -P ${to_dir} ${url}"
+  return run_cmd(
+    "wget --force-directories --timestamping -P ${to_dir} ${url} 2>&1 | grep -Po '${to_dir}[^’]+'"
+  )
+}
+
+def get_test_conf_property(String file_path, String device, String property) {
+  def device_data = readJSON file: file_path
+  def property_data = "${device_data['addresses'][device][property]}"
+  println "Got device '${device}' property '${property}' value: '${property_data}'"
+  return property_data
+}
+
+def checkout_ci_test_sources(
+  String pinned_source_file,
+  boolean use_flake_pinned_ci_test,
+  String ci_test_repo_branch,
+  String ci_test_repo_url) {
+  if (use_flake_pinned_ci_test) {
+    def pinned_src = run_cmd("cat ${pinned_source_file}")
+    println("Using flake-pinned ci-test-automation source: ${pinned_src}")
+    sh """
+      if [ ! -d "${pinned_src}/Robot-Framework/test-suites" ]; then
+        echo "ERROR: invalid ci-test-automation source path '${pinned_src}'"
+        exit 1
+      fi
+      cp -r "${pinned_src}/." .
+      chmod -R u+w .
+    """
+    return
+  }
+  checkout scmGit(
+    branches: [[name: ci_test_repo_branch]],
+    userRemoteConfigs: [[url: ci_test_repo_url]]
+  )
+}
+
 def path_basename(String path) {
   if (path == null) {
     return null
@@ -117,6 +155,22 @@ def extra_tag_suffix(String target, String deviceTag) {
 
 def boot_tag_for(String deviceTag) {
   return deviceTag == 'x1-sec-boot' ? 'lenovo-x1' : deviceTag
+}
+
+def archive_robot_artifacts(String tmp_img_dir, boolean should_archive) {
+  if (should_archive) {
+    def test_artifacts = '' +
+      'Robot-Framework/test-suites/**/*.html, ' +
+      'Robot-Framework/test-suites/**/*.xml, ' +
+      'Robot-Framework/test-suites/**/*.png, ' +
+      'Robot-Framework/test-suites/**/*.jpeg, ' +
+      'Robot-Framework/test-suites/**/*.mp4, ' +
+      'Robot-Framework/test-suites/**/*.mkv, ' +
+      'Robot-Framework/test-suites/**/*.wav, ' +
+      'Robot-Framework/test-suites/**/*.txt'
+    archiveArtifacts allowEmptyArchive: true, artifacts: test_artifacts
+  }
+  sh "rm -rf ${tmp_img_dir} || true"
 }
 
 def resolve_ghaf_flake_ref(String explicitFlakeRef, String imgUrl, String ociFlakeRef) {
