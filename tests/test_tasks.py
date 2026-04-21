@@ -145,7 +145,6 @@ def test_generate_signed_user_key_runs_expected_commands(
         ["ssh-keygen", "-s", str(ca), "-I", "", "-n", "builder-user", f"{key}.pub"],
     ]
 
-
 def test_install_release_hosts_parallelizes_all_release_hosts(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -396,6 +395,44 @@ def test_connect_release_testagent_retries_until_success(
         tasks.RELEASE_CONNECT_SLEEP_SEC,
         tasks.RELEASE_CONNECT_SLEEP_SEC,
     ]
+
+
+def test_deploy_release_testagent_skips_unreachable_host(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Release testagent deploy should fail fast when SSH is unreachable."""
+    infos: list[str] = []
+    probes: list[tuple[str, int, int | float]] = []
+
+    class FakeContext:
+        """Invoke-like context stub that must not run deploy on probe failure."""
+
+        def run(self, _command: str, *, warn: bool) -> SimpleNamespace:
+            raise AssertionError("deploy should not run when the SSH probe fails")
+
+    def fake_can_connect(host: str, port: int, timeout: int | float = 1) -> bool:
+        probes.append((host, port, timeout))
+        return False
+
+    def fake_log_info(message: str) -> None:
+        infos.append(message)
+
+    monkeypatch.setattr(tasks, "_can_connect", fake_can_connect)
+    monkeypatch.setattr(tasks.logger, "info", fake_log_info)
+
+    host = SimpleNamespace(host="172.18.16.32", port=None)
+
+    assert tasks._deploy_release_testagent(FakeContext(), host) is False
+    assert probes == [("172.18.16.32", 22, tasks.RELEASE_DEPLOY_SSH_PROBE_TIMEOUT_SEC)]
+    assert infos[0] == (
+        "Failed deploying 'testagent-release'. "
+        "The release environment is otherwise up, but you should manually deploy "
+        "the testagent-release, then connect it to the release Jenkins instance. "
+        "Hint: could not reach '172.18.16.32:22' over TCP within "
+        f"{tasks.RELEASE_DEPLOY_SSH_PROBE_TIMEOUT_SEC}s. "
+        "Perhaps you need to connect a VPN?"
+    )
+    assert len(infos) == 1
 
 
 def test_decrypt_host_key_respects_yes_on_sops_failure(

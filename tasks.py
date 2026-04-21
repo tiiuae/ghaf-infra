@@ -83,6 +83,7 @@ RELEASE_TESTAGENT_ALIAS = "testagent-release"
 RELEASE_TESTAGENT_URL = "https://ci-release.vedenemo.dev"
 RELEASE_CONNECT_ATTEMPTS = 3
 RELEASE_CONNECT_SLEEP_SEC = 5
+RELEASE_DEPLOY_SSH_PROBE_TIMEOUT_SEC = 5
 
 
 ################################################################################
@@ -511,6 +512,18 @@ def _install_release_hosts(c: Context, tmpdir: Path) -> None:
 
 def _deploy_release_testagent(c: Context, host: DeployHost) -> bool:
     """Deploy the release testagent without reinstalling it."""
+    port = host.port or 22
+    if not _can_connect(host.host, port, timeout=RELEASE_DEPLOY_SSH_PROBE_TIMEOUT_SEC):
+        logger.info(
+            "Failed deploying 'testagent-release'. "
+            "The release environment is otherwise up, but you should manually deploy "
+            "the testagent-release, then connect it to the release Jenkins instance. "
+            f"Hint: could not reach '{host.host}:{port}' over TCP within "
+            f"{RELEASE_DEPLOY_SSH_PROBE_TIMEOUT_SEC}s. "
+            "Perhaps you need to connect a VPN?"
+        )
+        return False
+
     deploy = c.run(f"deploy -s --targets .#{RELEASE_TESTAGENT_ALIAS}", warn=True)
     if deploy.ok:
         return True
@@ -544,19 +557,26 @@ def _connect_release_testagent(host: DeployHost) -> bool:
 ################################################################################
 
 
+def _can_connect(host: str, port: int, timeout: int | float = 1) -> bool:
+    """Return True when a TCP connection can be established within `timeout`."""
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
 def _wait_for_port(host: str, port: int, shutdown: bool = False) -> None:
     """Wait for `host`:`port`."""
     while True:
         time.sleep(1)
         sys.stdout.write(".")
         sys.stdout.flush()
-        try:
-            with socket.create_connection((host, port), timeout=1):
-                if not shutdown:
-                    break
-        except OSError:
-            if shutdown:
+        if _can_connect(host, port):
+            if not shutdown:
                 break
+        elif shutdown:
+            break
     print("")
 
 
