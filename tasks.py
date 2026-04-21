@@ -37,7 +37,7 @@ import sys
 import time
 from collections.abc import Iterable
 from collections import OrderedDict
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -245,6 +245,11 @@ def _build_nixos_anywhere_command(
     return shlex.join(cmd)
 
 
+def _clone_context(c: Context) -> Context:
+    """Return a fresh invoke context with cloned configuration."""
+    return Context(config=c.config.clone())
+
+
 def _get_deploy_host(alias: str, user: str | None = None) -> DeployHost:
     """Return DeployHost object, given `alias`."""
     hostname = TARGETS.get(alias).hostname
@@ -448,11 +453,60 @@ def _generate_signed_user_key(ca: Path, tmpdir: Path, user: str) -> Path:
     return key
 
 
+def _install_release_host(c: Context, alias: str, copy_dir: str) -> None:
+    """Install one release host using its own invoke context."""
+    succeeded = False
+    try:
+        install(_clone_context(c), alias, yes=True, copy_dir=copy_dir)
+        succeeded = True
+    finally:
+        if succeeded:
+            logger.info(f"[{alias}] parallel install: finished")
+        else:
+            logger.error(f"[{alias}] parallel install: failed")
+
+
+def _release_install_error_summary(err: Exception | SystemExit) -> str:
+    """Return a compact single-line summary for one release-install failure."""
+    detail = next((line.strip() for line in str(err).splitlines() if line.strip()), "")
+    return f"{type(err).__name__}: {detail}" if detail else type(err).__name__
+
+
 def _install_release_hosts(c: Context, tmpdir: Path) -> None:
-    """Install release builders and controller using the public install task."""
-    for alias in RELEASE_BUILDER_ALIASES:
-        install(c, alias, yes=True, copy_dir=str(tmpdir / "builder"))
-    install(c, RELEASE_CONTROLLER_ALIAS, yes=True, copy_dir=str(tmpdir / "controller"))
+    """Install all release hosts using the public install task."""
+    jobs = [
+        *((alias, str(tmpdir / "builder")) for alias in RELEASE_BUILDER_ALIASES),
+        (RELEASE_CONTROLLER_ALIAS, str(tmpdir / "controller")),
+    ]
+    logger.info(f"Installing {len(jobs)} release host(s) in parallel")
+
+    # Populate shared target metadata before worker threads start touching the
+    # lazy TARGETS cache.
+    for alias, _copy_dir in jobs:
+        TARGETS.resolve_secrets(alias)
+
+    failures: list[str] = []
+    with ThreadPoolExecutor(max_workers=len(jobs)) as executor:
+        future_to_alias = {
+            executor.submit(_install_release_host, c, alias, copy_dir): alias
+            for alias, copy_dir in jobs
+        }
+        for future in as_completed(future_to_alias):
+            alias = future_to_alias[future]
+            try:
+                future.result()
+            # Worker installs may raise SystemExit via helper guards; keep going so
+            # all parallel host failures are surfaced before the task aborts.
+            # pylint: disable=broad-exception-caught
+            except (Exception, SystemExit) as err:
+                failures.append(alias)
+                detail = _release_install_error_summary(err)
+                logger.error(f"Release install failed for '{alias}': {detail}")
+
+    if failures:
+        raise RuntimeError(
+            f"Release install failed on {len(failures)} host(s): {', '.join(failures)}"
+        )
 
 
 def _deploy_release_testagent(c: Context, host: DeployHost) -> bool:

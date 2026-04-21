@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 
-# pylint: disable=protected-access, too-few-public-methods, wrong-import-position
+# pylint: disable=missing-function-docstring, protected-access, too-few-public-methods, wrong-import-position
 
 """Tests for extracted helper logic in tasks.py."""
 
@@ -9,6 +9,7 @@ import shlex
 import subprocess
 import sys
 from collections import OrderedDict
+from collections.abc import Callable
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -17,6 +18,15 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import tasks
+
+
+def _expected_release_jobs(tmp_path: Path) -> list[tuple[str, str]]:
+    """Return the expected release-install job tuples for one temp dir."""
+    return [
+        ("hetz86-rel-2", str(tmp_path / "builder")),
+        ("hetzarm-rel-1", str(tmp_path / "builder")),
+        ("hetzci-release", str(tmp_path / "controller")),
+    ]
 
 
 def test_confirm_respects_yes_without_prompt(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -134,6 +144,201 @@ def test_generate_signed_user_key_runs_expected_commands(
         ["ssh-keygen", "-f", str(key), "-C", "", "-N", ""],
         ["ssh-keygen", "-s", str(ca), "-I", "", "-n", "builder-user", f"{key}.pub"],
     ]
+
+
+def test_install_release_hosts_parallelizes_all_release_hosts(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """All release hosts should be dispatched through the parallel install phase."""
+    submitted: list[tuple[str, str]] = []
+    install_calls: list[tuple[object, str, bool, str | None]] = []
+    clone_calls: list[object] = []
+    infos: list[str] = []
+    prepare_calls: list[str] = []
+    call_order: list[tuple[str, str]] = []
+
+    class FakeFuture:
+        """Minimal future stub that runs the task when awaited."""
+
+        def __init__(self, callback: Callable[[], None]) -> None:
+            self._callback = callback
+
+        def result(self) -> None:
+            self._callback()
+
+    class FakeExecutor:
+        """Minimal executor stub for deterministic release-install tests."""
+
+        def __init__(self, *, max_workers: int) -> None:
+            assert max_workers == len(_expected_release_jobs(tmp_path))
+
+        def __enter__(self) -> "FakeExecutor":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            pass
+
+        def submit(self, func: Callable[..., None], *args: object) -> FakeFuture:
+            submitted.append((args[1], args[2]))
+            return FakeFuture(lambda: func(*args))
+
+    def fake_clone_context(context: object) -> str:
+        clone_calls.append(context)
+        return f"host-context-{len(clone_calls)}"
+
+    def fake_resolve_secrets(alias: str) -> object:
+        prepare_calls.append(alias)
+        call_order.append(("resolve", alias))
+        return object()
+
+    def fake_install(
+        context: object,
+        alias: str,
+        *,
+        yes: bool,
+        copy_dir: str | None = None,
+    ) -> None:
+        install_calls.append((context, alias, yes, copy_dir))
+        call_order.append(("install", alias))
+
+    def fake_log_info(message: str) -> None:
+        infos.append(message)
+
+    monkeypatch.setattr(tasks, "ThreadPoolExecutor", FakeExecutor)
+    monkeypatch.setattr(
+        tasks, "as_completed", lambda submitted_futures: submitted_futures
+    )
+    monkeypatch.setattr(
+        tasks, "TARGETS", SimpleNamespace(resolve_secrets=fake_resolve_secrets)
+    )
+    monkeypatch.setattr(tasks, "_clone_context", fake_clone_context)
+    monkeypatch.setattr(tasks, "install", fake_install)
+    monkeypatch.setattr(tasks.logger, "info", fake_log_info)
+
+    root_context = object()
+    tasks._install_release_hosts(root_context, tmp_path)
+
+    assert prepare_calls == [
+        alias for alias, _copy_dir in _expected_release_jobs(tmp_path)
+    ]
+    assert submitted == _expected_release_jobs(tmp_path)
+    assert clone_calls == [root_context, root_context, root_context]
+    assert install_calls == [
+        (
+            "host-context-1",
+            "hetz86-rel-2",
+            True,
+            str(tmp_path / "builder"),
+        ),
+        (
+            "host-context-2",
+            "hetzarm-rel-1",
+            True,
+            str(tmp_path / "builder"),
+        ),
+        (
+            "host-context-3",
+            "hetzci-release",
+            True,
+            str(tmp_path / "controller"),
+        ),
+    ]
+    assert call_order[:3] == [
+        ("resolve", "hetz86-rel-2"),
+        ("resolve", "hetzarm-rel-1"),
+        ("resolve", "hetzci-release"),
+    ]
+    assert any(
+        "[hetz86-rel-2] parallel install: finished" in message for message in infos
+    )
+    assert any(
+        "[hetzarm-rel-1] parallel install: finished" in message for message in infos
+    )
+    assert any(
+        "[hetzci-release] parallel install: finished" in message for message in infos
+    )
+
+
+def test_install_release_hosts_reports_all_parallel_failures(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Parallel release install should log every failing host before exiting."""
+    errors: list[str] = []
+
+    class FakeFuture:
+        """Minimal future stub that runs the task when awaited."""
+
+        def __init__(self, callback: Callable[[], None]) -> None:
+            self._callback = callback
+
+        def result(self) -> None:
+            self._callback()
+
+    class FakeExecutor:
+        """Minimal executor stub for failure aggregation tests."""
+
+        def __init__(self, *, max_workers: int) -> None:
+            assert max_workers == len(_expected_release_jobs(tmp_path))
+
+        def __enter__(self) -> "FakeExecutor":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            pass
+
+        def submit(self, func: Callable[..., None], *args: object) -> FakeFuture:
+            return FakeFuture(lambda: func(*args))
+
+    def fake_install(
+        _context: object,
+        alias: str,
+        *,
+        yes: bool,
+        copy_dir: str | None = None,
+    ) -> None:
+        assert yes
+        assert copy_dir is not None
+        if alias == "hetz86-rel-2":
+            raise SystemExit(1)
+        if alias == "hetzci-release":
+            raise subprocess.CalledProcessError(2, "nixos-anywhere")
+
+    def identity_as_completed(submitted_futures: object) -> object:
+        return submitted_futures
+
+    def same_context(context: object) -> object:
+        return context
+
+    def fake_log_error(message: str) -> None:
+        errors.append(message)
+
+    monkeypatch.setattr(tasks, "ThreadPoolExecutor", FakeExecutor)
+    monkeypatch.setattr(tasks, "as_completed", identity_as_completed)
+    monkeypatch.setattr(
+        tasks, "TARGETS", SimpleNamespace(resolve_secrets=lambda _alias: object())
+    )
+    monkeypatch.setattr(tasks, "_clone_context", same_context)
+    monkeypatch.setattr(tasks, "install", fake_install)
+    monkeypatch.setattr(tasks.logger, "error", fake_log_error)
+
+    with pytest.raises(
+        RuntimeError, match="2 host\\(s\\): hetz86-rel-2, hetzci-release"
+    ):
+        tasks._install_release_hosts(object(), tmp_path)
+
+    assert any(
+        "[hetz86-rel-2] parallel install: failed" in message for message in errors
+    )
+    assert any(
+        "[hetzci-release] parallel install: failed" in message for message in errors
+    )
+    assert any(
+        "hetz86-rel-2" in message and "SystemExit: 1" in message for message in errors
+    )
+    assert any(
+        "hetzci-release" in message and "CalledProcessError:" in message
+        for message in errors
+    )
 
 
 def test_build_nixos_anywhere_command_is_shell_safe(tmp_path: Path) -> None:
