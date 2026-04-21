@@ -11,3 +11,4 @@ result-*
 /*.qcow2
 ca.key
 **/__pycache__/*
+.codex
