@@ -5,6 +5,9 @@
 
 """Tests for extracted helper logic in tasks.py."""
 
+import io
+import logging
+import re
 import shlex
 import subprocess
 import sys
@@ -20,13 +23,24 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import tasks
 
 
-def _expected_release_jobs(tmp_path: Path) -> list[tuple[str, str]]:
-    """Return the expected release-install job tuples for one temp dir."""
-    return [
-        ("hetz86-rel-2", str(tmp_path / "builder")),
-        ("hetzarm-rel-1", str(tmp_path / "builder")),
-        ("hetzci-release", str(tmp_path / "controller")),
-    ]
+ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _strip_ansi(text: str) -> str:
+    """Remove ANSI color codes from text."""
+    return ANSI_ESCAPE_RE.sub("", text)
+
+
+def _assert_loguru_line(line: str, level: str, message: str) -> None:
+    """Assert that one line matches the configured loguru output format."""
+    padded_level = f"{level:<8}"
+    pattern = (
+        r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \| "
+        f"{re.escape(padded_level)}"
+        r" \| "
+        f"{re.escape(message)}"
+    )
+    assert re.fullmatch(pattern, line)
 
 
 def test_confirm_respects_yes_without_prompt(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -145,14 +159,277 @@ def test_generate_signed_user_key_runs_expected_commands(
         ["ssh-keygen", "-s", str(ca), "-I", "", "-n", "builder-user", f"{key}.pub"],
     ]
 
+
+def test_announce_install_log_path_reports_file(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Install logging should announce the detailed log file path."""
+    outputs: list[str] = []
+    log_path = tmp_path / "logs/demo.log"
+
+    def fake_log_info(message: str) -> None:
+        outputs.append(message)
+
+    monkeypatch.setattr(tasks.logger, "info", fake_log_info)
+
+    tasks._announce_install_log_path("demo", log_path)
+
+    assert outputs == [f"Writing install log for 'demo' to {log_path}"]
+
+
+def test_context_stream_logger_routes_thread_local_output(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Context-aware handlers should prefer the thread-local stream."""
+    logger_name = "tasks.test-context-stream"
+    logger = logging.getLogger(logger_name)
+    logger.handlers = []
+    logger.propagate = False
+    logger.setLevel(logging.INFO)
+
+    logger.addHandler(logging.StreamHandler(io.StringIO()))
+
+    tasks._configure_context_stream_logger(logger)
+
+    logger.info("outside")
+    outside_lines = capsys.readouterr().err.splitlines()
+    assert len(outside_lines) == 1
+    _assert_loguru_line(_strip_ansi(outside_lines[0]), "INFO", "outside")
+
+    thread_stream = io.StringIO()
+    token = tasks.THREAD_LOG_STREAM.set(thread_stream)
+    try:
+        logger.info("inside")
+    finally:
+        tasks.THREAD_LOG_STREAM.reset(token)
+
+    assert capsys.readouterr().err == ""
+    thread_lines = thread_stream.getvalue().splitlines()
+    assert len(thread_lines) == 1
+    assert "\x1b[" not in thread_lines[0]
+    _assert_loguru_line(thread_lines[0], "INFO", "inside")
+
+
+def test_context_stream_logger_preserves_command_prefix(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Bridged stdlib log records should keep deploykit-style host prefixes."""
+    logger_name = "tasks.test-command-prefix"
+    logger = logging.getLogger(logger_name)
+    logger.handlers = []
+    logger.propagate = False
+    logger.setLevel(logging.INFO)
+
+    logger.addHandler(logging.StreamHandler(io.StringIO()))
+
+    tasks._configure_context_stream_logger(logger)
+
+    logger.info("$ ssh example", extra={"command_prefix": "demo-host"})
+
+    outside_lines = capsys.readouterr().err.splitlines()
+    assert len(outside_lines) == 1
+    _assert_loguru_line(
+        _strip_ansi(outside_lines[0]), "INFO", "[demo-host] $ ssh example"
+    )
+
+
+def test_init_disables_stderr_color_when_stream_is_not_a_tty(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Non-interactive stderr output should stay free of ANSI escape codes."""
+
+    class FakeStderr(io.StringIO):
+        """String buffer that behaves like a redirected stderr stream."""
+
+        def isatty(self) -> bool:
+            return False
+
+    stderr = FakeStderr()
+    monkeypatch.setattr(tasks.sys, "stderr", stderr)
+    monkeypatch.setattr(tasks.os, "chdir", lambda _path: None)
+
+    tasks.init()
+    tasks._log_info("outside")
+
+    lines = stderr.getvalue().splitlines()
+    assert len(lines) == 1
+    assert "\x1b[" not in lines[0]
+    _assert_loguru_line(lines[0], "INFO", "outside")
+
+
+def test_log_status_info_logs_once_without_thread_local_context(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Status logs should not be duplicated during normal execution."""
+    outputs: list[str] = []
+
+    def fake_log_info(message: str) -> None:
+        outputs.append(message)
+
+    monkeypatch.setattr(tasks.logger, "info", fake_log_info)
+
+    tasks._log_status_info("outside")
+
+    assert outputs == ["outside"]
+
+
+def test_log_status_info_mirrors_thread_local_output_to_console(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Status logs should go to both the host log file and the console mirror."""
+    outputs: list[str] = []
+    message = "[demo] install: building target system locally"
+
+    def fake_log_info(log_message: str) -> None:
+        outputs.append(log_message)
+
+    monkeypatch.setattr(tasks.logger, "info", fake_log_info)
+
+    log_path = tmp_path / "logs/demo.log"
+    with tasks._thread_log_to_file(log_path):
+        tasks._log_status_info(message)
+
+    assert outputs == [message]
+    lines = log_path.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 1
+    _assert_loguru_line(lines[0], "INFO", message)
+
+
+def test_warn_and_confirm_mirrors_thread_local_warning_to_console(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+) -> None:
+    """Prompt-triggering warnings should stay visible during logged installs."""
+
+    def fake_input(prompt: str) -> str:
+        print(prompt, end="")
+        return "n"
+
+    monkeypatch.setattr("builtins.input", fake_input)
+
+    log_path = tmp_path / "logs/demo.log"
+    with pytest.raises(SystemExit):
+        with tasks._thread_log_to_file(log_path):
+            tasks._warn_and_confirm("dynamic IP warning", yes=False)
+
+    captured = capsys.readouterr()
+    assert captured.out == "Still continue? [y/N] "
+    err_lines = captured.err.splitlines()
+    assert len(err_lines) == 1
+    _assert_loguru_line(_strip_ansi(err_lines[0]), "WARNING", "dynamic IP warning")
+
+    file_lines = log_path.read_text(encoding="utf-8").splitlines()
+    assert len(file_lines) == 1
+    _assert_loguru_line(file_lines[0], "WARNING", "dynamic IP warning")
+
+
+def test_install_creates_detailed_log_and_runs_inner_install(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Single-host installs should always wrap the inner workflow in a log file."""
+    outputs: list[str] = []
+    clone_calls: list[tuple[object, str]] = []
+    run_calls: list[tuple[object, str, str | None, bool, str | None]] = []
+    log_dir = tmp_path / "install-logs"
+
+    def fake_log_info(message: str) -> None:
+        outputs.append(message)
+
+    def fake_mkdtemp(*, prefix: str) -> str:
+        assert prefix == "install-logs-"
+        return str(log_dir)
+
+    def fake_clone_context_for_stream(context: object, stream: object) -> str:
+        clone_calls.append((context, stream.name))
+        return "logged-context"
+
+    def fake_run_install(
+        context: object,
+        alias: str,
+        *,
+        user: str | None = None,
+        yes: bool = False,
+        copy_dir: str | None = None,
+    ) -> None:
+        run_calls.append((context, alias, user, yes, copy_dir))
+
+    monkeypatch.setattr(tasks.logger, "info", fake_log_info)
+    monkeypatch.setattr(tasks, "mkdtemp", fake_mkdtemp)
+    monkeypatch.setattr(
+        tasks, "_clone_context_for_stream", fake_clone_context_for_stream
+    )
+    monkeypatch.setattr(tasks, "_run_install", fake_run_install)
+
+    root_context = object()
+    tasks.install.body(
+        root_context,
+        "demo",
+        user="operator",
+        yes=True,
+        copy_dir="/tmp/copied",
+    )
+
+    log_path = log_dir / "demo.log"
+    assert outputs == [f"Writing install log for 'demo' to {log_path}"]
+    assert clone_calls == [(root_context, str(log_path))]
+    assert run_calls == [("logged-context", "demo", "operator", True, "/tmp/copied")]
+    assert log_path.exists()
+
+
+def test_install_reports_failure_with_log_path(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Single-host install failures should keep the traceback and print the log path."""
+    errors: list[str] = []
+    log_dir = tmp_path / "install-logs"
+
+    def fake_mkdtemp(*, prefix: str) -> str:
+        assert prefix == "install-logs-"
+        return str(log_dir)
+
+    def same_context(context: object, _stream: object) -> object:
+        return context
+
+    def fail_run_install(
+        _context: object,
+        _alias: str,
+        *,
+        user: str | None = None,
+        yes: bool = False,
+        copy_dir: str | None = None,
+    ) -> None:
+        raise subprocess.CalledProcessError(2, "nixos-anywhere")
+
+    def fake_log_error(message: str) -> None:
+        errors.append(message)
+
+    monkeypatch.setattr(tasks, "mkdtemp", fake_mkdtemp)
+    monkeypatch.setattr(tasks, "_clone_context_for_stream", same_context)
+    monkeypatch.setattr(tasks, "_run_install", fail_run_install)
+    monkeypatch.setattr(tasks.logger, "error", fake_log_error)
+
+    log_path = log_dir / "demo.log"
+    with pytest.raises(subprocess.CalledProcessError):
+        tasks.install.body(object(), "demo", yes=True)
+
+    assert len(errors) == 2
+    assert errors[0].startswith("Install failed for 'demo': CalledProcessError:")
+    assert errors[1] == f"See detailed install log: {log_path}"
+
+
 def test_install_release_hosts_parallelizes_all_release_hosts(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """All release hosts should be dispatched through the parallel install phase."""
-    submitted: list[tuple[str, str]] = []
+    expected_jobs = [
+        ("hetz86-rel-2", str(tmp_path / "builder")),
+        ("hetzarm-rel-1", str(tmp_path / "builder")),
+        ("hetzci-release", str(tmp_path / "controller")),
+    ]
+    submitted: list[tuple[object, str, str]] = []
     install_calls: list[tuple[object, str, bool, str | None]] = []
     clone_calls: list[object] = []
-    infos: list[str] = []
     prepare_calls: list[str] = []
     call_order: list[tuple[str, str]] = []
 
@@ -169,7 +446,7 @@ def test_install_release_hosts_parallelizes_all_release_hosts(
         """Minimal executor stub for deterministic release-install tests."""
 
         def __init__(self, *, max_workers: int) -> None:
-            assert max_workers == len(_expected_release_jobs(tmp_path))
+            assert max_workers == len(expected_jobs)
 
         def __enter__(self) -> "FakeExecutor":
             return self
@@ -177,9 +454,11 @@ def test_install_release_hosts_parallelizes_all_release_hosts(
         def __exit__(self, *_args: object) -> None:
             pass
 
-        def submit(self, func: Callable[..., None], *args: object) -> FakeFuture:
-            submitted.append((args[1], args[2]))
-            return FakeFuture(lambda: func(*args))
+        def submit(
+            self, func: Callable[..., None], *args: object, **kwargs: object
+        ) -> FakeFuture:
+            submitted.append((args[0], args[1], kwargs["copy_dir"]))
+            return FakeFuture(lambda: func(*args, **kwargs))
 
     def fake_clone_context(context: object) -> str:
         clone_calls.append(context)
@@ -200,9 +479,6 @@ def test_install_release_hosts_parallelizes_all_release_hosts(
         install_calls.append((context, alias, yes, copy_dir))
         call_order.append(("install", alias))
 
-    def fake_log_info(message: str) -> None:
-        infos.append(message)
-
     monkeypatch.setattr(tasks, "ThreadPoolExecutor", FakeExecutor)
     monkeypatch.setattr(
         tasks, "as_completed", lambda submitted_futures: submitted_futures
@@ -212,15 +488,16 @@ def test_install_release_hosts_parallelizes_all_release_hosts(
     )
     monkeypatch.setattr(tasks, "_clone_context", fake_clone_context)
     monkeypatch.setattr(tasks, "install", fake_install)
-    monkeypatch.setattr(tasks.logger, "info", fake_log_info)
 
     root_context = object()
     tasks._install_release_hosts(root_context, tmp_path)
 
-    assert prepare_calls == [
-        alias for alias, _copy_dir in _expected_release_jobs(tmp_path)
+    assert prepare_calls == [alias for alias, _copy_dir in expected_jobs]
+    assert submitted == [
+        ("host-context-1", "hetz86-rel-2", str(tmp_path / "builder")),
+        ("host-context-2", "hetzarm-rel-1", str(tmp_path / "builder")),
+        ("host-context-3", "hetzci-release", str(tmp_path / "controller")),
     ]
-    assert submitted == _expected_release_jobs(tmp_path)
     assert clone_calls == [root_context, root_context, root_context]
     assert install_calls == [
         (
@@ -247,15 +524,6 @@ def test_install_release_hosts_parallelizes_all_release_hosts(
         ("resolve", "hetzarm-rel-1"),
         ("resolve", "hetzci-release"),
     ]
-    assert any(
-        "[hetz86-rel-2] parallel install: finished" in message for message in infos
-    )
-    assert any(
-        "[hetzarm-rel-1] parallel install: finished" in message for message in infos
-    )
-    assert any(
-        "[hetzci-release] parallel install: finished" in message for message in infos
-    )
 
 
 def test_install_release_hosts_reports_all_parallel_failures(
@@ -277,7 +545,7 @@ def test_install_release_hosts_reports_all_parallel_failures(
         """Minimal executor stub for failure aggregation tests."""
 
         def __init__(self, *, max_workers: int) -> None:
-            assert max_workers == len(_expected_release_jobs(tmp_path))
+            assert max_workers == 3
 
         def __enter__(self) -> "FakeExecutor":
             return self
@@ -285,8 +553,10 @@ def test_install_release_hosts_reports_all_parallel_failures(
         def __exit__(self, *_args: object) -> None:
             pass
 
-        def submit(self, func: Callable[..., None], *args: object) -> FakeFuture:
-            return FakeFuture(lambda: func(*args))
+        def submit(
+            self, func: Callable[..., None], *args: object, **kwargs: object
+        ) -> FakeFuture:
+            return FakeFuture(lambda: func(*args, **kwargs))
 
     def fake_install(
         _context: object,
@@ -325,12 +595,6 @@ def test_install_release_hosts_reports_all_parallel_failures(
     ):
         tasks._install_release_hosts(object(), tmp_path)
 
-    assert any(
-        "[hetz86-rel-2] parallel install: failed" in message for message in errors
-    )
-    assert any(
-        "[hetzci-release] parallel install: failed" in message for message in errors
-    )
     assert any(
         "hetz86-rel-2" in message and "SystemExit: 1" in message for message in errors
     )
