@@ -310,4 +310,13 @@
       publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBM3zxG++iSjFGkQ6Kqghwm5mcbo+KM4vAzH1Cqftoew";
     };
   };
+
+  uae-testagent2-prod = {
+    module = ./uae/testagent/prod2/configuration.nix;
+    system = "x86_64-linux";
+    machine = {
+      ip = "172.20.16.25";
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBxyeOZsaqhiDREmVU+H8sUIiCmg6JgjDdbAvFpDx+KI";
+    };
+  };
 }
