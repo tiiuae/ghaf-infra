@@ -395,11 +395,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1776424471,
-        "narHash": "sha256-8osdbHZuFf4O+ucoRMIq50E/WiG1ylyP26pGIDoGmgY=",
+        "lastModified": 1776675647,
+        "narHash": "sha256-eZ65EjfPbRT3ygFu5aepOnv4ImNUQUID65/J73tEeK8=",
         "owner": "tiiuae",
         "repo": "ci-test-automation",
-        "rev": "3cec3d86c3caba094fd6d8e3f18267a056e49425",
+        "rev": "b05a93d57339a2eb19bd96be5b1f100130f09093",
         "type": "github"
       },
       "original": {
