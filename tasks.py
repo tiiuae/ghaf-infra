@@ -26,8 +26,11 @@
 
 """Misc dev and deployment helper tasks."""
 
+# pylint: disable=too-many-lines
+
 import getpass
 import json
+import logging
 import os
 import shlex
 import shutil
@@ -35,13 +38,15 @@ import socket
 import subprocess
 import sys
 import time
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from pathlib import Path
-from tempfile import TemporaryDirectory
-from typing import Any
+from tempfile import TemporaryDirectory, mkdtemp
+from typing import Any, TextIO
 
 from deploykit import DeployHost, HostKeyCheck
 from invoke.context import Context
@@ -55,6 +60,15 @@ from tabulate import tabulate
 ################################################################################
 
 ROOT, TARGETS = (None, None)
+THREAD_LOG_STREAM: ContextVar[TextIO | None] = ContextVar(
+    "thread_log_stream", default=None
+)
+LOGURU_FORMAT = "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message}"
+LOGURU_COLOR_FORMAT = (
+    "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+    "<level>{level: <8}</level> | "
+    "<level>{message}</level>"
+)
 
 REVISION_DELIM = "\x1f"  # ASCII unit separator — can't appear in commit metadata
 
@@ -116,7 +130,7 @@ class Targets:
 
     def _populate(self) -> None:
         """Populate the target dictionary from nix evaluation."""
-        logger.debug("Reading targets")
+        _log_debug("Reading targets")
         self.target_dict = OrderedDict(
             {
                 name: TargetHost(
@@ -132,11 +146,11 @@ class Targets:
 
     def get(self, alias: str) -> TargetHost:
         """Get one host, exiting cleanly on unknown aliases."""
-        logger.debug(f"Reading target '{alias}'")
+        _log_debug(f"Reading target '{alias}'")
         if not self.populated:
             self._populate()
         if alias not in self.target_dict:
-            logger.error(f"Unknown alias '{alias}'")
+            _log_error(f"Unknown alias '{alias}'")
             sys.exit(1)
         return self.target_dict[alias]
 
@@ -158,6 +172,53 @@ class Targets:
 ################################################################################
 
 
+class _ContextLoguruHandler(logging.Handler):
+    """Forward stdlib log records through loguru."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Emit one formatted log record."""
+        try:
+            level = record.levelname
+            message = record.getMessage()
+            command_prefix = getattr(record, "command_prefix", "")
+            if command_prefix:
+                message = f"[{command_prefix}] {message}"
+            getattr(_active_logger().opt(exception=record.exc_info), level.lower())(
+                message
+            )
+        except RecursionError:
+            raise
+        # Logging handlers are expected to swallow formatting/write errors and
+        # delegate them to handleError instead of crashing the caller.
+        # pylint: disable=broad-exception-caught
+        except Exception:
+            self.handleError(record)
+
+
+def _configure_context_stream_logger(logger_obj: logging.Logger) -> None:
+    """Replace logger stream handlers with a loguru bridge handler."""
+    if any(
+        isinstance(handler, _ContextLoguruHandler) for handler in logger_obj.handlers
+    ):
+        return
+
+    handler_level = logger_obj.level
+
+    logger_obj.handlers = [
+        handler
+        for handler in logger_obj.handlers
+        if not isinstance(handler, logging.StreamHandler)
+    ]
+
+    handler = _ContextLoguruHandler()
+    handler.setLevel(handler_level)
+    logger_obj.addHandler(handler)
+
+
+_configure_context_stream_logger(logging.getLogger("deploykit.command"))
+_configure_context_stream_logger(logging.getLogger("deploykit.main"))
+
+
 def _run_checked(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
     """Run a local command and require success."""
     return subprocess.run(cmd, check=True, text=True, **kwargs)
@@ -169,9 +230,83 @@ def _run_json(cmd: list[str]) -> Any:
         proc = _run_checked(cmd, capture_output=True)
     except subprocess.CalledProcessError as err:
         detail = (err.stderr or "").strip() or str(err)
-        logger.error(f"Command failed: {shlex.join(cmd)}\n{detail}")
+        _log_error(f"Command failed: {shlex.join(cmd)}\n{detail}")
         sys.exit(1)
     return json.loads(proc.stdout)
+
+
+def _current_output_stream() -> TextIO:
+    """Return the thread-local output stream when configured."""
+    stream = THREAD_LOG_STREAM.get()
+    return sys.stdout if stream is None else stream
+
+
+def _stderr_loguru_sink(message: str) -> None:
+    """Write colored loguru messages to the active stderr stream."""
+    sys.stderr.write(message)
+    sys.stderr.flush()
+
+
+def _stderr_supports_color() -> bool:
+    """Return True when stderr is an interactive stream that can render ANSI."""
+    return bool(
+        getattr(sys.stderr, "isatty", None)
+        and sys.stderr.isatty()
+        and os.environ.get("NO_COLOR") is None
+    )
+
+
+def _thread_loguru_sink(message: str) -> None:
+    """Write plain loguru messages to the thread-local stream."""
+    stream = THREAD_LOG_STREAM.get()
+    if stream is None:
+        return
+    stream.write(message)
+    stream.flush()
+
+
+def _active_logger() -> Any:
+    """Return the logger instance for the current execution context."""
+    if THREAD_LOG_STREAM.get() is None:
+        return logger
+    return logger.bind(thread_local_stream=True)
+
+
+def _log_message(level: str, message: str) -> None:
+    """Log via loguru using the configured thread-aware sink."""
+    getattr(_active_logger(), level)(message)
+
+
+def _log_info(message: str) -> None:
+    """Log an informational message."""
+    _log_message("info", message)
+
+
+def _log_status_info(message: str) -> None:
+    """Log a high-level status message and mirror it to stderr when thread-local."""
+    _log_info(message)
+    if THREAD_LOG_STREAM.get() is not None:
+        logger.info(message)
+
+
+def _log_debug(message: str) -> None:
+    """Log a debug message."""
+    _log_message("debug", message)
+
+
+def _log_warning(message: str) -> None:
+    """Log a warning message."""
+    _log_message("warning", message)
+
+
+def _log_error(message: str) -> None:
+    """Log an error message."""
+    _log_message("error", message)
+
+
+def _print_output(message: str = "", *, end: str = "\n") -> None:
+    """Print to the thread-local stream when configured."""
+    print(message, end=end, file=_current_output_stream(), flush=True)
 
 
 def _confirm(prompt: str, yes: bool) -> bool:
@@ -183,7 +318,9 @@ def _confirm(prompt: str, yes: bool) -> bool:
 
 def _warn_and_confirm(message: str, yes: bool) -> None:
     """Log a warning and ask the operator to continue."""
-    logger.warning(message)
+    _log_warning(message)
+    if THREAD_LOG_STREAM.get() is not None:
+        logger.warning(message)
     if not _confirm("Still continue? [y/N] ", yes):
         sys.exit(1)
 
@@ -251,6 +388,14 @@ def _clone_context(c: Context) -> Context:
     return Context(config=c.config.clone())
 
 
+def _clone_context_for_stream(c: Context, stream: TextIO) -> Context:
+    """Return a fresh invoke context that writes command output to `stream`."""
+    clone = _clone_context(c)
+    clone.config.run.out_stream = stream
+    clone.config.run.err_stream = stream
+    return clone
+
+
 def _get_deploy_host(alias: str, user: str | None = None) -> DeployHost:
     """Return DeployHost object, given `alias`."""
     hostname = TARGETS.get(alias).hostname
@@ -271,7 +416,7 @@ def _decrypt_host_key(target: TargetHost, tmpdir: str, yes: bool) -> None:
     """Run sops to extract `nixosconfig` secret `ssh_host_ed25519_key`."""
 
     if target.secretspath is None:
-        logger.error(
+        _log_error(
             f"Missing sops secret path for '{target.nixosconfig}'; cannot decrypt host key"
         )
         sys.exit(1)
@@ -340,7 +485,7 @@ def _assert_stateversion(alias: str, yes: bool) -> None:
     try:
         ret.check_returncode()
     except subprocess.CalledProcessError:
-        logger.error(ret.stderr)
+        _log_error(ret.stderr)
         sys.exit(1)
 
     version_data = json.loads(ret.stdout)
@@ -366,7 +511,7 @@ def _check_remote_user_alignment(
     try:
         remote_user = _remote_stdout(host, "whoami")
     except subprocess.CalledProcessError:
-        logger.error("No ssh access to the remote host")
+        _log_error("No ssh access to the remote host")
         sys.exit(1)
 
     local_user = getpass.getuser()
@@ -435,6 +580,7 @@ def _generate_release_ssh_ca(tmpdir: Path) -> Path:
     _run_checked(
         ["ssh-keygen", "-f", f"{ca}", "-C", "", "-N", ""],
         stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
     return ca
 
@@ -446,29 +592,45 @@ def _generate_signed_user_key(ca: Path, tmpdir: Path, user: str) -> Path:
     _run_checked(
         ["ssh-keygen", "-f", f"{key}", "-C", "", "-N", ""],
         stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
     _run_checked(
         ["ssh-keygen", "-s", f"{ca}", "-I", "", "-n", f"{user}", f"{key}.pub"],
         stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
     return key
 
 
-def _install_release_host(c: Context, alias: str, copy_dir: str) -> None:
-    """Install one release host using its own invoke context."""
-    succeeded = False
-    try:
-        install(_clone_context(c), alias, yes=True, copy_dir=copy_dir)
-        succeeded = True
-    finally:
-        if succeeded:
-            logger.info(f"[{alias}] parallel install: finished")
-        else:
-            logger.error(f"[{alias}] parallel install: failed")
+def _new_install_log_path(alias: str, prefix: str = "install-logs-") -> Path:
+    """
+    Return a fresh per-host log file path for one install workflow.
+
+    The parent temporary directory is intentionally left on disk so operators can
+    inspect install logs after success or failure; callers do not clean it up.
+    """
+    return Path(mkdtemp(prefix=prefix)) / f"{alias}.log"
 
 
-def _release_install_error_summary(err: Exception | SystemExit) -> str:
-    """Return a compact single-line summary for one release-install failure."""
+def _announce_install_log_path(alias: str, log_path: Path) -> None:
+    """Log where one install writes its detailed output."""
+    logger.info(f"Writing install log for '{alias}' to {log_path}")
+
+
+@contextmanager
+def _thread_log_to_file(log_path: Path) -> Iterator[TextIO]:
+    """Route thread-local log and print output to `log_path`."""
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(log_path, "w", encoding="utf-8") as stream:
+        token = THREAD_LOG_STREAM.set(stream)
+        try:
+            yield stream
+        finally:
+            THREAD_LOG_STREAM.reset(token)
+
+
+def _install_error_summary(err: Exception | SystemExit) -> str:
+    """Return a compact single-line summary for one install failure."""
     detail = next((line.strip() for line in str(err).splitlines() if line.strip()), "")
     return f"{type(err).__name__}: {detail}" if detail else type(err).__name__
 
@@ -479,7 +641,7 @@ def _install_release_hosts(c: Context, tmpdir: Path) -> None:
         *((alias, str(tmpdir / "builder")) for alias in RELEASE_BUILDER_ALIASES),
         (RELEASE_CONTROLLER_ALIAS, str(tmpdir / "controller")),
     ]
-    logger.info(f"Installing {len(jobs)} release host(s) in parallel")
+    _log_info(f"Installing {len(jobs)} release host(s) in parallel")
 
     # Populate shared target metadata before worker threads start touching the
     # lazy TARGETS cache.
@@ -489,7 +651,9 @@ def _install_release_hosts(c: Context, tmpdir: Path) -> None:
     failures: list[str] = []
     with ThreadPoolExecutor(max_workers=len(jobs)) as executor:
         future_to_alias = {
-            executor.submit(_install_release_host, c, alias, copy_dir): alias
+            executor.submit(
+                install, _clone_context(c), alias, yes=True, copy_dir=copy_dir
+            ): alias
             for alias, copy_dir in jobs
         }
         for future in as_completed(future_to_alias):
@@ -501,8 +665,8 @@ def _install_release_hosts(c: Context, tmpdir: Path) -> None:
             # pylint: disable=broad-exception-caught
             except (Exception, SystemExit) as err:
                 failures.append(alias)
-                detail = _release_install_error_summary(err)
-                logger.error(f"Release install failed for '{alias}': {detail}")
+                detail = _install_error_summary(err)
+                _log_error(f"Release install failed for '{alias}': {detail}")
 
     if failures:
         raise RuntimeError(
@@ -514,7 +678,7 @@ def _deploy_release_testagent(c: Context, host: DeployHost) -> bool:
     """Deploy the release testagent without reinstalling it."""
     port = host.port or 22
     if not _can_connect(host.host, port, timeout=RELEASE_DEPLOY_SSH_PROBE_TIMEOUT_SEC):
-        logger.info(
+        _log_status_info(
             "Failed deploying 'testagent-release'. "
             "The release environment is otherwise up, but you should manually deploy "
             "the testagent-release, then connect it to the release Jenkins instance. "
@@ -528,7 +692,7 @@ def _deploy_release_testagent(c: Context, host: DeployHost) -> bool:
     if deploy.ok:
         return True
 
-    logger.info(
+    _log_status_info(
         "Failed deploying 'testagent-release'. "
         "The release environment is otherwise up, but you should manually deploy "
         "the testagent-release, then connect it to the release Jenkins instance. "
@@ -570,14 +734,11 @@ def _wait_for_port(host: str, port: int, shutdown: bool = False) -> None:
     """Wait for `host`:`port`."""
     while True:
         time.sleep(1)
-        sys.stdout.write(".")
-        sys.stdout.flush()
         if _can_connect(host, port):
             if not shutdown:
                 break
         elif shutdown:
             break
-    print("")
 
 
 def _git_revision_info(revisions: Iterable[str] | None = None) -> dict[str, list[str]]:
@@ -640,7 +801,7 @@ def alias_list(_c: Context) -> None:
     for alias, host in TARGETS.all().items():
         table_rows.append([alias, host.nixosconfig, host.hostname])
     table = tabulate(table_rows, headers="firstrow", tablefmt="fancy_outline")
-    print(f"\nCurrent ghaf-infra targets:\n\n{table}")
+    _print_output(f"\nCurrent ghaf-infra targets:\n\n{table}")
 
 
 @task
@@ -674,9 +835,9 @@ def print_keys(_c: Context, alias: str) -> None:
         _decrypt_host_key(target, tmpdir, yes=False)
         pub_key = Path(tmpdir) / "etc/ssh/ssh_host_ed25519_key.pub"
         pub_data = pub_key.read_text(encoding="utf-8")
-        print("###### Public keys ######")
-        print(pub_data)
-        print("###### Age keys ######")
+        _print_output("###### Public keys ######")
+        _print_output(pub_data)
+        _print_output("###### Age keys ######")
         _run_checked(["ssh-to-age"], input=pub_data)
 
 
@@ -699,17 +860,26 @@ def install_release(c: Context) -> None:
         _install_release_hosts(c, tmpdir)
 
     host = _get_deploy_host(RELEASE_TESTAGENT_ALIAS)
-    if not _deploy_release_testagent(c, host):
-        return
-    if _connect_release_testagent(host):
-        return
-    logger.info(
-        "Failed connecting 'testagent-release' to the installed release environment. "
-        "The release environment is otherwise up, but you need to manually connect "
-        "the testagent to the release Jenkins instance. "
-        f"Hint: is the testagent at '{host.host}' accessible over SSH? "
-        "Perhaps you need to connect a VPN?"
-    )
+    log_path = _new_install_log_path(RELEASE_TESTAGENT_ALIAS, "install-release-logs-")
+    _announce_install_log_path(RELEASE_TESTAGENT_ALIAS, log_path)
+    with _thread_log_to_file(log_path) as stream:
+        logged_context = _clone_context_for_stream(c, stream)
+        _log_status_info(f"[{RELEASE_TESTAGENT_ALIAS}] deploy: starting")
+        if not _deploy_release_testagent(logged_context, host):
+            return
+        _log_status_info(
+            f"[{RELEASE_TESTAGENT_ALIAS}] connect: attaching to {RELEASE_TESTAGENT_URL}"
+        )
+        if _connect_release_testagent(host):
+            _log_status_info(f"[{RELEASE_TESTAGENT_ALIAS}] connect: finished")
+            return
+        _log_status_info(
+            "Failed connecting 'testagent-release' to the installed release environment. "
+            "The release environment is otherwise up, but you need to manually connect "
+            "the testagent to the release Jenkins instance. "
+            f"Hint: is the testagent at '{host.host}' accessible over SSH? "
+            "Perhaps you need to connect a VPN?"
+        )
 
 
 @task
@@ -730,20 +900,53 @@ def install(
     Example usage:
     inv install hetzci-release --yes
     """
-    logger.info(f"Installing '{alias}'")
+    log_path = _new_install_log_path(alias)
+    _announce_install_log_path(alias, log_path)
+    try:
+        with _thread_log_to_file(log_path) as stream:
+            _run_install(
+                _clone_context_for_stream(c, stream),
+                alias,
+                user=user,
+                yes=yes,
+                copy_dir=copy_dir,
+            )
+    # Top-level installs should still surface a concise terminal summary while
+    # keeping the detailed command output in the host log file.
+    except (Exception, SystemExit) as err:
+        detail = _install_error_summary(err)
+        _log_error(f"Install failed for '{alias}': {detail}")
+        _log_error(f"See detailed install log: {log_path}")
+        raise
+
+
+def _run_install(
+    c: Context,
+    alias: str,
+    user: str | None = None,
+    yes: bool = False,
+    copy_dir: str | None = None,
+) -> None:
+    """Execute the install workflow; see `install` for the user-facing docs."""
+    _log_status_info(f"[{alias}] install: starting")
     if not _confirm(f"Install configuration '{alias}'? [y/N] ", yes):
+        _log_status_info(f"[{alias}] install: cancelled")
         return
 
     target = TARGETS.resolve_secrets(alias)
     host = _get_deploy_host(alias, user)
 
+    _log_status_info(f"[{alias}] install: validating target and remote access")
     _assert_stateversion(alias, yes)
     _check_remote_user_alignment(target, host, user, yes)
     _check_remote_sudo(host, yes)
     _check_dynamic_ip(host, yes)
+
+    _log_status_info(f"[{alias}] install: building target system locally")
     c.run(_build_local_build_command(target))
 
     with TemporaryDirectory() as tmpdir:
+        _log_status_info(f"[{alias}] install: preparing installer files")
         if copy_dir:
             shutil.copytree(Path(copy_dir), Path(tmpdir), dirs_exist_ok=True)
         _decrypt_host_key(target, tmpdir, yes)
@@ -754,13 +957,15 @@ def install(
             target,
             kexec_url=KEXEC_IMAGES.get(alias),
         )
-        logger.warning(command)
+        _log_status_info(f"[{alias}] install: running nixos-anywhere")
+        _log_warning(command)
         c.run(command)
 
-    print(f"Wait for {host.host} to start", end="")
-    sys.stdout.flush()
+    _log_status_info(f"[{alias}] install: waiting for SSH on {host.host}")
     _wait_for_port(host.host, 22)
+    _log_status_info(f"[{alias}] install: rebooting to finalize")
     reboot(c, alias)
+    _log_status_info(f"[{alias}] install: finished")
 
 
 @task
@@ -774,13 +979,11 @@ def reboot(_c: Context, alias: str) -> None:
     host = _get_deploy_host(alias)
     host.run("sudo reboot &")
 
-    print(f"Wait for {host.host} to shutdown", end="")
-    sys.stdout.flush()
+    _log_status_info(f"[{alias}] reboot: waiting for {host.host} to shut down")
     port = host.port or 22
     _wait_for_port(host.host, port, shutdown=True)
 
-    print(f"Wait for {host.host} to start", end="")
-    sys.stdout.flush()
+    _log_status_info(f"[{alias}] reboot: waiting for {host.host} to start")
     _wait_for_port(host.host, port)
 
 
@@ -798,7 +1001,7 @@ def print_revision(_c: Context, alias: str = "") -> None:
     git_info_def = ["", "", ""]
     target_aliases = [alias] if alias else list(TARGETS.all().keys())
     max_workers = min(32, len(target_aliases))
-    logger.info(f"Probing {len(target_aliases)} host(s) (up to 5s each)")
+    _log_info(f"Probing {len(target_aliases)} host(s) (up to 5s each)")
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         deployed_revisions = list(executor.map(_read_deployed_revision, target_aliases))
 
@@ -818,7 +1021,7 @@ def print_revision(_c: Context, alias: str = "") -> None:
 
     table_rows.sort(reverse=True, key=lambda row: row[2])  # sort by git_date
     table = tabulate(table_rows, headers=header_row, tablefmt="fancy_outline")
-    print(f"\nCurrently deployed revision(s):\n\n{table}")
+    _print_output(f"\nCurrently deployed revision(s):\n\n{table}")
 
 
 ################################################################################
@@ -828,8 +1031,21 @@ def print_revision(_c: Context, alias: str = "") -> None:
 
 def init() -> None:
     """Module initialization."""
-    logger.remove(0)
-    logger.add(sys.stderr, level="INFO")
+    logger.remove()
+    logger.add(
+        _stderr_loguru_sink,
+        level="INFO",
+        format=LOGURU_COLOR_FORMAT,
+        colorize=_stderr_supports_color(),
+        filter=lambda record: not record["extra"].get("thread_local_stream", False),
+    )
+    logger.add(
+        _thread_loguru_sink,
+        level="INFO",
+        format=LOGURU_FORMAT,
+        colorize=False,
+        filter=lambda record: record["extra"].get("thread_local_stream", False),
+    )
 
     global ROOT, TARGETS  # pylint: disable=global-statement
     ROOT = Path(__file__).parent.resolve()
