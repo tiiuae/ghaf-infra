@@ -551,23 +551,6 @@ def _check_remote_sudo(host: DeployHost, yes: bool) -> None:
         )
 
 
-def _check_dynamic_ip(host: DeployHost, yes: bool) -> None:
-    """Warn when the target reports dynamic IP addresses."""
-    try:
-        host.run("ip a | grep dynamic")
-    except subprocess.CalledProcessError:
-        return
-
-    _warn_and_confirm(
-        f"Above address(es) on '{host.host}' use dynamic addressing. "
-        "This might cause issues if you assume the target host is reachable "
-        "from any such address also after kexec switch. "
-        "If you do, consider making the address temporarily static "
-        "before continuing.",
-        yes,
-    )
-
-
 ################################################################################
 # Release-install helpers
 ################################################################################
@@ -940,7 +923,6 @@ def _run_install(
     _assert_stateversion(alias, yes)
     _check_remote_user_alignment(target, host, user, yes)
     _check_remote_sudo(host, yes)
-    _check_dynamic_ip(host, yes)
 
     _log_status_info(f"[{alias}] install: building target system locally")
     c.run(_build_local_build_command(target))
