@@ -78,6 +78,7 @@ in
   ++ (with self.nixosModules; [
     common
     service-openssh
+    team-devenv
   ]);
 
   sops.secrets =
@@ -99,6 +100,9 @@ in
       pi-pass = credential;
       # used for ssh connections
       ssh_host_ed25519_key.owner = "jenkins";
+
+      # Per-host secrets sourced via defaultSopsFile
+      metrics_password.owner = "alloy";
     };
 
   networking.useDHCP = true;
@@ -146,6 +150,13 @@ in
   # This server is only exposed to the internal network
   # fail2ban only causes issues here
   services.fail2ban.enable = lib.mkForce false;
+
+  # Trigger UDEV rules
+  system.activationScripts.udevTrigger = ''
+    echo "==> Triggering udev rules..."
+    /run/current-system/sw/bin/udevadm trigger --subsystem-match=tty
+    /run/current-system/sw/bin/udevadm trigger --subsystem-match=block
+  '';
 
   services.monitoring = {
     metrics.enable = true;

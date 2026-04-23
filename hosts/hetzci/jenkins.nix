@@ -361,6 +361,10 @@ in
         isNormalUser = true;
         openssh.authorizedKeys.keys = [ machines.uae-testagent-prod.publicKey ];
       };
+      uae-testagent2-prod = {
+        isNormalUser = true;
+        openssh.authorizedKeys.keys = [ machines.uae-testagent2-prod.publicKey ];
+      };
     };
   };
 }
