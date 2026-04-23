@@ -86,7 +86,7 @@
           inherit location;
           device_id = "00-e6-b4-c2-de";
           netvm_hostname = "ghaf-3870606046";
-          serial_port = "/dev/ttyAGX1";
+          serial_port = "NONE";
           relay_number = 4;
           device_ip_address = "172.18.16.54";
           socket_ip_address = "NONE";
