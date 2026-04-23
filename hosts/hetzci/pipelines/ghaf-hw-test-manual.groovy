@@ -160,6 +160,7 @@ def ghaf_robot_test(String tags) {
           -v DEVICE_TYPE:$DEVICE_TAG \
           -v BUILD_ID:${BUILD_NUMBER} \
           -v COMMIT_HASH:NONE \
+          -v FLASHED:${FLASHED} \
           -i $INCLUDE_TEST_TAGS .
       '''
       currentBuild.description = "${currentBuild.description}<br>✅ ${tags}"
@@ -258,6 +259,7 @@ pipeline {
           steps {
             script {
               env.TEST_CONFIG_DIR = 'Robot-Framework/config'
+              env.FLASHED = 'false'
               sh """
                 mkdir -p ${TEST_CONFIG_DIR}
                 rm -f ${TEST_CONFIG_DIR}/*.json
@@ -348,6 +350,7 @@ pipeline {
                 def resolved_dev = utils.run_cmd("/run/wrappers/bin/sudo readlink -f ${dev}")
                 sh "/run/wrappers/bin/sudo ${flashScriptPath}/bin/flash-script -d ${resolved_dev} -i ${env.FLASH_INPUT_PATH} -f"
               }
+              env.FLASHED = 'true'
               // Unmount
               sh "${env.UNMOUNT_CMD}"
               utils.assert_flash_target_unmounted(dev)
