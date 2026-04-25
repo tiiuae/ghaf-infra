@@ -34,9 +34,9 @@
     networkConfig.DHCP = "ipv4";
   };
 
-  boot.loader.grub = {
-    efiSupport = true;
-    efiInstallAsRemovable = true;
+  boot.loader = {
+    systemd-boot.enable = true;
+    systemd-boot.configurationLimit = 5;
   };
 
   environment.systemPackages = with pkgs; [
