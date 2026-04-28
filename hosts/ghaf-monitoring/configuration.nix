@@ -59,6 +59,7 @@ in
     secrets = {
       sshified_private_key.owner = "sshified";
       metrics_basic_auth.owner = "nginx";
+      zot_metrics_password.owner = "prometheus";
 
       # github oauth app credentials
       github_client_id.owner = "grafana";
@@ -421,6 +422,10 @@ in
         metrics_path = "/metrics";
         scheme = "https";
         tls_config.server_name = "registry.vedenemo.dev";
+        basic_auth = {
+          username = "prometheus";
+          password_file = config.sops.secrets.zot_metrics_password.path;
+        };
         static_configs = [
           {
             targets = [ "${machines.ghaf-registry.internal_ip}:443" ];

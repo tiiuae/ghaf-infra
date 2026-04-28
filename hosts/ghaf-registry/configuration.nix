@@ -92,6 +92,7 @@ let
       };
 
       accessControl = {
+        metrics.users = [ "prometheus" ];
         repositories = {
           "ghaf/**" = {
             policies = [
