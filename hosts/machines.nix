@@ -257,8 +257,8 @@
     module = ./uae/lab/node1/configuration.nix;
     system = "x86_64-linux";
     machine = {
-      ip = "172.19.16.37";
-      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGKZYL60TIQDoLwUwuZvzOdw/yikC181su5Cm1LAplcj";
+      ip = "172.31.107.42";
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINXec/ZGWCbBTaSi4dYOhVMWt/BUlSaIuvU/k9Ciap3P";
     };
   };
 
@@ -267,7 +267,7 @@
     system = "x86_64-linux";
     machine = {
       ip = "172.31.141.51";
-      nebula_ip = "10.42.42.33";
+      nebula_ip = "10.42.42.35";
       publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ69aPBjri8UJi1KbVDEUYW5YeHzAkQ86acQNHzqyrD0";
     };
   };
@@ -307,7 +307,7 @@
     system = "aarch64-linux";
     machine = {
       ip = "91.98.90.243";
-      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBM3zxG++iSjFGkQ6Kqghwm5mcbo+KM4vAzH1Cqftoew";
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDP8yHa00zzjb+KSLB/pSZTKsAiU4vW1V75dqS1/6TqZ";
     };
   };
 

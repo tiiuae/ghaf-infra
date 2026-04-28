@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   disko.devices.disk.os = {
-    device = "/dev/disk/by-id/nvme-KINGSTON_SNV3S2000G_50026B768715E152";
+    device = "/dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_2TB_S4J4NX0R830938M";
     type = "disk";
     content = {
       type = "gpt";
