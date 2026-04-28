@@ -35,7 +35,7 @@ keys:
   - &ghaf-registry age1j6xlgk93a9nwwtaqdxfqfp52x0kt9jkwj3r2zmdg8eres72s0y7qvf5r90
   - &ghaf-fleetdm age1ejte8fz7wdrnxcuzst5j66arkmwgvm67sj2hdhnvq7q0t0z5lsnqcyr97t
   - &nethsm-gateway age177v8xccs46774faav3tu36kfap0r04z0ukxh2t5293rwk5evrsaqd98j0p
-  - &uae-lab-node1 age1ugtdwk3vgnug0xjcme3ft8a5rk2htd207z83dgp5gzk52ajf94dqerju4w
+  - &uae-lab-node1 age1k0ujgggnrh2k9f6c4w2vnt6z6vg7m8ulk6e25vrzqa2ntvhu3e7ql7t5yv
   - &uae-nethsm-gateway age1yqpkn74zacvyujqadz5cm90e6tz8ws2kphladkyvtfrv65x5autqe9404a
   - &uae-azureci-prod age13jsxg67hfnk7pqrf0tsnqrdxs8ktly4ke2vqwsx0c0lqytlwd98s58rkna
   - &uae-azureci-az86-1 age1rcwsekkzc2x35kv3qcg6dvgjsl28nxhes4e9g8l5gue54tx2qp7s53wclg

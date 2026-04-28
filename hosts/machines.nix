@@ -267,7 +267,7 @@
     system = "x86_64-linux";
     machine = {
       ip = "172.31.141.51";
-      nebula_ip = "10.42.42.33";
+      nebula_ip = "10.42.42.35";
       publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ69aPBjri8UJi1KbVDEUYW5YeHzAkQ86acQNHzqyrD0";
     };
   };
