@@ -31,6 +31,7 @@ let
       ghaf-auth
       ghaf-monitoring
       ghaf-lighthouse
+      ghaf-registry
       hetzci-dev
       hetzci-prod
       hetzci-release
@@ -414,6 +415,20 @@ in
             machine_name = name;
           };
         }) hetznerCloudHosts;
+      }
+      {
+        job_name = "zot";
+        metrics_path = "/metrics";
+        scheme = "https";
+        tls_config.server_name = "registry.vedenemo.dev";
+        static_configs = [
+          {
+            targets = [ "${machines.ghaf-registry.internal_ip}:443" ];
+            labels = {
+              machine_name = "ghaf-registry";
+            };
+          }
+        ];
       }
       {
         # scrape nebula metrics if host has nebula ip address defined
