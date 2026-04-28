@@ -4,6 +4,7 @@
   pkgs,
   self,
   lib,
+  machines,
   inputs,
   config,
   ...
@@ -144,6 +145,11 @@ in
   system.stateVersion = lib.mkForce "25.11";
   networking.hostName = "ghaf-registry";
 
+  services.monitoring = {
+    metrics.enable = true;
+    logs.enable = true;
+  };
+
   sops = {
     secrets = {
       auth-client-secret.owner = "zot";
@@ -174,6 +180,14 @@ in
         proxy_max_temp_file_size 0;
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
+      '';
+    };
+
+    locations."= /metrics" = {
+      proxyPass = "http://127.0.0.1:${toString zotPort}/metrics";
+      extraConfig = ''
+        allow ${machines.ghaf-monitoring.internal_ip};
+        deny all;
       '';
     };
   };
