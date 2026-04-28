@@ -250,6 +250,13 @@ in
             "\${DS_PROMETHEUS}" = "prometheus";
           };
         })
+        (dashboard {
+          name = "Zot";
+          src = ./provision/dashboards/zot.json;
+          replacements = {
+            "\${DS_PROMETHEUS}" = "prometheus";
+          };
+        })
       ];
 
     provision.alerting = {
