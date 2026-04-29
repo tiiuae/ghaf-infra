@@ -288,6 +288,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
   def immutable_tag = "${env.CI_ENV}-${stamp}-${target_commit}"
   def signingToken = "YubiHSM"
   def signing_possible = env.CI_ENV != 'vm'
+  def ghaf_checkout = pwd()
 
   // Evaluate
   stage("Eval") {
@@ -298,6 +299,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
   targets.each {
     def shortname = it.target.substring(it.target.lastIndexOf('.') + 1)
     def output = "${artifacts_local_dir}/${it.target}"
+    def local_target_ref = "${ghaf_checkout}#${it.target}"
 
     def manifest = [
       ci_env: env.CI_ENV,
@@ -433,7 +435,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
           def outdir = "${output}/attestations"
           sh """
             mkdir -v -p ${outdir}
-            sbomnix ${output}/unsigned-output \
+            sbomnix '${local_target_ref}' \
               --csv ${outdir}/sbom.csv \
               --cdx ${outdir}/sbom.cdx.json \
               --spdx ${outdir}/sbom.spdx.json
