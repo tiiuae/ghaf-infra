@@ -120,10 +120,10 @@ def init() {
   }
   def flashTarget = utils.derive_target_name(params.IMG_URL, env.OCI_TARGET)
   def deviceInfo = null
-  if (flashTarget) {
+  if (flashTarget && !params.DEVICE_TAG) {
     deviceInfo = utils.derive_device_info(flashTarget, params.SECUREBOOT)
     if (!deviceInfo) {
-      error("Unable to parse device config for target '${flashTarget}'")
+      error("Could not derive DEVICE_TAG from target '${flashTarget}' and DEVICE_TAG is not defined")
     }
   }
   if (params.DEVICE_TAG) {
