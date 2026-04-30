@@ -180,6 +180,7 @@ in
         proxy_max_temp_file_size 0;
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
+        client_body_timeout 3600s;
       '';
     };
 
