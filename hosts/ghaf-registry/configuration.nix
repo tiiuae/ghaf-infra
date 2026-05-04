@@ -75,7 +75,7 @@ let
       externalUrl = "https://registry.vedenemo.dev";
 
       auth = {
-        htpasswd.path = config.sops.secrets.zot-htpasswd.path;
+        htpasswd.path = config.sops.templates."zot-htpasswd".path;
 
         openid.providers.oidc = {
           name = "Vedenemo Auth";
@@ -92,6 +92,7 @@ let
       };
 
       accessControl = {
+        metrics.users = [ "prometheus" ];
         repositories = {
           "ghaf/**" = {
             policies = [
@@ -155,6 +156,14 @@ in
       auth-client-secret.owner = "zot";
       zot-s3-credentials.owner = "zot";
       zot-htpasswd.owner = "zot";
+      zot-metrics-htpasswd-entry.owner = "zot";
+    };
+    templates."zot-htpasswd" = {
+      owner = "zot";
+      content = ''
+        ${config.sops.placeholder.zot-htpasswd}
+        ${config.sops.placeholder."zot-metrics-htpasswd-entry"}
+      '';
     };
     templates."zot-oidc-credentials.json" = {
       owner = "zot";
