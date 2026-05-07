@@ -33,10 +33,27 @@
           ];
         text = builtins.readFile ./archive-ghaf-release.sh;
       };
+      select-pkcs11-node = pkgs.writeShellApplication {
+        name = "select-pkcs11-node";
+        runtimeInputs = (
+          with pkgs;
+          [
+            jq
+            gnutls
+          ]
+        );
+        # bash options would apply to the parent shell when sourcing
+        bashOptions = [ ];
+        text = builtins.readFile ./select-pkcs11-node.sh;
+      };
     in
     {
       packages = {
-        inherit verify-signature archive-ghaf-release;
+        inherit
+          verify-signature
+          archive-ghaf-release
+          select-pkcs11-node
+          ;
       };
     };
 }

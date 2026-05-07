@@ -210,6 +210,16 @@ def assert_flash_target_unmounted(String dev) {
   """
 }
 
+def withRedundancyRouter(String object, Closure body) {
+  def signingEnv = readJSON text: run_cmd("select-pkcs11-node ${object}")
+  withEnv([
+    "PKCS11_PROXY_SOCKET=${signingEnv.socket}" // overrides the socket with one that works
+  ]) {
+    println "Proceeding to sign with ${signingEnv}"
+    body(signingEnv) // signingEnv object is available for closure
+  }
+}
+
 @NonCPS
 // Why NonCPS? Jenkins CPS does not handle regex matchers reliably.
 // See: https://stackoverflow.com/a/48465528
@@ -286,7 +296,6 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
   def artifacts_local_dir = "/var/lib/jenkins/${artifacts}"
   def artifacts_href = "<a href=\"/${artifacts}\">📦 Artifacts</a>"
   def immutable_tag = "${env.CI_ENV}-${stamp}-${target_commit}"
-  def signingToken = "YubiHSM"
   def signing_possible = env.CI_ENV != 'vm'
   def ghaf_checkout = pwd()
 
@@ -325,6 +334,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
         signature: [
           path: null,
           signing_key: null,
+          signing_proxy: null,
         ],
       ],
       uefi: [
@@ -338,6 +348,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
           signature: [
             path: null,
             signing_key: null,
+            signing_proxy: null,
           ],
         ],
         sbom_csv: [
@@ -450,15 +461,18 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
       if (signing_possible && it.get('provenance', true)) {
         stage("Sign (SLSA) provenance ${shortname}") {
           lock('signing') {
-            sh """
-              openssl pkeyutl -sign -rawin \
-                -inkey 'pkcs11:token=${signingToken};object=GhafInfraSignProv' \
-                -out ${output}/attestations/provenance.json.sig \
-                -in ${output}/attestations/provenance.json
-            """
+            withRedundancyRouter("GhafInfraSignProv") { ctx ->
+              sh """
+                openssl pkeyutl -sign -rawin \
+                  -inkey "${ctx.uri}" \
+                  -out ${output}/attestations/provenance.json.sig \
+                  -in ${output}/attestations/provenance.json
+              """
+              manifest.attestations.provenance.signature.path = "attestations/provenance.json.sig"
+              manifest.attestations.provenance.signature.signing_key = ctx.uri
+              manifest.attestations.provenance.signature.signing_proxy = ctx.socket
+            }
           }
-          manifest.attestations.provenance.signature.path = "attestations/provenance.json.sig"
-          manifest.attestations.provenance.signature.signing_key = "pkcs11:token=${signingToken};object=GhafInfraSignProv"
         }
       }
       if (!it.no_image) {
@@ -482,12 +496,16 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
               }
 
               lock('signing') {
-                sh """
-                  ${signer} /etc/jenkins/keys/secboot/DB.pem \
-                    'pkcs11:token=${signingToken};object=uefi-ghaf-db' \
-                    ${output}/${manifest.image.path} \
-                    ${tmpdir}
-                """
+                withRedundancyRouter("uefi-ghaf-db") { ctx ->
+                  sh """
+                    ${signer} /etc/jenkins/keys/secboot/DB.pem \
+                      "${ctx.uri}" \
+                      ${output}/${manifest.image.path} \
+                      ${tmpdir}
+                  """
+                  manifest.uefi.signing_key = ctx.uri
+                  manifest.uefi.signing_proxy = ctx.socket
+                }
               }
 
               sh "mv ${tmpdir}/signed_${img_name} ${output}/${img_name}"
@@ -495,22 +513,24 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
               manifest.image.path = img_name
               manifest.uefi.signed = true;
               manifest.uefi.reason = null
-              manifest.uefi.signing_key = "pkcs11:token=${signingToken};object=uefi-ghaf-db"
             }
           }
           stage("Sign (SLSA) image ${shortname}") {
             lock('signing') {
               def img_name = path_basename(manifest.image.path)
               // sign the current main image be it unsigned or uefisigned
-              sh """
-                openssl dgst -sha256 -sign \
-                  'pkcs11:token=${signingToken};object=GhafInfraSignECP256' \
-                  -out ${output}/${img_name}.sig \
-                  ${output}/${manifest.image.path}
-              """
+              manifest.image.signature.path = "${img_name}.sig"
+              withRedundancyRouter("GhafInfraSignECP256") { ctx ->
+                sh """
+                  openssl dgst -sha256 -sign \
+                    "${ctx.uri}" \
+                    -out ${output}/${manifest.image.signature.path} \
+                    ${output}/${manifest.image.path}
+                """
+                manifest.image.signature.signing_key = ctx.uri
+                manifest.image.signature.signing_proxy = ctx.socket
+              }
             }
-            manifest.image.signature.path = "${path_basename(manifest.image.path)}.sig"
-            manifest.image.signature.signing_key = "pkcs11:token=${signingToken};object=GhafInfraSignECP256"
           }
         }
       }
