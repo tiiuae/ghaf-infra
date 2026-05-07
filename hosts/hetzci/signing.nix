@@ -33,6 +33,7 @@ let
   proxyEnv = {
     PKCS11_PROXY_MODULE = "${pkcs11-proxy}/lib/libpkcs11-proxy.so";
     PKCS11_PROXY_TLS_PSK_FILE = config.sops.secrets.tls-pks-file.path;
+    # the default socket to use when redundancy router is not used
     PKCS11_PROXY_SOCKET = "tls://nethsm-gateway.sumu.vedenemo.dev:2345";
     PKCS11_TLS_IDENTITY = config.networking.hostName;
     OPENSSL_CONF = toString (
@@ -74,6 +75,7 @@ let
     ])
     ++ (with self.packages.${pkgs.stdenv.hostPlatform.system}; [
       verify-signature
+      select-pkcs11-node
     ])
     ++ [
       systemd-sbsign
