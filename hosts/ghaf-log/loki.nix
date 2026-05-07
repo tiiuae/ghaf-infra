@@ -47,7 +47,7 @@ in
       query_range.cache_results = true;
 
       limits_config = {
-        max_global_streams_per_user = 10000; # default is 5000
+        max_global_streams_per_user = 20000; # default is 5000
       };
     };
   };
