@@ -1,7 +1,10 @@
 #!/usr/bin/env groovy
 
 def poweroff(String device) {
-  def testagent_nodes = nodesByLabel(label: "$device", offline: false)
+  def testagent_nodes = null
+  node('built-in') {
+    testagent_nodes = nodesByLabel(label: "$device", offline: false)
+  }
   if (!testagent_nodes) {
     unstable("No '$device' test agents online")
     return
@@ -21,12 +24,13 @@ def poweroff(String device) {
 }
 
 pipeline {
-  agent { label 'built-in' }
+  agent none
   options {
     buildDiscarder(logRotator(numToKeepStr: '30'))
   }
   stages {
     stage('Set properties') {
+      agent { label 'built-in' }
       steps {
         script {
           properties([
@@ -39,6 +43,7 @@ pipeline {
       }
     }
     stage('Reload only') {
+      agent { label 'built-in' }
       when { expression { params && params.RELOAD_ONLY } }
       steps {
         script {

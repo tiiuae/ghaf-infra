@@ -3,7 +3,6 @@
 @Library('ghafInfra') _
 
 def REPO_URL = 'https://github.com/tiiuae/ghaf/'
-def WORKDIR  = 'checkout'
 def PIPELINE = [:]
 
 def TARGETS = [
@@ -45,12 +44,13 @@ properties([
 ])
 
 pipeline {
-  agent { label 'built-in' }
+  agent none
   options {
     buildDiscarder(logRotator(numToKeepStr: '100'))
   }
   stages {
     stage('Reload only') {
+      agent { label 'built-in' }
       when { expression { params && params.RELOAD_ONLY } }
       steps {
         script {
@@ -61,8 +61,9 @@ pipeline {
       }
     }
     stage('Checkout') {
+      agent { label 'built-in' }
       steps {
-        dir(WORKDIR) {
+        dir(utils.controller_workdir()) {
           script {
             if (!params.GITHUB_PR_NUMBER) {
               error('Missing GITHUB_PR_NUMBER')
@@ -90,8 +91,9 @@ pipeline {
       }
     }
     stage('Setup') {
+      agent { label 'built-in' }
       steps {
-        dir(WORKDIR) {
+        dir(utils.controller_workdir()) {
           script {
             if (params.SET_PR_STATUS) {
               utils.set_github_commit_status("Manual trigger: pending", "pending", env.TARGET_COMMIT)
@@ -110,26 +112,33 @@ pipeline {
     }
     stage('Build') {
       steps {
-        dir(WORKDIR) {
-          script {
-            parallel PIPELINE
-          }
+        script {
+          parallel PIPELINE
         }
       }
     }
   }
   post {
+    always {
+      script {
+        utils.clean_controller_workdir()
+      }
+    }
     success {
       script {
         if (params.SET_PR_STATUS) {
-          utils.set_github_commit_status("Manual trigger: success", "success", env.TARGET_COMMIT)
+          node('built-in') {
+            utils.set_github_commit_status("Manual trigger: success", "success", env.TARGET_COMMIT)
+          }
         }
       }
     }
     unsuccessful {
       script {
         if (params.SET_PR_STATUS) {
-          utils.set_github_commit_status("Manual trigger: failure", "failure", env.TARGET_COMMIT)
+          node('built-in') {
+            utils.set_github_commit_status("Manual trigger: failure", "failure", env.TARGET_COMMIT)
+          }
         }
       }
     }

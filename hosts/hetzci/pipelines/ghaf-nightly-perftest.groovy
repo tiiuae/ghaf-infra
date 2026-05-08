@@ -3,7 +3,6 @@
 @Library('ghafInfra') _
 
 def REPO_URL = 'https://github.com/tiiuae/ghaf/'
-def WORKDIR  = 'checkout'
 def PIPELINE = [:]
 
 def TARGETS = [
@@ -34,12 +33,13 @@ def TARGETS = [
 ]
 
 pipeline {
-  agent { label 'built-in' }
+  agent none
   options {
     buildDiscarder(logRotator(numToKeepStr: '30'))
   }
   stages {
     stage('Set properties') {
+      agent { label 'built-in' }
       steps {
         script {
           properties([
@@ -71,6 +71,7 @@ pipeline {
       }
     }
     stage('Reload only') {
+      agent { label 'built-in' }
       when { expression { params && params.RELOAD_ONLY } }
       steps {
         script {
@@ -81,8 +82,9 @@ pipeline {
       }
     }
     stage('Checkout') {
+      agent { label 'built-in' }
       steps {
-        dir(WORKDIR) {
+        dir(utils.controller_workdir()) {
           deleteDir()
           checkout scmGit(
             branches: [[name: 'main']],
@@ -92,8 +94,9 @@ pipeline {
       }
     }
     stage('Setup') {
+      agent { label 'built-in' }
       steps {
-        dir(WORKDIR) {
+        dir(utils.controller_workdir()) {
           script {
             if (params.SET_TESTAGENT_HOST && params.TESTAGENT_HOST) {
               PIPELINE = utils.create_pipeline(TARGETS, params.TESTAGENT_HOST)
@@ -106,13 +109,18 @@ pipeline {
     }
     stage('Build') {
       steps {
-        dir(WORKDIR) {
-          script {
-            PIPELINE.each { key, value ->
-              value()
-            }
+        script {
+          PIPELINE.each { key, value ->
+            value()
           }
         }
+      }
+    }
+  }
+  post {
+    always {
+      script {
+        utils.clean_controller_workdir()
       }
     }
   }

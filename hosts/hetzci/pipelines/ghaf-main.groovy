@@ -3,7 +3,6 @@
 @Library('ghafInfra') _
 
 def REPO_URL = 'https://github.com/tiiuae/ghaf/'
-def WORKDIR  = 'checkout'
 def PIPELINE = [:]
 
 def TARGETS = [
@@ -47,7 +46,7 @@ properties([
   githubProjectProperty(displayName: '', projectUrlStr: REPO_URL)
 ])
 pipeline {
-  agent { label 'built-in' }
+  agent none
   triggers {
     githubPush()
   }
@@ -60,8 +59,9 @@ pipeline {
     // before 'Reload only', otherwise this pipeline would never trigger
     // on githubPush().
     stage('Checkout') {
+      agent { label 'built-in' }
       steps {
-        dir(WORKDIR) {
+        dir(utils.controller_workdir()) {
           deleteDir()
           checkout scmGit(
             branches: [[name: 'main']],
@@ -71,6 +71,7 @@ pipeline {
       }
     }
     stage('Reload only') {
+      agent { label 'built-in' }
       when { expression { params && params.RELOAD_ONLY } }
       steps {
         script {
@@ -81,8 +82,9 @@ pipeline {
       }
     }
     stage('Setup') {
+      agent { label 'built-in' }
       steps {
-        dir(WORKDIR) {
+        dir(utils.controller_workdir()) {
           script {
             PIPELINE = utils.create_pipeline(TARGETS)
           }
@@ -91,11 +93,16 @@ pipeline {
     }
     stage('Build') {
       steps {
-        dir(WORKDIR) {
-          script {
-            parallel PIPELINE
-          }
+        script {
+          parallel PIPELINE
         }
+      }
+    }
+  }
+  post {
+    always {
+      script {
+        utils.clean_controller_workdir()
       }
     }
   }
