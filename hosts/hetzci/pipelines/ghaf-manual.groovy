@@ -87,11 +87,11 @@ pipeline {
             }
             if (params.nvidia_jetson_orin_agx_debug_from_x86_64) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64", testset: params.TESTSET ])
+                [ target: "packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64", uefisign: params.UEFISIGN, testset: params.TESTSET ])
             }
             if (params.nvidia_jetson_orin_nx_debug_from_x86_64) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.nvidia-jetson-orin-nx-debug-from-x86_64", testset: params.TESTSET ])
+                [ target: "packages.x86_64-linux.nvidia-jetson-orin-nx-debug-from-x86_64", uefisign: params.UEFISIGN, testset: params.TESTSET ])
             }
             if (params.nvidia_jetson_orin_agx_debug) {
               TARGETS.push(
