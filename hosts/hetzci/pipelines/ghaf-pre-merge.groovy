@@ -3,7 +3,6 @@
 @Library('ghafInfra') _
 
 def REPO_URL = 'https://github.com/tiiuae/ghaf/'
-def WORKDIR  = 'checkout'
 def PIPELINE = [:]
 
 def TARGETS = [
@@ -59,12 +58,13 @@ properties([
 ])
 
 pipeline {
-  agent { label 'built-in' }
+  agent none
   options {
     buildDiscarder(logRotator(numToKeepStr: '100'))
   }
   stages {
     stage('Reload only') {
+      agent { label 'built-in' }
       when { expression { params && params.RELOAD_ONLY } }
       steps {
         script {
@@ -75,8 +75,9 @@ pipeline {
       }
     }
     stage('Checkout') {
+      agent { label 'built-in' }
       steps {
-        dir(WORKDIR) {
+        dir(utils.controller_workdir()) {
           deleteDir()
           // https://www.jenkins.io/doc/pipeline/steps/params/scmgit/#scmgit
           // https://github.com/KostyaSha/github-integration-plugin/blob/master/docs/Configuration.adoc
@@ -117,8 +118,9 @@ pipeline {
       }
     }
     stage('Setup') {
+      agent { label 'built-in' }
       steps {
-        dir(WORKDIR) {
+        dir(utils.controller_workdir()) {
           script {
             utils.set_github_commit_status("Pending", "pending", env.TARGET_COMMIT)
             def merge_commit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
@@ -133,23 +135,30 @@ pipeline {
     }
     stage('Build') {
       steps {
-        dir(WORKDIR) {
-          script {
-            parallel PIPELINE
-          }
+        script {
+          parallel PIPELINE
         }
       }
     }
   }
   post {
+    always {
+      script {
+        utils.clean_controller_workdir()
+      }
+    }
     success {
       script {
-        utils.set_github_commit_status("Successful", "success", env.TARGET_COMMIT)
+        node('built-in') {
+          utils.set_github_commit_status("Successful", "success", env.TARGET_COMMIT)
+        }
       }
     }
     unsuccessful {
       script {
-        utils.set_github_commit_status("Failure", "failure", env.TARGET_COMMIT)
+        node('built-in') {
+          utils.set_github_commit_status("Failure", "failure", env.TARGET_COMMIT)
+        }
       }
     }
   }

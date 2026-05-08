@@ -3,7 +3,6 @@
 @Library('ghafInfra') _
 
 def REPO_URL = 'https://github.com/tiiuae/ghaf/'
-def WORKDIR  = 'checkout'
 def PIPELINE = [:]
 
 def ALL_RELEASE_TARGETS = [
@@ -85,7 +84,7 @@ properties([
   ])
 ])
 pipeline {
-  agent { label 'built-in' }
+  agent none
   triggers {
     githubPush()
   }
@@ -94,6 +93,7 @@ pipeline {
   }
   stages {
     stage('Reload only') {
+      agent { label 'built-in' }
       when { expression { params && params.RELOAD_ONLY } }
       steps {
         script {
@@ -104,8 +104,9 @@ pipeline {
       }
     }
     stage('Checkout') {
+      agent { label 'built-in' }
       steps {
-        dir(WORKDIR) {
+        dir(utils.controller_workdir()) {
           deleteDir()
           checkout scmGit(
             branches: [[name: params.GITREF]],
@@ -115,8 +116,9 @@ pipeline {
       }
     }
     stage('Setup') {
+      agent { label 'built-in' }
       steps {
-        dir(WORKDIR) {
+        dir(utils.controller_workdir()) {
           script {
             if (params.RELEASE_TARGETS_SET.contains('All targets')) {
               println('All release targets selected')
@@ -136,11 +138,16 @@ pipeline {
     }
     stage('Build and test') {
       steps {
-        dir(WORKDIR) {
-          script {
-            parallel PIPELINE
-          }
+        script {
+          parallel PIPELINE
         }
+      }
+    }
+  }
+  post {
+    always {
+      script {
+        utils.clean_controller_workdir()
       }
     }
   }

@@ -239,13 +239,42 @@ def resolve_ghaf_flake_ref(String explicitFlakeRef, String imgUrl, String ociFla
   return null
 }
 
-def trigger_hw_test(
+@NonCPS
+def safe_path_component(String value) {
+  return value.replaceAll(/[^A-Za-z0-9_.-]/, '-')
+}
+
+def controller_workdir() {
+  def rawTag = env.BUILD_TAG ?: "${env.JOB_NAME}-${env.BUILD_NUMBER}"
+  def tag = safe_path_component(rawTag)
+  if (!tag || tag == 'null-null') {
+    error('Cannot derive a unique controller workdir for this build')
+  }
+  return "/var/lib/jenkins/ghaf-pipeline-workspaces/${tag}"
+}
+
+def clean_controller_workdir() {
+  node('built-in') {
+    sh "rm -rf '${controller_workdir()}'"
+  }
+}
+
+def with_controller_workspace(String workspace, Closure body) {
+  node('built-in') {
+    dir(workspace) {
+      body()
+    }
+  }
+}
+
+def run_hw_test(
   String shortname,
   String testset,
   String testagent_host,
   Map oci_result,
-  String output,
   boolean secureboot) {
+  // Keep the blocking downstream wait outside node('built-in') so ghaf-hw-test
+  // can acquire a controller executor for its own initialization stages.
   def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
   def test_params = [
     string(name: "TESTSET", value: testset),
@@ -264,6 +293,19 @@ def trigger_hw_test(
   def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
     parameters: test_params
   )
+  return [
+    absoluteUrl: job.absoluteUrl,
+    number: job.number,
+    result: job.result,
+  ]
+}
+
+def collect_hw_test_result(
+  String shortname,
+  String testset,
+  String output,
+  boolean secureboot,
+  Map job) {
   def logPrefix = secureboot ? "ghaf-hw-test log SB '${shortname}:" : "ghaf-hw-test log '${shortname}:"
   println(logPrefix)
   sh "cat /var/lib/jenkins/jobs/ghaf-hw-test/builds/${job.number}/log | sed 's/^/    /'"
@@ -372,207 +414,209 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
     }
 
     pipeline["${it.target}"] = {
-      // Build
-      stage("Build ${shortname}") {
-        sh "mkdir -v -p ${output}"
+      with_controller_workspace(ghaf_checkout) {
+        // Build
+        stage("Build ${shortname}") {
+          sh "mkdir -v -p ${output}"
 
-        manifest.build.ts_begin = run_cmd('date +%s')
-        lock(label: 'nix-build', quantity: 1) {
-          sh "nix build --fallback -v .#${it.target} --out-link ${output}/unsigned-output"
-        }
-        manifest.build.ts_finished = run_cmd('date +%s')
-      }
-      // Provenance
-      if (it.get('provenance', true)) {
-        stage("Provenance ${shortname}") {
-          def ext_params = """
-            {
-              "target": {
-                "name": "${it.target}",
-                "repository": "${target_repo}",
-                "ref": "${target_commit}"
-              },
-              "workflow": {
-                "name": "${host_name}",
-                "repository": "https://github.com/tiiuae/ghaf-infra",
-                "ref": "${host_revision}"
-              },
-              "job": "${env.JOB_NAME}",
-              "jobParams": ${JsonOutput.toJson(params)},
-              "buildRun": "${env.BUILD_ID}"
-            }
-          """
-          withEnv([
-            'PROVENANCE_BUILD_TYPE=https://github.com/tiiuae/ghaf-infra/blob/ea938e90/slsa/v1.0/L1/buildtype.md',
-            "PROVENANCE_BUILDER_ID=${env.JENKINS_URL}",
-            "PROVENANCE_INVOCATION_ID=${env.BUILD_URL}",
-            "PROVENANCE_TIMESTAMP_BEGIN=${manifest.build.ts_begin}",
-            "PROVENANCE_TIMESTAMP_FINISHED=${manifest.build.ts_finished}",
-            "PROVENANCE_EXTERNAL_PARAMS=${ext_params}"
-          ]) {
-            sh "mkdir -v -p ${output}/attestations"
-            sh """
-              attempt=1; max_attempts=5;
-              while ! provenance ${output}/unsigned-output --recursive --out ${output}/attestations/provenance.json; do
-                echo "provenance attempt=\$attempt failed"
-                if (( \$attempt >= \$max_attempts )); then
-                  exit 1
-                fi
-                attempt=\$(( \$attempt + 1 ))
-                sleep 30
-              done
-              echo "provenance attempt=\$attempt passed"
-            """
-            manifest.attestations.provenance.path = "attestations/provenance.json"
+          manifest.build.ts_begin = run_cmd('date +%s')
+          lock(label: 'nix-build', quantity: 1) {
+            sh "nix build --fallback -v .#${it.target} --out-link ${output}/unsigned-output"
           }
+          manifest.build.ts_finished = run_cmd('date +%s')
         }
-      }
-      // Build OTA pin
-      if (it.get('build_otapin', false)) {
-        stage("OTA Build ${shortname}") {
-          def ota_target = it.target.tokenize('.').last()
-          sh """
-            mkdir -v -p ${ota_target}; cd ${ota_target}
-            nixos-rebuild build --fallback --flake .#${ota_target}
-            mv result ${artifacts_local_dir}/otapin.${ota_target}
-            nix-store --add-root ${artifacts_local_dir}/otapin.${ota_target} \
-              -r ${artifacts_local_dir}/otapin.${ota_target}
-          """
-        }
-      }
-      // Run sbomnix
-      if (it.get('sbom', false)) {
-        stage("SBOM ${shortname}") {
-          def outdir = "${output}/attestations"
-          sh """
-            mkdir -v -p ${outdir}
-            sbomnix '${local_target_ref}' \
-              --csv ${outdir}/sbom.csv \
-              --cdx ${outdir}/sbom.cdx.json \
-              --spdx ${outdir}/sbom.spdx.json
-          """
-          manifest.attestations.sbom_csv.path = "attestations/sbom.csv"
-          manifest.attestations.sbom_cyclonedx.path = "attestations/sbom.cdx.json"
-          manifest.attestations.sbom_spdx.path = "attestations/sbom.spdx.json"
-        }
-      }
-      // Signing stages
-      // Skip signing stages only in vm, where the signing proxy is not configured.
-      if (signing_possible && it.get('provenance', true)) {
-        stage("Sign (SLSA) provenance ${shortname}") {
-          lock('signing') {
-            withRedundancyRouter("GhafInfraSignProv") { ctx ->
-              sh """
-                openssl pkeyutl -sign -rawin \
-                  -inkey "${ctx.uri}" \
-                  -out ${output}/attestations/provenance.json.sig \
-                  -in ${output}/attestations/provenance.json
-              """
-              manifest.attestations.provenance.signature.path = "attestations/provenance.json.sig"
-              manifest.attestations.provenance.signature.signing_key = ctx.uri
-              manifest.attestations.provenance.signature.signing_proxy = ctx.socket
-            }
-          }
-        }
-      }
-      if (!it.no_image) {
-        stage("Find image ${shortname}") {
-          def img_path = run_cmd("find -L ${output}/unsigned-output -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print -quit")
-          if (!img_path) {
-            error("No image found!")
-          }
-          manifest.image.path = img_path - "${output}/"
-          manifest.image.role = image_role(manifest.image.path)
-        }
-        if (signing_possible) {
-          if (it.get('uefisign', false) || it.get('uefisigniso', false)) {
-            stage("Sign (UEFI) ${shortname}") {
-              def tmpdir = run_cmd("mktemp -d")
-              def img_name = path_basename(manifest.image.path)
-
-              def signer = "uefisign"
-              if (it.target.contains("nvidia-jetson-orin")) {
-                signer = "uefisign-simple"
+        // Provenance
+        if (it.get('provenance', true)) {
+          stage("Provenance ${shortname}") {
+            def ext_params = """
+              {
+                "target": {
+                  "name": "${it.target}",
+                  "repository": "${target_repo}",
+                  "ref": "${target_commit}"
+                },
+                "workflow": {
+                  "name": "${host_name}",
+                  "repository": "https://github.com/tiiuae/ghaf-infra",
+                  "ref": "${host_revision}"
+                },
+                "job": "${env.JOB_NAME}",
+                "jobParams": ${JsonOutput.toJson(params)},
+                "buildRun": "${env.BUILD_ID}"
               }
+            """
+            withEnv([
+              'PROVENANCE_BUILD_TYPE=https://github.com/tiiuae/ghaf-infra/blob/ea938e90/slsa/v1.0/L1/buildtype.md',
+              "PROVENANCE_BUILDER_ID=${env.JENKINS_URL}",
+              "PROVENANCE_INVOCATION_ID=${env.BUILD_URL}",
+              "PROVENANCE_TIMESTAMP_BEGIN=${manifest.build.ts_begin}",
+              "PROVENANCE_TIMESTAMP_FINISHED=${manifest.build.ts_finished}",
+              "PROVENANCE_EXTERNAL_PARAMS=${ext_params}"
+            ]) {
+              sh "mkdir -v -p ${output}/attestations"
+              sh """
+                attempt=1; max_attempts=5;
+                while ! provenance ${output}/unsigned-output --recursive --out ${output}/attestations/provenance.json; do
+                  echo "provenance attempt=\$attempt failed"
+                  if (( \$attempt >= \$max_attempts )); then
+                    exit 1
+                  fi
+                  attempt=\$(( \$attempt + 1 ))
+                  sleep 30
+                done
+                echo "provenance attempt=\$attempt passed"
+              """
+              manifest.attestations.provenance.path = "attestations/provenance.json"
+            }
+          }
+        }
+        // Build OTA pin
+        if (it.get('build_otapin', false)) {
+          stage("OTA Build ${shortname}") {
+            def ota_target = it.target.tokenize('.').last()
+            sh """
+              mkdir -v -p ${ota_target}; cd ${ota_target}
+              nixos-rebuild build --fallback --flake .#${ota_target}
+              mv result ${artifacts_local_dir}/otapin.${ota_target}
+              nix-store --add-root ${artifacts_local_dir}/otapin.${ota_target} \
+                -r ${artifacts_local_dir}/otapin.${ota_target}
+            """
+          }
+        }
+        // Run sbomnix
+        if (it.get('sbom', false)) {
+          stage("SBOM ${shortname}") {
+            def outdir = "${output}/attestations"
+            sh """
+              mkdir -v -p ${outdir}
+              sbomnix '${local_target_ref}' \
+                --csv ${outdir}/sbom.csv \
+                --cdx ${outdir}/sbom.cdx.json \
+                --spdx ${outdir}/sbom.spdx.json
+            """
+            manifest.attestations.sbom_csv.path = "attestations/sbom.csv"
+            manifest.attestations.sbom_cyclonedx.path = "attestations/sbom.cdx.json"
+            manifest.attestations.sbom_spdx.path = "attestations/sbom.spdx.json"
+          }
+        }
+        // Signing stages
+        // Skip signing stages only in vm, where the signing proxy is not configured.
+        if (signing_possible && it.get('provenance', true)) {
+          stage("Sign (SLSA) provenance ${shortname}") {
+            lock('signing') {
+              withRedundancyRouter("GhafInfraSignProv") { ctx ->
+                sh """
+                  openssl pkeyutl -sign -rawin \
+                    -inkey "${ctx.uri}" \
+                    -out ${output}/attestations/provenance.json.sig \
+                    -in ${output}/attestations/provenance.json
+                """
+                manifest.attestations.provenance.signature.path = "attestations/provenance.json.sig"
+                manifest.attestations.provenance.signature.signing_key = ctx.uri
+                manifest.attestations.provenance.signature.signing_proxy = ctx.socket
+              }
+            }
+          }
+        }
+        if (!it.no_image) {
+          stage("Find image ${shortname}") {
+            def img_path = run_cmd("find -L ${output}/unsigned-output -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print -quit")
+            if (!img_path) {
+              error("No image found!")
+            }
+            manifest.image.path = img_path - "${output}/"
+            manifest.image.role = image_role(manifest.image.path)
+          }
+          if (signing_possible) {
+            if (it.get('uefisign', false) || it.get('uefisigniso', false)) {
+              stage("Sign (UEFI) ${shortname}") {
+                def tmpdir = run_cmd("mktemp -d")
+                def img_name = path_basename(manifest.image.path)
 
+                def signer = "uefisign"
+                if (it.target.contains("nvidia-jetson-orin")) {
+                  signer = "uefisign-simple"
+                }
+
+                lock('signing') {
+                  withRedundancyRouter("uefi-ghaf-db") { ctx ->
+                    sh """
+                      ${signer} /etc/jenkins/keys/secboot/DB.pem \
+                        "${ctx.uri}" \
+                        ${output}/${manifest.image.path} \
+                        ${tmpdir}
+                    """
+                    manifest.uefi.signing_key = ctx.uri
+                    manifest.uefi.signing_proxy = ctx.socket
+                  }
+                }
+
+                sh "mv ${tmpdir}/signed_${img_name} ${output}/${img_name}"
+                // replace original image with uefisigned one
+                manifest.image.path = img_name
+                manifest.uefi.signed = true;
+                manifest.uefi.reason = null
+              }
+            }
+            stage("Sign (SLSA) image ${shortname}") {
               lock('signing') {
-                withRedundancyRouter("uefi-ghaf-db") { ctx ->
+                def img_name = path_basename(manifest.image.path)
+                // sign the current main image be it unsigned or uefisigned
+                manifest.image.signature.path = "${img_name}.sig"
+                withRedundancyRouter("GhafInfraSignECP256") { ctx ->
                   sh """
-                    ${signer} /etc/jenkins/keys/secboot/DB.pem \
+                    openssl dgst -sha256 -sign \
                       "${ctx.uri}" \
-                      ${output}/${manifest.image.path} \
-                      ${tmpdir}
+                      -out ${output}/${manifest.image.signature.path} \
+                      ${output}/${manifest.image.path}
                   """
-                  manifest.uefi.signing_key = ctx.uri
-                  manifest.uefi.signing_proxy = ctx.socket
+                  manifest.image.signature.signing_key = ctx.uri
+                  manifest.image.signature.signing_proxy = ctx.socket
                 }
               }
-
-              sh "mv ${tmpdir}/signed_${img_name} ${output}/${img_name}"
-              // replace original image with uefisigned one
-              manifest.image.path = img_name
-              manifest.uefi.signed = true;
-              manifest.uefi.reason = null
             }
           }
-          stage("Sign (SLSA) image ${shortname}") {
-            lock('signing') {
-              def img_name = path_basename(manifest.image.path)
-              // sign the current main image be it unsigned or uefisigned
-              manifest.image.signature.path = "${img_name}.sig"
-              withRedundancyRouter("GhafInfraSignECP256") { ctx ->
+        }
+        // Link artifacts
+        stage("Link artifacts ${shortname}") {
+          if (manifest.image.path && !manifest.uefi.signed) {
+            def img_name = path_basename(manifest.image.path)
+            // make symlink from output root to original image if not using uefisigned
+            sh "ln -s ${output}/${manifest.image.path} ${output}/${img_name}"
+            manifest.image.path = img_name
+          }
+
+          writeFile(
+            file: "${output}/manifest.json",
+            text: JsonOutput.prettyPrint(JsonOutput.toJson(manifest))
+          )
+
+          if (!currentBuild.description || !currentBuild.description.contains(artifacts_href)) {
+            append_to_build_description(artifacts_href)
+          }
+        }
+        if (!it.no_image) {
+          stage("Publish OCI ${shortname}") {
+            if (sh(
+              script: 'command -v oci-publish >/dev/null 2>&1',
+              returnStatus: true
+            ) != 0) {
+              println("Skipping OCI publish ${shortname}: oci-publish is not installed")
+            } else {
+              withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
+                def job_name = env.JOB_BASE_NAME.replaceFirst('^ghaf-', '')
+                def target_name = it.target.replaceFirst('^packages\\.', '')
+                def oci_repository = "ghaf/${job_name}/${target_name}"
+                def oci_result_json = "${output}/oci-result.json"
                 sh """
-                  openssl dgst -sha256 -sign \
-                    "${ctx.uri}" \
-                    -out ${output}/${manifest.image.signature.path} \
-                    ${output}/${manifest.image.path}
+                  oci-publish target \
+                    -d '${output}' \
+                    -r '${oci_repository}' \
+                    -t '${immutable_tag}' \
+                    -o '${oci_result_json}'
                 """
-                manifest.image.signature.signing_key = ctx.uri
-                manifest.image.signature.signing_proxy = ctx.socket
+                oci_result = readJSON file: oci_result_json
               }
-            }
-          }
-        }
-      }
-      // Link artifacts
-      stage("Link artifacts ${shortname}") {
-        if (manifest.image.path && !manifest.uefi.signed) {
-          def img_name = path_basename(manifest.image.path)
-          // make symlink from output root to original image if not using uefisigned
-          sh "ln -s ${output}/${manifest.image.path} ${output}/${img_name}"
-          manifest.image.path = img_name
-        }
-
-        writeFile(
-          file: "${output}/manifest.json",
-          text: JsonOutput.prettyPrint(JsonOutput.toJson(manifest))
-        )
-
-        if (!currentBuild.description || !currentBuild.description.contains(artifacts_href)) {
-          append_to_build_description(artifacts_href)
-        }
-      }
-      if (!it.no_image) {
-        stage("Publish OCI ${shortname}") {
-          if (sh(
-            script: 'command -v oci-publish >/dev/null 2>&1',
-            returnStatus: true
-          ) != 0) {
-            println("Skipping OCI publish ${shortname}: oci-publish is not installed")
-          } else {
-            withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
-              def job_name = env.JOB_BASE_NAME.replaceFirst('^ghaf-', '')
-              def target_name = it.target.replaceFirst('^packages\\.', '')
-              def oci_repository = "ghaf/${job_name}/${target_name}"
-              def oci_result_json = "${output}/oci-result.json"
-              sh """
-                oci-publish target \
-                  -d '${output}' \
-                  -r '${oci_repository}' \
-                  -t '${immutable_tag}' \
-                  -o '${oci_result_json}'
-              """
-              oci_result = readJSON file: oci_result_json
             }
           }
         }
@@ -585,7 +629,10 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
             Utils.markStageSkippedForConditional(testStageName)
             println("Skipping hardware tests for ${shortname}: CI_ENV is vm")
           } else {
-            trigger_hw_test(shortname, it.testset, testagent_host, oci_result, output, false)
+            def job = run_hw_test(shortname, it.testset, testagent_host, oci_result, false)
+            with_controller_workspace(ghaf_checkout) {
+              collect_hw_test_result(shortname, it.testset, output, false, job)
+            }
           }
         }
         // Run an additional secure boot test only when the target requests it and
@@ -594,7 +641,10 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
         // regular test run cannot be replaced with a secure boot-only run.
         if (it.test_secboot && manifest.uefi.signed && env.CI_ENV == "prod") {
           stage("Test SB ${shortname}") {
-            trigger_hw_test(shortname, it.testset, testagent_host, oci_result, output, true)
+            def job = run_hw_test(shortname, it.testset, testagent_host, oci_result, true)
+            with_controller_workspace(ghaf_checkout) {
+              collect_hw_test_result(shortname, it.testset, output, true, job)
+            }
           }
         }
       }
