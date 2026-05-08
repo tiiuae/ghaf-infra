@@ -76,6 +76,7 @@ let
     ++ (with self.packages.${pkgs.stdenv.hostPlatform.system}; [
       verify-signature
       select-pkcs11-node
+      run-cosign
     ])
     ++ [
       systemd-sbsign

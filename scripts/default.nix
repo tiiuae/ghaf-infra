@@ -35,16 +35,21 @@
       };
       select-pkcs11-node = pkgs.writeShellApplication {
         name = "select-pkcs11-node";
-        runtimeInputs = (
-          with pkgs;
-          [
-            jq
-            gnutls
-          ]
-        );
+        runtimeInputs = with pkgs; [
+          jq
+          gnutls
+        ];
         # bash options would apply to the parent shell when sourcing
         bashOptions = [ ];
         text = builtins.readFile ./select-pkcs11-node.sh;
+      };
+
+      run-cosign = pkgs.writeShellApplication {
+        name = "run-cosign";
+        runtimeInputs = with pkgs; [
+          cosign
+        ];
+        text = builtins.readFile ./run-cosign.sh;
       };
     in
     {
@@ -53,6 +58,7 @@
           verify-signature
           archive-ghaf-release
           select-pkcs11-node
+          run-cosign
           ;
       };
     };
