@@ -253,6 +253,14 @@ def controller_workdir() {
   return "/var/lib/jenkins/ghaf-pipeline-workspaces/${tag}"
 }
 
+def build_tmpdir(String name) {
+  def component = safe_path_component(name)
+  if (!component || component == 'null') {
+    error("Cannot derive a unique build tmpdir for '${name}'")
+  }
+  return "${controller_workdir()}/tmp/${component}"
+}
+
 def clean_controller_workdir() {
   node('built-in') {
     sh "rm -rf '${controller_workdir()}'"
@@ -383,6 +391,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
         signed: false,
         reason: null,
         signing_key: null,
+        signing_proxy: null,
       ],
       attestations: [
         provenance: [
@@ -530,7 +539,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
           if (signing_possible) {
             if (it.get('uefisign', false) || it.get('uefisigniso', false)) {
               stage("Sign (UEFI) ${shortname}") {
-                def tmpdir = run_cmd("mktemp -d")
+                def tmpdir = build_tmpdir("uefisign-${shortname}")
                 def img_name = path_basename(manifest.image.path)
 
                 def signer = "uefisign"
@@ -538,24 +547,33 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
                   signer = "uefisign-simple"
                 }
 
-                lock('signing') {
-                  withRedundancyRouter("uefi-ghaf-db") { ctx ->
-                    sh """
-                      ${signer} /etc/jenkins/keys/secboot/DB.pem \
-                        "${ctx.uri}" \
-                        ${output}/${manifest.image.path} \
-                        ${tmpdir}
-                    """
-                    manifest.uefi.signing_key = ctx.uri
-                    manifest.uefi.signing_proxy = ctx.socket
-                  }
-                }
+                try {
+                  sh """
+                    rm -rf '${tmpdir}'
+                    mkdir -p '${tmpdir}'
+                  """
 
-                sh "mv ${tmpdir}/signed_${img_name} ${output}/${img_name}"
-                // replace original image with uefisigned one
-                manifest.image.path = img_name
-                manifest.uefi.signed = true;
-                manifest.uefi.reason = null
+                  lock('signing') {
+                    withRedundancyRouter("uefi-ghaf-db") { ctx ->
+                      sh """
+                        ${signer} /etc/jenkins/keys/secboot/DB.pem \
+                          "${ctx.uri}" \
+                          ${output}/${manifest.image.path} \
+                          '${tmpdir}'
+                      """
+                      manifest.uefi.signing_key = ctx.uri
+                      manifest.uefi.signing_proxy = ctx.socket
+                    }
+                  }
+
+                  sh "mv '${tmpdir}/signed_${img_name}' '${output}/${img_name}'"
+                  // replace original image with uefisigned one
+                  manifest.image.path = img_name
+                  manifest.uefi.signed = true;
+                  manifest.uefi.reason = null
+                } finally {
+                  sh "rm -rf '${tmpdir}'"
+                }
               }
             }
             stage("Sign (SLSA) image ${shortname}") {
