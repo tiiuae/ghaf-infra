@@ -21,7 +21,6 @@
     service-nginx
     team-devenv
     user-bmg
-    user-vunnyso
   ]);
 
   sops = {

@@ -257,13 +257,6 @@ let
       ];
     }
     {
-      desc = "Vunny Sodhi";
-      name = "vunnyso";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIstCgKDX1vVWI8MgdVwsEMhju6DQJubi3V0ziLcU/2h vunny.sodhi@unikie.com"
-      ];
-    }
-    {
       desc = "Pavel Fedorov";
       name = "pavelf";
       keys = [
