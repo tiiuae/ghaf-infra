@@ -131,8 +131,6 @@
         proto = "udp";
         groups = [
           "hetzner"
-          "uae-lab"
-          "azureci"
         ];
       }
       # allow dns requests
@@ -160,17 +158,17 @@
         proto = "tcp";
         groups = [ "scraper" ];
       }
-      # allow hetzner, azureci and uae-lab servers to connect
+      # pkcs11-daemon
       {
-        port = 22;
+        port = config.pkcs11.proxy.listenPort;
         proto = "tcp";
-        groups = [
-          "hetzner"
-          "uae-lab"
-          "azureci"
-        ];
+        host = "any";
       }
     ];
+  };
+
+  services.nebula.networks."vedenemo".staticHostMap = {
+    "10.42.42.35" = [ "213.42.107.24:4242" ];
   };
 
   # This server is only exposed to the internal network
