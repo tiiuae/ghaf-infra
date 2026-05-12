@@ -102,7 +102,7 @@ for token in "${PKCS11_TOKENS[@]}"; do
         echo "Exported into environment:"
         echo "> PKCS11_PROXY_SOCKET=$socket"
         echo "> PKCS11_TOKEN=$token"
-        echo "> PKCS11_URI=$socket"
+        echo "> PKCS11_URI=$uri"
         return 0
       else
         jq -n \
