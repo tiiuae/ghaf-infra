@@ -11,7 +11,7 @@ let
 
   # Current host sizing: 96 vCPU, 251 GiB RAM, ~1760 GiB /nix disk.
   disk = tuning.mkDiskThresholds 1760;
-  jobs = tuning.mkMaxJobs {
+  build = tuning.mkBuildLimits {
     cpus = 96;
     ramGiB = 251;
   };
@@ -56,8 +56,8 @@ in
     logs.enable = true;
   };
 
-  nix.settings.max-jobs = lib.mkForce jobs;
-  nix.settings.cores = lib.mkForce 2;
+  nix.settings.max-jobs = lib.mkForce build.maxJobs;
+  nix.settings.cores = lib.mkForce build.cores;
   nix.settings.min-free = lib.mkForce disk.minFreeBytes;
   nix.settings.max-free = lib.mkForce disk.maxFreeBytes;
 }

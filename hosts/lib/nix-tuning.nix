@@ -5,7 +5,7 @@ let
   # Keep binary units explicit to avoid repeated literals in callers.
   gib = 1024 * 1024 * 1024;
 in
-{
+rec {
   # Exported for host modules that need byte conversion for custom values.
   inherit gib;
 
@@ -46,9 +46,29 @@ in
       maxFreeBytes = maxFreeGiB * gib;
     };
 
-  # Bound concurrent builds by both CPU and RAM:
-  # - cpu bound: at most half the cores used by concurrent jobs
-  # - ram bound: at most one job per 4 GiB RAM
-  # This is intentionally conservative to reduce OOM pressure and thrashing.
-  mkMaxJobs = { cpus, ramGiB }: lib.max 1 (lib.min (builtins.div cpus 2) (builtins.div ramGiB 4));
+  # Bound concurrent builds by both CPU and RAM, and pair that with the number
+  # of cores exposed to each derivation through NIX_BUILD_CORES.
+  #
+  # Start from a conservative job budget:
+  # - cpu bound: at most half the host CPUs as concurrent jobs
+  # - ram bound: roughly one job per 4 GiB RAM, rounded up
+  #
+  # Then choose a wider per-job core count while retaining enough job
+  # concurrency to keep the build graph fed. The aggregate CPU budget is capped
+  # at the host CPU count.
+  mkBuildLimits =
+    { cpus, ramGiB }:
+    let
+      ceilDiv = x: y: builtins.div (x + y - 1) y;
+      jobBudget = lib.max 1 (lib.min (builtins.div cpus 2) (builtins.div (ramGiB + 3) 4));
+      aggregateCoreBudget = lib.min cpus (jobBudget * 2);
+      minJobs = lib.min jobBudget (lib.max 1 (lib.max 4 (ceilDiv jobBudget 3)));
+      cores = lib.max 1 (builtins.div aggregateCoreBudget minJobs);
+      maxJobs = lib.max 1 (lib.min jobBudget (builtins.div aggregateCoreBudget cores));
+    in
+    {
+      inherit cores maxJobs;
+    };
+
+  mkMaxJobs = args: (mkBuildLimits args).maxJobs;
 }

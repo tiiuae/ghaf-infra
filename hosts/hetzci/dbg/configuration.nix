@@ -12,7 +12,7 @@ let
 
   # Current host sizing: 16 vCPU, 30 GiB RAM, ~300 GiB root disk.
   controllerDisk = tuning.mkDiskThresholds 300;
-  builderMaxJobs = tuning.mkMaxJobs {
+  builder = tuning.mkBuildLimits {
     cpus = 16;
     ramGiB = 30;
   };
@@ -109,7 +109,7 @@ in
           {
             hostName = trustedBuilderHost machines.hetzarm-dbg-1.ip;
             system = "aarch64-linux";
-            maxJobs = builderMaxJobs;
+            maxJobs = builder.maxJobs;
           }
           // commonOptions
         )
@@ -117,7 +117,7 @@ in
           {
             hostName = trustedBuilderHost machines.hetz86-dbg-1.ip;
             system = "x86_64-linux";
-            maxJobs = builderMaxJobs;
+            maxJobs = builder.maxJobs;
           }
           // commonOptions
         )
