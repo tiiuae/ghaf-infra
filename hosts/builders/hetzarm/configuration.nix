@@ -11,7 +11,7 @@ let
 
   # Current host sizing: 80 vCPU, 250 GiB RAM, ~3520 GiB /nix disk.
   disk = tuning.mkDiskThresholds 3520;
-  jobs = tuning.mkMaxJobs {
+  build = tuning.mkBuildLimits {
     cpus = 80;
     ramGiB = 250;
   };
@@ -66,8 +66,8 @@ in
     "@wheel"
     "hetz86-builder"
   ];
-  nix.settings.max-jobs = lib.mkForce jobs;
-  nix.settings.cores = lib.mkForce 2;
+  nix.settings.max-jobs = lib.mkForce build.maxJobs;
+  nix.settings.cores = lib.mkForce build.cores;
   nix.settings.min-free = lib.mkForce disk.minFreeBytes;
   nix.settings.max-free = lib.mkForce disk.maxFreeBytes;
 }

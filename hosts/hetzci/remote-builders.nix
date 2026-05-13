@@ -13,11 +13,11 @@ let
   # Current shared builder sizing:
   # - hetz86-1: 96 vCPU, 251 GiB RAM
   # - hetzarm: 80 vCPU, 250 GiB RAM
-  x86BuilderMaxJobs = tuning.mkMaxJobs {
+  x86Builder = tuning.mkBuildLimits {
     cpus = 96;
     ramGiB = 251;
   };
-  armBuilderMaxJobs = tuning.mkMaxJobs {
+  armBuilder = tuning.mkBuildLimits {
     cpus = 80;
     ramGiB = 250;
   };
@@ -48,7 +48,7 @@ in
           {
             hostName = trustedBuilderHost "hetzarm.vedenemo.dev";
             system = "aarch64-linux";
-            maxJobs = armBuilderMaxJobs;
+            maxJobs = armBuilder.maxJobs;
           }
           // commonOptions
         )
@@ -56,7 +56,7 @@ in
           {
             hostName = trustedBuilderHost "hetz86-1.vedenemo.dev";
             system = "x86_64-linux";
-            maxJobs = x86BuilderMaxJobs;
+            maxJobs = x86Builder.maxJobs;
           }
           // commonOptions
         )

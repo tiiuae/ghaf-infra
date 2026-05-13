@@ -5,8 +5,18 @@
   inputs,
   config,
   machines,
+  lib,
   ...
 }:
+let
+  tuning = import ../../lib/nix-tuning.nix { inherit lib; };
+
+  # Current hetzarm sizing: 80 vCPU, 250 GiB RAM.
+  armBuilder = tuning.mkBuildLimits {
+    cpus = 80;
+    ramGiB = 250;
+  };
+in
 {
   imports = [
     ./disk-config.nix
@@ -49,7 +59,7 @@
       {
         hostName = "hetzarm.vedenemo.dev";
         system = "aarch64-linux";
-        maxJobs = 40;
+        maxJobs = armBuilder.maxJobs;
         speedFactor = 1;
         supportedFeatures = [
           "nixos-test"

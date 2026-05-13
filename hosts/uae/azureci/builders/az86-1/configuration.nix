@@ -8,6 +8,15 @@
   lib,
   ...
 }:
+let
+  tuning = import ../../../../lib/nix-tuning.nix { inherit lib; };
+
+  # Current host sizing: 32 vCPU, 128 GiB RAM.
+  build = tuning.mkBuildLimits {
+    cpus = 32;
+    ramGiB = 128;
+  };
+in
 {
   imports = [
     ./disk-config.nix
@@ -59,4 +68,7 @@
     dmidecode
     jq
   ];
+
+  nix.settings.max-jobs = lib.mkForce build.maxJobs;
+  nix.settings.cores = lib.mkForce build.cores;
 }

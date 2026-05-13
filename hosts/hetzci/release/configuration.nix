@@ -15,11 +15,11 @@ let
   # Current release builder sizing:
   # - hetz86-rel-2: 96 vCPU, 251 GiB RAM
   # - hetzarm-rel-1: 16 vCPU, 30 GiB RAM
-  x86BuilderMaxJobs = tuning.mkMaxJobs {
+  x86Builder = tuning.mkBuildLimits {
     cpus = 96;
     ramGiB = 251;
   };
-  armBuilderMaxJobs = tuning.mkMaxJobs {
+  armBuilder = tuning.mkBuildLimits {
     cpus = 16;
     ramGiB = 30;
   };
@@ -104,7 +104,7 @@ in
           // {
             hostName = trustedBuilderHost "hetz86-rel-2";
             system = "x86_64-linux";
-            maxJobs = x86BuilderMaxJobs;
+            maxJobs = x86Builder.maxJobs;
             speedFactor = 12;
             sshUser = "hetz86-rel-2-builder";
             sshKey = "/etc/ssh/certs/hetz86-rel-2-builder";
@@ -115,7 +115,7 @@ in
           // {
             hostName = trustedBuilderHost "hetzarm-rel-1";
             system = "aarch64-linux";
-            maxJobs = armBuilderMaxJobs;
+            maxJobs = armBuilder.maxJobs;
             speedFactor = 2;
             sshUser = "hetzarm-rel-1-builder";
             sshKey = "/etc/ssh/certs/hetzarm-rel-1-builder";

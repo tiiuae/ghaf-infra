@@ -11,7 +11,7 @@ let
 
   # Current host sizing: 16 vCPU, 30 GiB RAM, ~337 GiB root disk.
   disk = tuning.mkDiskThresholds 337;
-  jobs = tuning.mkMaxJobs {
+  build = tuning.mkBuildLimits {
     cpus = 16;
     ramGiB = 30;
   };
@@ -53,8 +53,8 @@ in
     "ghaf-dbg"
   ];
   nix.settings.trusted-users = [ "@wheel" ];
-  nix.settings.max-jobs = lib.mkForce jobs;
-  nix.settings.cores = lib.mkForce 2;
+  nix.settings.max-jobs = lib.mkForce build.maxJobs;
+  nix.settings.cores = lib.mkForce build.cores;
   nix.settings.min-free = lib.mkForce disk.minFreeBytes;
   nix.settings.max-free = lib.mkForce disk.maxFreeBytes;
 

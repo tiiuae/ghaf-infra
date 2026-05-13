@@ -12,11 +12,11 @@ let
   # Current shared builder sizing:
   # - az86-1: 32 vCPU, 128 GiB RAM
   # - hetzarm-1: 16 vCPU, 32 GiB RAM
-  x86BuilderMaxJobs = tuning.mkMaxJobs {
+  x86Builder = tuning.mkBuildLimits {
     cpus = 32;
     ramGiB = 128;
   };
-  armBuilderMaxJobs = tuning.mkMaxJobs {
+  armBuilder = tuning.mkBuildLimits {
     cpus = 16;
     ramGiB = 32;
   };
@@ -47,7 +47,7 @@ in
           {
             hostName = "10.51.16.5";
             system = "x86_64-linux";
-            maxJobs = x86BuilderMaxJobs;
+            maxJobs = x86Builder.maxJobs;
           }
           // commonOptions
         )
@@ -55,7 +55,7 @@ in
           {
             hostName = "91.98.90.243";
             system = "aarch64-linux";
-            maxJobs = armBuilderMaxJobs;
+            maxJobs = armBuilder.maxJobs;
           }
           // commonOptions
         )
