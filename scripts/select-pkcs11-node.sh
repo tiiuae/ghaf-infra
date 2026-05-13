@@ -61,7 +61,7 @@ OBJECT="$1"
 YUBIHSM_PIN="${YUBIHSM_PIN:-$(cat /run/secrets/yubihsm-pin 2>/dev/null || true)}"
 
 # the default timeout for unreachable pkcs11 proxy is minutes, we want to exit much earlier than that
-SOCKET_TIMEOUT="${SOCKET_TIMEOUT:-5s}"
+SOCKET_TIMEOUT="${SOCKET_TIMEOUT:-30s}"
 
 if [[ -z $YUBIHSM_PIN ]]; then
   echo "Warning: YUBIHSM_PIN is empty. Connection to YubiHSMs will most likely fail." 1>&2
