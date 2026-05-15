@@ -359,6 +359,9 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
     def shortname = it.target.substring(it.target.lastIndexOf('.') + 1)
     def output = "${artifacts_local_dir}/${it.target}"
     def local_target_ref = "${ghaf_checkout}#${it.target}"
+    def no_image = it.get('no_image', false)
+    def uefi_sign_requested = it.get('uefisign', false) || it.get('uefisigniso', false)
+    def can_uefi_sign = !no_image && signing_possible && uefi_sign_requested
 
     def manifest = [
       ci_env: env.CI_ENV,
@@ -414,11 +417,11 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
       ],
     ]
     def oci_result = null
-    if (it.no_image) {
+    if (no_image) {
       manifest.uefi.reason = "no_image"
     } else if (!signing_possible) {
       manifest.uefi.reason = "signing_not_possible"
-    } else if (!(it.get('uefisign', false) || it.get('uefisigniso', false))) {
+    } else if (!uefi_sign_requested) {
       manifest.uefi.reason = "not_requested"
     }
 
@@ -527,7 +530,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
             }
           }
         }
-        if (!it.no_image) {
+        if (!no_image) {
           stage("Find image ${shortname}") {
             def img_path = run_cmd("find -L ${output}/unsigned-output -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print -quit")
             if (!img_path) {
@@ -537,7 +540,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
             manifest.image.role = image_role(manifest.image.path)
           }
           if (signing_possible) {
-            if (it.get('uefisign', false) || it.get('uefisigniso', false)) {
+            if (uefi_sign_requested) {
               stage("Sign (UEFI) ${shortname}") {
                 def tmpdir = build_tmpdir("uefisign-${shortname}")
                 def img_name = path_basename(manifest.image.path)
@@ -613,7 +616,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
             append_to_build_description(artifacts_href)
           }
         }
-        if (!it.no_image) {
+        if (!no_image) {
           stage("Publish OCI ${shortname}") {
             if (sh(
               script: 'command -v oci-publish >/dev/null 2>&1',
@@ -657,7 +660,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
         // secure-boot-capable hardware is available in prod. X1 update tests
         // still need secure boot disabled, even for signed images, so the
         // regular test run cannot be replaced with a secure boot-only run.
-        if (it.test_secboot && manifest.uefi.signed && env.CI_ENV == "prod") {
+        if (it.get('test_secboot', false) && can_uefi_sign && env.CI_ENV == "prod") {
           stage("Test SB ${shortname}") {
             def job = run_hw_test(shortname, it.testset, testagent_host, oci_result, true)
             with_controller_workspace(ghaf_checkout) {
