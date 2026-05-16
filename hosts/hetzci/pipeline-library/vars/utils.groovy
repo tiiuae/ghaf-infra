@@ -280,7 +280,8 @@ def run_hw_test(
   String testset,
   String testagent_host,
   Map oci_result,
-  boolean secureboot) {
+  boolean secureboot,
+  String ci_env) {
   // Keep the blocking downstream wait outside node('built-in') so ghaf-hw-test
   // can acquire a controller executor for its own initialization stages.
   def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
@@ -288,7 +289,7 @@ def run_hw_test(
     string(name: "TESTSET", value: testset),
     string(name: "DESC", value: "Triggered by ${build_href}<br>(${shortname})"),
     string(name: "TESTAGENT_HOST", value: testagent_host),
-    booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: env.CI_ENV == "release"),
+    booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: ci_env == "release"),
     booleanParam(name: "RELOAD_ONLY", value: false),
     booleanParam(name: "SECUREBOOT", value: secureboot),
   ]
@@ -345,8 +346,9 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
   def artifacts = "artifacts/${env.JOB_BASE_NAME}/${stamp}-commit_${target_commit}"
   def artifacts_local_dir = "/var/lib/jenkins/${artifacts}"
   def artifacts_href = "<a href=\"/${artifacts}\">📦 Artifacts</a>"
-  def immutable_tag = "${env.CI_ENV}-${stamp}-${target_commit}"
-  def signing_possible = env.CI_ENV != 'vm'
+  def ci_env = env.CI_ENV
+  def immutable_tag = "${ci_env}-${stamp}-${target_commit}"
+  def signing_possible = ci_env != 'vm'
   def ghaf_checkout = pwd()
 
   // Evaluate
@@ -355,16 +357,24 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
       sh 'nix flake show --all-systems | ansi2txt'
     }
   }
-  targets.each {
-    def shortname = it.target.substring(it.target.lastIndexOf('.') + 1)
-    def output = "${artifacts_local_dir}/${it.target}"
-    def local_target_ref = "${ghaf_checkout}#${it.target}"
-    def no_image = it.get('no_image', false)
-    def uefi_sign_requested = it.get('uefisign', false) || it.get('uefisigniso', false)
+  targets.each { target_config ->
+    def target_name = target_config.target
+    def shortname = target_name.substring(target_name.lastIndexOf('.') + 1)
+    def output = "${artifacts_local_dir}/${target_name}"
+    def local_target_ref = "${ghaf_checkout}#${target_name}"
+    def no_image = target_config.get('no_image', false)
+    def uefi_sign_requested = target_config.get('uefisign', false) || target_config.get('uefisigniso', false)
     def can_uefi_sign = !no_image && signing_possible && uefi_sign_requested
+    def testset = target_config.get('testset', null)
+    def has_testset = testset != null && !testset.isEmpty()
+    def test_secboot_requested = target_config.get('test_secboot', false)
+    def run_secboot_test = test_secboot_requested && can_uefi_sign && ci_env == "prod"
+    def provenance_requested = target_config.get('provenance', true)
+    def build_otapin_requested = target_config.get('build_otapin', false)
+    def sbom_requested = target_config.get('sbom', false)
 
     def manifest = [
-      ci_env: env.CI_ENV,
+      ci_env: ci_env,
       job: [
         name: env.JOB_NAME,
         build_id: env.BUILD_ID,
@@ -376,7 +386,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
         revision: target_commit,
         flake_ref: target_flake_ref,
       ],
-      target: it.target,
+      target: target_name,
       build: [
         ts_begin: null,
         ts_finished: null,
@@ -425,7 +435,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
       manifest.uefi.reason = "not_requested"
     }
 
-    pipeline["${it.target}"] = {
+    pipeline["${target_name}"] = {
       with_controller_workspace(ghaf_checkout) {
         // Build
         stage("Build ${shortname}") {
@@ -433,17 +443,17 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
 
           manifest.build.ts_begin = run_cmd('date +%s')
           lock(label: 'nix-build', quantity: 1) {
-            sh "nix build --fallback -v .#${it.target} --out-link ${output}/unsigned-output"
+            sh "nix build --fallback -v .#${target_name} --out-link ${output}/unsigned-output"
           }
           manifest.build.ts_finished = run_cmd('date +%s')
         }
         // Provenance
-        if (it.get('provenance', true)) {
+        if (provenance_requested) {
           stage("Provenance ${shortname}") {
             def ext_params = """
               {
                 "target": {
-                  "name": "${it.target}",
+                  "name": "${target_name}",
                   "repository": "${target_repo}",
                   "ref": "${target_commit}"
                 },
@@ -483,9 +493,9 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
           }
         }
         // Build OTA pin
-        if (it.get('build_otapin', false)) {
+        if (build_otapin_requested) {
           stage("OTA Build ${shortname}") {
-            def ota_target = it.target.tokenize('.').last()
+            def ota_target = target_name.tokenize('.').last()
             sh """
               mkdir -v -p ${ota_target}; cd ${ota_target}
               nixos-rebuild build --fallback --flake .#${ota_target}
@@ -496,7 +506,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
           }
         }
         // Run sbomnix
-        if (it.get('sbom', false)) {
+        if (sbom_requested) {
           stage("SBOM ${shortname}") {
             def outdir = "${output}/attestations"
             sh """
@@ -513,7 +523,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
         }
         // Signing stages
         // Skip signing stages only in vm, where the signing proxy is not configured.
-        if (signing_possible && it.get('provenance', true)) {
+        if (signing_possible && provenance_requested) {
           stage("Sign (SLSA) provenance ${shortname}") {
             lock('signing') {
               withRedundancyRouter("GhafInfraSignProv") { ctx ->
@@ -546,7 +556,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
                 def img_name = path_basename(manifest.image.path)
 
                 def signer = "uefisign"
-                if (it.target.contains("nvidia-jetson-orin")) {
+                if (target_name.contains("nvidia-jetson-orin")) {
                   signer = "uefisign-simple"
                 }
 
@@ -626,8 +636,8 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
             } else {
               withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
                 def job_name = env.JOB_BASE_NAME.replaceFirst('^ghaf-', '')
-                def target_name = it.target.replaceFirst('^packages\\.', '')
-                def oci_repository = "ghaf/${job_name}/${target_name}"
+                def oci_target_name = target_name.replaceFirst('^packages\\.', '')
+                def oci_repository = "ghaf/${job_name}/${oci_target_name}"
                 def oci_result_json = "${output}/oci-result.json"
                 sh """
                   oci-publish target \
@@ -643,16 +653,16 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
         }
       }
       // Test
-      if (it.testset != null && !it.testset.isEmpty()) {
+      if (has_testset) {
         def testStageName = "Test ${shortname}"
         stage(testStageName) {
-          if (env.CI_ENV == "vm") {
+          if (ci_env == "vm") {
             Utils.markStageSkippedForConditional(testStageName)
             println("Skipping hardware tests for ${shortname}: CI_ENV is vm")
           } else {
-            def job = run_hw_test(shortname, it.testset, testagent_host, oci_result, false)
+            def job = run_hw_test(shortname, testset, testagent_host, oci_result, false, ci_env)
             with_controller_workspace(ghaf_checkout) {
-              collect_hw_test_result(shortname, it.testset, output, false, job)
+              collect_hw_test_result(shortname, testset, output, false, job)
             }
           }
         }
@@ -660,11 +670,25 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
         // secure-boot-capable hardware is available in prod. X1 update tests
         // still need secure boot disabled, even for signed images, so the
         // regular test run cannot be replaced with a secure boot-only run.
-        if (it.get('test_secboot', false) && can_uefi_sign && env.CI_ENV == "prod") {
-          stage("Test SB ${shortname}") {
-            def job = run_hw_test(shortname, it.testset, testagent_host, oci_result, true)
-            with_controller_workspace(ghaf_checkout) {
-              collect_hw_test_result(shortname, it.testset, output, true, job)
+        if (test_secboot_requested) {
+          def testSecbootStageName = "Test SB ${shortname}"
+          println(
+            "Secure boot test decision ${shortname}: " +
+              "requested=${test_secboot_requested}, " +
+              "can_uefi_sign=${can_uefi_sign}, " +
+              "ci_env=${ci_env}, " +
+              "run=${run_secboot_test}"
+          )
+          if (run_secboot_test) {
+            stage(testSecbootStageName) {
+              def job = run_hw_test(shortname, testset, testagent_host, oci_result, true, ci_env)
+              with_controller_workspace(ghaf_checkout) {
+                collect_hw_test_result(shortname, testset, output, true, job)
+              }
+            }
+          } else {
+            stage(testSecbootStageName) {
+              Utils.markStageSkippedForConditional(testSecbootStageName)
             }
           }
         }
