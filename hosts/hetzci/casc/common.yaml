@@ -5,7 +5,6 @@ appearance:
     theme: "darkSystem" # follow system theme
 
 jenkins:
-  numExecutors: 4
   markupFormatter:
     rawHtml:
       disableSyntaxHighlighting: false
