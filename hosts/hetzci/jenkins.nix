@@ -42,6 +42,7 @@ let
     # YAML is a superset of JSON, ie. json is valid yaml
     builtins.toJSON {
       unclassified.location.url = "${cfg.url}";
+      jenkins.numExecutors = cfg.numExecutors;
       jenkins.nodes = # all permutations of device and host lists
         lib.mapCartesianProduct
           (
@@ -79,6 +80,11 @@ in
     url = lib.mkOption {
       type = lib.types.str;
       description = "Public URL of the jenkins instance";
+    };
+    numExecutors = lib.mkOption {
+      type = lib.types.ints.positive;
+      description = "Number of built-in Jenkins executors.";
+      default = 12;
     };
     extraCasc = lib.mkOption {
       type = lib.types.attrs;
