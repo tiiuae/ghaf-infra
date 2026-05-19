@@ -44,7 +44,7 @@ in
       provider = "oidc";
       oidcIssuerUrl = "https://auth.vedenemo.dev";
       setXauthrequest = true;
-      cookie.secure = false;
+      cookie.secure = true;
       extraConfig = {
         email-domain = "*";
         auth-logging = true;
@@ -54,6 +54,8 @@ in
         scope = "openid profile email groups offline_access";
         cookie-expire = "168h";
         cookie-refresh = "24h";
+        cookie-samesite = "lax";
+        cookie-csrf-samesite = "lax";
         skip-provider-button = true;
         client-secret-file = config.sops.secrets.oauth2_proxy_client_secret.path;
         whitelist-domain = cfg.domain;
