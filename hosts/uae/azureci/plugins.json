@@ -13,9 +13,9 @@
   },
   {
     "name": "asm-api",
-    "version": "9.9.1-189.vb_5ef2964da_91",
-    "url": "https://updates.jenkins.io/download/plugins/asm-api/9.9.1-189.vb_5ef2964da_91/asm-api.hpi",
-    "sha256": "0figfb4w2v5r5p1qwnpb3jxv9sl9w63k1fyc9i4122ca1r6x078m"
+    "version": "9.10-211.v7d13903b_a_d89",
+    "url": "https://updates.jenkins.io/download/plugins/asm-api/9.10-211.v7d13903b_a_d89/asm-api.hpi",
+    "sha256": "1h15k6h1d23549zg1ncx7i6qhppbwgd1hff4ss9256i7544w9il9"
   },
   {
     "name": "block-queued-job",
@@ -181,9 +181,9 @@
   },
   {
     "name": "durable-task",
-    "version": "664.v2b_e7a_dfff66c",
-    "url": "https://updates.jenkins.io/download/plugins/durable-task/664.v2b_e7a_dfff66c/durable-task.hpi",
-    "sha256": "1wx76fdd1kpzgrl09vvnv3h1glr0sm3cdk2vhigw1j8vx7jm2595"
+    "version": "671.v340ff7959010",
+    "url": "https://updates.jenkins.io/download/plugins/durable-task/671.v340ff7959010/durable-task.hpi",
+    "sha256": "15ff2jsjshialdvk8kvd021cxizc8mgywy81g5gn5rhiqk0ld28f"
   },
   {
     "name": "echarts-api",
@@ -439,15 +439,15 @@
   },
   {
     "name": "mina-sshd-api-common",
-    "version": "2.16.0-167.va_269f38cc024",
-    "url": "https://updates.jenkins.io/download/plugins/mina-sshd-api-common/2.16.0-167.va_269f38cc024/mina-sshd-api-common.hpi",
-    "sha256": "1pdxcwyj4nqagl6q0rff8h6x1df0hlp5ms8619x34l21dgzi58l9"
+    "version": "2.17.1-187.v0341274c2905",
+    "url": "https://updates.jenkins.io/download/plugins/mina-sshd-api-common/2.17.1-187.v0341274c2905/mina-sshd-api-common.hpi",
+    "sha256": "1s0kxhkc18qy3a9ri4zx3xddv47wbqdnpfxykqjbydclmmkx5y2b"
   },
   {
     "name": "mina-sshd-api-core",
-    "version": "2.16.0-167.va_269f38cc024",
-    "url": "https://updates.jenkins.io/download/plugins/mina-sshd-api-core/2.16.0-167.va_269f38cc024/mina-sshd-api-core.hpi",
-    "sha256": "1n57jlwxlkywnkyyxdqlhcjhv54q5qibi573mywvibr0rb37a0vj"
+    "version": "2.17.1-187.v0341274c2905",
+    "url": "https://updates.jenkins.io/download/plugins/mina-sshd-api-core/2.17.1-187.v0341274c2905/mina-sshd-api-core.hpi",
+    "sha256": "1d01xhrp6kszn6z0sj0ddvah4d2mam6wxkqnz1shs6i0d45dfycl"
   },
   {
     "name": "node-iterator-api",
@@ -487,9 +487,9 @@
   },
   {
     "name": "pipeline-graph-view",
-    "version": "893.v4660cf257e74",
-    "url": "https://updates.jenkins.io/download/plugins/pipeline-graph-view/893.v4660cf257e74/pipeline-graph-view.hpi",
-    "sha256": "0vdyq9bri7y0hb096xqgynv2s2qri0anv7903my1bjxbq43r3l1k"
+    "version": "903.v86ded4d9c36b_",
+    "url": "https://updates.jenkins.io/download/plugins/pipeline-graph-view/903.v86ded4d9c36b_/pipeline-graph-view.hpi",
+    "sha256": "0x18s8x579f3hyypwqkspibqa80f0sfpqzjkg104w5wcs3d6hhn9"
   },
   {
     "name": "pipeline-groovy-lib",
@@ -619,9 +619,9 @@
   },
   {
     "name": "scriptler",
-    "version": "451.v02fdb_b_d6c619",
-    "url": "https://updates.jenkins.io/download/plugins/scriptler/451.v02fdb_b_d6c619/scriptler.hpi",
-    "sha256": "16fdcwb5xr9snb4f28qinayzwdm34nr6j93f8b1kfrfh0617paqv"
+    "version": "456.v52a_410f4cdb_8",
+    "url": "https://updates.jenkins.io/download/plugins/scriptler/456.v52a_410f4cdb_8/scriptler.hpi",
+    "sha256": "0mv6cbqwh5lnswmyk4h4sd81mxgimbd2ki98f6q14zg9hai2fc49"
   },
   {
     "name": "snakeyaml-api",
@@ -667,9 +667,9 @@
   },
   {
     "name": "support-core",
-    "version": "1801.v76b_389d2deec",
-    "url": "https://updates.jenkins.io/download/plugins/support-core/1801.v76b_389d2deec/support-core.hpi",
-    "sha256": "13w1p9fvgngxkj8ya5dad3wm50lssq013spy4cp2fgpmfd54z783"
+    "version": "1830.v95660efff726",
+    "url": "https://updates.jenkins.io/download/plugins/support-core/1830.v95660efff726/support-core.hpi",
+    "sha256": "0n7knwpjqyb688cz964q8y22mk55iws4sl8fmlj9iqrwyy8ign5d"
   },
   {
     "name": "theme-manager",
@@ -739,15 +739,15 @@
   },
   {
     "name": "workflow-cps",
-    "version": "4315.va_e456c4e7f4f",
-    "url": "https://updates.jenkins.io/download/plugins/workflow-cps/4315.va_e456c4e7f4f/workflow-cps.hpi",
-    "sha256": "1qn7kqi2jpa0zyxvh582hgs0hwfpmnqrxzs01mdnid4vw7sp7ln7"
+    "version": "4331.v9d06ed4658ff",
+    "url": "https://updates.jenkins.io/download/plugins/workflow-cps/4331.v9d06ed4658ff/workflow-cps.hpi",
+    "sha256": "0aclpix71vr1idgh5ji6mrqnhvlxqy4kx14f4nh0l84256bs4fgm"
   },
   {
     "name": "workflow-durable-task-step",
-    "version": "1475.ved562f6ec8b_3",
-    "url": "https://updates.jenkins.io/download/plugins/workflow-durable-task-step/1475.ved562f6ec8b_3/workflow-durable-task-step.hpi",
-    "sha256": "1xc3wgvcg1la4gzxplvm0jdfrvzwyaqk0jvyyarqfxx35nvfyn2m"
+    "version": "1479.v56e587f413a_7",
+    "url": "https://updates.jenkins.io/download/plugins/workflow-durable-task-step/1479.v56e587f413a_7/workflow-durable-task-step.hpi",
+    "sha256": "0bj5658cvr7dlz8z6nwr9xcp4hidzklrq1zhs1v2yng39i3g3w50"
   },
   {
     "name": "workflow-job",
