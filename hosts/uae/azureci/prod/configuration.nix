@@ -40,11 +40,16 @@
         "ghaf-nightly"
       ];
       withCachix = false;
+      withRegistryPublish = true;
     };
     auth = {
       clientID = "azureci-prod";
       domain = "ci-prod.uaenorth.cloudapp.azure.com";
     };
     signing.proxy.enable = true;
+  };
+
+  services.jenkins.environment = {
+    OCI_REGISTRY = "registry.uaenorth.cloudapp.azure.com";
   };
 }
