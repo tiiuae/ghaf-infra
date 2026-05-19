@@ -319,4 +319,13 @@
       publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBxyeOZsaqhiDREmVU+H8sUIiCmg6JgjDdbAvFpDx+KI";
     };
   };
+
+  uae-azureci-registry = {
+    module = ./uae/azureci/registry/configuration.nix;
+    system = "x86_64-linux";
+    machine = {
+      ip = "40.120.125.69";
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJYc0ODoayp9f7UpoLNjce57xDa15COh6tPwxHgd/6Yb";
+    };
+  };
 }

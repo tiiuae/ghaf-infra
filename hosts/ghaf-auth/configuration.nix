@@ -146,6 +146,15 @@ in
             inherit grantTypes;
           }
           {
+            id = "uae-zot-registry";
+            name = "registry.uaenorth.cloudapp.azure.com";
+            redirectURIs = [
+              "https://registry.uaenorth.cloudapp.azure.com/oauth2/callback"
+            ];
+            secretEnv = "UAE_ZOT_CLIENT_SECRET";
+            inherit grantTypes;
+          }
+          {
             id = "ghaf-jenkins-controller-northeurope";
             name = "ghaf-jenkins-controller-release.northeurope.cloudapp.azure.com";
             redirectURIs = [
