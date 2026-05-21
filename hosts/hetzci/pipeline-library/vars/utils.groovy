@@ -40,10 +40,202 @@ def checkout_ci_test_sources(
     """
     return
   }
+  // CI test sources may be pinned to a branch, tag, commit, or GitHub synthetic PR ref.
+  checkout_remote_ref(ci_test_repo_url, ci_test_repo_branch, true)
+}
+
+@NonCPS
+def shell_quote(String value) {
+  if (value == null) {
+    return "''"
+  }
+  return "'${value.replace("'", "'\"'\"'")}'"
+}
+
+@NonCPS
+def looks_like_hex_ref(String value) {
+  return value ==~ /(?i)[0-9a-f]{7,40}/
+}
+
+@NonCPS
+def trim_prefix(String value, String prefix) {
+  return value.startsWith(prefix) ? value.substring(prefix.length()) : value
+}
+
+def remote_ref_exists(String repoUrl, String scope, String refName) {
+  def quotedRepo = shell_quote(repoUrl)
+  def quotedRef = shell_quote(refName)
+  return sh(
+    script: "git ls-remote --exit-code --${scope} --refs ${quotedRepo} ${quotedRef} >/dev/null 2>&1",
+    returnStatus: true
+  ) == 0
+}
+
+def with_checkout_retry(String repoUrl, String requestedRef, Closure body) {
+  retry(3) {
+    echo "Preparing clean checkout of '${requestedRef}' from ${repoUrl}"
+    deleteDir()
+    body()
+  }
+}
+
+@NonCPS
+def git_clone_extension(Map args = [:]) {
+  def extension = [
+    $class: 'CloneOption',
+    shallow: args.get('shallow', false),
+    noTags: args.get('noTags', true),
+    timeout: args.get('timeout', 30),
+    honorRefspec: args.get('honorRefspec', true),
+  ]
+  if (args.containsKey('depth') && args.depth != null) {
+    extension.depth = args.depth
+  }
+  return extension
+}
+
+def checkout_named_branch(String repoUrl, String branchName) {
+  def refspec = "+refs/heads/${branchName}:refs/remotes/origin/${branchName}"
   checkout scmGit(
-    branches: [[name: ci_test_repo_branch]],
-    userRemoteConfigs: [[url: ci_test_repo_url]]
+    branches: [[name: "origin/${branchName}"]],
+    userRemoteConfigs: [[
+      url: repoUrl,
+      name: 'origin',
+      refspec: refspec,
+    ]],
+    extensions: [
+      git_clone_extension(shallow: true, noTags: true, timeout: 30, depth: 50, honorRefspec: true),
+    ],
   )
+}
+
+def checkout_named_tag(String repoUrl, String tagName) {
+  def refspec = "+refs/tags/${tagName}:refs/tags/${tagName}"
+  checkout scmGit(
+    branches: [[name: "refs/tags/${tagName}"]],
+    userRemoteConfigs: [[
+      url: repoUrl,
+      name: 'origin',
+      refspec: refspec,
+    ]],
+    extensions: [
+      git_clone_extension(shallow: false, noTags: false, timeout: 30, honorRefspec: true),
+    ],
+  )
+}
+
+def checkout_exact_ref(String repoUrl, String remoteRef, String localRef) {
+  def refspec = "+${remoteRef}:${localRef}"
+  checkout scmGit(
+    branches: [[name: localRef]],
+    userRemoteConfigs: [[
+      url: repoUrl,
+      name: 'origin',
+      refspec: refspec,
+    ]],
+    extensions: [
+      git_clone_extension(shallow: false, noTags: true, timeout: 30, honorRefspec: true),
+    ],
+  )
+}
+
+def checkout_flexible_ref(String repoUrl, String requestedRef) {
+  // Commit SHAs and other unresolved refs need the git plugin's broader ref discovery path.
+  checkout scmGit(
+    branches: [[name: requestedRef]],
+    userRemoteConfigs: [[url: repoUrl]],
+    extensions: [
+      git_clone_extension(shallow: false, noTags: false, timeout: 30, honorRefspec: false),
+    ],
+  )
+}
+
+def checkout_remote_ref(String repoUrl, String requestedRef, boolean allowSyntheticRefs = false) {
+  def normalizedRef = requestedRef?.trim()
+  if (!normalizedRef) {
+    error("Missing git reference for repository '${repoUrl}'")
+  }
+  if (normalizedRef.startsWith('refs/pull/') && !allowSyntheticRefs) {
+    error(
+      "GitHub pull refs like '${normalizedRef}' are not supported here. " +
+      "Use a branch, tag, or commit ref, or use a PR-specific pipeline " +
+      "that propagates the pull ref downstream."
+    )
+  }
+
+  with_checkout_retry(repoUrl, normalizedRef) {
+    if (normalizedRef.startsWith('refs/heads/')) {
+      def branchName = trim_prefix(normalizedRef, 'refs/heads/')
+      echo "Checking out branch ref '${normalizedRef}' from ${repoUrl}"
+      checkout_named_branch(repoUrl, branchName)
+      return
+    }
+
+    if (normalizedRef.startsWith('refs/tags/')) {
+      def tagName = trim_prefix(normalizedRef, 'refs/tags/')
+      echo "Checking out tag ref '${normalizedRef}' from ${repoUrl}"
+      checkout_named_tag(repoUrl, tagName)
+      return
+    }
+
+    if (normalizedRef.startsWith('refs/pull/')) {
+      echo "Checking out exact ref '${normalizedRef}' from ${repoUrl}"
+      checkout_exact_ref(repoUrl, normalizedRef, 'refs/remotes/origin/selected-ref')
+      return
+    }
+
+    def branchName = normalizedRef
+    branchName = trim_prefix(branchName, 'refs/remotes/origin/')
+    branchName = trim_prefix(branchName, 'remotes/origin/')
+    branchName = trim_prefix(branchName, 'origin/')
+    if (remote_ref_exists(repoUrl, 'heads', "refs/heads/${branchName}")) {
+      echo "Checking out branch '${branchName}' from ${repoUrl}"
+      checkout_named_branch(repoUrl, branchName)
+      return
+    }
+
+    def tagName = trim_prefix(normalizedRef, 'refs/tags/')
+    if (remote_ref_exists(repoUrl, 'tags', "refs/tags/${tagName}")) {
+      echo "Checking out tag '${tagName}' from ${repoUrl}"
+      checkout_named_tag(repoUrl, tagName)
+      return
+    }
+
+    def reason = looks_like_hex_ref(normalizedRef) ? 'hex-looking ref' : 'unresolved ref'
+    echo "Falling back to flexible checkout for ${reason} '${normalizedRef}' from ${repoUrl}"
+    checkout_flexible_ref(repoUrl, normalizedRef)
+  }
+}
+
+def checkout_github_pr_merge(String repoUrl, String prNumber, String targetBranch = null, List extraExtensions = []) {
+  def normalizedPr = prNumber?.trim()
+  if (!normalizedPr) {
+    error("Missing PR number for repository '${repoUrl}'")
+  }
+  def normalizedTargetBranch = targetBranch?.trim()
+  def mergeRef = "refs/pull/${normalizedPr}/merge"
+  def headRef = "refs/pull/${normalizedPr}/head"
+  def refspecs = [
+    "+${mergeRef}:refs/remotes/pr_origin/pull/${normalizedPr}/merge",
+    "+${headRef}:refs/remotes/pr_origin/pull/${normalizedPr}/head",
+  ]
+  if (normalizedTargetBranch) {
+    refspecs << "+refs/heads/${normalizedTargetBranch}:refs/remotes/origin/${normalizedTargetBranch}"
+  }
+
+  with_checkout_retry(repoUrl, "PR ${normalizedPr}") {
+    checkout scmGit(
+      branches: [[name: "refs/remotes/pr_origin/pull/${normalizedPr}/merge"]],
+      userRemoteConfigs: [[
+        url: repoUrl,
+        name: 'pr_origin',
+        refspec: refspecs.join(' '),
+      ]],
+      extensions: [
+        git_clone_extension(shallow: false, noTags: true, timeout: 30, honorRefspec: true),
+      ] + extraExtensions,
+    )
+  }
 }
 
 def path_basename(String path) {

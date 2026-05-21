@@ -69,22 +69,12 @@ pipeline {
               error('Missing GITHUB_PR_NUMBER')
             }
           }
-          deleteDir()
-          checkout scmGit(
-            userRemoteConfigs: [[
-              url: REPO_URL,
-              name: 'pr_origin',
-              // Below, we set the git remote: 'pr_origin'.
-              // We use '/merge' in pr_origin to build the PR as if it was
-              // merged to the PR target branch. To build the PR head (without
-              // merge) you would replace '/merge' with '/head'.
-              refspec: "+refs/pull/${params.GITHUB_PR_NUMBER}/merge:refs/remotes/pr_origin/pull/${params.GITHUB_PR_NUMBER}/merge",
-            ]],
-            branches: [[name: "pr_origin/pull/${params.GITHUB_PR_NUMBER}/merge"]],
-          )
           script {
-            sh "git fetch pr_origin pull/${params.GITHUB_PR_NUMBER}/head:PR_head"
-            env.TARGET_COMMIT = sh(script: 'git rev-parse PR_head', returnStdout: true).trim()
+            utils.checkout_github_pr_merge(REPO_URL, params.GITHUB_PR_NUMBER)
+            env.TARGET_COMMIT = sh(
+              script: "git rev-parse refs/remotes/pr_origin/pull/${params.GITHUB_PR_NUMBER}/head",
+              returnStdout: true
+            ).trim()
             println "TARGET_COMMIT: ${env.TARGET_COMMIT}"
           }
         }
