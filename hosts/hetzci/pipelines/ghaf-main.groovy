@@ -62,11 +62,9 @@ pipeline {
       agent { label 'built-in' }
       steps {
         dir(utils.controller_workdir()) {
-          deleteDir()
-          checkout scmGit(
-            branches: [[name: 'main']],
-            userRemoteConfigs: [[url: REPO_URL]]
-          )
+          script {
+            utils.checkout_remote_ref(REPO_URL, 'main')
+          }
         }
       }
     }

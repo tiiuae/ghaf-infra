@@ -78,40 +78,29 @@ pipeline {
       agent { label 'built-in' }
       steps {
         dir(utils.controller_workdir()) {
-          deleteDir()
-          // https://www.jenkins.io/doc/pipeline/steps/params/scmgit/#scmgit
-          // https://github.com/KostyaSha/github-integration-plugin/blob/master/docs/Configuration.adoc
-          checkout scmGit(
-            userRemoteConfigs: [[
-              url: REPO_URL,
-              name: 'pr_origin',
-              // Below, we set two git remotes: 'pr_origin' and 'origin'
-              // We use '/merge' in pr_origin to build the PR as if it was
-              // merged to the PR target branch GITHUB_PR_TARGET_BRANCH.
-              // To build the PR head (without merge) you would replace
-              // '/merge' with '/head' in the pr_origin remote. We also
-              // need to set the 'origin' remote to be able to compare
-              // the PR changes against the correct target.
-              refspec: '+refs/pull/${GITHUB_PR_NUMBER}/merge:refs/remotes/pr_origin/pull/${GITHUB_PR_NUMBER}/merge +refs/heads/*:refs/remotes/origin/*',
-            ]],
-            branches: [[name: 'pr_origin/pull/${GITHUB_PR_NUMBER}/merge']],
-            extensions: [
-              // We use the 'changelogToBranch' extension to correctly
-              // show the PR changed commits in Jenkins changes.
-              // References:
-              // https://issues.jenkins.io/browse/JENKINS-26354
-              // https://javadoc.jenkins.io/plugin/git/hudson/plugins/git/extensions/impl/ChangelogToBranch.html
-              changelogToBranch (
-                options: [
-                  compareRemote: 'origin',
-                  compareTarget: "${GITHUB_PR_TARGET_BRANCH}"
-                ]
-              )
-            ],
-          )
           script {
-            sh 'git fetch pr_origin pull/${GITHUB_PR_NUMBER}/head:PR_head'
-            env.TARGET_COMMIT = sh(script: 'git rev-parse PR_head', returnStdout: true).trim()
+            utils.checkout_github_pr_merge(
+              REPO_URL,
+              env.GITHUB_PR_NUMBER,
+              env.GITHUB_PR_TARGET_BRANCH,
+              [
+                // We use the 'changelogToBranch' extension to correctly
+                // show the PR changed commits in Jenkins changes.
+                // References:
+                // https://issues.jenkins.io/browse/JENKINS-26354
+                // https://javadoc.jenkins.io/plugin/git/hudson/plugins/git/extensions/impl/ChangelogToBranch.html
+                changelogToBranch(
+                  options: [
+                    compareRemote: 'origin',
+                    compareTarget: "${GITHUB_PR_TARGET_BRANCH}"
+                  ]
+                )
+              ]
+            )
+            env.TARGET_COMMIT = sh(
+              script: 'git rev-parse refs/remotes/pr_origin/pull/${GITHUB_PR_NUMBER}/head',
+              returnStdout: true
+            ).trim()
             println "TARGET_COMMIT: ${env.TARGET_COMMIT}"
           }
         }
