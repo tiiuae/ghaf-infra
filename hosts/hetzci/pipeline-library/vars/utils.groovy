@@ -354,7 +354,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
   // Evaluate
   stage("Eval") {
     lock('evaluator') {
-      sh 'nix flake show --all-systems | ansi2txt'
+      sh 'bash -o pipefail -c "nix flake show --all-systems | ansi2txt"'
     }
   }
   targets.each { target_config ->
