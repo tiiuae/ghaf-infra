@@ -20,6 +20,13 @@
         softhsm2 = pkgs.callPackage ../pkgs/softhsm2 { };
         zot = pkgs.callPackage ../pkgs/zot { };
 
+        # Vendored in as nixos-25.11 has outdated package,
+        # which doesn't include the frontend assets
+        fleet = pkgs.callPackage ../pkgs/fleet { };
+        fleetctl = pkgs.fleetctl.override {
+          inherit (self'.packages) fleet;
+        };
+
         # Vendored in, as brainstem isn't suitable for nixpkgs packaging upstream:
         # https://github.com/NixOS/nixpkgs/pull/313643
         brainstem = pkgs.callPackage ../pkgs/brainstem {
