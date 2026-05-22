@@ -298,7 +298,7 @@
     system = "x86_64-linux";
     machine = {
       ip = "172.20.16.24";
-      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHO30maPQbVUqURaur8ze2S0vrrUivj2QdItIHsK75RS";
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF7/asZZRNxvkScL0AnAPG82YT2iJ1LcUOCd9dL77hpN";
     };
   };
 
@@ -307,7 +307,7 @@
     system = "aarch64-linux";
     machine = {
       ip = "91.98.90.243";
-      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDP8yHa00zzjb+KSLB/pSZTKsAiU4vW1V75dqS1/6TqZ";
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGipvpDvDhHwm55/qmxHrCfTfTGZfc912RSKwrBAg7+7";
     };
   };
 

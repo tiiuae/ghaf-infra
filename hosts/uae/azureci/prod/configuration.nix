@@ -30,7 +30,7 @@
   hetzci = {
     jenkins = {
       envType = "prod";
-      pluginsFile = ../plugins.json;
+      pluginsFile = ../../../hetzci/plugins.json;
       url = "https://ci-prod.uaenorth.cloudapp.azure.com";
       pipelines = [
         "ghaf-hw-test-manual"
