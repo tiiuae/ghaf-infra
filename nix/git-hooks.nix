@@ -53,6 +53,30 @@
         '';
       };
 
+      groovy-jenkins-tests = pkgs.writeShellApplication {
+        name = "groovy-jenkins-tests";
+        runtimeInputs = [
+          pkgs.coreutils
+          pkgs.findutils
+          pkgs.groovy
+        ];
+        text = ''
+          mapfile -t test_files < <(
+            find tests/jenkins -type f -name '*Test.groovy' -print | sort
+          )
+
+          if [ "''${#test_files[@]}" -eq 0 ]; then
+            echo "groovy-jenkins-tests: skipped (no tests found)"
+            exit 0
+          fi
+
+          for test_file in "''${test_files[@]}"; do
+            echo "groovy-jenkins-tests: running ''${test_file}"
+            groovy "''${test_file}"
+          done
+        '';
+      };
+
       python-env = pkgs.python3.withPackages (
         pp: with pp; [
           aiohttp
@@ -143,6 +167,13 @@
             name = "groovyc";
             entry = "${pkgs.lib.getExe groovyc-check}";
             files = "^hosts/hetzci/(pipelines|pipeline-library)/.*\\.groovy$";
+          };
+          groovy-jenkins-tests = {
+            enable = true;
+            name = "groovy-jenkins-tests";
+            entry = "${pkgs.lib.getExe groovy-jenkins-tests}";
+            files = "^(hosts/hetzci/(pipelines|pipeline-library)/.*\\.groovy|tests/jenkins/.*\\.groovy)$";
+            pass_filenames = false;
           };
         };
       };

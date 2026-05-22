@@ -45,6 +45,18 @@ def checkout_github_pr_merge(String repoUrl, String prNumber, String targetBranc
   checkoutUtils.checkout_github_pr_merge(repoUrl, prNumber, targetBranch, extraExtensions)
 }
 
+def pipeline_model_call(Closure body) {
+  try {
+    return body()
+  } catch (IllegalArgumentException e) {
+    error(e.message)
+  }
+}
+
+def short_target_name(String targetName) {
+  pipeline_model_call { pipelineModel.short_target_name(targetName) }
+}
+
 def path_basename(String path) {
   if (path == null) {
     return null
@@ -142,7 +154,43 @@ def resolve_ghaf_flake_ref(String explicitFlakeRef, String imgUrl, String ociFla
 
 @NonCPS
 def safe_path_component(String value) {
+  if (value == null) {
+    return null
+  }
   return value.replaceAll(/[^A-Za-z0-9_.-]/, '-')
+}
+
+def safe_stage_key(String value) {
+  pipelineModel.safe_stage_key(value)
+}
+
+def normalize_optional_string(value) {
+  pipelineModel.normalize_optional_string(value)
+}
+
+def test_identity(Map testConfig, boolean secureboot = false) {
+  pipeline_model_call { pipelineModel.test_identity(testConfig, secureboot) }
+}
+
+def normalize_tests(Map buildConfig, String defaultTestagentHost = null) {
+  pipeline_model_call { pipelineModel.normalize_tests(buildConfig, defaultTestagentHost) }
+}
+
+def normalize_build_config(
+  Map targetConfig,
+  boolean signingPossible,
+  String ciEnv,
+  String defaultTestagentHost = null,
+  boolean allowExplicitTests = true) {
+  pipeline_model_call {
+    pipelineModel.normalize_build_config(
+      targetConfig,
+      signingPossible,
+      ciEnv,
+      defaultTestagentHost,
+      allowExplicitTests
+    )
+  }
 }
 
 def controller_workdir() {
@@ -219,21 +267,28 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
       sh 'bash -o pipefail -c "nix flake show --all-systems | ansi2txt"'
     }
   }
-  targets.each { target_config ->
+  targets.each { raw_target_config ->
+    def target_config = normalize_build_config(
+      raw_target_config,
+      signing_possible,
+      ci_env,
+      testagent_host,
+      false
+    )
     def target_name = target_config.target
-    def shortname = target_name.substring(target_name.lastIndexOf('.') + 1)
+    def shortname = target_config.shortname
     def output = "${artifacts_local_dir}/${target_name}"
     def local_target_ref = "${ghaf_checkout}#${target_name}"
-    def no_image = target_config.get('no_image', false)
-    def uefi_sign_requested = target_config.get('uefisign', false) || target_config.get('uefisigniso', false)
-    def can_uefi_sign = !no_image && signing_possible && uefi_sign_requested
-    def testset = target_config.get('testset', null)
-    def has_testset = testset != null && !testset.isEmpty()
-    def test_secboot_requested = target_config.get('test_secboot', false)
-    def run_secboot_test = test_secboot_requested && can_uefi_sign && ci_env == "prod"
-    def provenance_requested = target_config.get('provenance', true)
-    def build_otapin_requested = target_config.get('build_otapin', false)
-    def sbom_requested = target_config.get('sbom', false)
+    def no_image = target_config.no_image
+    def uefi_sign_requested = target_config.uefi_sign_requested
+    def can_uefi_sign = target_config.can_uefi_sign
+    def testset = target_config.testset
+    def has_testset = target_config.has_testset
+    def test_secboot_requested = target_config.test_secboot_requested
+    def run_secboot_test = target_config.run_secboot_test
+    def provenance_requested = target_config.provenance_requested
+    def build_otapin_requested = target_config.build_otapin_requested
+    def sbom_requested = target_config.sbom_requested
 
     def manifest = [
       ci_env: ci_env,
