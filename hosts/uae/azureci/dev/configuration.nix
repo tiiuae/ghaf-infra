@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
+# SPDX-License-Identifier: Apache-2.0
+{
+  inputs,
+  modulesPath,
+  lib,
+  ...
+}:
+{
+  imports = [
+    ../../common.nix
+    ./disk-config.nix
+    ../azure-common.nix
+    ../remote-builders.nix
+    ../../../hetzci/auth.nix
+    ../../../hetzci/common.nix
+    ../../../hetzci/jenkins.nix
+    ../../../hetzci/signing.nix
+    (modulesPath + "/profiles/qemu-guest.nix")
+    inputs.disko.nixosModules.disko
+  ];
+
+  # this server has been initialized with 25.11 with nixos-anywhere
+  system.stateVersion = lib.mkForce "25.11";
+  sops.defaultSopsFile = ./secrets.yaml;
+
+  networking.hostName = "uae-azureci-dev";
+
+  hetzci = {
+    jenkins = {
+      envType = "dev";
+      pluginsFile = ../../../hetzci/plugins.json;
+      url = "https://ci-dev.uaenorth.cloudapp.azure.com";
+      pipelines = [
+        "ghaf-hw-test-manual"
+        "ghaf-hw-test"
+        "ghaf-main"
+        "ghaf-manual"
+      ];
+      withCachix = false;
+      withRegistryPublish = true;
+    };
+    auth = {
+      clientID = "azureci-dev";
+      domain = "ci-dev.uaenorth.cloudapp.azure.com";
+    };
+    signing.proxy.enable = true;
+  };
+
+  services.jenkins.environment = {
+    OCI_REGISTRY = "registry.uaenorth.cloudapp.azure.com";
+  };
+}
