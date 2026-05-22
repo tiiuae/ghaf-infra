@@ -17,17 +17,18 @@ let
 
   zotConfig = {
     storage = {
+      # Use local filesystem storage until aws s3 me-central-1 outage is resolved
       rootDirectory = zotDataDir;
 
       # Use AWS s3 storage as backend
-      storageDriver = {
-        name = "s3";
-        bucket = "ghaf-infra-artifacts";
-        region = "me-central-1";
-        forcepathstyle = true;
-        secure = true;
-        chunksize = toString (32 * 1024 * 1024);
-      };
+      #storageDriver = {
+      #  name = "s3";
+      #  bucket = "ghaf-infra-artifacts";
+      #  region = "me-central-1";
+      #  forcepathstyle = true;
+      #  secure = true;
+      #  chunksize = toString (32 * 1024 * 1024);
+      #};
 
       dedupe = false;
       gc = true;

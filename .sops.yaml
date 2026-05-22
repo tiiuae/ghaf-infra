@@ -39,8 +39,8 @@ keys:
   - &uae-nethsm-gateway age1yqpkn74zacvyujqadz5cm90e6tz8ws2kphladkyvtfrv65x5autqe9404a
   - &uae-azureci-prod age13jsxg67hfnk7pqrf0tsnqrdxs8ktly4ke2vqwsx0c0lqytlwd98s58rkna
   - &uae-azureci-az86-1 age1rcwsekkzc2x35kv3qcg6dvgjsl28nxhes4e9g8l5gue54tx2qp7s53wclg
-  - &uae-testagent-prod age1sl8yrksst9aq2fhg8t8h7tysgzm6ks00n9hxsvj8x6frsnrskd4szerqez
-  - &uae-azureci-hetzarm-1 age1n8a2mc6y4446fxkzpulpmmdk5lmqeyhn3rqv8ynyl24nh5zpxd5qlm5v28
+  - &uae-testagent-prod age157plehwp0vk08g3tkvvzur7gq4pqg0xkkzth6ljw65zfcmlw8gnsc70uvr
+  - &uae-azureci-hetzarm-1 age1khvgc59e6mty0408cs523jzwldgjl389dywfrfmas08kzfdyj40qcuh2vf
   - &uae-testagent2-prod age10x82kaw0zam7h4mfv88gx75gq7ex4gpfupslzgvh4cvp5sdc09vsmgwsdk
   - &uae-azureci-registry age14hx3z3hnzdcuertpyv7grznx3e0gvnzhadq3mpthl8q6t9nq83yquzveke
 
@@ -264,7 +264,6 @@ creation_rules:
       - *hetzci-dbg
       - *hetzci-prod
       - *hetzci-release
-      - *uae-lab-node1
       - *uae-nethsm-gateway
       - *uae-azureci-prod
       - *uae-testagent-prod
