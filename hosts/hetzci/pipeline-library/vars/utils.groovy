@@ -559,26 +559,19 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
         }
         if (!no_image) {
           stage("Publish OCI ${shortname}") {
-            if (sh(
-              script: 'command -v oci-publish >/dev/null 2>&1',
-              returnStatus: true
-            ) != 0) {
-              println("Skipping OCI publish ${shortname}: oci-publish is not installed")
-            } else {
-              withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
-                def job_name = env.JOB_BASE_NAME.replaceFirst('^ghaf-', '')
-                def oci_target_name = target_name.replaceFirst('^packages\\.', '')
-                def oci_repository = "ghaf/${job_name}/${oci_target_name}"
-                def oci_result_json = "${output}/oci-result.json"
-                sh """
-                  oci-publish target \
-                    -d '${output}' \
-                    -r '${oci_repository}' \
-                    -t '${immutable_tag}' \
-                    -o '${oci_result_json}'
-                """
-                oci_result = readJSON file: oci_result_json
-              }
+            withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
+              def job_name = env.JOB_BASE_NAME.replaceFirst('^ghaf-', '')
+              def oci_target_name = target_name.replaceFirst('^packages\\.', '')
+              def oci_repository = "ghaf/${job_name}/${oci_target_name}"
+              def oci_result_json = "${output}/oci-result.json"
+              sh """
+                oci-publish target \
+                  --target-dir '${output}' \
+                  --repository '${oci_repository}' \
+                  --tag '${immutable_tag}' \
+                  --result-json '${oci_result_json}'
+              """
+              oci_result = readJSON file: oci_result_json
             }
           }
         }
@@ -620,6 +613,25 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
           } else {
             stage(testSecbootStageName) {
               Utils.markStageSkippedForConditional(testSecbootStageName)
+            }
+          }
+        }
+        if (ci_env != "vm") {
+          stage("Publish OCI test results ${shortname}") {
+            with_controller_workspace(ghaf_checkout) {
+              if (sh(
+                script: "test -d '${output}/test-results'",
+                returnStatus: true
+              ) != 0) {
+                error("Missing test results for ${shortname}: ${output}/test-results")
+              }
+              withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
+                sh """
+                  oci-publish test-results \
+                    --results-dir '${output}/test-results' \
+                    --subject-reference '${oci_result.primary.reference}'
+                """
+              }
             }
           }
         }

@@ -8,11 +8,14 @@
 """Publish Ghaf OCI target artifacts."""
 
 import argparse
+from collections.abc import Iterator
+from contextlib import contextmanager
 import json
 import os
 import re
 import subprocess
 import sys
+import tarfile
 import tempfile
 from pathlib import Path
 from typing import Any, NoReturn
@@ -21,6 +24,8 @@ from typing import Any, NoReturn
 DETACHED_SIGNATURE_MEDIA_TYPE = "application/vnd.ghaf.signature.v1"
 TARGET_ARTIFACT_TYPE = "application/vnd.ghaf.image.v1"
 TARGET_CONFIG_MEDIA_TYPE = "application/vnd.ghaf.manifest.v1+json"
+TEST_RESULTS_ARTIFACT_TYPE = "application/vnd.ghaf.test-results.v1"
+TEST_RESULTS_MEDIA_TYPE = "application/x-tar"
 REFERRER_MEDIA_TYPES = {
     "provenance": "application/vnd.in-toto+json",
     "sbom_cyclonedx": "application/vnd.cyclonedx+json",
@@ -102,6 +107,40 @@ def normalize_repository(repository: str) -> str:
     return normalized
 
 
+@contextmanager
+def oras_common_args(
+    registry: str, username: str, password: str
+) -> Iterator[list[str]]:
+    """Return ORAS auth arguments and keep temporary registry config alive."""
+    layout_path = os.environ.get("OCI_LAYOUT_PATH", "")
+    if layout_path:
+        yield ["--oci-layout-path", layout_path]
+        return
+
+    if not password:
+        fail("OCI_PASSWORD is required when publishing to the registry")
+
+    with tempfile.TemporaryDirectory(prefix="oras-auth-") as registry_config_dir:
+        registry_config = Path(registry_config_dir) / "config.json"
+
+        # Use temp login session to avoid exposing OCI_PASSWORD in process arguments.
+        run_command(
+            [
+                "oras",
+                "login",
+                "-u",
+                username,
+                "--password-stdin",
+                "--registry-config",
+                str(registry_config),
+                registry,
+            ],
+            stdin_text=f"{password}\n",
+        )
+
+        yield ["--registry-config", str(registry_config)]
+
+
 def publish_referrer(
     *,
     common_args: list[str],
@@ -143,6 +182,16 @@ def publish_referrer(
     }
 
     return result
+
+
+def create_test_results_archive(results_dir: Path, archive_path: Path) -> None:
+    """Create a tar archive containing the test-results directory."""
+    if not results_dir.is_dir():
+        fail(f"test results directory is missing: {results_dir}")
+
+    archive_path.parent.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(archive_path, "w") as archive:
+        archive.add(results_dir, arcname=results_dir.name, recursive=True)
 
 
 def publish_target_artifacts(
@@ -259,53 +308,58 @@ def publish_target(args: argparse.Namespace) -> int:
     registry = os.environ.get("OCI_REGISTRY", "registry.vedenemo.dev")
     username = os.environ.get("OCI_USERNAME", "jenkins")
     password = os.environ.get("OCI_PASSWORD", "")
-    layout_path = os.environ.get("OCI_LAYOUT_PATH", "")
-
-    if layout_path:
+    with oras_common_args(registry, username, password) as common_args:
+        if os.environ.get("OCI_LAYOUT_PATH", ""):
+            primary_reference = f"{repository}:{args.tag}"
+            subject_uses_digest = False
+        else:
+            primary_reference = f"{registry}/{repository}:{args.tag}"
+            subject_uses_digest = True
         return publish_target_artifacts(
             manifest=manifest,
             target_dir=target_dir,
             result_json=result_json,
             repository=repository,
-            common_args=["--oci-layout-path", layout_path],
-            primary_reference=f"{repository}:{args.tag}",
+            common_args=common_args,
+            primary_reference=primary_reference,
             immutable_tag=args.tag,
             mutable_tags=list(args.mutable_tags),
-            subject_uses_digest=False,
+            subject_uses_digest=subject_uses_digest,
         )
 
-    if not password:
-        fail("OCI_PASSWORD is required when publishing to the registry")
 
-    with tempfile.TemporaryDirectory(prefix="oras-auth-") as registry_config_dir:
-        registry_config = Path(registry_config_dir) / "config.json"
+def publish_test_results(args: argparse.Namespace) -> int:
+    """Publish test results as a referrer attached to a target artifact."""
+    results_dir = Path(args.results_dir).expanduser().resolve()
 
-        # Use temp login session to avoid exposing OCI_PASSWORD in process arguments.
-        run_command(
-            [
-                "oras",
-                "login",
-                "-u",
-                username,
-                "--password-stdin",
-                "--registry-config",
-                str(registry_config),
-                registry,
-            ],
-            stdin_text=f"{password}\n",
+    registry = os.environ.get("OCI_REGISTRY", "registry.vedenemo.dev")
+    username = os.environ.get("OCI_USERNAME", "jenkins")
+    password = os.environ.get("OCI_PASSWORD", "")
+    with oras_common_args(registry, username, password) as common_args:
+        with tempfile.TemporaryDirectory(prefix="oci-test-results-") as archive_dir:
+            archive_path = Path(archive_dir) / "test-results.tar"
+            create_test_results_archive(results_dir, archive_path)
+
+            annotations = {
+                "org.opencontainers.image.description": archive_path.name,
+            }
+            output = run_oras(
+                [
+                    "attach",
+                    *common_args,
+                    *annotation_args(annotations),
+                    "--artifact-type",
+                    TEST_RESULTS_ARTIFACT_TYPE,
+                    args.subject_reference,
+                    f"{archive_path.name}:{TEST_RESULTS_MEDIA_TYPE}",
+                ],
+                cwd=archive_path.parent,
+            )
+
+        print(
+            f"[+] Published test results for {args.subject_reference}: {output['digest']}"
         )
-
-        return publish_target_artifacts(
-            manifest=manifest,
-            target_dir=target_dir,
-            result_json=result_json,
-            repository=repository,
-            common_args=["--registry-config", str(registry_config)],
-            primary_reference=f"{registry}/{repository}:{args.tag}",
-            immutable_tag=args.tag,
-            mutable_tags=list(args.mutable_tags),
-            subject_uses_digest=True,
-        )
+        return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -322,6 +376,13 @@ def build_parser() -> argparse.ArgumentParser:
         "-m", "--mutable-tag", action="append", default=[], dest="mutable_tags"
     )
     target_parser.set_defaults(handler=publish_target)
+
+    test_results_parser = subparsers.add_parser(
+        "test-results", help="attach test results to a target artifact"
+    )
+    test_results_parser.add_argument("-d", "--results-dir", required=True)
+    test_results_parser.add_argument("-s", "--subject-reference", required=True)
+    test_results_parser.set_defaults(handler=publish_test_results)
 
     return parser
 
