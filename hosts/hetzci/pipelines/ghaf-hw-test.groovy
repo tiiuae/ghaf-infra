@@ -32,6 +32,10 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
     string(name: 'CI_TEST_REPO_BRANCH', defaultValue: 'main', description: 'Select ci-test-automation branch to checkout.'),
     string(name: 'OCI_IMAGE_REF', defaultValue: '', description: 'Published OCI image reference.'),
     string(name: 'IMG_URL', defaultValue: '', description: 'Target image url.'),
+    string(
+      name: 'TEST_TARGET',
+      defaultValue: '',
+      description: 'Concrete target identity to test. If empty, derive it from OCI_IMAGE_REF or IMG_URL.'),
     string(name: 'GHAF_FLAKE_REF', defaultValue: '', description: 'Pinned Ghaf flake reference for flash-script. If empty, derive it from OCI metadata or IMG_URL commit.'),
     string(name: 'TESTSET', defaultValue: '_relayboot_', description: 'Target testset, e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.'),
     string(name: 'TESTAGENT_HOST', defaultValue: null, description: 'Target testagent host, e.g.: dev, prod, release'),
@@ -65,19 +69,25 @@ def init() {
   if (!ociImageRef && !imgUrl) {
     error("Missing OCI_IMAGE_REF or IMG_URL parameter")
   }
+  env.BUILD_TARGET = utils.derive_target_name(imgUrl, env.OCI_TARGET) ?: ''
+  env.TEST_TARGET = utils.resolve_test_target(params.TEST_TARGET, env.BUILD_TARGET) ?: ''
+  env.TESTSET = params.TESTSET ?: ''
+  env.INSTALLER_FLOW = env.BUILD_TARGET.contains("installer") ? 'true' : 'false'
   // Resolve the target here as well for controller-side fail-fast validation and
   // device/agent selection. The agent-side Resolve target stage repeats this so
   // it can initialize runtime state after node allocation.
-  def target = utils.derive_target_name(imgUrl, env.OCI_TARGET)
-  if (!target) {
-    if (ociImageRef) {
-      error("Unable to derive target name from OCI image '${ociImageRef}'")
-    }
-    error("Unexpected IMG_URL: ${params.IMG_URL}")
+  if (imgUrl && !env.BUILD_TARGET) {
+    error("Unsupported IMG_URL layout '${params.IMG_URL}': expected a path containing commit_<sha>/<target>/...")
   }
-  def deviceInfo = utils.derive_device_info(target, params.SECUREBOOT)
+  if (!env.TEST_TARGET) {
+    if (ociImageRef) {
+      error("Unable to derive test target from OCI image '${ociImageRef}'. Set TEST_TARGET explicitly.")
+    }
+    error("Unable to derive test target from IMG_URL '${params.IMG_URL}'")
+  }
+  def deviceInfo = utils.derive_device_info(env.TEST_TARGET, params.SECUREBOOT)
   if (!deviceInfo) {
-    error("Unable to parse device config for target '${target}'")
+    error("Unable to parse device config for test target '${env.TEST_TARGET}'")
   }
   env.DEVICE_NAME = deviceInfo.name
   env.DEVICE_TAG = deviceInfo.tag
@@ -240,16 +250,12 @@ pipeline {
         stage('Resolve target') {
           steps {
             script {
-              env.TARGET = utils.derive_target_name(params.IMG_URL, env.OCI_TARGET)
-              if (!env.TARGET) {
-                if (params.OCI_IMAGE_REF) {
-                  error("Unable to derive target name from OCI image '${params.OCI_IMAGE_REF}'")
-                }
-                error("Unexpected IMG_URL: ${params.IMG_URL}")
-              }
-              env.EXTRATAG = utils.extra_tag_suffix(env.TARGET, env.DEVICE_TAG)
-              currentBuild.description = params.containsKey('DESC') ? "${params.DESC}" : "${env.TARGET}"
-              println("Using TARGET: ${env.TARGET}")
+              env.TARGET = env.TEST_TARGET
+              env.TESTSET = params.TESTSET ?: ''
+              env.EXTRATAG = utils.extra_tag_suffix(env.TEST_TARGET, env.DEVICE_TAG)
+              currentBuild.description = params.containsKey('DESC') ? "${params.DESC}" : "${env.TEST_TARGET}"
+              println("Using TEST_TARGET: ${env.TEST_TARGET}")
+              println("Using TARGET alias: ${env.TARGET}")
               println("Using DEVICE_NAME: ${env.DEVICE_NAME}")
               println("Using DEVICE_TAG: ${env.DEVICE_TAG}")
               if (env.EXTRATAG) {
@@ -282,7 +288,7 @@ pipeline {
                 mkdir -p ${TEST_CONFIG_DIR}
                 rm -f ${TEST_CONFIG_DIR}/*.json
                 ln -sv ${CONF_FILE_PATH} ${TEST_CONFIG_DIR}
-                echo { \\\"Job\\\": \\\"${env.TARGET}\\\" } > ${TEST_CONFIG_DIR}/${BUILD_NUMBER}.json
+                echo { \\\"Job\\\": \\\"${env.TEST_TARGET}\\\" } > ${TEST_CONFIG_DIR}/${BUILD_NUMBER}.json
                 ls -la ${TEST_CONFIG_DIR}
               """
             }
@@ -351,6 +357,7 @@ pipeline {
               sh "verify-signature image ${img_path} ${sig_path}"
               // flash-script handles .zst natively; pass the original download path.
               env.FLASH_INPUT_PATH = img_path
+              env.INSTALLER_FLOW = img_path.endsWith(".iso") ? 'true' : env.INSTALLER_FLOW
               println "Flash input: ${env.FLASH_INPUT_PATH}"
             }
           }
@@ -358,7 +365,7 @@ pipeline {
         stage('Flash') {
           steps {
             script {
-              def mountCommands = utils.setup_mount_commands(CONF_FILE_PATH, env.TARGET, env.DEVICE_NAME)
+              def mountCommands = utils.setup_mount_commands(CONF_FILE_PATH, env.TEST_TARGET, env.DEVICE_NAME)
               env.MOUNT_CMD = mountCommands.mount_cmd
               env.UNMOUNT_CMD = mountCommands.unmount_cmd
               def dev = utils.resolve_flash_target(CONF_FILE_PATH, env.DEVICE_NAME, env.MOUNT_CMD, env.UNMOUNT_CMD)
@@ -385,7 +392,7 @@ pipeline {
           }
         }
         stage('Run Ghaf-installer') {
-          when { expression { env.TARGET.contains("installer") } }
+          when { expression { env.INSTALLER_FLOW == 'true' } }
           steps {
             script {
               println "Run ghaf-installer"
@@ -438,10 +445,10 @@ pipeline {
           }
         }
         stage('Wipe system') {
-          when { expression { env.TARGET.contains("installer")} }
+          when { expression { env.INSTALLER_FLOW == 'true'} }
           steps {
             script {
-              if (env.TARGET.contains("installer") && env.DEVICE_TAG == "darter-pro") {
+              if (env.INSTALLER_FLOW == 'true' && env.DEVICE_TAG == "darter-pro") {
                 ghaf_robot_test('break')
               }
               ghaf_robot_test('relay-turnoff')

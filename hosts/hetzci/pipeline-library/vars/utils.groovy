@@ -102,6 +102,11 @@ def derive_target_name(String imgUrl, String ociTarget) {
 }
 
 @NonCPS
+def resolve_test_target(String explicitTestTarget = null, String buildTarget = null, String fallbackTarget = null) {
+  hwTestUtils.resolve_test_target(explicitTestTarget, buildTarget, fallbackTarget)
+}
+
+@NonCPS
 def derive_device_info(String target, boolean secureboot) {
   hwTestUtils.derive_device_info(target, secureboot)
 }
@@ -225,13 +230,22 @@ def with_controller_workspace(String workspace, Closure body) {
 }
 
 def run_hw_test(
-  String shortname,
+  String buildShortname,
   String testset,
   String testagent_host,
   Map oci_result,
   boolean secureboot,
-  String ci_env) {
-  hwTestUtils.run_hw_test(shortname, testset, testagent_host, oci_result, secureboot, ci_env)
+  String ci_env,
+  String testTargetName = null) {
+  hwTestUtils.run_hw_test(
+    buildShortname,
+    testset,
+    testagent_host,
+    oci_result,
+    secureboot,
+    ci_env,
+    testTargetName
+  )
 }
 
 def collect_hw_test_result(
