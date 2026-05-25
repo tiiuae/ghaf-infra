@@ -42,6 +42,11 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
         Target image url. If specified, the target device is flashed with the given image before running the tests.
         Can be left empty, in which case DEVICE_TAG must be specified. With installer image this is mandatory to give!'''.stripIndent()),
     string(
+      name: 'TEST_TARGET',
+      defaultValue: '',
+      description: '''
+        Concrete target identity to test. When set, this controls device selection and job identity even if OCI_IMAGE_REF or IMG_URL points to a generic build artifact.'''.stripIndent()),
+    string(
       name: 'GHAF_FLAKE_REF',
       defaultValue: '',
       description: '''
@@ -72,10 +77,9 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
       name: 'JOB_SELECTOR',
       defaultValue: '',
       description: '''
-        Select the job. If device is flashed, the job is derived from OCI_IMAGE_REF or IMG_URL when available.
-        Otherwise this selection is used.
-        For example system76-darp11-b-storeDisk-debug-installer or system76-darp11-b-storeDisk-debug.
-        DEVICE_TAG is used as the job by default when not flashing.'''.stripIndent()),
+        Legacy fallback for explicit test identity. Used only when TEST_TARGET is empty.
+        If neither TEST_TARGET, JOB_SELECTOR, nor a build target derived from OCI_IMAGE_REF or IMG_URL is available, DEVICE_TAG is used as the job.
+        For example system76-darp11-b-storeDisk-debug-installer or system76-darp11-b-storeDisk-debug.'''.stripIndent()),
     [
       $class: 'ChoiceParameter',
       name: 'TESTAGENT_HOST',
@@ -118,12 +122,19 @@ def init() {
     env.OCI_TARGET = annotations[TARGET_ANNOTATION] ?: ''
     env.OCI_SOURCE_REF = annotations[SOURCE_REF_ANNOTATION] ?: ''
   }
-  def flashTarget = utils.derive_target_name(params.IMG_URL, env.OCI_TARGET)
+  env.BUILD_TARGET = utils.derive_target_name(params.IMG_URL, env.OCI_TARGET) ?: ''
+  env.TEST_TARGET = utils.resolve_test_target(
+    params.TEST_TARGET,
+    env.BUILD_TARGET,
+    params.JOB_SELECTOR?.trim() ?: params.DEVICE_TAG
+  ) ?: ''
+  def installerTarget = env.BUILD_TARGET ?: env.TEST_TARGET
+  env.INSTALLER_FLOW = installerTarget.contains("installer") ? 'true' : 'false'
   def deviceInfo = null
-  if (flashTarget && !params.DEVICE_TAG) {
-    deviceInfo = utils.derive_device_info(flashTarget, params.SECUREBOOT)
+  if (env.TEST_TARGET && !params.DEVICE_TAG) {
+    deviceInfo = utils.derive_device_info(env.TEST_TARGET, params.SECUREBOOT)
     if (!deviceInfo) {
-      error("Could not derive DEVICE_TAG from target '${flashTarget}' and DEVICE_TAG is not defined")
+      error("Could not derive DEVICE_TAG from test target '${env.TEST_TARGET}' and DEVICE_TAG is not defined")
     }
   }
   if (params.DEVICE_TAG) {
@@ -134,7 +145,10 @@ def init() {
     deviceInfo = [name: deviceName, tag: params.DEVICE_TAG]
   }
   if (!deviceInfo) {
-    error("DEVICE_TAG is not defined and could not be derived from IMG_URL '${params.IMG_URL}', OCI_IMAGE_REF '${params.OCI_IMAGE_REF}', or explicit DEVICE_TAG")
+    error(
+      "DEVICE_TAG is not defined and could not be derived from TEST_TARGET '${params.TEST_TARGET}', " +
+        "JOB_SELECTOR '${params.JOB_SELECTOR}', IMG_URL '${params.IMG_URL}', OCI_IMAGE_REF '${params.OCI_IMAGE_REF}', or explicit DEVICE_TAG"
+    )
   }
   env.DEVICE_NAME = deviceInfo.name
   env.DEVICE_TAG = deviceInfo.tag
@@ -225,18 +239,11 @@ pipeline {
         stage('Resolve target') {
           steps {
             script {
-              def explicitTarget = utils.derive_target_name(params.IMG_URL, env.OCI_TARGET)
-              def jobSelector = params.JOB_SELECTOR?.trim()
-              if (explicitTarget) {
-                env.TARGET = explicitTarget
-              } else if (jobSelector) {
-                env.TARGET = jobSelector
-              } else {
-                env.TARGET = env.DEVICE_TAG
-              }
+              env.TARGET = env.TEST_TARGET
               env.DEVICE_BOOT_TAG = utils.boot_tag_for(env.DEVICE_TAG)
-              currentBuild.description = "${env.TEST_AGENT_LABEL}"
-              println("Using TARGET: ${env.TARGET}")
+              currentBuild.description = "${env.TEST_AGENT_LABEL}<br>${env.TEST_TARGET}"
+              println("Using TEST_TARGET: ${env.TEST_TARGET}")
+              println("Using TARGET alias: ${env.TARGET}")
               println("Using DEVICE_NAME: ${env.DEVICE_NAME}")
               println("Using DEVICE_TAG: ${env.DEVICE_TAG}")
             }
@@ -264,10 +271,10 @@ pipeline {
                 mkdir -p ${TEST_CONFIG_DIR}
                 rm -f ${TEST_CONFIG_DIR}/*.json
                 ln -sv ${CONF_FILE_PATH} ${TEST_CONFIG_DIR}
-                echo { \\\"Job\\\": \\\"${env.TARGET}\\\" } > ${TEST_CONFIG_DIR}/${BUILD_NUMBER}.json
+                echo { \\\"Job\\\": \\\"${env.TEST_TARGET}\\\" } > ${TEST_CONFIG_DIR}/${BUILD_NUMBER}.json
                 ls -la ${TEST_CONFIG_DIR}
               """
-              def mountCommands = utils.setup_mount_commands(CONF_FILE_PATH, env.TARGET, env.DEVICE_NAME)
+              def mountCommands = utils.setup_mount_commands(CONF_FILE_PATH, env.TEST_TARGET, env.DEVICE_NAME)
               env.MOUNT_CMD = mountCommands.mount_cmd
               env.UNMOUNT_CMD = mountCommands.unmount_cmd
             }
@@ -300,9 +307,11 @@ pipeline {
                   env.IMG_PATH = img_path
                 }
                 println "Uncompressed image at: ${env.IMG_PATH}"
+                env.INSTALLER_FLOW = env.IMG_PATH.endsWith(".iso") ? 'true' : env.INSTALLER_FLOW
               } else {
                 // flash-script handles .zst natively; pass the original download path.
                 env.FLASH_INPUT_PATH = img_path
+                env.INSTALLER_FLOW = img_path.endsWith(".iso") ? 'true' : env.INSTALLER_FLOW
                 println "Flash input: ${env.FLASH_INPUT_PATH}"
               }
             }
@@ -316,7 +325,7 @@ pipeline {
               if (params.USE_LEGACY_DD_FLASH) {
                 // Wipe possible ZFS leftovers, more details here:
                 // https://github.com/tiiuae/ghaf/blob/454b18bc/packages/installer/ghaf-installer.sh#L75
-                if(env.TARGET.contains("lenovo-x1")) {
+                if(env.TEST_TARGET.contains("lenovo-x1")) {
                   echo "Wiping filesystem..."
                   def SECTOR = 512
                   def MIB_TO_SECTORS = 20480
@@ -359,7 +368,7 @@ pipeline {
           }
         }
         stage('Run Ghaf-installer') {
-          when { expression { env.TARGET.contains("installer") && !params.WIPE_ONLY } }
+          when { expression { env.INSTALLER_FLOW == 'true' && !params.WIPE_ONLY } }
           steps {
             script {
               sh "${env.UNMOUNT_CMD}"
@@ -387,10 +396,10 @@ pipeline {
           }
         }
         stage('Wipe system') {
-          when { expression { env.TARGET.contains("installer")} }
+          when { expression { env.INSTALLER_FLOW == 'true'} }
           steps {
             script {
-              if (env.TARGET.contains("installer") && env.DEVICE_TAG == "darter-pro") {
+              if (env.INSTALLER_FLOW == 'true' && env.DEVICE_TAG == "darter-pro") {
                 ghaf_robot_test('break')
               }
               ghaf_robot_test('relay-turnoff')

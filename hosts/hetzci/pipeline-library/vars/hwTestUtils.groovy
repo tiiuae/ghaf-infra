@@ -40,6 +40,20 @@ def derive_target_name(String imgUrl, String ociTarget) {
 }
 
 @NonCPS
+def resolve_test_target(String explicitTestTarget = null, String buildTarget = null, String fallbackTarget = null) {
+  def explicit = explicitTestTarget?.trim()
+  if (explicit) {
+    return explicit
+  }
+  def build = buildTarget?.trim()
+  if (build) {
+    return build
+  }
+  def fallback = fallbackTarget?.trim()
+  return fallback ?: null
+}
+
+@NonCPS
 def derive_device_info(String target, boolean secureboot) {
   def devices = device_catalog()
   if (target.contains("lenovo-x1")) {
@@ -155,29 +169,39 @@ def resolve_ghaf_flake_ref(String explicitFlakeRef, String imgUrl, String ociFla
 }
 
 def run_hw_test(
-  String shortname,
+  String buildShortname,
   String testset,
   String testagent_host,
   Map oci_result,
   boolean secureboot,
-  String ci_env) {
+  String ci_env,
+  String testTargetName = null) {
   // Keep the blocking downstream wait outside node('built-in') so ghaf-hw-test
   // can acquire a controller executor for its own initialization stages.
   def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
+  def normalizedTestTarget = testTargetName?.trim()
+  def desc = normalizedTestTarget ?
+    "Triggered by ${build_href}<br>(build: ${buildShortname}, test: ${normalizedTestTarget})" :
+    "Triggered by ${build_href}<br>(${buildShortname})"
   def test_params = [
     string(name: "TESTSET", value: testset),
-    string(name: "DESC", value: "Triggered by ${build_href}<br>(${shortname})"),
+    string(name: "DESC", value: desc),
     string(name: "TESTAGENT_HOST", value: testagent_host),
     booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: ci_env == "release"),
     booleanParam(name: "RELOAD_ONLY", value: false),
     booleanParam(name: "SECUREBOOT", value: secureboot),
   ]
   if (oci_result == null) {
-    error("Missing OCI publish result for ${shortname}; cannot trigger ghaf-hw-test")
+    error("Missing OCI publish result for ${buildShortname}; cannot trigger ghaf-hw-test")
   }
   test_params += [
     string(name: "OCI_IMAGE_REF", value: oci_result.primary.reference),
   ]
+  if (normalizedTestTarget) {
+    test_params += [
+      string(name: "TEST_TARGET", value: normalizedTestTarget),
+    ]
+  }
   def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
     parameters: test_params
   )
