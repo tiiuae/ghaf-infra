@@ -146,8 +146,9 @@ Nebula firewall rules defined in `services/nebula/default.nix`.
 | `office` | Tampere office nodes |
 | `testagent` | Test agent machines |
 | `scraper` | Metrics scraping (ghaf-monitoring) |
+| `azureci` | UAE Azure cloud nodes |
 | `uae-lab` | UAE lab nodes |
-| `uae-masdar` | UAE masdar nodes |
+| `masdar` | UAE masdar nodes |
 
 The `scraper` group is used in an inbound firewall rule that allows
 ghaf-monitoring to scrape Prometheus node-exporter metrics (port 9100/tcp)
