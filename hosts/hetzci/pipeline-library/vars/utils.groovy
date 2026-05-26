@@ -198,6 +198,10 @@ def normalize_build_config(
   }
 }
 
+def test_result_entry(Map testRun, Map result = [:]) {
+  pipeline_model_call { pipelineModel.test_result_entry(testRun, result) }
+}
+
 def controller_workdir() {
   def rawTag = env.BUILD_TAG ?: "${env.JOB_NAME}-${env.BUILD_NUMBER}"
   def tag = safe_path_component(rawTag)
@@ -231,33 +235,45 @@ def with_controller_workspace(String workspace, Closure body) {
 
 def run_hw_test(
   String buildShortname,
+  String testTargetName,
+  String testIdentity,
   String testset,
   String testagent_host,
   Map oci_result,
   boolean secureboot,
-  String ci_env,
-  String testTargetName = null) {
+  String ci_env) {
   hwTestUtils.run_hw_test(
     buildShortname,
+    testTargetName,
+    testIdentity,
     testset,
     testagent_host,
     oci_result,
     secureboot,
-    ci_env,
-    testTargetName
+    ci_env
   )
 }
 
 def collect_hw_test_result(
-  String shortname,
-  String testset,
-  String output,
+  String testIdentity,
+  String testPathKey,
   boolean secureboot,
+  String output,
   Map job) {
-  hwTestUtils.collect_hw_test_result(shortname, testset, output, secureboot, job)
+  hwTestUtils.collect_hw_test_result(
+    testIdentity,
+    testPathKey,
+    secureboot,
+    output,
+    job
+  )
 }
 
-def create_pipeline(List<Map> targets, String testagent_host = null, String target_flake_ref = null) {
+def create_pipeline(
+  List<Map> targets,
+  String testagent_host = null,
+  String target_flake_ref = null,
+  Map options = [:]) {
   def pipeline = [:]
   def stamp = run_cmd('date +"%Y%m%d_%H%M%S%3N"')
   def target_commit = run_cmd('git rev-parse HEAD')
@@ -274,8 +290,8 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
   def immutable_tag = "${ci_env}-${stamp}-${target_commit}"
   def signing_possible = ci_env != 'vm'
   def ghaf_checkout = pwd()
+  def parallel_tests = options.get('parallel_tests', true)
 
-  // Evaluate
   stage("Eval") {
     lock('evaluator') {
       sh 'bash -o pipefail -c "nix flake show --all-systems | ansi2txt"'
@@ -286,20 +302,15 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
       raw_target_config,
       signing_possible,
       ci_env,
-      testagent_host,
-      false
+      testagent_host
     )
-    def target_name = target_config.target
-    def shortname = target_config.shortname
-    def output = "${artifacts_local_dir}/${target_name}"
-    def local_target_ref = "${ghaf_checkout}#${target_name}"
+    def build_target_name = target_config.target
+    def build_shortname = target_config.shortname
+    def normalized_test_runs = target_config.test_runs
+    def output = "${artifacts_local_dir}/${build_target_name}"
+    def local_target_ref = "${ghaf_checkout}#${build_target_name}"
     def no_image = target_config.no_image
     def uefi_sign_requested = target_config.uefi_sign_requested
-    def can_uefi_sign = target_config.can_uefi_sign
-    def testset = target_config.testset
-    def has_testset = target_config.has_testset
-    def test_secboot_requested = target_config.test_secboot_requested
-    def run_secboot_test = target_config.run_secboot_test
     def provenance_requested = target_config.provenance_requested
     def build_otapin_requested = target_config.build_otapin_requested
     def sbom_requested = target_config.sbom_requested
@@ -317,7 +328,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
         revision: target_commit,
         flake_ref: target_flake_ref,
       ],
-      target: target_name,
+      target: build_target_name,
       build: [
         ts_begin: null,
         ts_finished: null,
@@ -358,6 +369,32 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
       ],
     ]
     def oci_result = null
+    def result_file_for = { Map testRun ->
+      "${output}/test-results/${testRun.test_path_key}/result.json"
+    }
+    def write_manifest = { List testEntries = null ->
+      if (testEntries == null) {
+        manifest.remove('tests')
+      } else {
+        manifest.tests = testEntries
+      }
+      writeFile(
+        file: "${output}/manifest.json",
+        text: JsonOutput.prettyPrint(JsonOutput.toJson(manifest))
+      )
+    }
+    def persist_test_result = { Map testRun, Map result = [:] ->
+      def entry = test_result_entry(testRun, result)
+      with_controller_workspace(ghaf_checkout) {
+        sh "mkdir -v -p '${output}/test-results/${testRun.test_path_key}'"
+        writeFile(
+          file: result_file_for(testRun),
+          text: JsonOutput.prettyPrint(JsonOutput.toJson(entry))
+        )
+      }
+      return entry
+    }
+
     if (no_image) {
       manifest.uefi.reason = "no_image"
     } else if (!signing_possible) {
@@ -366,25 +403,23 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
       manifest.uefi.reason = "not_requested"
     }
 
-    pipeline["${target_name}"] = {
+    pipeline["${build_target_name}"] = {
       with_controller_workspace(ghaf_checkout) {
-        // Build
-        stage("Build ${shortname}") {
+        stage("Build ${build_shortname}") {
           sh "mkdir -v -p ${output}"
 
           manifest.build.ts_begin = run_cmd('date +%s')
           lock(label: 'nix-build', quantity: 1) {
-            sh "nix build --fallback -v .#${target_name} --out-link ${output}/unsigned-output"
+            sh "nix build --fallback -v .#${build_target_name} --out-link ${output}/unsigned-output"
           }
           manifest.build.ts_finished = run_cmd('date +%s')
         }
-        // Provenance
         if (provenance_requested) {
-          stage("Provenance ${shortname}") {
+          stage("Provenance ${build_shortname}") {
             def ext_params = """
               {
                 "target": {
-                  "name": "${target_name}",
+                  "name": "${build_target_name}",
                   "repository": "${target_repo}",
                   "ref": "${target_commit}"
                 },
@@ -423,10 +458,9 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
             }
           }
         }
-        // Build OTA pin
         if (build_otapin_requested) {
-          stage("OTA Build ${shortname}") {
-            def ota_target = target_name.tokenize('.').last()
+          stage("OTA Build ${build_shortname}") {
+            def ota_target = build_target_name.tokenize('.').last()
             sh """
               mkdir -v -p ${ota_target}; cd ${ota_target}
               nixos-rebuild build --fallback --flake .#${ota_target}
@@ -436,9 +470,8 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
             """
           }
         }
-        // Run sbomnix
         if (sbom_requested) {
-          stage("SBOM ${shortname}") {
+          stage("SBOM ${build_shortname}") {
             def outdir = "${output}/attestations"
             sh """
               mkdir -v -p ${outdir}
@@ -452,10 +485,8 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
             manifest.attestations.sbom_spdx.path = "attestations/sbom.spdx.json"
           }
         }
-        // Signing stages
-        // Skip signing stages only in vm, where the signing proxy is not configured.
         if (signing_possible && provenance_requested) {
-          stage("Sign (SLSA) provenance ${shortname}") {
+          stage("Sign (SLSA) provenance ${build_shortname}") {
             lock('signing') {
               withRedundancyRouter("GhafInfraSignProv") { ctx ->
                 sh """
@@ -472,7 +503,7 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
           }
         }
         if (!no_image) {
-          stage("Find image ${shortname}") {
+          stage("Find image ${build_shortname}") {
             def img_path = run_cmd("find -L ${output}/unsigned-output -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print -quit")
             if (!img_path) {
               error("No image found!")
@@ -482,12 +513,12 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
           }
           if (signing_possible) {
             if (uefi_sign_requested) {
-              stage("Sign (UEFI) ${shortname}") {
-                def tmpdir = build_tmpdir("uefisign-${shortname}")
+              stage("Sign (UEFI) ${build_shortname}") {
+                def tmpdir = build_tmpdir("uefisign-${build_shortname}")
                 def img_name = path_basename(manifest.image.path)
 
                 def signer = "uefisign"
-                if (target_name.contains("nvidia-jetson-orin")) {
+                if (build_target_name.contains("nvidia-jetson-orin")) {
                   signer = "uefisign-simple"
                 }
 
@@ -511,19 +542,17 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
                   }
 
                   sh "mv '${tmpdir}/signed_${img_name}' '${output}/${img_name}'"
-                  // replace original image with uefisigned one
                   manifest.image.path = img_name
-                  manifest.uefi.signed = true;
+                  manifest.uefi.signed = true
                   manifest.uefi.reason = null
                 } finally {
                   sh "rm -rf '${tmpdir}'"
                 }
               }
             }
-            stage("Sign (SLSA) image ${shortname}") {
+            stage("Sign (SLSA) image ${build_shortname}") {
               lock('signing') {
                 def img_name = path_basename(manifest.image.path)
-                // sign the current main image be it unsigned or uefisigned
                 manifest.image.signature.path = "${img_name}.sig"
                 withRedundancyRouter("GhafInfraSignECP256") { ctx ->
                   sh """
@@ -539,29 +568,24 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
             }
           }
         }
-        // Link artifacts
-        stage("Link artifacts ${shortname}") {
+        stage("Link artifacts ${build_shortname}") {
           if (manifest.image.path && !manifest.uefi.signed) {
             def img_name = path_basename(manifest.image.path)
-            // make symlink from output root to original image if not using uefisigned
             sh "ln -s ${output}/${manifest.image.path} ${output}/${img_name}"
             manifest.image.path = img_name
           }
 
-          writeFile(
-            file: "${output}/manifest.json",
-            text: JsonOutput.prettyPrint(JsonOutput.toJson(manifest))
-          )
+          write_manifest()
 
           if (!currentBuild.description || !currentBuild.description.contains(artifacts_href)) {
             append_to_build_description(artifacts_href)
           }
         }
         if (!no_image) {
-          stage("Publish OCI ${shortname}") {
+          stage("Publish OCI ${build_shortname}") {
             withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
               def job_name = env.JOB_BASE_NAME.replaceFirst('^ghaf-', '')
-              def oci_target_name = target_name.replaceFirst('^packages\\.', '')
+              def oci_target_name = build_target_name.replaceFirst('^packages\\.', '')
               def oci_repository = "ghaf/${job_name}/${oci_target_name}"
               def oci_result_json = "${output}/oci-result.json"
               sh """
@@ -576,54 +600,105 @@ def create_pipeline(List<Map> targets, String testagent_host = null, String targ
           }
         }
       }
-      // Test
-      if (has_testset) {
-        def testStageName = "Test ${shortname}"
-        stage(testStageName) {
-          if (ci_env == "vm") {
-            Utils.markStageSkippedForConditional(testStageName)
-            println("Skipping hardware tests for ${shortname}: CI_ENV is vm")
-          } else {
-            def job = run_hw_test(shortname, testset, testagent_host, oci_result, false, ci_env)
-            with_controller_workspace(ghaf_checkout) {
-              collect_hw_test_result(shortname, testset, output, false, job)
-            }
-          }
-        }
-        // Run an additional secure boot test only when the target requests it and
-        // secure-boot-capable hardware is available in prod. X1 update tests
-        // still need secure boot disabled, even for signed images, so the
-        // regular test run cannot be replaced with a secure boot-only run.
-        if (test_secboot_requested) {
-          def testSecbootStageName = "Test SB ${shortname}"
-          println(
-            "Secure boot test decision ${shortname}: " +
-              "requested=${test_secboot_requested}, " +
-              "can_uefi_sign=${can_uefi_sign}, " +
-              "ci_env=${ci_env}, " +
-              "run=${run_secboot_test}"
-          )
-          if (run_secboot_test) {
-            stage(testSecbootStageName) {
-              def job = run_hw_test(shortname, testset, testagent_host, oci_result, true, ci_env)
-              with_controller_workspace(ghaf_checkout) {
-                collect_hw_test_result(shortname, testset, output, true, job)
+
+      if (!normalized_test_runs.isEmpty()) {
+        try {
+          def test_branches = [:]
+          normalized_test_runs.each { testRun ->
+            def localTestRun = testRun
+            def stageName = localTestRun.stage_name
+            test_branches[stageName] = {
+              stage(stageName) {
+                if (localTestRun.initial_status == 'SKIPPED') {
+                  persist_test_result(localTestRun)
+                  Utils.markStageSkippedForConditional(stageName)
+                  println(
+                    "Skipping hardware test ${localTestRun.id}: ${localTestRun.initial_reason}"
+                  )
+                } else {
+                  def job = null
+                  try {
+                    job = run_hw_test(
+                      build_shortname,
+                      localTestRun.target,
+                      localTestRun.id,
+                      localTestRun.testset,
+                      localTestRun.effective_testagent_host,
+                      oci_result,
+                      localTestRun.secureboot,
+                      ci_env
+                    )
+                    persist_test_result(localTestRun, [job: job])
+                    with_controller_workspace(ghaf_checkout) {
+                      collect_hw_test_result(
+                        localTestRun.id,
+                        localTestRun.test_path_key,
+                        localTestRun.secureboot,
+                        output,
+                        job
+                      )
+                    }
+                    persist_test_result(localTestRun, [
+                      status: job.result ?: 'UNKNOWN',
+                      job: job,
+                    ])
+                  } catch (Exception e) {
+                    def result = [
+                      status: 'ERROR',
+                      reason: e.message,
+                    ]
+                    if (job != null) {
+                      result.job = job
+                    }
+                    persist_test_result(localTestRun, result)
+                    append_to_build_description("⛔ ${localTestRun.id}")
+                    throw e
+                  }
+                }
               }
             }
+          }
+
+          if (parallel_tests) {
+            parallel test_branches
           } else {
-            stage(testSecbootStageName) {
-              Utils.markStageSkippedForConditional(testSecbootStageName)
+            test_branches.each { key, value -> value() }
+          }
+        } finally {
+          stage("Publish test results ${build_shortname}") {
+            with_controller_workspace(ghaf_checkout) {
+              def finalTestEntries = normalized_test_runs.collect { testRun ->
+                def resultFile = result_file_for(testRun)
+                if (sh(script: "test -f '${resultFile}'", returnStatus: true) == 0) {
+                  return readJSON(file: resultFile, returnPojo: true)
+                }
+                if (testRun.initial_status != null) {
+                  return test_result_entry(testRun)
+                }
+                return test_result_entry(testRun, [
+                  status: 'UNKNOWN',
+                  reason: 'missing_result',
+                ])
+              }
+              write_manifest(finalTestEntries)
+              writeFile(
+                file: "${output}/test-results.json",
+                text: JsonOutput.prettyPrint(JsonOutput.toJson([
+                  target: build_target_name,
+                  tests: finalTestEntries,
+                ]))
+              )
             }
           }
         }
         if (ci_env != "vm") {
-          stage("Publish OCI test results ${shortname}") {
+          stage("Publish OCI test results ${build_shortname}") {
             with_controller_workspace(ghaf_checkout) {
               if (sh(
                 script: "test -d '${output}/test-results'",
                 returnStatus: true
               ) != 0) {
-                error("Missing test results for ${shortname}: ${output}/test-results")
+                error("Missing test results for ${build_shortname}: ${output}/test-results")
               }
               withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
                 sh """

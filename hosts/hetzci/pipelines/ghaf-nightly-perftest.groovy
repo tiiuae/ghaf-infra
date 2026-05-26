@@ -97,9 +97,13 @@ pipeline {
         dir(utils.controller_workdir()) {
           script {
             if (params.SET_TESTAGENT_HOST && params.TESTAGENT_HOST) {
-              PIPELINE = utils.create_pipeline(TARGETS, params.TESTAGENT_HOST)
+              PIPELINE = utils.create_pipeline(TARGETS, params.TESTAGENT_HOST, null, [
+                parallel_tests: false,
+              ])
             } else {
-              PIPELINE = utils.create_pipeline(TARGETS, env.CI_ENV)
+              PIPELINE = utils.create_pipeline(TARGETS, env.CI_ENV, null, [
+                parallel_tests: false,
+              ])
             }
           }
         }

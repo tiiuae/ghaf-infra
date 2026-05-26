@@ -230,6 +230,9 @@ prepare_artifacts() {
     if [[ -d "$dir/test-results" ]]; then
       ln -s "$dir/test-results" "$TMPDIR/$target_name/test-results"
     fi
+    if [[ -f "$dir/test-results.json" ]]; then
+      ln -s "$dir/test-results.json" "$TMPDIR/$target_name/test-results.json"
+    fi
 
     # Create a release tarball
     tarball=${target_name#"packages."} # strip possible 'packages.' prefix

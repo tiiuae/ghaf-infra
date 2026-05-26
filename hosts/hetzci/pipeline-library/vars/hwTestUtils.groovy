@@ -170,23 +170,25 @@ def resolve_ghaf_flake_ref(String explicitFlakeRef, String imgUrl, String ociFla
 
 def run_hw_test(
   String buildShortname,
+  String testTargetName,
+  String testIdentity,
   String testset,
   String testagent_host,
   Map oci_result,
   boolean secureboot,
-  String ci_env,
-  String testTargetName = null) {
+  String ci_env) {
   // Keep the blocking downstream wait outside node('built-in') so ghaf-hw-test
   // can acquire a controller executor for its own initialization stages.
   def build_href = "<a href=\"${env.BUILD_URL}\">${env.JOB_NAME}#${env.BUILD_ID}</a>"
   def normalizedTestTarget = testTargetName?.trim()
-  def desc = normalizedTestTarget ?
-    "Triggered by ${build_href}<br>(build: ${buildShortname}, test: ${normalizedTestTarget})" :
+  def normalizedTestIdentity = testIdentity?.trim()
+  def desc = normalizedTestIdentity ?
+    "Triggered by ${build_href}<br>(build: ${buildShortname}, test: ${normalizedTestIdentity})" :
     "Triggered by ${build_href}<br>(${buildShortname})"
   def test_params = [
     string(name: "TESTSET", value: testset),
     string(name: "DESC", value: desc),
-    string(name: "TESTAGENT_HOST", value: testagent_host),
+    string(name: "TESTAGENT_HOST", value: testagent_host ?: ''),
     booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: ci_env == "release"),
     booleanParam(name: "RELOAD_ONLY", value: false),
     booleanParam(name: "SECUREBOOT", value: secureboot),
@@ -206,28 +208,27 @@ def run_hw_test(
     parameters: test_params
   )
   return [
-    absoluteUrl: job.absoluteUrl,
+    url: job.absoluteUrl,
     number: job.number,
     result: job.result,
   ]
 }
 
 def collect_hw_test_result(
-  String shortname,
-  String testset,
-  String output,
+  String testIdentity,
+  String testPathKey,
   boolean secureboot,
+  String output,
   Map job) {
-  def logPrefix = secureboot ? "ghaf-hw-test log SB '${shortname}:" : "ghaf-hw-test log '${shortname}:"
+  def logPrefix = secureboot ? "ghaf-hw-test log SB '${testIdentity}:" : "ghaf-hw-test log '${testIdentity}:"
   println(logPrefix)
   sh "cat /var/lib/jenkins/jobs/ghaf-hw-test/builds/${job.number}/log | sed 's/^/    /'"
   if (job.result != "SUCCESS") {
-    unstable("FAILED: ${shortname} ${testset}")
+    unstable("FAILED: ${testIdentity}")
     currentBuild.result = "FAILURE"
-    def buildDescriptionName = secureboot ? "${shortname} (SB)" : shortname
-    utils.append_to_build_description("<a href=\"${job.absoluteUrl}\">⛔ ${buildDescriptionName}</a>")
+    utils.append_to_build_description("<a href=\"${job.url}\">⛔ ${testIdentity}</a>")
   }
-  def artifactsTarget = secureboot ? "${output}/test-results/secureboot" : "${output}/test-results"
+  def artifactsTarget = "${output}/test-results/${testPathKey}"
   copyArtifacts(
     projectName: "ghaf-hw-test",
     selector: specific("${job.number}"),
