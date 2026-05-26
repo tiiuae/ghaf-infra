@@ -20,19 +20,20 @@ assert pipelineModel.short_target_name('packages.x86_64-linux.lenovo-x1-carbon-g
 assert pipelineModel.short_target_name('plain-target') == 'plain-target'
 assert pipelineModel.safe_path_component('ghaf/main 1@prod') == 'ghaf-main-1-prod'
 assert pipelineModel.safe_stage_key(
-  'packages.x86_64-linux.lenovo@_relayboot bat_@host-prod@normal'
-) == 'packages.x86_64-linux.lenovo___relayboot-bat___host-prod__normal'
+  'x86_64-linux.lenovo@_relayboot bat_@prod@no-secureboot'
+) == 'x86_64-linux.lenovo___relayboot-bat___prod__no-secureboot'
 
 def sampleTestTarget = 'packages.x86_64-linux.lenovo-x1-carbon-gen11-debug'
+def sampleTestIdentityTarget = 'x86_64-linux.lenovo-x1-carbon-gen11-debug'
 assert pipelineModel.test_identity([
   target: sampleTestTarget,
   testset: '_relayboot_bat_',
   effective_testagent_host: 'prod',
-]) == "${sampleTestTarget}@_relayboot_bat_@host-prod@normal"
+]) == "${sampleTestIdentityTarget}@_relayboot_bat_@prod@no-secureboot"
 assert pipelineModel.test_identity([
   target: sampleTestTarget,
   testset: '_relayboot_bat_',
-], true) == "${sampleTestTarget}@_relayboot_bat_@host-any@secureboot"
+], true) == "${sampleTestIdentityTarget}@_relayboot_bat_@any@secureboot"
 
 def normalizedLegacyBuild = pipelineModel.normalize_build_config([
   target: sampleTestTarget,
@@ -61,9 +62,9 @@ assert normalizedLegacyBuild.tests[0].testagent_host_override == null
 assert normalizedLegacyBuild.tests[0].effective_testagent_host == 'prod'
 assert normalizedLegacyBuild.tests[0].secureboot_requested == true
 assert normalizedLegacyBuild.tests[0].id ==
-  "${sampleTestTarget}@_relayboot_bat_@host-prod@normal"
+  "${sampleTestIdentityTarget}@_relayboot_bat_@prod@no-secureboot"
 assert normalizedLegacyBuild.tests[0].secureboot_id ==
-  "${sampleTestTarget}@_relayboot_bat_@host-prod@secureboot"
+  "${sampleTestIdentityTarget}@_relayboot_bat_@prod@secureboot"
 
 def normalizedDocBuild = pipelineModel.normalize_build_config([
   target: 'packages.x86_64-linux.doc',
@@ -111,11 +112,11 @@ assert normalizedExplicitTests.size() == 2
 assert normalizedExplicitTests[0].effective_testagent_host == 'prod'
 assert normalizedExplicitTests[0].secureboot_requested == true
 assert normalizedExplicitTests[0].test_path_key ==
-  'packages.x86_64-linux.lenovo-x1-carbon-gen11-debug___relayboot_bat___host-prod__normal'
+  'x86_64-linux.lenovo-x1-carbon-gen11-debug___relayboot_bat___prod__no-secureboot'
 assert normalizedExplicitTests[1].testagent_host_override == 'release'
 assert normalizedExplicitTests[1].effective_testagent_host == 'release'
 assert normalizedExplicitTests[1].id ==
-  'packages.x86_64-linux.system76-darp11-b-debug@_relayboot_bat_@host-release@normal'
+  'x86_64-linux.system76-darp11-b-debug@_relayboot_bat_@release@no-secureboot'
 
 def normalizedBuildWithExplicitTests = pipelineModel.normalize_build_config([
   target: 'packages.x86_64-linux.intel-laptop-debug',
@@ -136,6 +137,33 @@ def normalizedBuildWithExplicitTests = pipelineModel.normalize_build_config([
 assert normalizedBuildWithExplicitTests.tests.size() == 2
 assert normalizedBuildWithExplicitTests.has_testset == false
 assert normalizedBuildWithExplicitTests.tests[1].effective_testagent_host == 'release'
+assert normalizedBuildWithExplicitTests.test_runs.size() == 3
+assert normalizedBuildWithExplicitTests.test_runs[1].initial_status == 'SKIPPED'
+assert normalizedBuildWithExplicitTests.test_runs[1].initial_reason == 'secureboot_not_available'
+
+def skippedTestEntry = pipelineModel.test_result_entry(normalizedBuildWithExplicitTests.test_runs[1])
+assert skippedTestEntry.status == 'SKIPPED'
+assert skippedTestEntry.reason == 'secureboot_not_available'
+assert skippedTestEntry.artifacts ==
+  'test-results/x86_64-linux.lenovo-x1-carbon-gen11-debug___relayboot_bat___prod__secureboot'
+
+def finishedTestEntry = pipelineModel.test_result_entry(
+  normalizedBuildWithExplicitTests.test_runs[0],
+  [
+    status: 'SUCCESS',
+    job: [
+      url: 'https://ci.example.invalid/job/ghaf-hw-test/42/',
+      number: 42,
+      result: 'SUCCESS',
+    ],
+  ]
+)
+assert finishedTestEntry.status == 'SUCCESS'
+assert finishedTestEntry.job == [
+  url: 'https://ci.example.invalid/job/ghaf-hw-test/42/',
+  number: 42,
+  result: 'SUCCESS',
+]
 
 expectFailure('Missing target name') {
   pipelineModel.normalize_build_config([:], true, 'prod', 'prod')

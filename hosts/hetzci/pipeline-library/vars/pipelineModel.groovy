@@ -76,9 +76,41 @@ def test_identity(Map testConfig, boolean secureboot = false) {
   validate_test_identity_component('testset', testset)
   validate_test_identity_component('testagent host', effectiveHost)
 
-  def mode = secureboot ? 'secureboot' : 'normal'
-  def hostComponent = effectiveHost == null ? 'host-any' : "host-${effectiveHost}"
-  return "${testTarget}@${testset}@${hostComponent}@${mode}".toString()
+  def targetComponent = testTarget.replaceFirst(/^packages\./, '')
+  def mode = secureboot ? 'secureboot' : 'no-secureboot'
+  def hostComponent = effectiveHost == null ? 'any' : effectiveHost
+  return "${targetComponent}@${testset}@${hostComponent}@${mode}".toString()
+}
+
+def test_result_entry(Map testRun, Map result = [:]) {
+  if (testRun == null) {
+    fail("Missing test run")
+  }
+
+  def entry = [
+    id: testRun.id,
+    target: testRun.target,
+    testset: testRun.testset,
+    testagent_host_override: testRun.get('testagent_host_override', null),
+    effective_testagent_host: testRun.get('effective_testagent_host', null),
+    secureboot: testRun.get('secureboot', false),
+    artifacts: testRun.get('artifacts', null) ?: "test-results/${testRun.test_path_key}",
+  ]
+
+  def status = result.containsKey('status') ? result.status : testRun.get('initial_status', null)
+  def reason = result.containsKey('reason') ? result.reason : testRun.get('initial_reason', null)
+
+  if (status != null) {
+    entry.status = status
+  }
+  if (reason != null) {
+    entry.reason = reason
+  }
+  if (result.get('job', null) instanceof Map) {
+    entry.job = shallow_copy_map(result.job)
+  }
+
+  return entry
 }
 
 def normalize_tests(Map buildConfig, String defaultTestagentHost = null) {
@@ -199,6 +231,59 @@ def normalize_tests(Map buildConfig, String defaultTestagentHost = null) {
   return normalizedTests
 }
 
+def expand_test_runs(Map buildConfig) {
+  if (buildConfig == null) {
+    fail("Missing build config")
+  }
+
+  def buildTarget = buildConfig.target
+  if (!(buildTarget instanceof String) || buildTarget.isEmpty()) {
+    fail("Missing target name")
+  }
+
+  def normalizedTests = buildConfig.get('tests', [])
+  if (!(normalizedTests instanceof List)) {
+    fail("Invalid tests for '${buildTarget}': expected a list")
+  }
+
+  def ciEnv = normalize_optional_string(buildConfig.get('ci_env', null))
+  def securebootExecutionAllowed = buildConfig.get('secureboot_execution_allowed', false)
+  def runs = []
+
+  normalizedTests.each { normalizedTest ->
+    def normalRun = shallow_copy_map(normalizedTest)
+    normalRun.id = normalizedTest.id
+    normalRun.test_path_key = normalizedTest.test_path_key
+    normalRun.secureboot = false
+    normalRun.stage_name = "Test ${normalRun.test_path_key}"
+    normalRun.artifacts = "test-results/${normalRun.test_path_key}"
+    if (ciEnv == 'vm') {
+      normalRun.initial_status = 'SKIPPED'
+      normalRun.initial_reason = 'ci_env_vm'
+    }
+    runs << normalRun
+
+    if (normalizedTest.secureboot_requested) {
+      def securebootRun = shallow_copy_map(normalizedTest)
+      securebootRun.id = normalizedTest.secureboot_id
+      securebootRun.test_path_key = normalizedTest.secureboot_test_path_key
+      securebootRun.secureboot = true
+      securebootRun.stage_name = "Test SB ${securebootRun.test_path_key}"
+      securebootRun.artifacts = "test-results/${securebootRun.test_path_key}"
+      if (ciEnv == 'vm') {
+        securebootRun.initial_status = 'SKIPPED'
+        securebootRun.initial_reason = 'ci_env_vm'
+      } else if (!securebootExecutionAllowed) {
+        securebootRun.initial_status = 'SKIPPED'
+        securebootRun.initial_reason = 'secureboot_not_available'
+      }
+      runs << securebootRun
+    }
+  }
+
+  return runs
+}
+
 def normalize_build_config(
   Map targetConfig,
   boolean signingPossible,
@@ -220,7 +305,9 @@ def normalize_build_config(
   def normalized = shallow_copy_map(targetConfig)
   normalized.target = targetName
   normalized.shortname = short_target_name(targetName)
+  normalized.ci_env = ciEnv
   normalized.no_image = normalized.get('no_image', false)
+  normalized.signing_possible = signingPossible
   normalized.uefi_sign_requested = normalized.get('uefisign', false) || normalized.get('uefisigniso', false)
   normalized.testset = normalized.get('testset', null)
   normalized.has_testset = normalized.testset != null && !normalized.testset.isEmpty()
@@ -229,8 +316,10 @@ def normalize_build_config(
   normalized.build_otapin_requested = normalized.get('build_otapin', false)
   normalized.sbom_requested = normalized.get('sbom', false)
   normalized.can_uefi_sign = !normalized.no_image && signingPossible && normalized.uefi_sign_requested
+  normalized.secureboot_execution_allowed = normalized.can_uefi_sign && ciEnv == "prod"
   normalized.tests = normalize_tests(normalized, defaultTestagentHost)
+  normalized.test_runs = expand_test_runs(normalized)
   normalized.run_secboot_test =
-    normalized.test_secboot_requested && normalized.can_uefi_sign && ciEnv == "prod"
+    normalized.test_secboot_requested && normalized.secureboot_execution_allowed
   return normalized
 }
