@@ -133,9 +133,9 @@
   },
   {
     "name": "configuration-as-code",
-    "version": "2088.ve3b_42c663c80",
-    "url": "https://updates.jenkins.io/download/plugins/configuration-as-code/2088.ve3b_42c663c80/configuration-as-code.hpi",
-    "sha256": "1m14ya1hq85xr5hagdnxn00vlipgjd9pdc1nb7d5bpkljcjfv6qh"
+    "version": "2089.v970a_0b_a_8cc6d",
+    "url": "https://updates.jenkins.io/download/plugins/configuration-as-code/2089.v970a_0b_a_8cc6d/configuration-as-code.hpi",
+    "sha256": "1h9rx9mc53mjcr851xd5vmwi58hvqgk4p1az5am82z3g4vwk6iq8"
   },
   {
     "name": "configuration-as-code-groovy",
@@ -457,9 +457,9 @@
   },
   {
     "name": "oss-symbols-api",
-    "version": "461.v209fb_a_3e73da_",
-    "url": "https://updates.jenkins.io/download/plugins/oss-symbols-api/461.v209fb_a_3e73da_/oss-symbols-api.hpi",
-    "sha256": "184511lav1mipjsfj83qdprpmwiaynrdzh62sbzr31l5g86g5699"
+    "version": "463.vff8a_5631a_09d",
+    "url": "https://updates.jenkins.io/download/plugins/oss-symbols-api/463.vff8a_5631a_09d/oss-symbols-api.hpi",
+    "sha256": "0cbdplssdzpvgm4xy3dgnd29k0qk3qyg1cyxqw7ig3c72yliwin5"
   },
   {
     "name": "parameterized-trigger",
@@ -481,9 +481,9 @@
   },
   {
     "name": "pipeline-graph-view",
-    "version": "940.v790e7a_c51722",
-    "url": "https://updates.jenkins.io/download/plugins/pipeline-graph-view/940.v790e7a_c51722/pipeline-graph-view.hpi",
-    "sha256": "17zv0s39sbw2vn7pznwm8gjnb6fp35n6nwp0x2lycxqzfhmydvvf"
+    "version": "949.v1cf0f01ca_cfa_",
+    "url": "https://updates.jenkins.io/download/plugins/pipeline-graph-view/949.v1cf0f01ca_cfa_/pipeline-graph-view.hpi",
+    "sha256": "1zxq9hka3ial4qxa2d3vhbz89540lavidp0axa8llisfb072pbxp"
   },
   {
     "name": "pipeline-groovy-lib",
