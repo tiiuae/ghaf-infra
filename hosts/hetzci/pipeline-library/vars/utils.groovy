@@ -65,6 +65,10 @@ def path_basename(String path) {
   return idx >= 0 ? path.substring(idx + 1) : path
 }
 
+def html_escape(String value) {
+  pipeline_model_call { pipelineModel.html_escape(value) }
+}
+
 def image_role(String path) {
   def basename = path_basename(path)
   if (basename == null) {
@@ -604,65 +608,71 @@ def create_pipeline(
       if (!normalized_test_runs.isEmpty()) {
         try {
           def test_branches = [:]
+          def hw_test_stage_name = "HW test ${build_shortname}"
+          def all_tests_skipped = normalized_test_runs.every { testRun ->
+            testRun.initial_status == 'SKIPPED'
+          }
           normalized_test_runs.each { testRun ->
             def localTestRun = testRun
             def stageName = localTestRun.stage_name
             test_branches[stageName] = {
-              stage(stageName) {
-                if (localTestRun.initial_status == 'SKIPPED') {
-                  persist_test_result(localTestRun)
-                  Utils.markStageSkippedForConditional(stageName)
-                  println(
-                    "Skipping hardware test ${localTestRun.id}: ${localTestRun.initial_reason}"
+              if (localTestRun.initial_status == 'SKIPPED') {
+                persist_test_result(localTestRun)
+                println(
+                  "Skipping hardware test ${localTestRun.id}: ${localTestRun.initial_reason}"
+                )
+              } else {
+                def job = null
+                try {
+                  job = run_hw_test(
+                    build_shortname,
+                    localTestRun.target,
+                    localTestRun.id,
+                    localTestRun.testset,
+                    localTestRun.effective_testagent_host,
+                    oci_result,
+                    localTestRun.secureboot,
+                    ci_env
                   )
-                } else {
-                  def job = null
-                  try {
-                    job = run_hw_test(
-                      build_shortname,
-                      localTestRun.target,
+                  persist_test_result(localTestRun, [job: job])
+                  with_controller_workspace(ghaf_checkout) {
+                    collect_hw_test_result(
                       localTestRun.id,
-                      localTestRun.testset,
-                      localTestRun.effective_testagent_host,
-                      oci_result,
+                      localTestRun.test_path_key,
                       localTestRun.secureboot,
-                      ci_env
+                      output,
+                      job
                     )
-                    persist_test_result(localTestRun, [job: job])
-                    with_controller_workspace(ghaf_checkout) {
-                      collect_hw_test_result(
-                        localTestRun.id,
-                        localTestRun.test_path_key,
-                        localTestRun.secureboot,
-                        output,
-                        job
-                      )
-                    }
-                    persist_test_result(localTestRun, [
-                      status: job.result ?: 'UNKNOWN',
-                      job: job,
-                    ])
-                  } catch (Exception e) {
-                    def result = [
-                      status: 'ERROR',
-                      reason: e.message,
-                    ]
-                    if (job != null) {
-                      result.job = job
-                    }
-                    persist_test_result(localTestRun, result)
-                    append_to_build_description("⛔ ${localTestRun.id}")
-                    throw e
                   }
+                  persist_test_result(localTestRun, [
+                    status: job.result ?: 'UNKNOWN',
+                    job: job,
+                  ])
+                } catch (Exception e) {
+                  def result = [
+                    status: 'ERROR',
+                    reason: e.message,
+                  ]
+                  if (job != null) {
+                    result.job = job
+                  }
+                  persist_test_result(localTestRun, result)
+                  append_to_build_description("⛔ ${html_escape(localTestRun.id)}")
+                  throw e
                 }
               }
             }
           }
 
-          if (parallel_tests) {
-            parallel test_branches
-          } else {
-            test_branches.each { key, value -> value() }
+          stage(hw_test_stage_name) {
+            if (parallel_tests) {
+              parallel test_branches
+            } else {
+              test_branches.each { key, value -> value() }
+            }
+            if (all_tests_skipped) {
+              Utils.markStageSkippedForConditional(hw_test_stage_name)
+            }
           }
         } finally {
           stage("Publish test results ${build_shortname}") {

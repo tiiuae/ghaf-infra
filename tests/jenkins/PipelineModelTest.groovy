@@ -22,6 +22,10 @@ assert pipelineModel.safe_path_component('ghaf/main 1@prod') == 'ghaf-main-1-pro
 assert pipelineModel.safe_stage_key(
   'x86_64-linux.lenovo@_relayboot bat_@prod@no-secureboot'
 ) == 'x86_64-linux.lenovo___relayboot-bat___prod__no-secureboot'
+assert pipelineModel.html_escape(null) == null
+assert pipelineModel.html_escape('<script data-x="a&b">\'</script>') ==
+  '&lt;script data-x=&quot;a&amp;b&quot;&gt;&#39;&lt;/script&gt;'
+assert pipelineModel.display_testset('_relayboot_bat_') == 'relayboot bat'
 
 def sampleTestTarget = 'packages.x86_64-linux.lenovo-x1-carbon-gen11-debug'
 def sampleTestIdentityTarget = 'x86_64-linux.lenovo-x1-carbon-gen11-debug'
@@ -65,6 +69,10 @@ assert normalizedLegacyBuild.tests[0].id ==
   "${sampleTestIdentityTarget}@_relayboot_bat_@prod@no-secureboot"
 assert normalizedLegacyBuild.tests[0].secureboot_id ==
   "${sampleTestIdentityTarget}@_relayboot_bat_@prod@secureboot"
+assert normalizedLegacyBuild.test_runs*.stage_name == [
+  'Test lenovo-x1-carbon-gen11-debug / relayboot bat / prod / no-secureboot',
+  'Test lenovo-x1-carbon-gen11-debug / relayboot bat / prod / secureboot',
+]
 
 def normalizedDocBuild = pipelineModel.normalize_build_config([
   target: 'packages.x86_64-linux.doc',
@@ -138,6 +146,11 @@ assert normalizedBuildWithExplicitTests.tests.size() == 2
 assert normalizedBuildWithExplicitTests.has_testset == false
 assert normalizedBuildWithExplicitTests.tests[1].effective_testagent_host == 'release'
 assert normalizedBuildWithExplicitTests.test_runs.size() == 3
+assert normalizedBuildWithExplicitTests.test_runs*.stage_name == [
+  'Test lenovo-x1-carbon-gen11-debug / relayboot bat / prod / no-secureboot',
+  'Test lenovo-x1-carbon-gen11-debug / relayboot bat / prod / secureboot',
+  'Test system76-darp11-b-debug / relayboot bat / release / no-secureboot',
+]
 assert normalizedBuildWithExplicitTests.test_runs[1].initial_status == 'SKIPPED'
 assert normalizedBuildWithExplicitTests.test_runs[1].initial_reason == 'secureboot_not_available'
 
@@ -241,6 +254,22 @@ expectFailure('Duplicate test path key') {
       ],
     ],
   ], 'prod')
+}
+
+expectFailure('Duplicate test stage name') {
+  pipelineModel.normalize_build_config([
+    target: 'packages.x86_64-linux.intel-laptop-debug',
+    tests: [
+      [
+        target: 'packages.x86_64-linux.same-shortname',
+        testset: '_relayboot_',
+      ],
+      [
+        target: 'packages.aarch64-linux.same-shortname',
+        testset: '_relayboot_',
+      ],
+    ],
+  ], true, 'prod', null)
 }
 
 expectFailure("reserved in canonical test identities") {
