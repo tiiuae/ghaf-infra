@@ -27,6 +27,41 @@ def safe_stage_key(String value) {
   return value.replace('@', '__').replaceAll(/[^A-Za-z0-9_.-]/, '-')
 }
 
+def html_escape(String value) {
+  if (value == null) {
+    return null
+  }
+  return value
+    .replace('&', '&amp;')
+    .replace('<', '&lt;')
+    .replace('>', '&gt;')
+    .replace('"', '&quot;')
+    .replace("'", '&#39;')
+}
+
+def display_testset(String value) {
+  def normalized = normalize_optional_string(value)
+  if (normalized == null) {
+    return null
+  }
+  normalized = normalized.replaceAll(/^_+|_+$/, '').replace('_', ' ')
+  return normalized ?: value
+}
+
+def test_stage_name(Map testRun) {
+  if (testRun == null) {
+    fail("Missing test run")
+  }
+  def shortname = normalize_optional_string(testRun.get('shortname', null))
+  if (shortname == null) {
+    shortname = short_target_name(testRun.target)
+  }
+  def testset = display_testset(testRun.testset)
+  def host = normalize_optional_string(testRun.get('effective_testagent_host', null)) ?: 'any'
+  def mode = testRun.get('secureboot', false) ? 'secureboot' : 'no-secureboot'
+  return "Test ${shortname} / ${testset} / ${host} / ${mode}".toString()
+}
+
 def normalize_optional_string(value) {
   if (!(value instanceof String)) {
     return null
@@ -255,7 +290,7 @@ def expand_test_runs(Map buildConfig) {
     normalRun.id = normalizedTest.id
     normalRun.test_path_key = normalizedTest.test_path_key
     normalRun.secureboot = false
-    normalRun.stage_name = "Test ${normalRun.test_path_key}"
+    normalRun.stage_name = test_stage_name(normalRun)
     normalRun.artifacts = "test-results/${normalRun.test_path_key}"
     if (ciEnv == 'vm') {
       normalRun.initial_status = 'SKIPPED'
@@ -268,7 +303,7 @@ def expand_test_runs(Map buildConfig) {
       securebootRun.id = normalizedTest.secureboot_id
       securebootRun.test_path_key = normalizedTest.secureboot_test_path_key
       securebootRun.secureboot = true
-      securebootRun.stage_name = "Test SB ${securebootRun.test_path_key}"
+      securebootRun.stage_name = test_stage_name(securebootRun)
       securebootRun.artifacts = "test-results/${securebootRun.test_path_key}"
       if (ciEnv == 'vm') {
         securebootRun.initial_status = 'SKIPPED'
@@ -279,6 +314,18 @@ def expand_test_runs(Map buildConfig) {
       }
       runs << securebootRun
     }
+  }
+
+  def seenStageNames = [:]
+  runs.each { run ->
+    if (seenStageNames.containsKey(run.stage_name)) {
+      def previous = seenStageNames[run.stage_name]
+      fail(
+        "Duplicate test stage name '${run.stage_name}' for build '${buildTarget}': " +
+          "'${previous.id}' and '${run.id}'"
+      )
+    }
+    seenStageNames[run.stage_name] = run
   }
 
   return runs
