@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
+# SPDX-FileCopyrightText: 2022-2026 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 {
   description = "NixOS configurations for Ghaf Infra";
@@ -20,7 +20,7 @@
 
   inputs = {
     # Nixpkgs
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
 
     # Allows us to structure the flake with the NixOS module system
     flake-parts.url = "github:hercules-ci/flake-parts";

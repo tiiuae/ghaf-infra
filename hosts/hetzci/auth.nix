@@ -26,12 +26,6 @@ in
         oauth2_proxy_client_secret.owner = "oauth2-proxy";
         oauth2_proxy_cookie_secret.owner = "oauth2-proxy";
       };
-      templates.oauth2_proxy_env = {
-        content = ''
-          OAUTH2_PROXY_COOKIE_SECRET=${config.sops.placeholder.oauth2_proxy_cookie_secret}
-        '';
-        owner = "oauth2-proxy";
-      };
     };
 
     environment.etc."jenkins/casc/auth.yaml".source = ./casc/auth.yaml;
@@ -39,8 +33,8 @@ in
     services.oauth2-proxy = {
       enable = true;
       inherit (cfg) clientID;
-      clientSecret = null;
-      cookie.secret = null;
+      clientSecretFile = config.sops.secrets.oauth2_proxy_client_secret.path;
+      cookie.secretFile = config.sops.secrets.oauth2_proxy_cookie_secret.path;
       provider = "oidc";
       oidcIssuerUrl = "https://auth.vedenemo.dev";
       setXauthrequest = true;
@@ -57,10 +51,8 @@ in
         cookie-samesite = "lax";
         cookie-csrf-samesite = "lax";
         skip-provider-button = true;
-        client-secret-file = config.sops.secrets.oauth2_proxy_client_secret.path;
         whitelist-domain = cfg.domain;
       };
-      keyFile = config.sops.templates.oauth2_proxy_env.path;
     };
 
     systemd.services.oauth2-proxy = {
