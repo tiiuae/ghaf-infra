@@ -28,6 +28,7 @@ assert pipelineModel.html_escape('<script data-x="a&b">\'</script>') ==
 assert pipelineModel.display_testset('_relayboot_bat_') == 'relayboot bat'
 
 def sampleTestTarget = 'packages.x86_64-linux.lenovo-x1-carbon-gen11-debug'
+def sampleTestShortTarget = 'lenovo-x1-carbon-gen11-debug'
 def sampleTestIdentityTarget = 'x86_64-linux.lenovo-x1-carbon-gen11-debug'
 assert pipelineModel.test_identity([
   target: sampleTestTarget,
@@ -104,12 +105,12 @@ def normalizedExplicitTests = pipelineModel.normalize_tests([
   target: 'packages.x86_64-linux.intel-laptop-debug',
   tests: [
     [
-      target: 'packages.x86_64-linux.lenovo-x1-carbon-gen11-debug',
+      test_target: sampleTestShortTarget,
       testset: '_relayboot_bat_',
       test_secboot: true,
     ],
     [
-      target: 'packages.x86_64-linux.system76-darp11-b-debug',
+      test_target: 'system76-darp11-b-debug',
       testset: '_relayboot_bat_',
       testagent_host: 'release',
     ],
@@ -120,22 +121,22 @@ assert normalizedExplicitTests.size() == 2
 assert normalizedExplicitTests[0].effective_testagent_host == 'prod'
 assert normalizedExplicitTests[0].secureboot_requested == true
 assert normalizedExplicitTests[0].test_path_key ==
-  'x86_64-linux.lenovo-x1-carbon-gen11-debug___relayboot_bat___prod__no-secureboot'
+  'lenovo-x1-carbon-gen11-debug___relayboot_bat___prod__no-secureboot'
 assert normalizedExplicitTests[1].testagent_host_override == 'release'
 assert normalizedExplicitTests[1].effective_testagent_host == 'release'
 assert normalizedExplicitTests[1].id ==
-  'x86_64-linux.system76-darp11-b-debug@_relayboot_bat_@release@no-secureboot'
+  'system76-darp11-b-debug@_relayboot_bat_@release@no-secureboot'
 
 def normalizedBuildWithExplicitTests = pipelineModel.normalize_build_config([
   target: 'packages.x86_64-linux.intel-laptop-debug',
   tests: [
     [
-      target: 'packages.x86_64-linux.lenovo-x1-carbon-gen11-debug',
+      test_target: sampleTestShortTarget,
       testset: '_relayboot_bat_',
       test_secboot: true,
     ],
     [
-      target: 'packages.x86_64-linux.system76-darp11-b-debug',
+      test_target: 'system76-darp11-b-debug',
       testset: '_relayboot_bat_',
       testagent_host: 'release',
     ],
@@ -158,7 +159,7 @@ def skippedTestEntry = pipelineModel.test_result_entry(normalizedBuildWithExplic
 assert skippedTestEntry.status == 'SKIPPED'
 assert skippedTestEntry.reason == 'secureboot_not_available'
 assert skippedTestEntry.artifacts ==
-  'test-results/x86_64-linux.lenovo-x1-carbon-gen11-debug___relayboot_bat___prod__secureboot'
+  'test-results/lenovo-x1-carbon-gen11-debug___relayboot_bat___prod__secureboot'
 
 def finishedTestEntry = pipelineModel.test_result_entry(
   normalizedBuildWithExplicitTests.test_runs[0],
@@ -186,7 +187,7 @@ expectFailure("Explicit 'tests' entries are not supported by create_pipeline() y
   pipelineModel.normalize_build_config([
     target: 'packages.x86_64-linux.intel-laptop-debug',
     tests: [[
-      target: sampleTestTarget,
+      test_target: sampleTestTarget,
       testset: '_relayboot_bat_',
     ]],
   ], true, 'prod', 'prod', false)
@@ -197,7 +198,7 @@ expectFailure("use either 'tests' or legacy 'testset'") {
     target: 'packages.x86_64-linux.intel-laptop-debug',
     testset: '_relayboot_bat_',
     tests: [[
-      target: sampleTestTarget,
+      test_target: sampleTestTarget,
       testset: '_relayboot_bat_',
     ]],
   ], 'prod')
@@ -207,7 +208,7 @@ expectFailure('expected a list') {
   pipelineModel.normalize_tests([
     target: 'packages.x86_64-linux.intel-laptop-debug',
     tests: [
-      target: sampleTestTarget,
+      test_target: sampleTestTarget,
       testset: '_relayboot_bat_',
     ],
   ], 'prod')
@@ -218,7 +219,7 @@ expectFailure('no_image builds cannot define tests') {
     target: 'packages.x86_64-linux.doc',
     no_image: true,
     tests: [[
-      target: sampleTestTarget,
+      test_target: sampleTestTarget,
       testset: '_relayboot_bat_',
     ]],
   ], 'prod')
@@ -229,11 +230,11 @@ expectFailure('Duplicate canonical test identity') {
     target: 'packages.x86_64-linux.intel-laptop-debug',
     tests: [
       [
-        target: sampleTestTarget,
+        test_target: sampleTestShortTarget,
         testset: '_relayboot_bat_',
       ],
       [
-        target: sampleTestTarget,
+        test_target: sampleTestShortTarget,
         testset: '_relayboot_bat_',
       ],
     ],
@@ -245,11 +246,11 @@ expectFailure('Duplicate test path key') {
     target: 'packages.x86_64-linux.intel-laptop-debug',
     tests: [
       [
-        target: sampleTestTarget,
+        test_target: sampleTestShortTarget,
         testset: 'collision/a',
       ],
       [
-        target: sampleTestTarget,
+        test_target: sampleTestShortTarget,
         testset: 'collision?a',
       ],
     ],
@@ -261,11 +262,11 @@ expectFailure('Duplicate test stage name') {
     target: 'packages.x86_64-linux.intel-laptop-debug',
     tests: [
       [
-        target: 'packages.x86_64-linux.same-shortname',
+        test_target: 'same-shortname',
         testset: '_relayboot_',
       ],
       [
-        target: 'packages.aarch64-linux.same-shortname',
+        test_target: 'packages.aarch64-linux.same-shortname',
         testset: '_relayboot_',
       ],
     ],
@@ -278,6 +279,16 @@ expectFailure("reserved in canonical test identities") {
     testset: 'bad@testset',
     effective_testagent_host: 'prod',
   ])
+}
+
+expectFailure("full 'packages.<system>.<target>' value or a short target name") {
+  pipelineModel.normalize_tests([
+    target: 'packages.x86_64-linux.intel-laptop-debug',
+    tests: [[
+      test_target: 'x86_64-linux.lenovo-x1-carbon-gen11-debug',
+      testset: '_relayboot_bat_',
+    ]],
+  ], 'prod')
 }
 
 println 'PipelineModelTest passed'
