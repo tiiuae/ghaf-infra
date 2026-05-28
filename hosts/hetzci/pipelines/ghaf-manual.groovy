@@ -28,6 +28,7 @@ properties([
     booleanParam(name: 'system76_darp11_b_storeDisk_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.system76-darp11-b-storeDisk-debug-installer'),
     booleanParam(name: 'intel_laptop_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug'),
     booleanParam(name: 'intel_laptop_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug-installer'),
+    booleanParam(name: 'intel_laptop_storeDisk_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-storeDisk-debug-installer'),
     booleanParam(name: 'intel_laptop_low_mem_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-low-mem-debug'),
     booleanParam(name: 'intel_laptop_low_mem_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-low-mem-debug-installer'),
   ])
@@ -65,6 +66,26 @@ pipeline {
         dir(utils.controller_workdir()) {
           script {
             def TARGETS = []
+            def normalizedTestset = params.TESTSET?.trim()
+            if (normalizedTestset?.isEmpty()) {
+              normalizedTestset = null
+            }
+            def addExplicitTests = { Map targetConfig, List testMappings ->
+              if (!normalizedTestset) {
+                return targetConfig
+              }
+              targetConfig.tests = testMappings.collect { testMapping ->
+                def explicitTest = [
+                  test_target: testMapping.test_target,
+                  testset: normalizedTestset,
+                ]
+                if (testMapping.containsKey('test_secboot')) {
+                  explicitTest.test_secboot = testMapping.test_secboot
+                }
+                return explicitTest
+              }
+              return targetConfig
+            }
             if (params.doc) {
               TARGETS.push(
                 [ target: "packages.x86_64-linux.doc", no_image: true, testset: null ])
@@ -118,16 +139,42 @@ pipeline {
                 [ target: "packages.x86_64-linux.system76-darp11-b-storeDisk-debug-installer", uefisigniso: params.UEFISIGN, testset: params.TESTSET  ])
             }
             if (params.intel_laptop_debug) {
-              TARGETS.push(
-                [ target: "packages.x86_64-linux.intel-laptop-debug", uefisign: params.UEFISIGN, testset: null ])
+              TARGETS.push(addExplicitTests(
+                [ target: "packages.x86_64-linux.intel-laptop-debug", uefisign: params.UEFISIGN ],
+                [
+                  [
+                    test_target: "lenovo-x1-carbon-gen11-debug",
+                    test_secboot: params.SECUREBOOT,
+                  ],
+                  [
+                    test_target: "system76-darp11-b-debug",
+                  ],
+                ],
+              ))
             }
             if (params.intel_laptop_debug_installer) {
-              TARGETS.push(
-                [ target: "packages.x86_64-linux.intel-laptop-debug-installer", uefisigniso: params.UEFISIGN, testset: null ])
+              TARGETS.push(addExplicitTests(
+                [ target: "packages.x86_64-linux.intel-laptop-debug-installer", uefisigniso: params.UEFISIGN ],
+                [[
+                  test_target: "lenovo-x1-carbon-gen11-debug-installer",
+                ]],
+              ))
+            }
+            if (params.intel_laptop_storeDisk_debug_installer) {
+              TARGETS.push(addExplicitTests(
+                [ target: "packages.x86_64-linux.intel-laptop-storeDisk-debug-installer", uefisigniso: params.UEFISIGN ],
+                [[
+                  test_target: "system76-darp11-b-storeDisk-debug-installer",
+                ]],
+              ))
             }
             if (params.intel_laptop_low_mem_debug) {
-              TARGETS.push(
-                [ target: "packages.x86_64-linux.intel-laptop-low-mem-debug", uefisign: params.UEFISIGN, testset: null ])
+              TARGETS.push(addExplicitTests(
+                [ target: "packages.x86_64-linux.intel-laptop-low-mem-debug", uefisign: params.UEFISIGN ],
+                [[
+                  test_target: "dell-latitude-7330-debug",
+                ]],
+              ))
             }
             if (params.intel_laptop_low_mem_debug_installer) {
               TARGETS.push(
