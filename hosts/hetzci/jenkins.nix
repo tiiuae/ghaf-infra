@@ -294,6 +294,12 @@ in
       # runs `rm -r /var/lib/jenkins/plugins`, to avoid first-boot noise.
       preStart = lib.mkBefore ''
         mkdir -p /var/lib/jenkins/plugins
+        mkdir -p ${config.services.jenkins.home}/userContent
+        rm -f ${config.services.jenkins.home}/userContent/pipeline-graph-view-nested-layout.js
+        cp ${./user-content/pipeline-graph-view-nested-layout.js} \
+          ${config.services.jenkins.home}/userContent/pipeline-graph-view-nested-layout.js
+        chown jenkins:jenkins \
+          ${config.services.jenkins.home}/userContent/pipeline-graph-view-nested-layout.js
       '';
       serviceConfig = {
         Restart = "on-failure";

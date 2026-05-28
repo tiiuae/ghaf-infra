@@ -1,6 +1,10 @@
 appearance:
   pipelineGraphView:
     showGraphOnBuildPage: true
+  simpleTheme:
+    elements:
+    - jsUrl:
+        url: "/userContent/pipeline-graph-view-nested-layout.js"
   themeManager:
     theme: "darkSystem" # follow system theme
 

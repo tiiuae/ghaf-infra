@@ -141,6 +141,7 @@ def test_result_entry(Map testRun, Map result = [:]) {
   if (testRun == null) {
     fail("Missing test run")
   }
+  result = result ?: [:]
 
   def entry = [
     id: testRun.id,

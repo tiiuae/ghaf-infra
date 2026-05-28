@@ -18,3 +18,4 @@ uno-choice
 workflow-aggregator
 workflow-job
 dark-theme
+simple-theme-plugin
