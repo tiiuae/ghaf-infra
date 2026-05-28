@@ -87,6 +87,27 @@ def append_to_build_description(String text) {
   }
 }
 
+def append_to_build_description_once(String text) {
+  lock('build-description') {
+    if (currentBuild.description?.contains(text)) {
+      return
+    }
+    if (!currentBuild.description) {
+      currentBuild.description = text
+    } else {
+      currentBuild.description = "${currentBuild.description}<br>${text}"
+    }
+  }
+}
+
+def hw_test_stage_display_name(String buildShortname, List<Map> testRuns) {
+  def runCount = testRuns.size()
+  if (runCount > 1) {
+    return "HW tests ${buildShortname} (${runCount})"
+  }
+  return "HW test ${buildShortname}"
+}
+
 def ghaf_flake_ref(String repo, String rev) {
   def normalizedRepo = repo.trim()
   if (!normalizedRepo.startsWith("https://")) {
@@ -581,9 +602,7 @@ def create_pipeline(
 
           write_manifest()
 
-          if (!currentBuild.description || !currentBuild.description.contains(artifacts_href)) {
-            append_to_build_description(artifacts_href)
-          }
+          append_to_build_description_once(artifacts_href)
         }
         if (!no_image) {
           stage("Publish OCI ${build_shortname}") {
@@ -608,7 +627,10 @@ def create_pipeline(
       if (!normalized_test_runs.isEmpty()) {
         try {
           def test_branches = [:]
-          def hw_test_stage_name = "HW test ${build_shortname}"
+          def hw_test_stage_name = hw_test_stage_display_name(
+            build_shortname,
+            normalized_test_runs
+          )
           def all_tests_skipped = normalized_test_runs.every { testRun ->
             testRun.initial_status == 'SKIPPED'
           }
@@ -616,49 +638,55 @@ def create_pipeline(
             def localTestRun = testRun
             def stageName = localTestRun.stage_name
             test_branches[stageName] = {
-              if (localTestRun.initial_status == 'SKIPPED') {
-                persist_test_result(localTestRun)
-                println(
-                  "Skipping hardware test ${localTestRun.id}: ${localTestRun.initial_reason}"
-                )
-              } else {
-                def job = null
-                try {
-                  job = run_hw_test(
-                    build_shortname,
-                    localTestRun.target,
-                    localTestRun.id,
-                    localTestRun.testset,
-                    localTestRun.effective_testagent_host,
-                    oci_result,
-                    localTestRun.secureboot,
-                    ci_env
-                  )
-                  persist_test_result(localTestRun, [job: job])
-                  with_controller_workspace(ghaf_checkout) {
-                    collect_hw_test_result(
+              stage(stageName) {
+                if (localTestRun.initial_status == 'SKIPPED') {
+                  persist_test_result(localTestRun, [:])
+                  def skipMessage =
+                    "Skipping hardware test ${localTestRun.id}: ${localTestRun.initial_reason}"
+                  // Mark the child stage explicitly as skipped so graph views
+                  // do not misattribute sibling failures to this branch.
+                  echo(skipMessage)
+                  Utils.markStageSkippedForConditional(stageName)
+                  return
+                } else {
+                  def job = null
+                  try {
+                    job = run_hw_test(
+                      build_shortname,
+                      localTestRun.target,
                       localTestRun.id,
-                      localTestRun.test_path_key,
+                      localTestRun.testset,
+                      localTestRun.effective_testagent_host,
+                      oci_result,
                       localTestRun.secureboot,
-                      output,
-                      job
+                      ci_env
                     )
+                    persist_test_result(localTestRun, [job: job])
+                    with_controller_workspace(ghaf_checkout) {
+                      collect_hw_test_result(
+                        localTestRun.id,
+                        localTestRun.test_path_key,
+                        localTestRun.secureboot,
+                        output,
+                        job
+                      )
+                    }
+                    persist_test_result(localTestRun, [
+                      status: job.result ?: 'UNKNOWN',
+                      job: job,
+                    ])
+                  } catch (Exception e) {
+                    def result = [
+                      status: 'ERROR',
+                      reason: e.message,
+                    ]
+                    if (job != null) {
+                      result.job = job
+                    }
+                    persist_test_result(localTestRun, result)
+                    append_to_build_description("⛔ ${html_escape(localTestRun.id)}")
+                    throw e
                   }
-                  persist_test_result(localTestRun, [
-                    status: job.result ?: 'UNKNOWN',
-                    job: job,
-                  ])
-                } catch (Exception e) {
-                  def result = [
-                    status: 'ERROR',
-                    reason: e.message,
-                  ]
-                  if (job != null) {
-                    result.job = job
-                  }
-                  persist_test_result(localTestRun, result)
-                  append_to_build_description("⛔ ${html_escape(localTestRun.id)}")
-                  throw e
                 }
               }
             }

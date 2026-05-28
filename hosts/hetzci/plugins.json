@@ -624,6 +624,12 @@
     "sha256": "0mv6cbqwh5lnswmyk4h4sd81mxgimbd2ki98f6q14zg9hai2fc49"
   },
   {
+    "name": "simple-theme-plugin",
+    "version": "230.v8b_fd91b_b_800c",
+    "url": "https://updates.jenkins.io/download/plugins/simple-theme-plugin/230.v8b_fd91b_b_800c/simple-theme-plugin.hpi",
+    "sha256": "0z3bw8k8v7r75g5hmvdj865z6dh1z9dgjx4y3jbdrln90djc03n5"
+  },
+  {
     "name": "snakeyaml-api",
     "version": "2.5-149.v72471e9c6371",
     "url": "https://updates.jenkins.io/download/plugins/snakeyaml-api/2.5-149.v72471e9c6371/snakeyaml-api.hpi",
