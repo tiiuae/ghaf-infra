@@ -84,12 +84,32 @@ def validate_test_identity_component(String name, String value) {
   }
 }
 
+def resolve_explicit_test_target(Map testConfig, String buildTarget, int idx) {
+  if (testConfig == null) {
+    fail("Missing test config")
+  }
+
+  def explicitTestTarget = normalize_optional_string(testConfig.get('test_target', null))
+  if (!(explicitTestTarget instanceof String) || explicitTestTarget.isEmpty()) {
+    fail("Missing test_target for '${buildTarget}' entry #${idx + 1}")
+  }
+
+  if (explicitTestTarget.contains('.') && !explicitTestTarget.startsWith('packages.')) {
+    fail(
+      "Invalid explicit test_target '${explicitTestTarget}': " +
+        "use either a full 'packages.<system>.<target>' value or a short target name"
+    )
+  }
+
+  return explicitTestTarget
+}
+
 def test_identity(Map testConfig, boolean secureboot = false) {
   if (testConfig == null) {
     fail("Missing test config")
   }
 
-  def testTarget = testConfig.target
+  def testTarget = normalize_optional_string(testConfig.get('target', null))
   if (!(testTarget instanceof String) || testTarget.isEmpty()) {
     fail("Missing test target")
   }
@@ -173,7 +193,7 @@ def normalize_tests(Map buildConfig, String defaultTestagentHost = null) {
     rawTests = explicitTests
   } else if (hasLegacyTestset) {
     rawTests = [[
-      target: rawTarget,
+      test_target: rawTarget,
       testset: legacyTestset,
       test_secboot: buildConfig.get('test_secboot', false),
     ]]
@@ -189,10 +209,7 @@ def normalize_tests(Map buildConfig, String defaultTestagentHost = null) {
       fail("Invalid test entry #${idx + 1} for '${rawTarget}': expected a map")
     }
 
-    def testTarget = rawTest.target
-    if (!(testTarget instanceof String) || testTarget.isEmpty()) {
-      fail("Missing test target for '${rawTarget}' entry #${idx + 1}")
-    }
+    def testTarget = resolve_explicit_test_target(rawTest, rawTarget, idx)
 
     def testset = rawTest.testset
     if (!(testset instanceof String) || testset.isEmpty()) {
@@ -222,6 +239,7 @@ def normalize_tests(Map buildConfig, String defaultTestagentHost = null) {
     ])
 
     def normalizedTest = shallow_copy_map(rawTest)
+    normalizedTest.remove('test_target')
     normalizedTest.target = testTarget
     normalizedTest.shortname = short_target_name(testTarget)
     normalizedTest.testset = testset
