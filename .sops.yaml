@@ -197,6 +197,7 @@ creation_rules:
       - *hetzci-prod
       - *hrosten
       - *jrautiola
+      - *pavelf
   - path_regex: hosts/hetzci/dbg/secrets.yaml$
     key_groups:
     - age:
@@ -212,6 +213,7 @@ creation_rules:
       - *hetzci-dev
       - *hrosten
       - *jrautiola
+      - *pavelf
   - path_regex: hosts/hetzci/vm/secrets.yaml$
     key_groups:
     - age:
@@ -221,6 +223,7 @@ creation_rules:
       - *fayad
       - *cazfi
       - *ktu
+      - *pavelf
   - path_regex: hosts/testagent/credentials.yaml$
     key_groups:
     - age:
