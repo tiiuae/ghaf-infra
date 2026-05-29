@@ -71,6 +71,7 @@ def init() {
   }
   env.BUILD_TARGET = utils.derive_target_name(imgUrl, env.OCI_TARGET) ?: ''
   env.TEST_TARGET = utils.resolve_test_target(params.TEST_TARGET, env.BUILD_TARGET) ?: ''
+  env.JOB_TARGET = env.BUILD_TARGET ?: env.TEST_TARGET
   env.TESTSET = params.TESTSET ?: ''
   env.INSTALLER_FLOW = env.BUILD_TARGET.contains("installer") ? 'true' : 'false'
   // Resolve the target here as well for controller-side fail-fast validation and
@@ -254,7 +255,9 @@ pipeline {
               env.TESTSET = params.TESTSET ?: ''
               env.EXTRATAG = utils.extra_tag_suffix(env.TEST_TARGET, env.DEVICE_TAG)
               currentBuild.description = params.containsKey('DESC') ? "${params.DESC}" : "${env.TEST_TARGET}"
+              println("Using BUILD_TARGET: ${env.BUILD_TARGET}")
               println("Using TEST_TARGET: ${env.TEST_TARGET}")
+              println("Using JOB_TARGET: ${env.JOB_TARGET}")
               println("Using TARGET alias: ${env.TARGET}")
               println("Using DEVICE_NAME: ${env.DEVICE_NAME}")
               println("Using DEVICE_TAG: ${env.DEVICE_TAG}")
@@ -288,7 +291,7 @@ pipeline {
                 mkdir -p ${TEST_CONFIG_DIR}
                 rm -f ${TEST_CONFIG_DIR}/*.json
                 ln -sv ${CONF_FILE_PATH} ${TEST_CONFIG_DIR}
-                echo { \\\"Job\\\": \\\"${env.TEST_TARGET}\\\" } > ${TEST_CONFIG_DIR}/${BUILD_NUMBER}.json
+                echo { \\\"Job\\\": \\\"${env.JOB_TARGET}\\\" } > ${TEST_CONFIG_DIR}/${BUILD_NUMBER}.json
                 ls -la ${TEST_CONFIG_DIR}
               """
             }
