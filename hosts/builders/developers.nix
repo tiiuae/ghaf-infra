@@ -270,6 +270,13 @@ let
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKm50s8rzgArRqbYjqqGSwmfgnMMLjkmC+FrUhidAV44 veikko.nopanen@unikie.com"
       ];
     }
+    {
+      desc = "Janne Pirskanen";
+      name = "jpirska";
+      keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHkq2GqA7XfW4JN8kiDLjaYf8j2zOsw1DABA7wLmk1qN janne.pirskanen@tii.ae"
+      ];
+    }
   ];
 in
 {
