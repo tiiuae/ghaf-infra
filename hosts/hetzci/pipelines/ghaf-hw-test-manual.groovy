@@ -128,6 +128,7 @@ def init() {
     env.BUILD_TARGET,
     params.JOB_SELECTOR?.trim() ?: params.DEVICE_TAG
   ) ?: ''
+  env.JOB_TARGET = env.BUILD_TARGET ?: params.JOB_SELECTOR?.trim() ?: env.TEST_TARGET ?: params.DEVICE_TAG
   def installerTarget = env.BUILD_TARGET ?: env.TEST_TARGET
   env.INSTALLER_FLOW = installerTarget.contains("installer") ? 'true' : 'false'
   def deviceInfo = null
@@ -242,7 +243,9 @@ pipeline {
               env.TARGET = env.TEST_TARGET
               env.DEVICE_BOOT_TAG = utils.boot_tag_for(env.DEVICE_TAG)
               currentBuild.description = "${env.TEST_AGENT_LABEL}<br>${env.TEST_TARGET}"
+              println("Using BUILD_TARGET: ${env.BUILD_TARGET}")
               println("Using TEST_TARGET: ${env.TEST_TARGET}")
+              println("Using JOB_TARGET: ${env.JOB_TARGET}")
               println("Using TARGET alias: ${env.TARGET}")
               println("Using DEVICE_NAME: ${env.DEVICE_NAME}")
               println("Using DEVICE_TAG: ${env.DEVICE_TAG}")
@@ -271,7 +274,7 @@ pipeline {
                 mkdir -p ${TEST_CONFIG_DIR}
                 rm -f ${TEST_CONFIG_DIR}/*.json
                 ln -sv ${CONF_FILE_PATH} ${TEST_CONFIG_DIR}
-                echo { \\\"Job\\\": \\\"${env.TEST_TARGET}\\\" } > ${TEST_CONFIG_DIR}/${BUILD_NUMBER}.json
+                echo { \\\"Job\\\": \\\"${env.JOB_TARGET}\\\" } > ${TEST_CONFIG_DIR}/${BUILD_NUMBER}.json
                 ls -la ${TEST_CONFIG_DIR}
               """
               def mountCommands = utils.setup_mount_commands(CONF_FILE_PATH, env.TEST_TARGET, env.DEVICE_NAME)
