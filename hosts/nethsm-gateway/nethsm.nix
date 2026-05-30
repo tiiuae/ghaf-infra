@@ -9,27 +9,13 @@
   ...
 }:
 let
-  # patch in the 1.1 update.
-  # can be removed when we update to 25.11
-  # https://github.com/NixOS/nixpkgs/pull/444707
-  pkcs11-provider = pkgs.pkcs11-provider.overrideAttrs rec {
-    version = "1.1";
-
-    src = pkgs.fetchFromGitHub {
-      owner = "latchset";
-      repo = "pkcs11-provider";
-      tag = "v${version}";
-      fetchSubmodules = true;
-      hash = "sha256-QXEwDl6pk8G5ba8lD4uYw2QuD3qS/sgd1od8crHct2s=";
-    };
-  };
-
   inherit (self.packages.${pkgs.stdenv.hostPlatform.system})
     pkcs11-proxy
     systemd-sbsign
     nethsm-pkcs11
     nethsm-exporter
     ;
+  inherit (pkgs) pkcs11-provider;
 
   pkcs11Modules = {
     nethsm = "${nethsm-pkcs11}/lib/libnethsm_pkcs11.so";
