@@ -28,6 +28,7 @@ properties([
     booleanParam(name: 'system76_darp11_b_storeDisk_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.system76-darp11-b-storeDisk-debug-installer'),
     booleanParam(name: 'intel_laptop_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug'),
     booleanParam(name: 'intel_laptop_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug-installer'),
+    booleanParam(name: 'intel_laptop_storeDisk_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-storeDisk-debug'),
     booleanParam(name: 'intel_laptop_storeDisk_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-storeDisk-debug-installer'),
     booleanParam(name: 'intel_laptop_low_mem_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-low-mem-debug'),
     booleanParam(name: 'intel_laptop_low_mem_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-low-mem-debug-installer'),
@@ -157,6 +158,14 @@ pipeline {
                 [ target: "packages.x86_64-linux.intel-laptop-debug-installer", uefisigniso: params.UEFISIGN ],
                 [[
                   test_target: "lenovo-x1-carbon-gen11-debug-installer",
+                ]],
+              ))
+            }
+            if (params.intel_laptop_storeDisk_debug) {
+              TARGETS.push(addExplicitTests(
+                [ target: "packages.x86_64-linux.intel-laptop-storeDisk-debug", uefisign: params.UEFISIGN ],
+                [[
+                  test_target: "system76-darp11-b-storeDisk-debug",
                 ]],
               ))
             }
