@@ -78,10 +78,6 @@ KEXEC_IMAGES = {
         f"{NIXOS_IMAGES_URL}/nixos-24.05/"
         "nixos-kexec-installer-noninteractive-x86_64-linux.tar.gz"
     ),
-    "hetzarm-rel-1": (
-        f"{NIXOS_IMAGES_URL}/nixos-25.11/"
-        "nixos-kexec-installer-noninteractive-aarch64-linux.tar.gz"
-    ),
 }
 
 RELEASE_BUILDER_USERS = (
