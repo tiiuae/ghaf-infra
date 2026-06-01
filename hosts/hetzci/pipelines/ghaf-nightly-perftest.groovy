@@ -6,11 +6,23 @@ def REPO_URL = 'https://github.com/tiiuae/ghaf/'
 def PIPELINE = [:]
 
 def TARGETS = [
-  [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug",
-    testset: '_relayboot_perf_',
+  [ target: "packages.x86_64-linux.intel-laptop-debug",
+    tests: [
+      [
+        test_target: "lenovo-x1-carbon-gen11-debug",
+        testset: '_relayboot_perf_',
+      ],
+      [
+        test_target: "system76-darp11-b-debug",
+        testset: '_relayboot_perf_',
+      ],
+    ],
   ],
-  [ target: "packages.x86_64-linux.dell-latitude-7330-debug",
-    testset: '_relayboot_perf_',
+  [ target: "packages.x86_64-linux.intel-laptop-low-mem-debug",
+    tests: [[
+      test_target: "dell-latitude-7330-debug",
+      testset: '_relayboot_perf_',
+    ]],
   ],
   [ target: "packages.aarch64-linux.nvidia-jetson-orin-agx-debug",
     testset: '_relayboot_perf_',
@@ -24,11 +36,11 @@ def TARGETS = [
   [ target: "packages.x86_64-linux.nvidia-jetson-orin-nx-debug-from-x86_64",
     testset: '_relayboot_perf_',
   ],
-  [ target: "packages.x86_64-linux.system76-darp11-b-debug",
-    testset: '_relayboot_perf_',
-  ],
-  [ target: "packages.x86_64-linux.system76-darp11-b-storeDisk-debug-installer",
-    testset: '_relayboot_perf_',
+  [ target: "packages.x86_64-linux.intel-laptop-storeDisk-debug-installer",
+    tests: [[
+      test_target: "system76-darp11-b-storeDisk-debug-installer",
+      testset: '_relayboot_perf_',
+    ]],
   ],
 ]
 
