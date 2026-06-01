@@ -34,8 +34,8 @@
       pipelines = [
         "ghaf-hw-test-manual"
         "ghaf-hw-test"
-        "ghaf-main"
         "ghaf-manual"
+        "g4h-manual"
       ];
       withCachix = false;
       withRegistryPublish = true;
