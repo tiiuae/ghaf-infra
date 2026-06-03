@@ -3,7 +3,7 @@
 
 import groovy.json.JsonOutput
 
-def pipeline_model_call(Closure body) {
+private def pipeline_model_call(Closure body) {
   try {
     return body()
   } catch (IllegalArgumentException e) {
@@ -11,32 +11,7 @@ def pipeline_model_call(Closure body) {
   }
 }
 
-def normalize_build_config(
-  Map targetConfig,
-  boolean signingPossible,
-  String ciEnv,
-  String defaultTestagentHost = null,
-  boolean allowExplicitTests = true) {
-  pipeline_model_call {
-    pipelineModel.normalize_build_config(
-      targetConfig,
-      signingPossible,
-      ciEnv,
-      defaultTestagentHost,
-      allowExplicitTests
-    )
-  }
-}
-
-def test_result_entry(Map testRun, Map result = [:]) {
-  pipeline_model_call { pipelineModel.test_result_entry(testRun, result) }
-}
-
-def html_escape(String value) {
-  pipeline_model_call { pipelineModel.html_escape(value) }
-}
-
-def hw_test_stage_display_name(String buildShortname, List<Map> testRuns) {
+private def hw_test_stage_display_name(String buildShortname, List<Map> testRuns) {
   def runCount = testRuns.size()
   if (runCount > 1) {
     return "HW tests ${buildShortname} (${runCount})"
@@ -44,7 +19,7 @@ def hw_test_stage_display_name(String buildShortname, List<Map> testRuns) {
   return "HW test ${buildShortname}"
 }
 
-def ghaf_flake_ref(String repo, String rev) {
+private def ghaf_flake_ref(String repo, String rev) {
   def normalizedRepo = repo.trim()
   if (!normalizedRepo.startsWith("https://")) {
     error("Unsupported Ghaf repository URL '${repo}': expected an HTTPS remote")
@@ -55,7 +30,7 @@ def ghaf_flake_ref(String repo, String rev) {
   return "${normalizedRepo}${separator}rev=${rev}"
 }
 
-def withRedundancyRouter(String object, Closure body) {
+private def withRedundancyRouter(String object, Closure body) {
   def signingEnv = readJSON text: artifactUtils.run_cmd("select-pkcs11-node ${object}")
   withEnv([
     "PKCS11_PROXY_SOCKET=${signingEnv.socket}" // overrides the socket with one that works
@@ -94,12 +69,14 @@ def create_pipeline(
     }
   }
   targets.each { raw_target_config ->
-    def target_config = normalize_build_config(
-      raw_target_config,
-      signing_possible,
-      ci_env,
-      testagent_host
-    )
+    def target_config = pipeline_model_call {
+      pipelineModel.normalize_build_config(
+        raw_target_config,
+        signing_possible,
+        ci_env,
+        testagent_host
+      )
+    }
     def build_target_name = target_config.target
     def build_shortname = target_config.shortname
     def normalized_test_runs = target_config.test_runs
@@ -180,8 +157,8 @@ def create_pipeline(
       )
     }
     def persist_test_result = { Map testRun, Map result = [:] ->
-      def entry = test_result_entry(testRun, result)
-      artifactUtils.with_controller_workspace(ghaf_checkout) {
+      def entry = pipeline_model_call { pipelineModel.test_result_entry(testRun, result) }
+      artifactSupport.with_controller_workspace(ghaf_checkout) {
         sh "mkdir -v -p '${output}/test-results/${testRun.test_path_key}'"
         writeFile(
           file: result_file_for(testRun),
@@ -200,7 +177,7 @@ def create_pipeline(
     }
 
     pipeline["${build_target_name}"] = {
-      artifactUtils.with_controller_workspace(ghaf_checkout) {
+      artifactSupport.with_controller_workspace(ghaf_checkout) {
         stage("Build ${build_shortname}") {
           sh "mkdir -v -p ${output}"
 
@@ -307,13 +284,13 @@ def create_pipeline(
               error("No image found!")
             }
             manifest.image.path = img_path - "${output}/"
-            manifest.image.role = artifactUtils.image_role(manifest.image.path)
+            manifest.image.role = artifactSupport.image_role(manifest.image.path)
           }
           if (signing_possible) {
             if (uefi_sign_requested) {
               stage("Sign (UEFI) ${build_shortname}") {
-                def tmpdir = artifactUtils.build_tmpdir("uefisign-${build_shortname}")
-                def img_name = artifactUtils.path_basename(manifest.image.path)
+                def tmpdir = artifactSupport.build_tmpdir("uefisign-${build_shortname}")
+                def img_name = artifactSupport.path_basename(manifest.image.path)
 
                 def signer = "uefisign"
                 if (build_target_name.contains("nvidia-jetson-orin")) {
@@ -350,7 +327,7 @@ def create_pipeline(
             }
             stage("Sign (SLSA) image ${build_shortname}") {
               lock('signing') {
-                def img_name = artifactUtils.path_basename(manifest.image.path)
+                def img_name = artifactSupport.path_basename(manifest.image.path)
                 manifest.image.signature.path = "${img_name}.sig"
                 withRedundancyRouter("GhafInfraSignECP256") { ctx ->
                   sh """
@@ -368,14 +345,14 @@ def create_pipeline(
         }
         stage("Link artifacts ${build_shortname}") {
           if (manifest.image.path && !manifest.uefi.signed) {
-            def img_name = artifactUtils.path_basename(manifest.image.path)
+            def img_name = artifactSupport.path_basename(manifest.image.path)
             sh "ln -s ${output}/${manifest.image.path} ${output}/${img_name}"
             manifest.image.path = img_name
           }
 
           write_manifest()
 
-          artifactUtils.append_to_build_description_once(artifacts_href)
+          artifactSupport.append_to_build_description(artifacts_href, true)
         }
         if (!no_image) {
           stage("Publish OCI ${build_shortname}") {
@@ -435,7 +412,7 @@ def create_pipeline(
                       ci_env
                     )
                     persist_test_result(localTestRun, [job: job])
-                    artifactUtils.with_controller_workspace(ghaf_checkout) {
+                    artifactSupport.with_controller_workspace(ghaf_checkout) {
                       hwTestUtils.collect_hw_test_result(
                         localTestRun.id,
                         localTestRun.test_path_key,
@@ -457,7 +434,7 @@ def create_pipeline(
                       result.job = job
                     }
                     persist_test_result(localTestRun, result)
-                    artifactUtils.append_to_build_description("⛔ ${html_escape(localTestRun.id)}")
+                    artifactSupport.append_to_build_description("⛔ ${pipelineModel.html_escape(localTestRun.id)}")
                     throw e
                   }
                 }
@@ -477,19 +454,21 @@ def create_pipeline(
           }
         } finally {
           stage("Publish test results ${build_shortname}") {
-            artifactUtils.with_controller_workspace(ghaf_checkout) {
+            artifactSupport.with_controller_workspace(ghaf_checkout) {
               def finalTestEntries = normalized_test_runs.collect { testRun ->
                 def resultFile = result_file_for(testRun)
                 if (sh(script: "test -f '${resultFile}'", returnStatus: true) == 0) {
                   return readJSON(file: resultFile, returnPojo: true)
                 }
                 if (testRun.initial_status != null) {
-                  return test_result_entry(testRun)
+                  return pipeline_model_call { pipelineModel.test_result_entry(testRun) }
                 }
-                return test_result_entry(testRun, [
-                  status: 'UNKNOWN',
-                  reason: 'missing_result',
-                ])
+                return pipeline_model_call {
+                  pipelineModel.test_result_entry(testRun, [
+                    status: 'UNKNOWN',
+                    reason: 'missing_result',
+                  ])
+                }
               }
               write_manifest(finalTestEntries)
               writeFile(
@@ -504,7 +483,7 @@ def create_pipeline(
         }
         if (ci_env != "vm") {
           stage("Publish OCI test results ${build_shortname}") {
-            artifactUtils.with_controller_workspace(ghaf_checkout) {
+            artifactSupport.with_controller_workspace(ghaf_checkout) {
               if (sh(
                 script: "test -d '${output}/test-results'",
                 returnStatus: true

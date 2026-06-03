@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 @NonCPS
-def shell_quote(String value) {
+private def shell_quote(String value) {
   if (value == null) {
     return "''"
   }
@@ -10,16 +10,16 @@ def shell_quote(String value) {
 }
 
 @NonCPS
-def looks_like_hex_ref(String value) {
+private def looks_like_hex_ref(String value) {
   return value ==~ /(?i)[0-9a-f]{7,40}/
 }
 
 @NonCPS
-def trim_prefix(String value, String prefix) {
+private def trim_prefix(String value, String prefix) {
   return value.startsWith(prefix) ? value.substring(prefix.length()) : value
 }
 
-def remote_ref_exists(String repoUrl, String scope, String refName) {
+private def remote_ref_exists(String repoUrl, String scope, String refName) {
   def quotedRepo = shell_quote(repoUrl)
   def quotedRef = shell_quote(refName)
   return sh(
@@ -28,7 +28,7 @@ def remote_ref_exists(String repoUrl, String scope, String refName) {
   ) == 0
 }
 
-def with_checkout_retry(String repoUrl, String requestedRef, Closure body) {
+private def with_checkout_retry(String repoUrl, String requestedRef, Closure body) {
   retry(3) {
     echo "Preparing clean checkout of '${requestedRef}' from ${repoUrl}"
     deleteDir()
@@ -37,7 +37,7 @@ def with_checkout_retry(String repoUrl, String requestedRef, Closure body) {
 }
 
 @NonCPS
-def git_clone_extension(Map args = [:]) {
+private def git_clone_extension(Map args = [:]) {
   def extension = [
     $class: 'CloneOption',
     shallow: args.get('shallow', false),
@@ -51,7 +51,7 @@ def git_clone_extension(Map args = [:]) {
   return extension
 }
 
-def checkout_named_branch(String repoUrl, String branchName) {
+private def checkout_named_branch(String repoUrl, String branchName) {
   def refspec = "+refs/heads/${branchName}:refs/remotes/origin/${branchName}"
   checkout scmGit(
     branches: [[name: "origin/${branchName}"]],
@@ -66,7 +66,7 @@ def checkout_named_branch(String repoUrl, String branchName) {
   )
 }
 
-def checkout_named_tag(String repoUrl, String tagName) {
+private def checkout_named_tag(String repoUrl, String tagName) {
   def refspec = "+refs/tags/${tagName}:refs/tags/${tagName}"
   checkout scmGit(
     branches: [[name: "refs/tags/${tagName}"]],
@@ -81,7 +81,7 @@ def checkout_named_tag(String repoUrl, String tagName) {
   )
 }
 
-def checkout_exact_ref(String repoUrl, String remoteRef, String localRef) {
+private def checkout_exact_ref(String repoUrl, String remoteRef, String localRef) {
   def refspec = "+${remoteRef}:${localRef}"
   checkout scmGit(
     branches: [[name: localRef]],
@@ -96,7 +96,7 @@ def checkout_exact_ref(String repoUrl, String remoteRef, String localRef) {
   )
 }
 
-def checkout_flexible_ref(String repoUrl, String requestedRef) {
+private def checkout_flexible_ref(String repoUrl, String requestedRef) {
   // Commit SHAs and other unresolved refs need the git plugin's broader ref discovery path.
   checkout scmGit(
     branches: [[name: requestedRef]],

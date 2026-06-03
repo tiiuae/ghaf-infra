@@ -54,7 +54,7 @@ pipeline {
     stage('Checkout') {
       agent { label 'built-in' }
       steps {
-        dir(artifactUtils.controller_workdir()) {
+        dir(artifactSupport.controller_workdir()) {
           script {
             checkoutUtils.checkout_remote_ref(params.REPO_URL, params.GITREF)
           }
@@ -64,7 +64,7 @@ pipeline {
     stage('Setup') {
       agent { label 'built-in' }
       steps {
-        dir(artifactUtils.controller_workdir()) {
+        dir(artifactSupport.controller_workdir()) {
           script {
             def TARGETS = []
             def normalizedTestset = params.TESTSET?.trim()

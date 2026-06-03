@@ -69,7 +69,7 @@ pipeline {
     stage('Checkout') {
       agent { label 'built-in' }
       steps {
-        dir(artifactUtils.controller_workdir()) {
+        dir(artifactSupport.controller_workdir()) {
           script {
             if (!params.GITHUB_PR_NUMBER) {
               error('Missing GITHUB_PR_NUMBER')
@@ -89,13 +89,13 @@ pipeline {
     stage('Setup') {
       agent { label 'built-in' }
       steps {
-        dir(artifactUtils.controller_workdir()) {
+        dir(artifactSupport.controller_workdir()) {
           script {
             if (params.SET_PR_STATUS) {
               pipelineExecution.set_github_commit_status("Manual trigger: pending", "pending", env.TARGET_COMMIT)
             }
             def pr_href = "<a href=\"${REPO_URL}/pull/${params.GITHUB_PR_NUMBER}\">🧩 PR#${params.GITHUB_PR_NUMBER}</a>"
-            artifactUtils.append_to_build_description(pr_href)
+            artifactSupport.append_to_build_description(pr_href)
             def merge_commit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
             // The downstream hw-test job needs the PR merge ref as well as the
             // merge SHA, otherwise it cannot refetch GitHub's synthetic merge commit.

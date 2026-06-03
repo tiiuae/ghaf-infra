@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 // SPDX-License-Identifier: Apache-2.0
 
-def get_test_conf_property(String file_path, String device, String property) {
+private def get_test_conf_property(String file_path, String device, String property) {
   def device_data = readJSON file: file_path
   def property_data = "${device_data['addresses'][device][property]}"
   println "Got device '${device}' property '${property}' value: '${property_data}'"
@@ -9,7 +9,7 @@ def get_test_conf_property(String file_path, String device, String property) {
 }
 
 @NonCPS
-def device_catalog() {
+private def device_catalog() {
   return [
     [target_substring: "nvidia-jetson-orin-agx64", name: 'OrinAGX64', tag: 'orin-agx-64'],
     [target_substring: "nvidia-jetson-orin-agx", name: 'OrinAGX1', tag: 'orin-agx'],
@@ -54,8 +54,13 @@ def resolve_test_target(String explicitTestTarget = null, String buildTarget = n
 }
 
 @NonCPS
-def derive_device_info(String target, boolean secureboot) {
+def derive_device_info(String target, boolean secureboot, String deviceTag = null) {
   def devices = device_catalog()
+  def normalizedDeviceTag = deviceTag?.trim()
+  if (normalizedDeviceTag) {
+    def explicitDevice = devices.find { it.tag == normalizedDeviceTag }
+    return explicitDevice ? [name: explicitDevice.name, tag: explicitDevice.tag] : null
+  }
   if (target.contains("lenovo-x1")) {
     if (secureboot && !target.contains("installer")) {
       def securebootDevice = devices.find { it.tag == 'x1-sec-boot' }
@@ -69,11 +74,6 @@ def derive_device_info(String target, boolean secureboot) {
   return null
 }
 
-@NonCPS
-def device_name_from_tag(String deviceTag) {
-  return device_catalog().find { it.tag == deviceTag }?.name
-}
-
 def extra_tag_suffix(String target, String deviceTag) {
   def filters = []
   if (target.contains("lenovo-x1") || target.contains("darp11-b")) {
@@ -84,14 +84,6 @@ def extra_tag_suffix(String target, String deviceTag) {
     filters.add(deviceTag == 'x1-sec-boot' ? 'NOTexcl-secboot' : 'NOTsecboot-only')
   }
   return filters.unique().join('')
-}
-
-def boot_tag_for(String deviceTag) {
-  return deviceTag == 'x1-sec-boot' ? 'lenovo-x1' : deviceTag
-}
-
-def archive_robot_artifacts(String tmp_img_dir, boolean should_archive) {
-  artifactUtils.archive_robot_artifacts(tmp_img_dir, should_archive)
 }
 
 def setup_mount_commands(String conf_file_path, String target, String device_name) {
@@ -167,13 +159,13 @@ def run_hw_test(
   String ci_env) {
   // Keep the blocking downstream wait outside node('built-in') so ghaf-hw-test
   // can acquire a controller executor for its own initialization stages.
-  def build_href = "<a href=\"${pipelineExecution.html_escape(env.BUILD_URL)}\">" +
-    "${pipelineExecution.html_escape("${env.JOB_NAME}#${env.BUILD_ID}")}</a>"
+  def build_href = "<a href=\"${pipelineModel.html_escape(env.BUILD_URL)}\">" +
+    "${pipelineModel.html_escape("${env.JOB_NAME}#${env.BUILD_ID}")}</a>"
   def normalizedTestTarget = testTargetName?.trim()
   def normalizedTestIdentity = testIdentity?.trim()
   def desc = normalizedTestIdentity ?
-    "Triggered by ${build_href}<br>(${pipelineExecution.html_escape(normalizedTestIdentity)})" :
-    "Triggered by ${build_href}<br>(${pipelineExecution.html_escape(buildShortname)})"
+    "Triggered by ${build_href}<br>(${pipelineModel.html_escape(normalizedTestIdentity)})" :
+    "Triggered by ${build_href}<br>(${pipelineModel.html_escape(buildShortname)})"
   def test_params = [
     string(name: "TESTSET", value: testset),
     string(name: "DESC", value: desc),
@@ -215,8 +207,8 @@ def collect_hw_test_result(
   if (job.result != "SUCCESS") {
     unstable("FAILED: ${testIdentity}")
     currentBuild.result = "FAILURE"
-    artifactUtils.append_to_build_description(
-      "<a href=\"${pipelineExecution.html_escape(job.url)}\">⛔ ${pipelineExecution.html_escape(testIdentity)}</a>"
+    artifactSupport.append_to_build_description(
+      "<a href=\"${pipelineModel.html_escape(job.url)}\">⛔ ${pipelineModel.html_escape(testIdentity)}</a>"
     )
   }
   def artifactsTarget = "${output}/test-results/${testPathKey}"
