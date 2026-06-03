@@ -51,6 +51,15 @@
         ];
         text = builtins.readFile ./run-cosign.sh;
       };
+      ghaf-fetch = pkgs.writeShellApplication {
+        name = "ghaf-fetch";
+        runtimeInputs = with pkgs; [
+          gum
+          jq
+          oras
+        ];
+        text = builtins.readFile ./ghaf-fetch.sh;
+      };
     in
     {
       packages = {
@@ -59,6 +68,7 @@
           archive-ghaf-release
           select-pkcs11-node
           run-cosign
+          ghaf-fetch
           ;
       };
     };
