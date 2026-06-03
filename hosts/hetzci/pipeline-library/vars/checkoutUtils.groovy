@@ -107,6 +107,28 @@ def checkout_flexible_ref(String repoUrl, String requestedRef) {
   )
 }
 
+def checkout_ci_test_sources(
+  String pinned_source_file,
+  boolean use_flake_pinned_ci_test,
+  String ci_test_repo_branch,
+  String ci_test_repo_url) {
+  if (use_flake_pinned_ci_test) {
+    def pinned_src = artifactUtils.run_cmd("cat ${pinned_source_file}")
+    println("Using flake-pinned ci-test-automation source: ${pinned_src}")
+    sh """
+      if [ ! -d "${pinned_src}/Robot-Framework/test-suites" ]; then
+        echo "ERROR: invalid ci-test-automation source path '${pinned_src}'"
+        exit 1
+      fi
+      cp -r "${pinned_src}/." .
+      chmod -R u+w .
+    """
+    return
+  }
+  // CI test sources may be pinned to a branch, tag, commit, or GitHub synthetic PR ref.
+  checkout_remote_ref(ci_test_repo_url, ci_test_repo_branch, true)
+}
+
 def checkout_remote_ref(String repoUrl, String requestedRef, boolean allowSyntheticRefs = false) {
   def normalizedRef = requestedRef?.trim()
   if (!normalizedRef) {

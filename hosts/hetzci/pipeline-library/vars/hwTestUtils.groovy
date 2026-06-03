@@ -91,19 +91,7 @@ def boot_tag_for(String deviceTag) {
 }
 
 def archive_robot_artifacts(String tmp_img_dir, boolean should_archive) {
-  if (should_archive) {
-    def test_artifacts = '' +
-      'Robot-Framework/test-suites/**/*.html, ' +
-      'Robot-Framework/test-suites/**/*.xml, ' +
-      'Robot-Framework/test-suites/**/*.png, ' +
-      'Robot-Framework/test-suites/**/*.jpeg, ' +
-      'Robot-Framework/test-suites/**/*.mp4, ' +
-      'Robot-Framework/test-suites/**/*.mkv, ' +
-      'Robot-Framework/test-suites/**/*.wav, ' +
-      'Robot-Framework/test-suites/**/*.txt'
-    archiveArtifacts allowEmptyArchive: true, artifacts: test_artifacts
-  }
-  sh "rm -rf ${tmp_img_dir} || true"
+  artifactUtils.archive_robot_artifacts(tmp_img_dir, should_archive)
 }
 
 def setup_mount_commands(String conf_file_path, String target, String device_name) {
