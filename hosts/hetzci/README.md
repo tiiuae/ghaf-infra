@@ -37,8 +37,9 @@ hosts/hetzci/
 │   ├── ghaf-main.groovy
 │   ├── ghaf-manual.groovy
 │   ...
-├── pipeline-library       # Jenkins shared library entry points
-│   └── vars
+├── pipeline-library       # Jenkins shared library
+│   └── vars               # Entry points and shared helper scripts
+│       ├── artifactSupport.groovy
 │       ├── artifactUtils.groovy
 │       ├── checkoutUtils.groovy
 │       ├── hwTestUtils.groovy

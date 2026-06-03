@@ -156,7 +156,8 @@ def automated_test_tags(String testname) {
   if (testname.contains('turnoff')) {
     return testname
   }
-  return "${hwTestUtils.boot_tag_for(env.DEVICE_TAG)}AND${testname}${env.EXTRATAG}"
+  def bootTag = env.DEVICE_TAG == 'x1-sec-boot' ? 'lenovo-x1' : env.DEVICE_TAG
+  return "${bootTag}AND${testname}${env.EXTRATAG}"
 }
 
 def ghaf_robot_test(String testname='relayboot') {
@@ -327,8 +328,8 @@ pipeline {
                 def provenance_url = "${artifacts_url}/${target}/attestations/provenance.json"
                 def signature_url = "${provenance_url}.sig"
                 println("provenance_url: ${provenance_url}")
-                provenance_path = artifactUtils.run_wget(provenance_url, TMP_IMG_DIR)
-                sig_path = artifactUtils.run_wget(signature_url, TMP_IMG_DIR)
+                provenance_path = artifactSupport.run_wget(provenance_url, TMP_IMG_DIR)
+                sig_path = artifactSupport.run_wget(signature_url, TMP_IMG_DIR)
               }
               sh "policy-checker ${provenance_path} --sig ${sig_path} --policy /etc/jenkins/provenance-trust-policy.yaml"
             }
@@ -347,13 +348,13 @@ pipeline {
                   error("Unable to derive image files from OCI image '${params.OCI_IMAGE_REF}'")
                 }
               } else {
-                img_path = artifactUtils.run_wget(params.IMG_URL, TMP_IMG_DIR)
+                img_path = artifactSupport.run_wget(params.IMG_URL, TMP_IMG_DIR)
                 def split = split_img_url(params.IMG_URL)
                 def artifacts_url = split["artifacts_url"]
                 def img_relpath = split["img_relpath"]
                 def target = split["target_name"]
                 def sig_url = "${artifacts_url}/${target}/${img_relpath}.sig"
-                sig_path = artifactUtils.run_wget(sig_url, TMP_IMG_DIR)
+                sig_path = artifactSupport.run_wget(sig_url, TMP_IMG_DIR)
               }
               println "Downloaded image to workspace: ${img_path}"
               println "Downloaded SLSA signature file to workspace: ${sig_path}"

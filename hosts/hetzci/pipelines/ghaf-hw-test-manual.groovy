@@ -139,11 +139,10 @@ def init() {
     }
   }
   if (params.DEVICE_TAG) {
-    def deviceName = hwTestUtils.device_name_from_tag(params.DEVICE_TAG)
-    if (!deviceName) {
+    deviceInfo = hwTestUtils.derive_device_info(env.TEST_TARGET, params.SECUREBOOT, params.DEVICE_TAG)
+    if (!deviceInfo) {
       error("Unknown DEVICE_TAG '${params.DEVICE_TAG}'")
     }
-    deviceInfo = [name: deviceName, tag: params.DEVICE_TAG]
   }
   if (!deviceInfo) {
     error(
@@ -241,7 +240,7 @@ pipeline {
           steps {
             script {
               env.TARGET = env.TEST_TARGET
-              env.DEVICE_BOOT_TAG = hwTestUtils.boot_tag_for(env.DEVICE_TAG)
+              env.DEVICE_BOOT_TAG = env.DEVICE_TAG == 'x1-sec-boot' ? 'lenovo-x1' : env.DEVICE_TAG
               currentBuild.description = "${env.TEST_AGENT_LABEL}<br>${env.TEST_TARGET}"
               println("Using BUILD_TARGET: ${env.BUILD_TARGET}")
               println("Using TEST_TARGET: ${env.TEST_TARGET}")
@@ -297,7 +296,7 @@ pipeline {
                   error("Unable to derive image file from OCI image '${params.OCI_IMAGE_REF}'")
                 }
               } else {
-                img_path = artifactUtils.run_wget(params.IMG_URL, TMP_IMG_DIR)
+                img_path = artifactSupport.run_wget(params.IMG_URL, TMP_IMG_DIR)
               }
               println "Downloaded image to workspace: ${img_path}"
               if (params.USE_LEGACY_DD_FLASH) {

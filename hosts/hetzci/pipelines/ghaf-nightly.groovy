@@ -116,7 +116,7 @@ pipeline {
     stage('Checkout') {
       agent { label 'built-in' }
       steps {
-        dir(artifactUtils.controller_workdir()) {
+        dir(artifactSupport.controller_workdir()) {
           script {
             checkoutUtils.checkout_remote_ref(REPO_URL, 'main')
           }
@@ -126,7 +126,7 @@ pipeline {
     stage('Setup') {
       agent { label 'built-in' }
       steps {
-        dir(artifactUtils.controller_workdir()) {
+        dir(artifactSupport.controller_workdir()) {
           script {
             PIPELINE = pipelineExecution.create_pipeline(TARGETS)
           }

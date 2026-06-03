@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 // SPDX-License-Identifier: Apache-2.0
 
-def fail(String message) {
+private def fail(String message) {
   throw new IllegalArgumentException(message)
 }
 
@@ -48,7 +48,7 @@ def display_testset(String value) {
   return normalized ?: value
 }
 
-def test_stage_name(Map testRun) {
+private def test_stage_name(Map testRun) {
   if (testRun == null) {
     fail("Missing test run")
   }
@@ -62,7 +62,7 @@ def test_stage_name(Map testRun) {
   return "Test ${shortname} / ${testset} / ${host} / ${mode}".toString()
 }
 
-def normalize_optional_string(value) {
+private def normalize_optional_string(value) {
   if (!(value instanceof String)) {
     return null
   }
@@ -70,7 +70,7 @@ def normalize_optional_string(value) {
   return trimmed.isEmpty() ? null : trimmed
 }
 
-def shallow_copy_map(Map source) {
+private def shallow_copy_map(Map source) {
   def copy = [:]
   source.each { key, value ->
     copy[key] = value
@@ -78,13 +78,13 @@ def shallow_copy_map(Map source) {
   return copy
 }
 
-def validate_test_identity_component(String name, String value) {
+private def validate_test_identity_component(String name, String value) {
   if (value != null && value.contains('@')) {
     fail("Invalid ${name} '${value}': '@' is reserved in canonical test identities")
   }
 }
 
-def resolve_explicit_test_target(Map testConfig, String buildTarget, int idx) {
+private def resolve_explicit_test_target(Map testConfig, String buildTarget, int idx) {
   if (testConfig == null) {
     fail("Missing test config")
   }
@@ -285,7 +285,7 @@ def normalize_tests(Map buildConfig, String defaultTestagentHost = null) {
   return normalizedTests
 }
 
-def expand_test_runs(Map buildConfig) {
+private def expand_test_runs(Map buildConfig) {
   if (buildConfig == null) {
     fail("Missing build config")
   }

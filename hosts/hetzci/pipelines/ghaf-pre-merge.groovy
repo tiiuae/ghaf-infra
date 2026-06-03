@@ -86,7 +86,7 @@ pipeline {
     stage('Checkout') {
       agent { label 'built-in' }
       steps {
-        dir(artifactUtils.controller_workdir()) {
+        dir(artifactSupport.controller_workdir()) {
           script {
             checkoutUtils.checkout_github_pr_merge(
               REPO_URL,
@@ -118,7 +118,7 @@ pipeline {
     stage('Setup') {
       agent { label 'built-in' }
       steps {
-        dir(artifactUtils.controller_workdir()) {
+        dir(artifactSupport.controller_workdir()) {
           script {
             pipelineExecution.set_github_commit_status("Pending", "pending", env.TARGET_COMMIT)
             def merge_commit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()

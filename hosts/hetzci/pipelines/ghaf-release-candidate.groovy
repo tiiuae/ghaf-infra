@@ -120,7 +120,7 @@ pipeline {
     stage('Checkout') {
       agent { label 'built-in' }
       steps {
-        dir(artifactUtils.controller_workdir()) {
+        dir(artifactSupport.controller_workdir()) {
           script {
             checkoutUtils.checkout_remote_ref(REPO_URL, params.GITREF)
           }
@@ -130,7 +130,7 @@ pipeline {
     stage('Setup') {
       agent { label 'built-in' }
       steps {
-        dir(artifactUtils.controller_workdir()) {
+        dir(artifactSupport.controller_workdir()) {
           script {
             if (params.RELEASE_TARGETS_SET.contains('All targets')) {
               println('All release targets selected')
