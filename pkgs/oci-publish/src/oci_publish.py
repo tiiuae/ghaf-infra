@@ -32,6 +32,12 @@ REFERRER_MEDIA_TYPES = {
     "sbom_spdx": "application/spdx+json",
     "sbom_csv": "text/csv",
 }
+REFERRER_DESCRIPTIONS = {
+    "provenance": "SLSA Provenance",
+    "sbom_cyclonedx": "CycloneDX SBOM",
+    "sbom_spdx": "SPDX SBOM",
+    "sbom_csv": "CSV SBOM",
+}
 REPOSITORY_COMPONENT_PATTERN = re.compile(r"^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$")
 SOURCE_REF_ANNOTATION = "org.ghaf.source.ref"
 TARGET_ANNOTATION = "org.ghaf.target"
@@ -152,14 +158,13 @@ def publish_referrer(
 ) -> dict[str, str]:
     """Attach one referrer artifact."""
     media_type = REFERRER_MEDIA_TYPES[role]
-    path = target_dir / relpath
 
     files = [f"{relpath}:{media_type}"]
     if signature_relpath:
         files.append(f"{signature_relpath}:{DETACHED_SIGNATURE_MEDIA_TYPE}")
 
     annotations = {
-        "org.opencontainers.image.description": path.name,
+        "org.opencontainers.image.description": REFERRER_DESCRIPTIONS[role],
     }
     output = run_oras(
         [
@@ -215,6 +220,7 @@ def publish_target_artifacts(
     image_signature = image["signature"]["path"]
     source = manifest.get("source", {})
     primary_annotations = {
+        "org.opencontainers.image.description": "Disk image",
         "org.opencontainers.image.title": target,
         "org.opencontainers.image.source": source.get("repository", ""),
         "org.opencontainers.image.revision": source.get("revision", ""),
@@ -341,7 +347,7 @@ def publish_test_results(args: argparse.Namespace) -> int:
             create_test_results_archive(results_dir, archive_path)
 
             annotations = {
-                "org.opencontainers.image.description": archive_path.name,
+                "org.opencontainers.image.description": "Test results",
             }
             output = run_oras(
                 [
