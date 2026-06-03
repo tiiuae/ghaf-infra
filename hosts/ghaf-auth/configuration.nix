@@ -148,18 +148,14 @@ in
           {
             id = "azureci-dev";
             name = "ci-dev.uaenorth.cloudapp.azure.com";
-            redirectURIs = [
-              "https://ci-dev.uaenorth.cloudapp.azure.com/oauth2/callback"
-            ];
+            redirectURIs = [ "https://ci-dev.uaenorth.cloudapp.azure.com/oauth2/callback" ];
             secretEnv = "UAE_CI_DEV_CLIENT_SECRET";
             inherit grantTypes;
           }
           {
             id = "uae-zot-registry";
             name = "registry.uaenorth.cloudapp.azure.com";
-            redirectURIs = [
-              "https://registry.uaenorth.cloudapp.azure.com/oauth2/callback"
-            ];
+            redirectURIs = [ "https://registry.uaenorth.cloudapp.azure.com/zot/auth/callback/oidc" ];
             secretEnv = "UAE_ZOT_CLIENT_SECRET";
             inherit grantTypes;
           }
