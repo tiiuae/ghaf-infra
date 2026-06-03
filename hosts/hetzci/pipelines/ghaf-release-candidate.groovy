@@ -120,9 +120,9 @@ pipeline {
     stage('Checkout') {
       agent { label 'built-in' }
       steps {
-        dir(utils.controller_workdir()) {
+        dir(artifactUtils.controller_workdir()) {
           script {
-            utils.checkout_remote_ref(REPO_URL, params.GITREF)
+            checkoutUtils.checkout_remote_ref(REPO_URL, params.GITREF)
           }
         }
       }
@@ -130,17 +130,17 @@ pipeline {
     stage('Setup') {
       agent { label 'built-in' }
       steps {
-        dir(utils.controller_workdir()) {
+        dir(artifactUtils.controller_workdir()) {
           script {
             if (params.RELEASE_TARGETS_SET.contains('All targets')) {
               println('All release targets selected')
-              PIPELINE = utils.create_pipeline(ALL_RELEASE_TARGETS)
+              PIPELINE = pipelineExecution.create_pipeline(ALL_RELEASE_TARGETS)
             } else if (params.RELEASE_TARGETS_SET.contains('Only laptop targets')){
               println('Only laptop release targets selected')
-              PIPELINE = utils.create_pipeline(LAPTOP_RELEASE_TARGETS)
+              PIPELINE = pipelineExecution.create_pipeline(LAPTOP_RELEASE_TARGETS)
             } else if (params.RELEASE_TARGETS_SET.contains('Minimal build targets')){
               println('Minimal build targets selected')
-              PIPELINE = utils.create_pipeline(MINIMAL_BUILD_TARGETS)
+              PIPELINE = pipelineExecution.create_pipeline(MINIMAL_BUILD_TARGETS)
             } else {
               error('Release targets pre-set was not selected')
             }
@@ -159,7 +159,7 @@ pipeline {
   post {
     always {
       script {
-        utils.clean_controller_workdir()
+        artifactUtils.clean_controller_workdir()
       }
     }
   }

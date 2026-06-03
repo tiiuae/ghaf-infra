@@ -113,9 +113,9 @@ pipeline {
     stage('Checkout') {
       agent { label 'built-in' }
       steps {
-        dir(utils.controller_workdir()) {
+        dir(artifactUtils.controller_workdir()) {
           script {
-            utils.checkout_remote_ref(REPO_URL, 'main')
+            checkoutUtils.checkout_remote_ref(REPO_URL, 'main')
           }
         }
       }
@@ -123,9 +123,9 @@ pipeline {
     stage('Setup') {
       agent { label 'built-in' }
       steps {
-        dir(utils.controller_workdir()) {
+        dir(artifactUtils.controller_workdir()) {
           script {
-            PIPELINE = utils.create_pipeline(TARGETS)
+            PIPELINE = pipelineExecution.create_pipeline(TARGETS)
           }
         }
       }
@@ -141,7 +141,7 @@ pipeline {
   post {
     always {
       script {
-        utils.clean_controller_workdir()
+        artifactUtils.clean_controller_workdir()
       }
     }
   }

@@ -57,10 +57,10 @@ def init() {
   def imgUrl = params.IMG_URL?.trim()
   env.OCI_TARGET = ''
   env.OCI_SOURCE_REF = ''
-  env.OCI_IMAGE_REVISION = ''
+    env.OCI_IMAGE_REVISION = ''
   if (ociImageRef) {
     def annotations = readJSON(
-      text: utils.run_cmd("oras manifest fetch --format json '${ociImageRef}'")
+      text: artifactUtils.run_cmd("oras manifest fetch --format json '${ociImageRef}'")
     ).content?.annotations ?: [:]
     env.OCI_TARGET = annotations[TARGET_ANNOTATION] ?: ''
     env.OCI_SOURCE_REF = annotations[SOURCE_REF_ANNOTATION] ?: ''
@@ -69,8 +69,8 @@ def init() {
   if (!ociImageRef && !imgUrl) {
     error("Missing OCI_IMAGE_REF or IMG_URL parameter")
   }
-  env.BUILD_TARGET = utils.derive_target_name(imgUrl, env.OCI_TARGET) ?: ''
-  env.TEST_TARGET = utils.resolve_test_target(params.TEST_TARGET, env.BUILD_TARGET) ?: ''
+  env.BUILD_TARGET = hwTestUtils.derive_target_name(imgUrl, env.OCI_TARGET) ?: ''
+  env.TEST_TARGET = hwTestUtils.resolve_test_target(params.TEST_TARGET, env.BUILD_TARGET) ?: ''
   env.JOB_TARGET = env.BUILD_TARGET ?: env.TEST_TARGET
   env.TESTSET = params.TESTSET ?: ''
   env.INSTALLER_FLOW = env.BUILD_TARGET.contains("installer") ? 'true' : 'false'
@@ -86,7 +86,7 @@ def init() {
     }
     error("Unable to derive test target from IMG_URL '${params.IMG_URL}'")
   }
-  def deviceInfo = utils.derive_device_info(env.TEST_TARGET, params.SECUREBOOT)
+  def deviceInfo = hwTestUtils.derive_device_info(env.TEST_TARGET, params.SECUREBOOT)
   if (!deviceInfo) {
     error("Unable to parse device config for test target '${env.TEST_TARGET}'")
   }
@@ -102,7 +102,7 @@ def init() {
 
 def oras_pull_json(String reference, String outputDir) {
   return readJSON(
-    text: utils.run_cmd("oras pull --format json -o '${outputDir}' '${reference}'")
+    text: artifactUtils.run_cmd("oras pull --format json -o '${outputDir}' '${reference}'")
   )
 }
 
@@ -156,7 +156,7 @@ def automated_test_tags(String testname) {
   if (testname.contains('turnoff')) {
     return testname
   }
-  return "${utils.boot_tag_for(env.DEVICE_TAG)}AND${testname}${env.EXTRATAG}"
+  return "${hwTestUtils.boot_tag_for(env.DEVICE_TAG)}AND${testname}${env.EXTRATAG}"
 }
 
 def ghaf_robot_test(String testname='relayboot') {
@@ -253,7 +253,7 @@ pipeline {
             script {
               env.TARGET = env.TEST_TARGET
               env.TESTSET = params.TESTSET ?: ''
-              env.EXTRATAG = utils.extra_tag_suffix(env.TEST_TARGET, env.DEVICE_TAG)
+              env.EXTRATAG = hwTestUtils.extra_tag_suffix(env.TEST_TARGET, env.DEVICE_TAG)
               currentBuild.description = params.containsKey('DESC') ? "${params.DESC}" : "${env.TEST_TARGET}"
               println("Using BUILD_TARGET: ${env.BUILD_TARGET}")
               println("Using TEST_TARGET: ${env.TEST_TARGET}")
@@ -273,7 +273,7 @@ pipeline {
           steps {
             deleteDir()
             script {
-              utils.checkout_ci_test_sources(
+              checkoutUtils.checkout_ci_test_sources(
                 CI_TEST_PINNED_SOURCE_FILE,
                 params.USE_FLAKE_PINNED_CI_TEST,
                 params.CI_TEST_REPO_BRANCH,
@@ -304,7 +304,7 @@ pipeline {
               def sig_path
               if (params.OCI_IMAGE_REF) {
                 def discovery = readJSON(
-                  text: utils.run_cmd("oras discover --format json '${params.OCI_IMAGE_REF}'")
+                  text: artifactUtils.run_cmd("oras discover --format json '${params.OCI_IMAGE_REF}'")
                 )
                 def referrer = discovery.referrers?.find { it.artifactType == IN_TOTO_MEDIA_TYPE }
                 def provenanceRef = referrer?.reference
@@ -327,8 +327,8 @@ pipeline {
                 def provenance_url = "${artifacts_url}/${target}/attestations/provenance.json"
                 def signature_url = "${provenance_url}.sig"
                 println("provenance_url: ${provenance_url}")
-                provenance_path = utils.run_wget(provenance_url, TMP_IMG_DIR)
-                sig_path = utils.run_wget(signature_url, TMP_IMG_DIR)
+                provenance_path = artifactUtils.run_wget(provenance_url, TMP_IMG_DIR)
+                sig_path = artifactUtils.run_wget(signature_url, TMP_IMG_DIR)
               }
               sh "policy-checker ${provenance_path} --sig ${sig_path} --policy /etc/jenkins/provenance-trust-policy.yaml"
             }
@@ -347,13 +347,13 @@ pipeline {
                   error("Unable to derive image files from OCI image '${params.OCI_IMAGE_REF}'")
                 }
               } else {
-                img_path = utils.run_wget(params.IMG_URL, TMP_IMG_DIR)
+                img_path = artifactUtils.run_wget(params.IMG_URL, TMP_IMG_DIR)
                 def split = split_img_url(params.IMG_URL)
                 def artifacts_url = split["artifacts_url"]
                 def img_relpath = split["img_relpath"]
                 def target = split["target_name"]
                 def sig_url = "${artifacts_url}/${target}/${img_relpath}.sig"
-                sig_path = utils.run_wget(sig_url, TMP_IMG_DIR)
+                sig_path = artifactUtils.run_wget(sig_url, TMP_IMG_DIR)
               }
               println "Downloaded image to workspace: ${img_path}"
               println "Downloaded SLSA signature file to workspace: ${sig_path}"
@@ -368,11 +368,11 @@ pipeline {
         stage('Flash') {
           steps {
             script {
-              def mountCommands = utils.setup_mount_commands(CONF_FILE_PATH, env.TEST_TARGET, env.DEVICE_NAME)
+              def mountCommands = hwTestUtils.setup_mount_commands(CONF_FILE_PATH, env.TEST_TARGET, env.DEVICE_NAME)
               env.MOUNT_CMD = mountCommands.mount_cmd
               env.UNMOUNT_CMD = mountCommands.unmount_cmd
-              def dev = utils.resolve_flash_target(CONF_FILE_PATH, env.DEVICE_NAME, env.MOUNT_CMD, env.UNMOUNT_CMD)
-              def ghafFlakeRef = utils.resolve_ghaf_flake_ref(params.GHAF_FLAKE_REF, params.IMG_URL, env.OCI_SOURCE_REF)
+              def dev = hwTestUtils.resolve_flash_target(CONF_FILE_PATH, env.DEVICE_NAME, env.MOUNT_CMD, env.UNMOUNT_CMD)
+              def ghafFlakeRef = hwTestUtils.resolve_ghaf_flake_ref(params.GHAF_FLAKE_REF, params.IMG_URL, env.OCI_SOURCE_REF)
               if (!ghafFlakeRef) {
                 if (params.OCI_IMAGE_REF) {
                   error("Missing GHAF_FLAKE_REF and unable to derive it from OCI image '${params.OCI_IMAGE_REF}'")
@@ -381,16 +381,16 @@ pipeline {
               }
               env.GHAF_FLAKE_REF = ghafFlakeRef
               println "Building flash-script from GHAF_FLAKE_REF: ${ghafFlakeRef}"
-              def flashScriptPath = utils.run_cmd(
+              def flashScriptPath = artifactUtils.run_cmd(
                 "nix build --no-link --print-out-paths '${ghafFlakeRef}#packages.x86_64-linux.flash-script'"
               )
               // flash-script validates /dev/sdX format; resolve the by-id symlink
-              def resolved_dev = utils.run_cmd("/run/wrappers/bin/sudo readlink -f ${dev}")
+              def resolved_dev = artifactUtils.run_cmd("/run/wrappers/bin/sudo readlink -f ${dev}")
               sh "/run/wrappers/bin/sudo ${flashScriptPath}/bin/flash-script -d ${resolved_dev} -i ${env.FLASH_INPUT_PATH} -f"
               env.FLASHED = 'true'
               // Unmount
               sh "${env.UNMOUNT_CMD}"
-              utils.assert_flash_target_unmounted(dev)
+              hwTestUtils.assert_flash_target_unmounted(dev)
             }
           }
         }
@@ -473,7 +473,7 @@ pipeline {
       post {
         always {
           script {
-            utils.archive_robot_artifacts(TMP_IMG_DIR, env.BOOT_PASSED != null)
+            artifactUtils.archive_robot_artifacts(TMP_IMG_DIR, env.BOOT_PASSED != null)
           }
         }
       }
