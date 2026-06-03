@@ -23,12 +23,23 @@ STORAGE_URL="${STORAGE_URL:=https://hel1.your-objectstorage.com}"
 BUCKET="${BUCKET:=ghaf-artifacts-dev}"
 ACCESS_KEY="${ACCESS_KEY:=}"
 SECRET_KEY="${SECRET_KEY:=}"
+OCI_REPOSITORY_PREFIX="${OCI_REPOSITORY_PREFIX:=registry.vedenemo.dev/ghaf/release-candidate}"
+
+release_targets=(
+  "packages.aarch64-linux.nvidia-jetson-orin-agx-debug"
+  "packages.aarch64-linux.nvidia-jetson-orin-nx-debug"
+  "packages.x86_64-linux.intel-laptop-debug"
+  "packages.x86_64-linux.intel-laptop-debug-installer"
+  "packages.x86_64-linux.intel-laptop-storeDisk-debug-installer"
+  "packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64"
+  "packages.x86_64-linux.nvidia-jetson-orin-nx-debug-from-x86_64"
+)
 
 ################################################################################
 
 usage() {
   cat <<EOF
-Usage: $MYNAME [-h] [-v] -a ARTIFACTS
+Usage: $MYNAME [-h] [-v] (-a ARTIFACTS | -o OCI_TAG) -t GHAF_VERSION
 
 Archive Ghaf release to a permanent storage.
 Assumes storage credentials are exported in environment variables ACCESS_KEY and SECRET_KEY.
@@ -38,6 +49,7 @@ Options:
   -h    Print this help message
   -v    Set the script verbosity to DEBUG
   -a    Specify a path to ARTIFACTS directory
+  -o    Specify an OCI tag to pull release artifacts from the registry
   -t    Specify a ghaf release tag/version name, e.g. 'ghaf-25.12.1'
 
 
@@ -45,6 +57,9 @@ Examples:
 
   Archive artifacts from the given path:
     $ ./$MYNAME -t ghaf-25.12.1 -a /local/path/to/artifacts/
+
+  Archive artifacts from an OCI registry tag:
+    $ ./$MYNAME -t ghaf-25.12.1 -o release-20260603_123242705-29e9ef6e98ef9a589b5814fe438ba94601df1bdc
 
 EOF
 }
@@ -64,8 +79,9 @@ argparse() {
   OPTIND=1
   DEBUG="false"
   ARTIFACTS=""
+  OCI_TAG=""
   GHAF_VERSION=""
-  while getopts "hva:t:" copt; do
+  while getopts "hva:o:t:" copt; do
     case "${copt}" in
     h)
       usage
@@ -76,6 +92,9 @@ argparse() {
       ;;
     a)
       ARTIFACTS="$OPTARG"
+      ;;
+    o)
+      OCI_TAG="$OPTARG"
       ;;
     t)
       GHAF_VERSION="$OPTARG"
@@ -92,8 +111,13 @@ argparse() {
     print_err "unsupported positional argument(s): '$*'"
     exit 1
   fi
-  if [[ -z $ARTIFACTS ]]; then
-    print_err "missing mandatory option (-a)"
+  if [[ -z $ARTIFACTS && -z $OCI_TAG ]]; then
+    print_err "missing mandatory option (-a or -o)"
+    usage
+    exit 1
+  fi
+  if [[ -n $ARTIFACTS && -n $OCI_TAG ]]; then
+    print_err "options -a and -o are mutually exclusive"
     usage
     exit 1
   fi
@@ -107,7 +131,7 @@ argparse() {
     usage
     exit 1
   fi
-  if [[ ! -d $ARTIFACTS ]]; then
+  if [[ -n $ARTIFACTS && ! -d $ARTIFACTS ]]; then
     print_err "invalid ARTIFACTS directory path (-a)"
     usage
     exit 1
@@ -119,6 +143,16 @@ exit_unless_command_exists() {
     print_err "command '$1' is not installed (Hint: are you inside a nix-shell?)"
     exit 1
   fi
+}
+
+is_release_target() {
+  candidate="$1"
+  for target in "${release_targets[@]}"; do
+    if [[ $candidate == "$target" ]]; then
+      return 0
+    fi
+  done
+  return 1
 }
 
 verify_signatures() {
@@ -180,22 +214,82 @@ verify_signatures() {
   fi
 }
 
+pull_artifacts_from_oci() {
+  tag="$1"
+  artifactsdir="$TMPDIR/oci-artifacts"
+
+  if [[ $tag == */* || $tag == *@* || $tag == *:* ]]; then
+    print_err "OCI release archival requires a tag, not a reference: $tag"
+    exit 1
+  fi
+
+  mkdir -p "$artifactsdir"
+  pulled_targets=0
+  for target_name in "${release_targets[@]}"; do
+    oci_target_name="${target_name#packages.}"
+    oci_target_name="${oci_target_name,,}"
+    target_reference="$OCI_REPOSITORY_PREFIX/$oci_target_name:$tag"
+    target_dir="$artifactsdir/$target_name"
+
+    mkdir -p "$target_dir"
+    echo "[+] Pulling release artifacts from OCI: $target_reference"
+    manifest_log="$target_dir/oras-manifest-fetch.log"
+    if ! oras manifest fetch --format json "$target_reference" >/dev/null 2>"$manifest_log"; then
+      if grep -Eiq "(not found|manifest unknown|name unknown)" "$manifest_log"; then
+        echo "[+] Skipping missing OCI target: $target_reference"
+        rm -rf "$target_dir"
+        continue
+      fi
+      cat "$manifest_log" >&2
+      print_err "failed checking OCI target: $target_reference"
+      exit 1
+    fi
+    rm -f "$manifest_log"
+
+    if ! (
+      cd "$target_dir"
+      ghaf-fetch --all "$target_reference"
+    ); then
+      print_err "failed pulling OCI target: $target_reference"
+      exit 1
+    fi
+
+    manifest="$target_dir/manifest.json"
+    if [[ ! -f $manifest ]]; then
+      print_err "missing manifest pulled from OCI reference: $target_reference"
+      exit 1
+    fi
+
+    if ! manifest_target=$(jq -re '.target' "$manifest"); then
+      print_err "missing target entry in OCI manifest: $manifest"
+      exit 1
+    fi
+    if [[ $manifest_target != "$target_name" ]]; then
+      print_err "unexpected target in OCI manifest: expected '$target_name', got '$manifest_target'"
+      exit 1
+    fi
+
+    if [[ -f "$target_dir/test-results.tar" && ! -d "$target_dir/test-results" ]]; then
+      tar -xf "$target_dir/test-results.tar" -C "$target_dir"
+      rm -f "$target_dir/test-results.tar"
+    fi
+    pulled_targets=$((pulled_targets + 1))
+  done
+
+  if [[ $pulled_targets -eq 0 ]]; then
+    print_err "no release targets found in OCI registry for tag: $tag"
+    exit 1
+  fi
+
+  ARTIFACTS="$artifactsdir"
+}
+
 prepare_artifacts() {
-  build_targets=(
-    # Leading and trailing spaces are intentional
-    " packages.aarch64-linux.nvidia-jetson-orin-agx-debug "
-    " packages.aarch64-linux.nvidia-jetson-orin-nx-debug "
-    " packages.x86_64-linux.intel-laptop-debug "
-    " packages.x86_64-linux.intel-laptop-debug-installer "
-    " packages.x86_64-linux.intel-laptop-storeDisk-debug-installer "
-    " packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64 "
-    " packages.x86_64-linux.nvidia-jetson-orin-nx-debug-from-x86_64 "
-  )
   artifactsdir="$1"
   for dir in "$artifactsdir"/*/; do
     target_name="$(basename "$dir")"
-    # Skip unless target_name is listed in the build_targets list
-    if ! echo "${build_targets[@]}" | grep -P -q " $target_name "; then
+    # Skip unless target_name is listed in the release target list
+    if ! is_release_target "$target_name"; then
       continue
     fi
     echo "[+] Release artifact: $target_name"
@@ -266,7 +360,13 @@ main() {
   exit_unless_command_exists jq
 
   # Prepare the release archive from artifacts
-  prepare_artifacts "$(realpath "$ARTIFACTS")"
+  if [[ -n $OCI_TAG ]]; then
+    exit_unless_command_exists ghaf-fetch
+    pull_artifacts_from_oci "$OCI_TAG"
+  else
+    ARTIFACTS="$(realpath "$ARTIFACTS")"
+  fi
+  prepare_artifacts "$ARTIFACTS"
 
   # Upoload the archive to Hetzner
   echo "[+] Uploading release tar archives to Hetzner"

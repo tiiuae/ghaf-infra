@@ -25,10 +25,12 @@
         runtimeInputs =
           (with pkgs; [
             minio-client
+            oras
             tree
             jq
           ])
           ++ [
+            ghaf-fetch
             verify-signature
           ];
         text = builtins.readFile ./archive-ghaf-release.sh;
