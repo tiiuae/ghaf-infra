@@ -117,13 +117,13 @@ def init() {
   env.OCI_SOURCE_REF = ''
   if (params.OCI_IMAGE_REF) {
     def annotations = readJSON(
-      text: utils.run_cmd("oras manifest fetch --format json '${params.OCI_IMAGE_REF}'")
+      text: artifactUtils.run_cmd("oras manifest fetch --format json '${params.OCI_IMAGE_REF}'")
     ).content?.annotations ?: [:]
     env.OCI_TARGET = annotations[TARGET_ANNOTATION] ?: ''
     env.OCI_SOURCE_REF = annotations[SOURCE_REF_ANNOTATION] ?: ''
   }
-  env.BUILD_TARGET = utils.derive_target_name(params.IMG_URL, env.OCI_TARGET) ?: ''
-  env.TEST_TARGET = utils.resolve_test_target(
+  env.BUILD_TARGET = hwTestUtils.derive_target_name(params.IMG_URL, env.OCI_TARGET) ?: ''
+  env.TEST_TARGET = hwTestUtils.resolve_test_target(
     params.TEST_TARGET,
     env.BUILD_TARGET,
     params.JOB_SELECTOR?.trim() ?: params.DEVICE_TAG
@@ -133,13 +133,13 @@ def init() {
   env.INSTALLER_FLOW = installerTarget.contains("installer") ? 'true' : 'false'
   def deviceInfo = null
   if (env.TEST_TARGET && !params.DEVICE_TAG) {
-    deviceInfo = utils.derive_device_info(env.TEST_TARGET, params.SECUREBOOT)
+    deviceInfo = hwTestUtils.derive_device_info(env.TEST_TARGET, params.SECUREBOOT)
     if (!deviceInfo) {
       error("Could not derive DEVICE_TAG from test target '${env.TEST_TARGET}' and DEVICE_TAG is not defined")
     }
   }
   if (params.DEVICE_TAG) {
-    def deviceName = utils.device_name_from_tag(params.DEVICE_TAG)
+    def deviceName = hwTestUtils.device_name_from_tag(params.DEVICE_TAG)
     if (!deviceName) {
       error("Unknown DEVICE_TAG '${params.DEVICE_TAG}'")
     }
@@ -241,7 +241,7 @@ pipeline {
           steps {
             script {
               env.TARGET = env.TEST_TARGET
-              env.DEVICE_BOOT_TAG = utils.boot_tag_for(env.DEVICE_TAG)
+              env.DEVICE_BOOT_TAG = hwTestUtils.boot_tag_for(env.DEVICE_TAG)
               currentBuild.description = "${env.TEST_AGENT_LABEL}<br>${env.TEST_TARGET}"
               println("Using BUILD_TARGET: ${env.BUILD_TARGET}")
               println("Using TEST_TARGET: ${env.TEST_TARGET}")
@@ -256,7 +256,7 @@ pipeline {
           steps {
             deleteDir()
             script {
-              utils.checkout_ci_test_sources(
+              checkoutUtils.checkout_ci_test_sources(
                 CI_TEST_PINNED_SOURCE_FILE,
                 params.USE_FLAKE_PINNED_CI_TEST,
                 params.CI_TEST_REPO_BRANCH,
@@ -277,7 +277,7 @@ pipeline {
                 echo { \\\"Job\\\": \\\"${env.JOB_TARGET}\\\" } > ${TEST_CONFIG_DIR}/${BUILD_NUMBER}.json
                 ls -la ${TEST_CONFIG_DIR}
               """
-              def mountCommands = utils.setup_mount_commands(CONF_FILE_PATH, env.TEST_TARGET, env.DEVICE_NAME)
+              def mountCommands = hwTestUtils.setup_mount_commands(CONF_FILE_PATH, env.TEST_TARGET, env.DEVICE_NAME)
               env.MOUNT_CMD = mountCommands.mount_cmd
               env.UNMOUNT_CMD = mountCommands.unmount_cmd
             }
@@ -290,14 +290,14 @@ pipeline {
               def img_path
               if (params.OCI_IMAGE_REF) {
                 def pullResult = readJSON(
-                  text: utils.run_cmd("oras pull --format json -o '${TMP_IMG_DIR}' '${params.OCI_IMAGE_REF}'")
+                  text: artifactUtils.run_cmd("oras pull --format json -o '${TMP_IMG_DIR}' '${params.OCI_IMAGE_REF}'")
                 )
                 img_path = pullResult.files?.find { it.mediaType == IMAGE_MEDIA_TYPE }?.path
                 if (!img_path) {
                   error("Unable to derive image file from OCI image '${params.OCI_IMAGE_REF}'")
                 }
               } else {
-                img_path = utils.run_wget(params.IMG_URL, TMP_IMG_DIR)
+                img_path = artifactUtils.run_wget(params.IMG_URL, TMP_IMG_DIR)
               }
               println "Downloaded image to workspace: ${img_path}"
               if (params.USE_LEGACY_DD_FLASH) {
@@ -324,7 +324,7 @@ pipeline {
           when { expression { params && (params.IMG_URL || params.OCI_IMAGE_REF) } }
           steps {
             script {
-              def dev = utils.resolve_flash_target(CONF_FILE_PATH, env.DEVICE_NAME, env.MOUNT_CMD, env.UNMOUNT_CMD)
+              def dev = hwTestUtils.resolve_flash_target(CONF_FILE_PATH, env.DEVICE_NAME, env.MOUNT_CMD, env.UNMOUNT_CMD)
               if (params.USE_LEGACY_DD_FLASH) {
                 // Wipe possible ZFS leftovers, more details here:
                 // https://github.com/tiiuae/ghaf/blob/454b18bc/packages/installer/ghaf-installer.sh#L75
@@ -347,7 +347,7 @@ pipeline {
                 if (env.FLASH_INPUT_PATH.endsWith('.raw')) {
                   error("flash-script does not support '.raw' images. Enable USE_LEGACY_DD_FLASH to flash '${env.FLASH_INPUT_PATH}' with dd.")
                 }
-                def ghafFlakeRef = utils.resolve_ghaf_flake_ref(params.GHAF_FLAKE_REF, params.IMG_URL, env.OCI_SOURCE_REF)
+                def ghafFlakeRef = hwTestUtils.resolve_ghaf_flake_ref(params.GHAF_FLAKE_REF, params.IMG_URL, env.OCI_SOURCE_REF)
                 if (!ghafFlakeRef) {
                   if (params.OCI_IMAGE_REF) {
                     error("Missing GHAF_FLAKE_REF and unable to derive it from OCI image '${params.OCI_IMAGE_REF}'. Set GHAF_FLAKE_REF or enable USE_LEGACY_DD_FLASH.")
@@ -355,17 +355,17 @@ pipeline {
                   error("Missing GHAF_FLAKE_REF and unable to derive Ghaf commit from IMG_URL '${params.IMG_URL}'. Set GHAF_FLAKE_REF or enable USE_LEGACY_DD_FLASH.")
                 }
                 println "Building flash-script from GHAF_FLAKE_REF: ${ghafFlakeRef}"
-                def flashScriptPath = utils.run_cmd(
+                def flashScriptPath = artifactUtils.run_cmd(
                   "nix build --no-link --print-out-paths '${ghafFlakeRef}#packages.x86_64-linux.flash-script'"
                 )
                 // flash-script validates /dev/sdX format; resolve the by-id symlink.
-                def resolved_dev = utils.run_cmd("/run/wrappers/bin/sudo readlink -f ${dev}")
+                def resolved_dev = artifactUtils.run_cmd("/run/wrappers/bin/sudo readlink -f ${dev}")
                 sh "/run/wrappers/bin/sudo ${flashScriptPath}/bin/flash-script -d ${resolved_dev} -i ${env.FLASH_INPUT_PATH} -f"
               }
               env.FLASHED = 'true'
               // Unmount
               sh "${env.UNMOUNT_CMD}"
-              utils.assert_flash_target_unmounted(dev)
+              hwTestUtils.assert_flash_target_unmounted(dev)
               currentBuild.description = "${currentBuild.description}<br>✅ Device flashed"
             }
           }
@@ -425,7 +425,7 @@ pipeline {
       post {
         always {
           script {
-            utils.archive_robot_artifacts(TMP_IMG_DIR, env.ROBOT_EXECUTED != null)
+            artifactUtils.archive_robot_artifacts(TMP_IMG_DIR, env.ROBOT_EXECUTED != null)
           }
         }
       }

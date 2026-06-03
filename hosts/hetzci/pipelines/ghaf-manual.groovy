@@ -54,9 +54,9 @@ pipeline {
     stage('Checkout') {
       agent { label 'built-in' }
       steps {
-        dir(utils.controller_workdir()) {
+        dir(artifactUtils.controller_workdir()) {
           script {
-            utils.checkout_remote_ref(params.REPO_URL, params.GITREF)
+            checkoutUtils.checkout_remote_ref(params.REPO_URL, params.GITREF)
           }
         }
       }
@@ -64,7 +64,7 @@ pipeline {
     stage('Setup') {
       agent { label 'built-in' }
       steps {
-        dir(utils.controller_workdir()) {
+        dir(artifactUtils.controller_workdir()) {
           script {
             def TARGETS = []
             def normalizedTestset = params.TESTSET?.trim()
@@ -190,7 +190,7 @@ pipeline {
                 [ target: "packages.x86_64-linux.intel-laptop-low-mem-debug-installer", uefisigniso: params.UEFISIGN, testset: null ])
             }
 
-            PIPELINE = utils.create_pipeline(TARGETS)
+            PIPELINE = pipelineExecution.create_pipeline(TARGETS)
           }
         }
       }
@@ -206,7 +206,7 @@ pipeline {
   post {
     always {
       script {
-        utils.clean_controller_workdir()
+        artifactUtils.clean_controller_workdir()
       }
     }
   }

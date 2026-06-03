@@ -96,9 +96,9 @@ pipeline {
     stage('Checkout') {
       agent { label 'built-in' }
       steps {
-        dir(utils.controller_workdir()) {
+        dir(artifactUtils.controller_workdir()) {
           script {
-            utils.checkout_remote_ref(REPO_URL, 'main')
+            checkoutUtils.checkout_remote_ref(REPO_URL, 'main')
           }
         }
       }
@@ -106,14 +106,14 @@ pipeline {
     stage('Setup') {
       agent { label 'built-in' }
       steps {
-        dir(utils.controller_workdir()) {
+        dir(artifactUtils.controller_workdir()) {
           script {
             if (params.SET_TESTAGENT_HOST && params.TESTAGENT_HOST) {
-              PIPELINE = utils.create_pipeline(TARGETS, params.TESTAGENT_HOST, null, [
+              PIPELINE = pipelineExecution.create_pipeline(TARGETS, params.TESTAGENT_HOST, null, [
                 parallel_tests: false,
               ])
             } else {
-              PIPELINE = utils.create_pipeline(TARGETS, env.CI_ENV, null, [
+              PIPELINE = pipelineExecution.create_pipeline(TARGETS, env.CI_ENV, null, [
                 parallel_tests: false,
               ])
             }
@@ -134,7 +134,7 @@ pipeline {
   post {
     always {
       script {
-        utils.clean_controller_workdir()
+        artifactUtils.clean_controller_workdir()
       }
     }
   }

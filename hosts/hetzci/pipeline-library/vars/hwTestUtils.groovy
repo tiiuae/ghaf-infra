@@ -167,13 +167,13 @@ def run_hw_test(
   String ci_env) {
   // Keep the blocking downstream wait outside node('built-in') so ghaf-hw-test
   // can acquire a controller executor for its own initialization stages.
-  def build_href = "<a href=\"${utils.html_escape(env.BUILD_URL)}\">" +
-    "${utils.html_escape("${env.JOB_NAME}#${env.BUILD_ID}")}</a>"
+  def build_href = "<a href=\"${pipelineExecution.html_escape(env.BUILD_URL)}\">" +
+    "${pipelineExecution.html_escape("${env.JOB_NAME}#${env.BUILD_ID}")}</a>"
   def normalizedTestTarget = testTargetName?.trim()
   def normalizedTestIdentity = testIdentity?.trim()
   def desc = normalizedTestIdentity ?
-    "Triggered by ${build_href}<br>(${utils.html_escape(normalizedTestIdentity)})" :
-    "Triggered by ${build_href}<br>(${utils.html_escape(buildShortname)})"
+    "Triggered by ${build_href}<br>(${pipelineExecution.html_escape(normalizedTestIdentity)})" :
+    "Triggered by ${build_href}<br>(${pipelineExecution.html_escape(buildShortname)})"
   def test_params = [
     string(name: "TESTSET", value: testset),
     string(name: "DESC", value: desc),
@@ -215,8 +215,8 @@ def collect_hw_test_result(
   if (job.result != "SUCCESS") {
     unstable("FAILED: ${testIdentity}")
     currentBuild.result = "FAILURE"
-    utils.append_to_build_description(
-      "<a href=\"${utils.html_escape(job.url)}\">⛔ ${utils.html_escape(testIdentity)}</a>"
+    artifactUtils.append_to_build_description(
+      "<a href=\"${pipelineExecution.html_escape(job.url)}\">⛔ ${pipelineExecution.html_escape(testIdentity)}</a>"
     )
   }
   def artifactsTarget = "${output}/test-results/${testPathKey}"

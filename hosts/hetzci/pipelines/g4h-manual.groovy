@@ -37,9 +37,9 @@ pipeline {
     stage('Checkout') {
       agent { label 'built-in' }
       steps {
-        dir(utils.controller_workdir()) {
+        dir(artifactSupport.controller_workdir()) {
           script {
-            utils.checkout_remote_ref(params.REPO_URL, params.GITREF)
+            checkoutUtils.checkout_remote_ref(params.REPO_URL, params.GITREF)
           }
         }
       }
@@ -47,7 +47,7 @@ pipeline {
     stage('Setup') {
       agent { label 'built-in' }
       steps {
-        dir(utils.controller_workdir()) {
+        dir(artifactSupport.controller_workdir()) {
           script {
             def TARGETS = []
             if (params.nvidia_jetson_orin_agx_debug_from_x86_64) {
@@ -59,7 +59,7 @@ pipeline {
                 [ target: "packages.aarch64-linux.nvidia-jetson-orin-agx-debug", uefisign: params.UEFISIGN, testset: params.TESTSET ])
             }
 
-            PIPELINE = utils.create_pipeline(TARGETS)
+            PIPELINE = pipelineExecution.create_pipeline(TARGETS)
           }
         }
       }
@@ -75,7 +75,7 @@ pipeline {
   post {
     always {
       script {
-        utils.clean_controller_workdir()
+        artifactUtils.clean_controller_workdir()
       }
     }
   }

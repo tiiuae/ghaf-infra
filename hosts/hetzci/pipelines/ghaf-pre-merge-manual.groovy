@@ -72,14 +72,14 @@ pipeline {
     stage('Checkout') {
       agent { label 'built-in' }
       steps {
-        dir(utils.controller_workdir()) {
+        dir(artifactUtils.controller_workdir()) {
           script {
             if (!params.GITHUB_PR_NUMBER) {
               error('Missing GITHUB_PR_NUMBER')
             }
           }
           script {
-            utils.checkout_github_pr_merge(REPO_URL, params.GITHUB_PR_NUMBER)
+            checkoutUtils.checkout_github_pr_merge(REPO_URL, params.GITHUB_PR_NUMBER)
             env.TARGET_COMMIT = sh(
               script: "git rev-parse refs/remotes/pr_origin/pull/${params.GITHUB_PR_NUMBER}/head",
               returnStdout: true
@@ -92,19 +92,19 @@ pipeline {
     stage('Setup') {
       agent { label 'built-in' }
       steps {
-        dir(utils.controller_workdir()) {
+        dir(artifactUtils.controller_workdir()) {
           script {
             if (params.SET_PR_STATUS) {
-              utils.set_github_commit_status("Manual trigger: pending", "pending", env.TARGET_COMMIT)
+              pipelineExecution.set_github_commit_status("Manual trigger: pending", "pending", env.TARGET_COMMIT)
             }
             def pr_href = "<a href=\"${REPO_URL}/pull/${params.GITHUB_PR_NUMBER}\">🧩 PR#${params.GITHUB_PR_NUMBER}</a>"
-            utils.append_to_build_description(pr_href)
+            artifactUtils.append_to_build_description(pr_href)
             def merge_commit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
             // The downstream hw-test job needs the PR merge ref as well as the
             // merge SHA, otherwise it cannot refetch GitHub's synthetic merge commit.
             def normalizedRepoUrl = REPO_URL.replaceAll('/+$', '')
             def merge_flake_ref = "git+${normalizedRepoUrl}?ref=refs/pull/${params.GITHUB_PR_NUMBER}/merge&rev=${merge_commit}"
-            PIPELINE = utils.create_pipeline(TARGETS, null, merge_flake_ref)
+            PIPELINE = pipelineExecution.create_pipeline(TARGETS, null, merge_flake_ref)
           }
         }
       }
@@ -120,14 +120,14 @@ pipeline {
   post {
     always {
       script {
-        utils.clean_controller_workdir()
+        artifactUtils.clean_controller_workdir()
       }
     }
     success {
       script {
         if (params.SET_PR_STATUS) {
           node('built-in') {
-            utils.set_github_commit_status("Manual trigger: success", "success", env.TARGET_COMMIT)
+            pipelineExecution.set_github_commit_status("Manual trigger: success", "success", env.TARGET_COMMIT)
           }
         }
       }
@@ -136,7 +136,7 @@ pipeline {
       script {
         if (params.SET_PR_STATUS) {
           node('built-in') {
-            utils.set_github_commit_status("Manual trigger: failure", "failure", env.TARGET_COMMIT)
+            pipelineExecution.set_github_commit_status("Manual trigger: failure", "failure", env.TARGET_COMMIT)
           }
         }
       }

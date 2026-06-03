@@ -86,9 +86,9 @@ pipeline {
     stage('Checkout') {
       agent { label 'built-in' }
       steps {
-        dir(utils.controller_workdir()) {
+        dir(artifactUtils.controller_workdir()) {
           script {
-            utils.checkout_github_pr_merge(
+            checkoutUtils.checkout_github_pr_merge(
               REPO_URL,
               env.GITHUB_PR_NUMBER,
               env.GITHUB_PR_TARGET_BRANCH,
@@ -118,15 +118,15 @@ pipeline {
     stage('Setup') {
       agent { label 'built-in' }
       steps {
-        dir(utils.controller_workdir()) {
+        dir(artifactUtils.controller_workdir()) {
           script {
-            utils.set_github_commit_status("Pending", "pending", env.TARGET_COMMIT)
+            pipelineExecution.set_github_commit_status("Pending", "pending", env.TARGET_COMMIT)
             def merge_commit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
             // The downstream hw-test job needs the PR merge ref as well as the
             // merge SHA, otherwise it cannot refetch GitHub's synthetic merge commit.
             def normalizedRepoUrl = REPO_URL.replaceAll('/+$', '')
             def merge_flake_ref = "git+${normalizedRepoUrl}?ref=refs/pull/${GITHUB_PR_NUMBER}/merge&rev=${merge_commit}"
-            PIPELINE = utils.create_pipeline(TARGETS, null, merge_flake_ref)
+            PIPELINE = pipelineExecution.create_pipeline(TARGETS, null, merge_flake_ref)
           }
         }
       }
@@ -142,20 +142,20 @@ pipeline {
   post {
     always {
       script {
-        utils.clean_controller_workdir()
+        artifactUtils.clean_controller_workdir()
       }
     }
     success {
       script {
         node('built-in') {
-          utils.set_github_commit_status("Successful", "success", env.TARGET_COMMIT)
+          pipelineExecution.set_github_commit_status("Successful", "success", env.TARGET_COMMIT)
         }
       }
     }
     unsuccessful {
       script {
         node('built-in') {
-          utils.set_github_commit_status("Failure", "failure", env.TARGET_COMMIT)
+          pipelineExecution.set_github_commit_status("Failure", "failure", env.TARGET_COMMIT)
         }
       }
     }
