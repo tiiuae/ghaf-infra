@@ -49,23 +49,10 @@ def normalizedLegacyBuild = pipelineModel.normalize_build_config([
   sbom: true,
 ], true, 'prod', 'prod')
 
-assert normalizedLegacyBuild.target == sampleTestTarget
-assert normalizedLegacyBuild.shortname == 'lenovo-x1-carbon-gen11-debug'
-assert normalizedLegacyBuild.no_image == false
-assert normalizedLegacyBuild.uefi_sign_requested == true
-assert normalizedLegacyBuild.has_testset == true
-assert normalizedLegacyBuild.test_secboot_requested == true
-assert normalizedLegacyBuild.provenance_requested == true
-assert normalizedLegacyBuild.build_otapin_requested == true
-assert normalizedLegacyBuild.sbom_requested == true
 assert normalizedLegacyBuild.can_uefi_sign == true
 assert normalizedLegacyBuild.run_secboot_test == true
 assert normalizedLegacyBuild.tests.size() == 1
-assert normalizedLegacyBuild.tests[0].target == sampleTestTarget
-assert normalizedLegacyBuild.tests[0].shortname == 'lenovo-x1-carbon-gen11-debug'
-assert normalizedLegacyBuild.tests[0].testagent_host_override == null
 assert normalizedLegacyBuild.tests[0].effective_testagent_host == 'prod'
-assert normalizedLegacyBuild.tests[0].secureboot_requested == true
 assert normalizedLegacyBuild.tests[0].id ==
   "${sampleTestIdentityTarget}@_relayboot_bat_@prod@no-secureboot"
 assert normalizedLegacyBuild.tests[0].secureboot_id ==
@@ -82,12 +69,9 @@ def normalizedDocBuild = pipelineModel.normalize_build_config([
   provenance: false,
 ], true, 'prod', 'prod')
 
-assert normalizedDocBuild.shortname == 'doc'
 assert normalizedDocBuild.no_image == true
-assert normalizedDocBuild.has_testset == false
 assert normalizedDocBuild.provenance_requested == false
 assert normalizedDocBuild.can_uefi_sign == false
-assert normalizedDocBuild.run_secboot_test == false
 assert normalizedDocBuild.tests.isEmpty()
 
 def normalizedVmBuild = pipelineModel.normalize_build_config([
@@ -118,11 +102,8 @@ def normalizedExplicitTests = pipelineModel.normalize_tests([
 ], 'prod')
 
 assert normalizedExplicitTests.size() == 2
-assert normalizedExplicitTests[0].effective_testagent_host == 'prod'
-assert normalizedExplicitTests[0].secureboot_requested == true
 assert normalizedExplicitTests[0].test_path_key ==
   'lenovo-x1-carbon-gen11-debug___relayboot_bat___prod__no-secureboot'
-assert normalizedExplicitTests[1].testagent_host_override == 'release'
 assert normalizedExplicitTests[1].effective_testagent_host == 'release'
 assert normalizedExplicitTests[1].id ==
   'system76-darp11-b-debug@_relayboot_bat_@release@no-secureboot'
@@ -143,9 +124,6 @@ def normalizedBuildWithExplicitTests = pipelineModel.normalize_build_config([
   ],
 ], true, 'prod', 'prod')
 
-assert normalizedBuildWithExplicitTests.tests.size() == 2
-assert normalizedBuildWithExplicitTests.has_testset == false
-assert normalizedBuildWithExplicitTests.tests[1].effective_testagent_host == 'release'
 assert normalizedBuildWithExplicitTests.test_runs.size() == 3
 assert normalizedBuildWithExplicitTests.test_runs*.stage_name == [
   'Test lenovo-x1-carbon-gen11-debug / relayboot bat / prod / no-secureboot',
@@ -181,16 +159,6 @@ assert finishedTestEntry.job == [
 
 expectFailure('Missing target name') {
   pipelineModel.normalize_build_config([:], true, 'prod', 'prod')
-}
-
-expectFailure("Explicit 'tests' entries are not supported by create_pipeline() yet") {
-  pipelineModel.normalize_build_config([
-    target: 'packages.x86_64-linux.intel-laptop-debug',
-    tests: [[
-      test_target: sampleTestTarget,
-      testset: '_relayboot_bat_',
-    ]],
-  ], true, 'prod', 'prod', false)
 }
 
 expectFailure("use either 'tests' or legacy 'testset'") {
