@@ -339,6 +339,7 @@ def create_pipeline(
           write_manifest()
 
           artifactSupport.append_to_build_description(artifacts_href, true)
+          artifactSupport.append_to_build_description("OCI Tag: ${pipelineModel.html_escape(immutable_tag)}", true)
         }
         run_optional_stage(
           !target_config.no_image,

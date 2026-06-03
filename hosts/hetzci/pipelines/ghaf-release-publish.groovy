@@ -8,10 +8,17 @@ properties([
       Ghaf release tag or version name used to identify the release in the archive. Example: 'ghaf-25.12.1'
       '''.stripIndent()),
     string(name: 'ARTIFACTS_URL', defaultValue: '', description: '''
-      Specify the artifacts URL from where the release artifacts will be read.
+      Specify the artifacts URL used for local artifact lookup and OTA pinning.
+      If OCI_TAG is empty, release artifacts are also archived from this local artifact path.
       If left empty, uses the current latest artifacts from the 'ghaf-release-candidate' pipeline.
       Example:
       'https://ci-release.vedenemo.dev/artifacts/ghaf-release-candidate/20251210_081817797-commit_28fb2bdcbb558d02c33b01ef25a2250ff3fdc479/'
+      '''.stripIndent()),
+    string(name: 'OCI_TAG', defaultValue: '', description: '''
+      Specify an OCI registry tag.
+      If set, all release targets are archived from the OCI registry using this tag. ARTIFACTS_URL must be set and is still used for OTA pinning.
+      Example:
+      'release-20260603_123242705-29e9ef6e98ef9a589b5814fe438ba94601df1bdc'
       '''.stripIndent()),
     string(name: 'BUCKET', defaultValue: null, description: '''
       Override the object storage bucket to push to, leave empty to select automatically. Example: 'ghaf-artifacts-dev'
@@ -40,6 +47,13 @@ pipeline {
           script {
             if (!params.GHAF_VERSION) {
               error('Missing GHAF_VERSION parameter')
+            }
+            env.OCI_TAG = params.OCI_TAG ?: ''
+            if (env.OCI_TAG) {
+              if (!params.ARTIFACTS_URL) {
+                error('ARTIFACTS_URL parameter is required when OCI_TAG is set')
+              }
+              println("Using OCI_TAG: ${env.OCI_TAG}")
             }
             def adir = "/var/lib/jenkins/artifacts/ghaf-release-candidate"
             // By default, take the release artifacts from the newest subdir directly under ${adir}
@@ -108,9 +122,15 @@ pipeline {
                 } else {
                   env.BUCKET=params.BUCKET
                 }
-                sh """
-                  archive-ghaf-release -a "$ARTIFACTS_DIR" -t "${params.GHAF_VERSION}"
-                """
+                if (env.OCI_TAG) {
+                  sh """
+                    archive-ghaf-release -o "$OCI_TAG" -t "${params.GHAF_VERSION}"
+                  """
+                } else {
+                  sh """
+                    archive-ghaf-release -a "$ARTIFACTS_DIR" -t "${params.GHAF_VERSION}"
+                  """
+                }
               }
             }
           }
