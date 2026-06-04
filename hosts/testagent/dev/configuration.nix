@@ -72,6 +72,9 @@
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B72838C5549", SYMLINK+="ssdDARTER", MODE="0666", GROUP="dialout"
 
+    # Bluetooth Board
+    SUBSYSTEM=="tty", ATTRS{idVendor}=="1366", ATTRS{idProduct}=="1061", ATTRS{serial}=="001050212869", SYMLINK+="ttyBTboard", MODE="0666", GROUP="dialout"
+
   '';
 
   # Details of the hardware devices connected to this host
@@ -82,6 +85,8 @@
     builtins.toJSON {
       addresses = {
         relay_serial_port = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A10KYI3B-if00-port0";
+        bluetooth_serial_port = "/dev/ttyBTboard";
+        bluetooth_name = "Ghaf Test BT Board Dev";
         OrinAGX1 = {
           inherit location;
           device_id = "00-e6-b4-c2-de";
