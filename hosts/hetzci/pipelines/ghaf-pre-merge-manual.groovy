@@ -21,9 +21,6 @@ def TARGETS = [
       ],
     ],
   ],
-  [ target: "packages.x86_64-linux.dell-latitude-7230-debug",
-    testset: null,
-  ],
   [ target: "packages.x86_64-linux.intel-laptop-low-mem-debug",
     tests: [[
       test_target: "dell-latitude-7330-debug",
