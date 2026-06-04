@@ -850,9 +850,11 @@ def test_print_revision_collects_remote_hosts_before_git_lookup(
     monkeypatch.setattr(
         tasks,
         "_git_revision_info",
-        lambda selected: {"abc123": ["abc123", "2026-01-01", "initial commit"]}
-        if list(selected) == ["abc123", "abc123"]
-        else {},
+        lambda selected: (
+            {"abc123": ["abc123", "2026-01-01", "initial commit"]}
+            if list(selected) == ["abc123", "abc123"]
+            else {}
+        ),
     )
     monkeypatch.setattr(tasks, "ThreadPoolExecutor", FakeExecutor)
 
