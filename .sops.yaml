@@ -140,6 +140,7 @@ creation_rules:
       - *ghaf-log
       - *jrautiola
       - *hrosten
+      - *cazfi
   - path_regex: hosts/ghaf-monitoring/secrets.yaml$
     key_groups:
     - age:
