@@ -43,9 +43,6 @@ def TARGETS = [
   [ target: "packages.x86_64-linux.intel-laptop-release-installer",
     testset: null, sbom: true,
   ],
-  [ target: "packages.x86_64-linux.dell-latitude-7230-debug",
-    testset: null, sbom: true,
-  ],
   [ target: "packages.x86_64-linux.intel-laptop-low-mem-debug",
     sbom: true,
     tests: [[
