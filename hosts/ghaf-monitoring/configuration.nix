@@ -64,6 +64,7 @@ in
       # github oauth app credentials
       github_client_id.owner = "grafana";
       github_client_secret.owner = "grafana";
+      grafana_secret_key.owner = "grafana";
 
       slack_webhook_url.owner = "grafana";
 
@@ -144,6 +145,7 @@ in
 
       # https://grafana.com/docs/grafana/latest/setup-grafana/configure-security/configure-security-hardening
       security = {
+        secret_key = "$__file{${config.sops.secrets.grafana_secret_key.path}}";
         cookie_secure = true;
         # we cannot use 'strict' here or github oauth cannot set the login cookie
         cookie_samesite = "lax";
