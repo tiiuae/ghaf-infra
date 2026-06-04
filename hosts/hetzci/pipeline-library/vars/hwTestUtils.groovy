@@ -110,42 +110,79 @@ def setup_mount_commands(String conf_file_path, String target, String device_nam
   if (target.contains("microchip-icicle-")) {
     def muxport = get_test_conf_property(conf_file_path, device_name, 'usb_sd_mux_port')
     return [
-      mount_cmd: "/run/wrappers/bin/sudo usbsdmux ${muxport} host; sleep 10",
-      unmount_cmd: "/run/wrappers/bin/sudo usbsdmux ${muxport} dut",
+      mount_cmd: "(/run/wrappers/bin/sudo usbsdmux ${muxport} host; rc=\$?; /run/wrappers/bin/sudo udevadm settle --timeout=10 || true; sleep 2; exit \$rc)",
+      unmount_cmd: "(/run/wrappers/bin/sudo usbsdmux ${muxport} dut; rc=\$?; /run/wrappers/bin/sudo udevadm settle --timeout=10 || true; sleep 2; exit \$rc)",
     ]
   }
   def serial = get_test_conf_property(conf_file_path, device_name, 'usbhub_serial')
   return [
-    mount_cmd: "/run/wrappers/bin/sudo AcronameHubCLI -u 0 -s ${serial}; sleep 10",
-    unmount_cmd: "/run/wrappers/bin/sudo AcronameHubCLI -u 1 -s ${serial}; sleep 10",
+    mount_cmd: "(/run/wrappers/bin/sudo AcronameHubCLI -u 0 -s ${serial}; rc=\$?; /run/wrappers/bin/sudo udevadm settle --timeout=10 || true; sleep 2; exit \$rc)",
+    unmount_cmd: "(/run/wrappers/bin/sudo AcronameHubCLI -u 1 -s ${serial}; rc=\$?; /run/wrappers/bin/sudo udevadm settle --timeout=10 || true; sleep 2; exit \$rc)",
   ]
 }
 
 def resolve_flash_target(String conf_file_path, String device_name, String mount_cmd, String unmount_cmd) {
-  sh mount_cmd
   def dev = get_test_conf_property(conf_file_path, device_name, 'ext_drive_by-id')
   println "Checking that flash target '${dev}' is connected..."
   sh """
     if /run/wrappers/bin/sudo test -f ${dev}; then
       echo "dev ${dev} found as regular file, removing the file and trying re-mount"
-      ${unmount_cmd}; /run/wrappers/bin/sudo rm ${dev}; ${mount_cmd}
+      /run/wrappers/bin/sudo rm ${dev}
     fi
-    if ! /run/wrappers/bin/sudo test -L ${dev}; then
-      echo "Symlink ${dev} not found. Failed to connect target USB disk to test agent."
-      echo "Check USB cables. Maybe need to reboot test agent or Acroname USB hub."
-      echo "Aborting flashing ${device_name}"
-      exit 1
-    fi
+
+    for attempt in \$(seq 1 3); do
+      echo "Connecting target USB disk to test agent, attempt \${attempt}/3..."
+      if ${mount_cmd}; then
+        for wait_round in \$(seq 1 45); do
+          /run/wrappers/bin/sudo udevadm settle --timeout=2 || true
+          if /run/wrappers/bin/sudo test -L ${dev}; then
+            echo "Symlink ${dev} found."
+            exit 0
+          fi
+          sleep 2
+        done
+
+        echo "Symlink ${dev} not found after attempt \${attempt}."
+      else
+        mount_status=\$?
+        echo "Connecting target USB disk command failed with exit status \${mount_status}."
+      fi
+
+      if [ "\${attempt}" -lt 3 ]; then
+        echo "Toggling USB hub back to target before retry."
+        if ! ${unmount_cmd}; then
+          echo "Failed to toggle USB hub back to target; continuing to next connect attempt."
+        fi
+      fi
+    done
+
+    echo "Symlink ${dev} not found. Failed to connect target USB disk to test agent."
+    echo "Check USB cables. Maybe need to reboot test agent or Acroname USB hub."
+    echo "Block devices visible on test agent:"
+    lsblk -S -o NAME,TRAN,SERIAL,MODEL,SIZE,STATE || true
+    echo "Recent USB/storage kernel messages:"
+    /run/wrappers/bin/sudo dmesg -T | tail -n 80 | sed 's/^/  /' || true
+    echo "Aborting flashing ${device_name}"
+    exit 1
   """
   return dev
 }
 
 def assert_flash_target_unmounted(String dev) {
+  println "Checking that flash target '${dev}' is disconnected from the test agent..."
   sh """
-    if /run/wrappers/bin/sudo test -L ${dev}; then
-      echo "Symlink ${dev} was found. Failed to unmount target USB disk from test agent."
-      exit 1
-    fi
+    for wait_round in \$(seq 1 45); do
+      /run/wrappers/bin/sudo udevadm settle --timeout=2 || true
+      if ! /run/wrappers/bin/sudo test -L ${dev}; then
+        echo "Symlink ${dev} removed."
+        exit 0
+      fi
+      sleep 2
+    done
+
+    echo "Symlink ${dev} was found. Failed to unmount target USB disk from test agent."
+    echo "Resolved target: \$(/run/wrappers/bin/sudo readlink -f ${dev} || true)"
+    exit 1
   """
 }
 
