@@ -9,19 +9,6 @@ private def get_test_conf_property(String file_path, String device, String prope
 }
 
 @NonCPS
-private def device_catalog() {
-  return [
-    [target_substring: "nvidia-jetson-orin-agx64", name: 'OrinAGX64', tag: 'orin-agx-64'],
-    [target_substring: "nvidia-jetson-orin-agx", name: 'OrinAGX1', tag: 'orin-agx'],
-    [target_substring: "nvidia-jetson-orin-nx", name: 'OrinNX1', tag: 'orin-nx'],
-    [target_substring: "lenovo-x1", name: 'LenovoX1-1', tag: 'lenovo-x1'],
-    [target_substring: null, name: 'X1-Secure-Boot', tag: 'x1-sec-boot'],
-    [target_substring: "dell-latitude-7330", name: 'Dell7330', tag: 'dell-7330'],
-    [target_substring: "system76-darp11-b", name: 'DarterPRO', tag: 'darter-pro'],
-  ]
-}
-
-@NonCPS
 // Why NonCPS? Jenkins CPS does not handle regex matchers reliably.
 // See: https://stackoverflow.com/a/48465528
 def derive_target_name(String imgUrl, String ociTarget) {
@@ -51,32 +38,6 @@ def resolve_test_target(String explicitTestTarget = null, String buildTarget = n
   }
   def fallback = fallbackTarget?.trim()
   return fallback ?: null
-}
-
-@NonCPS
-def derive_device_info(String target, boolean secureboot, String deviceTag = null) {
-  def devices = device_catalog()
-  def normalizedTarget = target?.trim() ?: ''
-  def normalizedDeviceTag = deviceTag?.trim()
-  if (normalizedDeviceTag) {
-    if (normalizedDeviceTag == 'lenovo-x1' && secureboot && !normalizedTarget.contains("installer")) {
-      def securebootDevice = devices.find { it.tag == 'x1-sec-boot' }
-      return securebootDevice ? [name: securebootDevice.name, tag: securebootDevice.tag] : null
-    }
-    def explicitDevice = devices.find { it.tag == normalizedDeviceTag }
-    return explicitDevice ? [name: explicitDevice.name, tag: explicitDevice.tag] : null
-  }
-  if (normalizedTarget.contains("lenovo-x1")) {
-    if (secureboot && !normalizedTarget.contains("installer")) {
-      def securebootDevice = devices.find { it.tag == 'x1-sec-boot' }
-      return securebootDevice ? [name: securebootDevice.name, tag: securebootDevice.tag] : null
-    }
-  }
-  def device = devices.find { it.target_substring && normalizedTarget.contains(it.target_substring) }
-  if (device) {
-    return [name: device.name, tag: device.tag]
-  }
-  return null
 }
 
 def extra_tag_suffix(String target, String deviceTag) {

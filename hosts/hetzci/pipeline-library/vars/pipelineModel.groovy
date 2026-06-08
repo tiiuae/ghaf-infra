@@ -48,19 +48,46 @@ def display_testset(String value) {
   return normalized ?: value
 }
 
-private def test_target_catalog() {
+private def device_catalog() {
   return [
-    'lenovo-x1': [
-      'debug': 'lenovo-x1-carbon-gen11-debug',
-      'debug-installer': 'lenovo-x1-carbon-gen11-debug-installer',
+    'orin-agx-64': [
+      name: 'OrinAGX64',
+      target_substrings: ['nvidia-jetson-orin-agx64'],
     ],
-    'darter-pro': [
-      'debug': 'system76-darp11-b-debug',
-      'storeDisk-debug': 'system76-darp11-b-storeDisk-debug',
-      'storeDisk-debug-installer': 'system76-darp11-b-storeDisk-debug-installer',
+    'orin-agx': [
+      name: 'OrinAGX1',
+      target_substrings: ['nvidia-jetson-orin-agx'],
+    ],
+    'orin-nx': [
+      name: 'OrinNX1',
+      target_substrings: ['nvidia-jetson-orin-nx'],
+    ],
+    'lenovo-x1': [
+      name: 'LenovoX1-1',
+      target_substrings: ['lenovo-x1'],
+      variants: [
+        'debug': 'lenovo-x1-carbon-gen11-debug',
+        'debug-installer': 'lenovo-x1-carbon-gen11-debug-installer',
+      ],
+    ],
+    'x1-sec-boot': [
+      name: 'X1-Secure-Boot',
     ],
     'dell-7330': [
-      'debug': 'dell-latitude-7330-debug',
+      name: 'Dell7330',
+      target_substrings: ['dell-latitude-7330'],
+      variants: [
+        'debug': 'dell-latitude-7330-debug',
+      ],
+    ],
+    'darter-pro': [
+      name: 'DarterPRO',
+      target_substrings: ['system76-darp11-b'],
+      variants: [
+        'debug': 'system76-darp11-b-debug',
+        'storeDisk-debug': 'system76-darp11-b-storeDisk-debug',
+        'storeDisk-debug-installer': 'system76-darp11-b-storeDisk-debug-installer',
+      ],
     ],
   ]
 }
@@ -101,31 +128,74 @@ private def validate_test_identity_component(String name, String value) {
   }
 }
 
-private def device_tag_for_test_target(String targetName) {
+def test_target_variants(String deviceTag) {
+  def variants = device_catalog().get(normalize_optional_string(deviceTag), null)?.variants
+  if (!(variants instanceof Map)) {
+    return [:]
+  }
+  return variants
+}
+
+def test_target_for_variant(String deviceTag, String variant) {
+  def resolvedTarget = test_target_variants(deviceTag).get(normalize_optional_string(variant), null)
+  return resolvedTarget instanceof String ? resolvedTarget : null
+}
+
+def device_tag_for_target(String targetName) {
   def normalizedTarget = normalize_optional_string(targetName)
   if (normalizedTarget == null) {
     return null
   }
 
   def shortTarget = short_target_name(normalizedTarget)
-  for (def deviceEntry : test_target_catalog().entrySet()) {
-    for (def variantEntry : deviceEntry.value.entrySet()) {
-      if (variantEntry.value == shortTarget) {
-        return deviceEntry.key
-      }
+  return device_catalog().findResult { String deviceTag, Map device ->
+    def variants = device.variants
+    if (variants instanceof Map && variants.values().contains(shortTarget)) {
+      return deviceTag
     }
+    return null
+  }
+}
+
+def device_info(String targetName, boolean secureboot, String explicitDeviceTag = null) {
+  def normalizedTarget = normalize_optional_string(targetName) ?: ''
+  def normalizedDeviceTag = normalize_optional_string(explicitDeviceTag)
+
+  if (normalizedDeviceTag != null) {
+    if (normalizedDeviceTag == 'lenovo-x1' && secureboot && !normalizedTarget.contains('installer')) {
+      return device_info_for_tag('x1-sec-boot')
+    }
+    return device_info_for_tag(normalizedDeviceTag)
   }
 
-  return null
+  if (normalizedTarget.contains('lenovo-x1') && secureboot && !normalizedTarget.contains('installer')) {
+    return device_info_for_tag('x1-sec-boot')
+  }
+
+  return device_catalog().findResult { String deviceTag, Map device ->
+    def targetSubstrings = device.target_substrings
+    if (targetSubstrings instanceof List && targetSubstrings.any { normalizedTarget.contains(it as String) }) {
+      return [name: device.name as String, tag: deviceTag]
+    }
+    return null
+  }
+}
+
+private def device_info_for_tag(String deviceTag) {
+  def device = device_catalog().get(deviceTag, null)
+  if (!(device instanceof Map)) {
+    return null
+  }
+  return [name: device.name as String, tag: deviceTag]
 }
 
 private def resolve_catalog_test_target(String deviceTag, String variant, String buildTarget, int idx) {
-  def variants = test_target_catalog().get(deviceTag, null)
-  if (!(variants instanceof Map)) {
+  def variants = test_target_variants(deviceTag)
+  if (variants.isEmpty()) {
     fail("Unknown device_tag '${deviceTag}' for '${buildTarget}' entry #${idx + 1}")
   }
 
-  def resolvedTarget = normalize_optional_string(variants.get(variant, null))
+  def resolvedTarget = normalize_optional_string(test_target_for_variant(deviceTag, variant))
   if (!(resolvedTarget instanceof String) || resolvedTarget.isEmpty()) {
     def supportedVariants = variants.keySet().toList().sort().join(', ')
     fail(
@@ -166,7 +236,7 @@ private def resolve_explicit_test_target(Map testConfig, String buildTarget, int
 
     return [
       target: explicitTestTarget,
-      deviceTag: device_tag_for_test_target(explicitTestTarget),
+      deviceTag: device_tag_for_target(explicitTestTarget),
     ]
   }
 
@@ -445,20 +515,12 @@ def normalize_build_config(
   Map targetConfig,
   boolean signingPossible,
   String ciEnv,
-  String defaultTestagentHost = null,
-  boolean allowExplicitTests = true) {
+  String defaultTestagentHost = null) {
   if (targetConfig == null) {
     fail("Missing target config")
   }
 
   def targetName = targetConfig.target
-  def targetLabel = targetName ?: '<unknown>'
-  if (!allowExplicitTests && targetConfig.containsKey('tests')) {
-    fail(
-      "Explicit 'tests' entries are not supported by create_pipeline() yet for '${targetLabel}'; " +
-        "use legacy build-level 'testset' until build-to-many fan-out lands"
-    )
-  }
   def normalized = shallow_copy_map(targetConfig)
   normalized.target = targetName
   normalized.shortname = short_target_name(targetName)
@@ -467,8 +529,6 @@ def normalize_build_config(
   normalized.signing_possible = signingPossible
   normalized.uefi_sign_requested = normalized.get('uefisign', false) || normalized.get('uefisigniso', false)
   normalized.testset = normalized.get('testset', null)
-  normalized.has_testset = normalized.testset != null && !normalized.testset.isEmpty()
-  normalized.test_secboot_requested = normalized.get('test_secboot', false)
   normalized.provenance_requested = normalized.get('provenance', true)
   normalized.build_otapin_requested = normalized.get('build_otapin', false)
   normalized.sbom_requested = normalized.get('sbom', false)
@@ -476,7 +536,5 @@ def normalize_build_config(
   normalized.secureboot_execution_allowed = normalized.can_uefi_sign && ciEnv == "prod"
   normalized.tests = normalize_tests(normalized, defaultTestagentHost)
   normalized.test_runs = expand_test_runs(normalized)
-  normalized.run_secboot_test =
-    normalized.test_secboot_requested && normalized.secureboot_execution_allowed
   return normalized
 }

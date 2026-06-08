@@ -63,9 +63,7 @@ def init() {
   env.OCI_SOURCE_REF = ''
     env.OCI_IMAGE_REVISION = ''
   if (ociImageRef) {
-    def annotations = readJSON(
-      text: artifactUtils.run_cmd("oras manifest fetch --format json '${ociImageRef}'")
-    ).content?.annotations ?: [:]
+    def annotations = artifactSupport.oci_annotations(ociImageRef)
     env.OCI_TARGET = annotations[TARGET_ANNOTATION] ?: ''
     env.OCI_SOURCE_REF = annotations[SOURCE_REF_ANNOTATION] ?: ''
     env.OCI_IMAGE_REVISION = annotations[SOURCE_REVISION_ANNOTATION] ?: ''
@@ -74,7 +72,7 @@ def init() {
     error("Missing OCI_IMAGE_REF or IMG_URL parameter")
   }
   env.BUILD_TARGET = hwTestUtils.derive_target_name(imgUrl, env.OCI_TARGET) ?: ''
-  env.TEST_TARGET = hwTestUtils.resolve_test_target(params.TEST_TARGET, env.BUILD_TARGET) ?: ''
+  env.TEST_TARGET = params.TEST_TARGET?.trim() ?: env.BUILD_TARGET ?: ''
   env.JOB_TARGET = env.BUILD_TARGET ?: env.TEST_TARGET
   env.TESTSET = params.TESTSET ?: ''
   env.INSTALLER_FLOW = env.BUILD_TARGET.contains("installer") ? 'true' : 'false'
@@ -91,8 +89,15 @@ def init() {
     }
     error("Unable to derive test target from IMG_URL '${params.IMG_URL}'")
   }
-  def deviceInfo = hwTestUtils.derive_device_info(env.TEST_TARGET, params.SECUREBOOT, explicitDeviceTag)
+  def deviceInfo = pipelineModel.device_info(env.TEST_TARGET, params.SECUREBOOT, explicitDeviceTag)
   if (!deviceInfo) {
+    if (explicitDeviceTag) {
+      def explicitTagInfo = pipelineModel.device_info(null, params.SECUREBOOT, explicitDeviceTag)
+      if (explicitTagInfo != null) {
+        error("DEVICE_TAG '${explicitDeviceTag}' does not match TEST_TARGET '${env.TEST_TARGET}'")
+      }
+      error("Unknown DEVICE_TAG '${explicitDeviceTag}'")
+    }
     error("Unable to parse device config for test target '${env.TEST_TARGET}'")
   }
   env.DEVICE_NAME = deviceInfo.name
@@ -103,18 +108,6 @@ def init() {
     error("No test agents online")
   }
   return label
-}
-
-def oras_pull_json(String reference, String outputDir) {
-  return readJSON(
-    text: artifactUtils.run_cmd("oras pull --format json -o '${outputDir}' '${reference}'")
-  )
-}
-
-@NonCPS
-def find_oci_pull_file(Map pullResult, String mediaType) {
-  def file = pullResult.files?.find { it.mediaType == mediaType }
-  return file?.path
 }
 
 @NonCPS
@@ -129,42 +122,6 @@ def split_img_url(String img_url) {
   return split
 }
 
-@NonCPS
-def parse_oci_reference(String reference) {
-  def digestSeparator = reference.indexOf('@')
-  if (digestSeparator >= 0) {
-    return [
-      repository: reference.substring(0, digestSeparator),
-      tag: null,
-      digest: reference.substring(digestSeparator + 1),
-    ]
-  }
-
-  def tagSeparator = reference.lastIndexOf(':')
-  def lastSlash = reference.lastIndexOf('/')
-  if (tagSeparator > lastSlash) {
-    return [
-      repository: reference.substring(0, tagSeparator),
-      tag: reference.substring(tagSeparator + 1),
-      digest: null,
-    ]
-  }
-
-  return [
-    repository: reference,
-    tag: null,
-    digest: null,
-  ]
-}
-
-def automated_test_tags(String testname) {
-  if (testname.contains('turnoff')) {
-    return testname
-  }
-  def bootTag = env.DEVICE_TAG == 'x1-sec-boot' ? 'lenovo-x1' : env.DEVICE_TAG
-  return "${bootTag}AND${testname}${env.EXTRATAG}"
-}
-
 def ghaf_robot_test(String testname='relayboot') {
   if (!env.DEVICE_TAG) {
     error("DEVICE_TAG not set")
@@ -172,7 +129,12 @@ def ghaf_robot_test(String testname='relayboot') {
   if (!env.DEVICE_NAME) {
     error("DEVICE_NAME not set")
   }
-  env.INCLUDE_TEST_TAGS = automated_test_tags(testname)
+  if (testname.contains('turnoff')) {
+    env.INCLUDE_TEST_TAGS = testname
+  } else {
+    def bootTag = env.DEVICE_TAG == 'x1-sec-boot' ? 'lenovo-x1' : env.DEVICE_TAG
+    env.INCLUDE_TEST_TAGS = "${bootTag}AND${testname}${env.EXTRATAG}"
+  }
   dir("Robot-Framework/test-suites") {
     sh 'rm -f *.txt *.png *.jpeg *.mp4 *.mkv *.wav output.xml report.html log.html'
     // On failure, continue the pipeline execution
@@ -310,19 +272,19 @@ pipeline {
               def sig_path
               if (params.OCI_IMAGE_REF) {
                 def discovery = readJSON(
-                  text: artifactUtils.run_cmd("oras discover --format json '${params.OCI_IMAGE_REF}'")
+                  text: artifactSupport.run_cmd("oras discover --format json '${params.OCI_IMAGE_REF}'")
                 )
                 def referrer = discovery.referrers?.find { it.artifactType == IN_TOTO_MEDIA_TYPE }
                 def provenanceRef = referrer?.reference
                 if (!provenanceRef && referrer?.digest) {
-                  provenanceRef = "${parse_oci_reference(params.OCI_IMAGE_REF).repository}@${referrer.digest}"
+                  provenanceRef = "${artifactSupport.parse_oci_reference(params.OCI_IMAGE_REF).repository}@${referrer.digest}"
                 }
                 if (!provenanceRef) {
                   error("Unable to discover provenance referrer for OCI image '${params.OCI_IMAGE_REF}'")
                 }
-                def pullResult = oras_pull_json(provenanceRef, TMP_IMG_DIR)
-                provenance_path = find_oci_pull_file(pullResult, IN_TOTO_MEDIA_TYPE)
-                sig_path = find_oci_pull_file(pullResult, DETACHED_SIGNATURE_MEDIA_TYPE)
+                def pullResult = artifactSupport.oras_pull_json(provenanceRef, TMP_IMG_DIR)
+                provenance_path = artifactSupport.find_oci_pull_file(pullResult, IN_TOTO_MEDIA_TYPE)
+                sig_path = artifactSupport.find_oci_pull_file(pullResult, DETACHED_SIGNATURE_MEDIA_TYPE)
                 if (!provenance_path || !sig_path) {
                   error("Unable to derive provenance files from OCI referrer '${provenanceRef}'")
                 }
@@ -346,9 +308,9 @@ pipeline {
               def img_path
               def sig_path
               if (params.OCI_IMAGE_REF) {
-                def pullResult = oras_pull_json(params.OCI_IMAGE_REF, TMP_IMG_DIR)
-                img_path = find_oci_pull_file(pullResult, IMAGE_MEDIA_TYPE)
-                sig_path = find_oci_pull_file(pullResult, DETACHED_SIGNATURE_MEDIA_TYPE)
+                def pullResult = artifactSupport.oras_pull_json(params.OCI_IMAGE_REF, TMP_IMG_DIR)
+                img_path = artifactSupport.find_oci_pull_file(pullResult, IMAGE_MEDIA_TYPE)
+                sig_path = artifactSupport.find_oci_pull_file(pullResult, DETACHED_SIGNATURE_MEDIA_TYPE)
                 if (!img_path || !sig_path) {
                   error("Unable to derive image files from OCI image '${params.OCI_IMAGE_REF}'")
                 }
@@ -387,11 +349,11 @@ pipeline {
               }
               env.GHAF_FLAKE_REF = ghafFlakeRef
               println "Building flash-script from GHAF_FLAKE_REF: ${ghafFlakeRef}"
-              def flashScriptPath = artifactUtils.run_cmd(
+              def flashScriptPath = artifactSupport.run_cmd(
                 "nix build --no-link --print-out-paths '${ghafFlakeRef}#packages.x86_64-linux.flash-script'"
               )
               // flash-script validates /dev/sdX format; resolve the by-id symlink
-              def resolved_dev = artifactUtils.run_cmd("/run/wrappers/bin/sudo readlink -f ${dev}")
+              def resolved_dev = artifactSupport.run_cmd("/run/wrappers/bin/sudo readlink -f ${dev}")
               sh "/run/wrappers/bin/sudo ${flashScriptPath}/bin/flash-script -d ${resolved_dev} -i ${env.FLASH_INPUT_PATH} -f"
               env.FLASHED = 'true'
               // Unmount
@@ -479,7 +441,7 @@ pipeline {
       post {
         always {
           script {
-            artifactUtils.archive_robot_artifacts(TMP_IMG_DIR, env.BOOT_PASSED != null)
+            artifactSupport.archive_robot_artifacts(TMP_IMG_DIR, env.BOOT_PASSED != null)
           }
         }
       }

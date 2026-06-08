@@ -31,7 +31,7 @@ private def ghaf_flake_ref(String repo, String rev) {
 }
 
 private def withRedundancyRouter(String object, Closure body) {
-  def signingEnv = readJSON text: artifactUtils.run_cmd("select-pkcs11-node ${object}")
+  def signingEnv = readJSON text: artifactSupport.run_cmd("select-pkcs11-node ${object}")
   withEnv([
     "PKCS11_PROXY_SOCKET=${signingEnv.socket}" // overrides the socket with one that works
   ]) {
@@ -46,14 +46,14 @@ def create_pipeline(
   String target_flake_ref = null,
   Map options = [:]) {
   def pipeline = [:]
-  def stamp = artifactUtils.run_cmd('date +"%Y%m%d_%H%M%S%3N"')
-  def target_commit = artifactUtils.run_cmd('git rev-parse HEAD')
-  def target_repo = artifactUtils.run_cmd('git remote get-url origin || git remote get-url pr_origin')
+  def stamp = artifactSupport.run_cmd('date +"%Y%m%d_%H%M%S%3N"')
+  def target_commit = artifactSupport.run_cmd('git rev-parse HEAD')
+  def target_repo = artifactSupport.run_cmd('git remote get-url origin || git remote get-url pr_origin')
   // Pre-merge jobs can override this with a PR merge ref, which is required
   // to make GitHub's synthetic merge commit fetchable on downstream test agents.
   target_flake_ref = target_flake_ref ?: ghaf_flake_ref(target_repo, target_commit)
-  def host_name = artifactUtils.run_cmd('hostname')
-  def host_revision = artifactUtils.run_cmd('/run/current-system/sw/bin/nixos-version --configuration-revision')
+  def host_name = artifactSupport.run_cmd('hostname')
+  def host_revision = artifactSupport.run_cmd('/run/current-system/sw/bin/nixos-version --configuration-revision')
   def artifacts = "artifacts/${env.JOB_BASE_NAME}/${stamp}-commit_${target_commit}"
   def artifacts_local_dir = "/var/lib/jenkins/${artifacts}"
   def artifacts_href = "<a href=\"/${artifacts}\">📦 Artifacts</a>"
@@ -181,11 +181,11 @@ def create_pipeline(
         stage("Build ${build_shortname}") {
           sh "mkdir -v -p ${output}"
 
-          manifest.build.ts_begin = artifactUtils.run_cmd('date +%s')
+          manifest.build.ts_begin = artifactSupport.run_cmd('date +%s')
           lock(label: 'nix-build', quantity: 1) {
             sh "nix build --fallback -v .#${build_target_name} --out-link ${output}/unsigned-output"
           }
-          manifest.build.ts_finished = artifactUtils.run_cmd('date +%s')
+          manifest.build.ts_finished = artifactSupport.run_cmd('date +%s')
         }
         if (provenance_requested) {
           stage("Provenance ${build_shortname}") {
@@ -277,7 +277,7 @@ def create_pipeline(
         }
         if (!no_image) {
           stage("Find image ${build_shortname}") {
-            def img_path = artifactUtils.run_cmd(
+            def img_path = artifactSupport.run_cmd(
               "find -L ${output}/unsigned-output -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print -quit"
             )
             if (!img_path) {

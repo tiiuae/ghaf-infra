@@ -113,7 +113,7 @@ def checkout_ci_test_sources(
   String ci_test_repo_branch,
   String ci_test_repo_url) {
   if (use_flake_pinned_ci_test) {
-    def pinned_src = artifactUtils.run_cmd("cat ${pinned_source_file}")
+    def pinned_src = artifactSupport.run_cmd("cat ${pinned_source_file}")
     println("Using flake-pinned ci-test-automation source: ${pinned_src}")
     sh """
       if [ ! -d "${pinned_src}/Robot-Framework/test-suites" ]; then

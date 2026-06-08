@@ -10,6 +10,56 @@ private def shell_quote(String value) {
   return "'${value.replace("'", "'\"'\"'")}'"
 }
 
+def run_cmd(String cmd) {
+  return sh(script: cmd, returnStdout: true).trim()
+}
+
+def oci_annotations(String reference) {
+  return readJSON(
+    text: run_cmd("oras manifest fetch --format json '${reference}'")
+  ).content?.annotations ?: [:]
+}
+
+def oras_pull_json(String reference, String outputDir) {
+  return readJSON(
+    text: run_cmd("oras pull --format json -o '${outputDir}' '${reference}'")
+  )
+}
+
+@NonCPS
+def find_oci_pull_file(Map pullResult, String mediaType) {
+  def file = pullResult.files?.find { it.mediaType == mediaType }
+  return file?.path
+}
+
+@NonCPS
+def parse_oci_reference(String reference) {
+  def digestSeparator = reference.indexOf('@')
+  if (digestSeparator >= 0) {
+    return [
+      repository: reference.substring(0, digestSeparator),
+      tag: null,
+      digest: reference.substring(digestSeparator + 1),
+    ]
+  }
+
+  def tagSeparator = reference.lastIndexOf(':')
+  def lastSlash = reference.lastIndexOf('/')
+  if (tagSeparator > lastSlash) {
+    return [
+      repository: reference.substring(0, tagSeparator),
+      tag: reference.substring(tagSeparator + 1),
+      digest: null,
+    ]
+  }
+
+  return [
+    repository: reference,
+    tag: null,
+    digest: null,
+  ]
+}
+
 def run_wget(String url, String to_dir) {
   def quotedDir = shell_quote(to_dir)
   def quotedUrl = shell_quote(url)
@@ -29,6 +79,22 @@ def run_wget(String url, String to_dir) {
     return matcher.group(1)
   }
   error("Failed to determine downloaded file path for '${url}'")
+}
+
+def archive_robot_artifacts(String tmp_img_dir, boolean should_archive) {
+  if (should_archive) {
+    def test_artifacts = '' +
+      'Robot-Framework/test-suites/**/*.html, ' +
+      'Robot-Framework/test-suites/**/*.xml, ' +
+      'Robot-Framework/test-suites/**/*.png, ' +
+      'Robot-Framework/test-suites/**/*.jpeg, ' +
+      'Robot-Framework/test-suites/**/*.mp4, ' +
+      'Robot-Framework/test-suites/**/*.mkv, ' +
+      'Robot-Framework/test-suites/**/*.wav, ' +
+      'Robot-Framework/test-suites/**/*.txt'
+    archiveArtifacts allowEmptyArchive: true, artifacts: test_artifacts
+  }
+  sh "rm -rf ${tmp_img_dir} || true"
 }
 
 def path_basename(String path) {
@@ -82,5 +148,11 @@ def with_controller_workspace(String workspace, Closure body) {
     dir(workspace) {
       body()
     }
+  }
+}
+
+def clean_controller_workdir() {
+  node('built-in') {
+    sh "rm -rf '${controller_workdir()}'"
   }
 }
