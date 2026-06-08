@@ -30,6 +30,7 @@ assert pipelineModel.display_testset('_relayboot_bat_') == 'relayboot bat'
 def sampleTestTarget = 'packages.x86_64-linux.lenovo-x1-carbon-gen11-debug'
 def sampleTestShortTarget = 'lenovo-x1-carbon-gen11-debug'
 def sampleTestIdentityTarget = 'x86_64-linux.lenovo-x1-carbon-gen11-debug'
+def sampleStoreDiskInstallerTarget = 'system76-darp11-b-storeDisk-debug-installer'
 assert pipelineModel.test_identity([
   target: sampleTestTarget,
   testset: '_relayboot_bat_',
@@ -104,9 +105,25 @@ def normalizedExplicitTests = pipelineModel.normalize_tests([
 assert normalizedExplicitTests.size() == 2
 assert normalizedExplicitTests[0].test_path_key ==
   'lenovo-x1-carbon-gen11-debug___relayboot_bat___prod__no-secureboot'
+assert normalizedExplicitTests[0].device_tag == 'lenovo-x1'
 assert normalizedExplicitTests[1].effective_testagent_host == 'release'
 assert normalizedExplicitTests[1].id ==
   'system76-darp11-b-debug@_relayboot_bat_@release@no-secureboot'
+
+def normalizedDeviceTagTests = pipelineModel.normalize_tests([
+  target: 'packages.x86_64-linux.intel-laptop-storeDisk-debug-installer',
+  tests: [[
+    device_tag: 'darter-pro',
+    variant: 'storeDisk-debug-installer',
+    testset: '_relayboot_bat_',
+  ]],
+], 'prod')
+
+assert normalizedDeviceTagTests.size() == 1
+assert normalizedDeviceTagTests[0].device_tag == 'darter-pro'
+assert normalizedDeviceTagTests[0].target == sampleStoreDiskInstallerTarget
+assert normalizedDeviceTagTests[0].test_path_key ==
+  'system76-darp11-b-storeDisk-debug-installer___relayboot_bat___prod__no-secureboot'
 
 def normalizedBuildWithExplicitTests = pipelineModel.normalize_build_config([
   target: 'packages.x86_64-linux.intel-laptop-debug',
@@ -239,6 +256,49 @@ expectFailure('Duplicate test stage name') {
       ],
     ],
   ], true, 'prod', null)
+}
+
+expectFailure("Unknown device_tag 'unknown-device'") {
+  pipelineModel.normalize_tests([
+    target: 'packages.x86_64-linux.intel-laptop-debug',
+    tests: [[
+      device_tag: 'unknown-device',
+      variant: 'debug',
+      testset: '_relayboot_bat_',
+    ]],
+  ], 'prod')
+}
+
+expectFailure("'variant' requires 'device_tag'") {
+  pipelineModel.normalize_tests([
+    target: 'packages.x86_64-linux.intel-laptop-debug',
+    tests: [[
+      variant: 'debug',
+      testset: '_relayboot_bat_',
+    ]],
+  ], 'prod')
+}
+
+expectFailure("'device_tag' requires 'variant'") {
+  pipelineModel.normalize_tests([
+    target: 'packages.x86_64-linux.intel-laptop-debug',
+    tests: [[
+      device_tag: 'lenovo-x1',
+      testset: '_relayboot_bat_',
+    ]],
+  ], 'prod')
+}
+
+expectFailure("use either 'test_target' or 'device_tag'") {
+  pipelineModel.normalize_tests([
+    target: 'packages.x86_64-linux.intel-laptop-debug',
+    tests: [[
+      test_target: sampleTestShortTarget,
+      device_tag: 'lenovo-x1',
+      variant: 'debug',
+      testset: '_relayboot_bat_',
+    ]],
+  ], 'prod')
 }
 
 expectFailure("reserved in canonical test identities") {

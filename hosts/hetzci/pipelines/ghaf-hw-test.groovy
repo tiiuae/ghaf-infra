@@ -36,6 +36,10 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
       name: 'TEST_TARGET',
       defaultValue: '',
       description: 'Concrete target identity to test. If empty, derive it from OCI_IMAGE_REF or IMG_URL.'),
+    string(
+      name: 'DEVICE_TAG',
+      defaultValue: '',
+      description: 'Concrete device tag for agent selection. If empty, derive it from TEST_TARGET.'),
     string(name: 'GHAF_FLAKE_REF', defaultValue: '', description: 'Pinned Ghaf flake reference for flash-script. If empty, derive it from OCI metadata or IMG_URL commit.'),
     string(name: 'TESTSET', defaultValue: '_relayboot_', description: 'Target testset, e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.'),
     string(name: 'TESTAGENT_HOST', defaultValue: null, description: 'Target testagent host, e.g.: dev, prod, release'),
@@ -74,6 +78,7 @@ def init() {
   env.JOB_TARGET = env.BUILD_TARGET ?: env.TEST_TARGET
   env.TESTSET = params.TESTSET ?: ''
   env.INSTALLER_FLOW = env.BUILD_TARGET.contains("installer") ? 'true' : 'false'
+  def explicitDeviceTag = params.DEVICE_TAG?.trim()
   // Resolve the target here as well for controller-side fail-fast validation and
   // device/agent selection. The agent-side Resolve target stage repeats this so
   // it can initialize runtime state after node allocation.
@@ -86,7 +91,7 @@ def init() {
     }
     error("Unable to derive test target from IMG_URL '${params.IMG_URL}'")
   }
-  def deviceInfo = hwTestUtils.derive_device_info(env.TEST_TARGET, params.SECUREBOOT)
+  def deviceInfo = hwTestUtils.derive_device_info(env.TEST_TARGET, params.SECUREBOOT, explicitDeviceTag)
   if (!deviceInfo) {
     error("Unable to parse device config for test target '${env.TEST_TARGET}'")
   }

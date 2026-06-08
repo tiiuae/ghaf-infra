@@ -13,11 +13,13 @@ def ALL_RELEASE_TARGETS = [
     uefisign: true, build_otapin: true, sbom: true,
     tests: [
       [
-        test_target: "lenovo-x1-carbon-gen11-debug",
+        device_tag: 'lenovo-x1',
+        variant: 'debug',
         testset: '_relayboot_bat_',
       ],
       [
-        test_target: "system76-darp11-b-debug",
+        device_tag: 'darter-pro',
+        variant: 'debug',
         testset: '_relayboot_bat_',
       ],
     ],
@@ -50,11 +52,13 @@ def LAPTOP_RELEASE_TARGETS = [
     uefisign: true, build_otapin: true, sbom: true,
     tests: [
       [
-        test_target: "lenovo-x1-carbon-gen11-debug",
+        device_tag: 'lenovo-x1',
+        variant: 'debug',
         testset: '_relayboot_bat_',
       ],
       [
-        test_target: "system76-darp11-b-debug",
+        device_tag: 'darter-pro',
+        variant: 'debug',
         testset: '_relayboot_bat_',
       ],
     ],
