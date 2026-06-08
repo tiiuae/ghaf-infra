@@ -92,11 +92,6 @@ private def device_catalog() {
   ]
 }
 
-private def device_catalog_entry(String deviceTag) {
-  def device = device_catalog().get(normalize_optional_string(deviceTag), null)
-  return device instanceof Map ? device : null
-}
-
 private def test_stage_name(Map testRun) {
   if (testRun == null) {
     fail("Missing test run")
@@ -149,19 +144,22 @@ private def device_tag_for_target(String targetName) {
   }
 }
 
-def device_info(String targetName, boolean secureboot, String explicitDeviceTag = null) {
-  def normalizedTarget = normalize_optional_string(targetName) ?: ''
-  def normalizedDeviceTag = normalize_optional_string(explicitDeviceTag)
+private def info_for_device_tag(String deviceTag) {
+  def device = device_catalog().get(deviceTag, null)
+  if (!(device instanceof Map)) {
+    return null
+  }
+  return [name: device.name as String, tag: deviceTag]
+}
 
-  if (normalizedDeviceTag != null) {
-    if (normalizedDeviceTag == 'lenovo-x1' && secureboot && !normalizedTarget.contains('installer')) {
-      return device_info_for_tag('x1-sec-boot')
-    }
-    return device_info_for_tag(normalizedDeviceTag)
+private def inferred_device_info(String targetName, boolean secureboot) {
+  def normalizedTarget = normalize_optional_string(targetName)
+  if (normalizedTarget == null) {
+    return null
   }
 
   if (normalizedTarget.contains('lenovo-x1') && secureboot && !normalizedTarget.contains('installer')) {
-    return device_info_for_tag('x1-sec-boot')
+    return info_for_device_tag('x1-sec-boot')
   }
 
   return device_catalog().findResult { String deviceTag, Map device ->
@@ -173,18 +171,43 @@ def device_info(String targetName, boolean secureboot, String explicitDeviceTag 
   }
 }
 
-private def device_info_for_tag(String deviceTag) {
-  def device = device_catalog_entry(deviceTag)
-  if (device == null) {
-    return null
+def device_info(String targetName, boolean secureboot, String explicitDeviceTag = null) {
+  def normalizedDeviceTag = normalize_optional_string(explicitDeviceTag)
+  def inferredInfo = inferred_device_info(targetName, secureboot)
+
+  if (normalizedDeviceTag != null) {
+    def explicitInfo = info_for_device_tag(normalizedDeviceTag)
+    if (explicitInfo == null) {
+      return null
+    }
+
+    if (inferredInfo == null) {
+      return explicitInfo
+    }
+
+    def explicitTag = normalizedDeviceTag
+    if (explicitTag == 'lenovo-x1' && inferredInfo.tag == 'x1-sec-boot') {
+      return inferredInfo
+    }
+    if (explicitTag == 'x1-sec-boot' && inferredInfo.tag == 'lenovo-x1') {
+      return explicitInfo
+    }
+
+    return explicitTag == inferredInfo.tag ? inferredInfo : null
   }
-  return [name: device.name as String, tag: deviceTag]
+
+  return inferredInfo
 }
 
 private def resolve_catalog_test_target(String deviceTag, String variant, String buildTarget, int idx) {
-  def variants = device_catalog_entry(deviceTag)?.variants
-  if (!(variants instanceof Map) || variants.isEmpty()) {
+  def device = device_catalog().get(normalize_optional_string(deviceTag), null)
+  if (!(device instanceof Map)) {
     fail("Unknown device_tag '${deviceTag}' for '${buildTarget}' entry #${idx + 1}")
+  }
+
+  def variants = device instanceof Map ? device.variants : null
+  if (!(variants instanceof Map) || variants.isEmpty()) {
+    fail("device_tag '${deviceTag}' does not support variants for '${buildTarget}' entry #${idx + 1}")
   }
 
   def resolvedTarget = normalize_optional_string(variants.get(variant, null))
@@ -382,10 +405,7 @@ def normalize_tests(Map buildConfig, String defaultTestagentHost = null) {
     }
 
     def testagentHostOverride = overrideFromExplicitField ?: overrideFromAlias
-    def effectiveTestagentHost = effective_testagent_host(
-      [testagent_host_override: testagentHostOverride],
-      defaultTestagentHost
-    )
+    def effectiveTestagentHost = testagentHostOverride ?: normalize_optional_string(defaultTestagentHost)
     def securebootRequested = rawTest.get('test_secboot', false)
     def identity = test_identity([
       target: testTarget,
@@ -456,23 +476,14 @@ private def test_run(Map normalizedTest, String id, String pathKey, boolean secu
   return run
 }
 
-private def expand_test_runs(Map buildConfig) {
-  if (buildConfig == null) {
-    fail("Missing build config")
-  }
-
-  def buildTarget = buildConfig.target
+private def expand_test_runs(
+  String buildTarget,
+  List normalizedTests,
+  String ciEnv,
+  boolean securebootExecutionAllowed) {
   if (!(buildTarget instanceof String) || buildTarget.isEmpty()) {
     fail("Missing target name")
   }
-
-  def normalizedTests = buildConfig.get('tests', [])
-  if (!(normalizedTests instanceof List)) {
-    fail("Invalid tests for '${buildTarget}': expected a list")
-  }
-
-  def ciEnv = normalize_optional_string(buildConfig.get('ci_env', null))
-  def securebootExecutionAllowed = buildConfig.get('secureboot_execution_allowed', false)
   def runs = []
 
   normalizedTests.each { normalizedTest ->
@@ -522,19 +533,19 @@ def normalize_build_config(
 
   def targetName = targetConfig.target
   def normalized = shallow_copy_map(targetConfig)
-  normalized.target = targetName
   normalized.shortname = short_target_name(targetName)
-  normalized.ci_env = ciEnv
   normalized.no_image = normalized.get('no_image', false)
-  normalized.signing_possible = signingPossible
-  normalized.uefi_sign_requested = normalized.get('uefisign', false) || normalized.get('uefisigniso', false)
-  normalized.testset = normalized.get('testset', null)
+  def uefiSignRequested = normalized.get('uefisign', false) || normalized.get('uefisigniso', false)
+  normalized.uefi_sign_requested = uefiSignRequested
   normalized.provenance_requested = normalized.get('provenance', true)
   normalized.build_otapin_requested = normalized.get('build_otapin', false)
   normalized.sbom_requested = normalized.get('sbom', false)
-  normalized.can_uefi_sign = !normalized.no_image && signingPossible && normalized.uefi_sign_requested
-  normalized.secureboot_execution_allowed = normalized.can_uefi_sign && ciEnv == "prod"
   normalized.tests = normalize_tests(normalized, defaultTestagentHost)
-  normalized.test_runs = expand_test_runs(normalized)
+  normalized.test_runs = expand_test_runs(
+    targetName,
+    normalized.tests,
+    ciEnv,
+    !normalized.no_image && signingPossible && uefiSignRequested && ciEnv == "prod"
+  )
   return normalized
 }

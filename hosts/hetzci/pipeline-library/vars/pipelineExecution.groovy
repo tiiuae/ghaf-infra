@@ -22,12 +22,14 @@ private def ghaf_flake_ref(String repo, String rev) {
 }
 
 private def withRedundancyRouter(String object, Closure body) {
-  def signingEnv = readJSON text: artifactSupport.run_cmd("select-pkcs11-node ${object}")
-  withEnv([
-    "PKCS11_PROXY_SOCKET=${signingEnv.socket}" // overrides the socket with one that works
-  ]) {
-    println "Proceeding to sign with ${signingEnv}"
-    body(signingEnv) // signingEnv object is available for closure
+  lock('signing') {
+    def signingEnv = readJSON text: artifactSupport.run_cmd("select-pkcs11-node ${object}")
+    withEnv([
+      "PKCS11_PROXY_SOCKET=${signingEnv.socket}" // overrides the socket with one that works
+    ]) {
+      println "Proceeding to sign with ${signingEnv}"
+      body(signingEnv)
+    }
   }
 }
 
@@ -43,10 +45,6 @@ private def record_signature(Map target, Map signingCtx, String path = null) {
   if (path != null) target.path = path
   target.signing_key = signingCtx.uri
   target.signing_proxy = signingCtx.socket
-}
-
-private def mark_stage_skipped(String stageName) {
-  org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(stageName)
 }
 
 def create_pipeline(
@@ -261,16 +259,14 @@ def create_pipeline(
           signing_possible && target_config.provenance_requested,
           "Sign (SLSA) provenance ${build_shortname}"
         ) {
-          lock('signing') {
-            withRedundancyRouter("GhafInfraSignProv") { ctx ->
-              sh """
-                openssl pkeyutl -sign -rawin \
-                  -inkey "${ctx.uri}" \
-                  -out ${output}/attestations/provenance.json.sig \
-                  -in ${output}/attestations/provenance.json
-              """
-              record_signature(manifest.attestations.provenance.signature, ctx, "attestations/provenance.json.sig")
-            }
+          withRedundancyRouter("GhafInfraSignProv") { ctx ->
+            sh """
+              openssl pkeyutl -sign -rawin \
+                -inkey "${ctx.uri}" \
+                -out ${output}/attestations/provenance.json.sig \
+                -in ${output}/attestations/provenance.json
+            """
+            record_signature(manifest.attestations.provenance.signature, ctx, "attestations/provenance.json.sig")
           }
         }
         run_optional_stage(
@@ -300,16 +296,14 @@ def create_pipeline(
               mkdir -p '${tmpdir}'
             """
 
-            lock('signing') {
-              withRedundancyRouter("uefi-ghaf-db") { ctx ->
-                sh """
-                  ${signer} /etc/jenkins/keys/secboot/DB.pem \
-                    "${ctx.uri}" \
-                    ${output}/${manifest.image.path} \
-                    '${tmpdir}'
-                """
-                record_signature(manifest.uefi, ctx)
-              }
+            withRedundancyRouter("uefi-ghaf-db") { ctx ->
+              sh """
+                ${signer} /etc/jenkins/keys/secboot/DB.pem \
+                  "${ctx.uri}" \
+                  ${output}/${manifest.image.path} \
+                  '${tmpdir}'
+              """
+              record_signature(manifest.uefi, ctx)
             }
 
             sh "mv '${tmpdir}/signed_${img_name}' '${output}/${img_name}'"
@@ -324,17 +318,15 @@ def create_pipeline(
           !target_config.no_image && signing_possible,
           "Sign (SLSA) image ${build_shortname}"
         ) {
-          lock('signing') {
-            withRedundancyRouter("GhafInfraSignECP256") { ctx ->
-              def img_name = artifactSupport.path_basename(manifest.image.path)
-              record_signature(manifest.image.signature, ctx, "${img_name}.sig")
-              sh """
-                openssl dgst -sha256 -sign \
-                  "${ctx.uri}" \
-                  -out ${output}/${manifest.image.signature.path} \
-                  ${output}/${manifest.image.path}
-              """
-            }
+          withRedundancyRouter("GhafInfraSignECP256") { ctx ->
+            def img_name = artifactSupport.path_basename(manifest.image.path)
+            record_signature(manifest.image.signature, ctx, "${img_name}.sig")
+            sh """
+              openssl dgst -sha256 -sign \
+                "${ctx.uri}" \
+                -out ${output}/${manifest.image.signature.path} \
+                ${output}/${manifest.image.path}
+            """
           }
         }
         stage("Link artifacts ${build_shortname}") {
@@ -383,7 +375,9 @@ def create_pipeline(
                   echo("Skipping hardware test ${localTestRun.id}: ${localTestRun.initial_reason}")
                   // Mark the child stage explicitly as skipped so graph views
                   // do not misattribute sibling failures to this branch.
-                  mark_stage_skipped(localTestRun.stage_name)
+                  org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(
+                    localTestRun.stage_name
+                  )
                   return
                 }
 
@@ -429,7 +423,9 @@ def create_pipeline(
               test_branches.each { key, value -> value() }
             }
             if (all_tests_skipped) {
-              mark_stage_skipped(hw_test_stage_name)
+              org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(
+                hw_test_stage_name
+              )
             }
           }
         } finally {

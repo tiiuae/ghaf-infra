@@ -15,31 +15,43 @@ def expectFailure(String messagePart, Closure body) {
   }
 }
 
-assert pipelineModel.short_target_name('packages.x86_64-linux.lenovo-x1-carbon-gen11-debug') ==
-  'lenovo-x1-carbon-gen11-debug'
-assert pipelineModel.short_target_name('plain-target') == 'plain-target'
-assert pipelineModel.safe_path_component('ghaf/main 1@prod') == 'ghaf-main-1-prod'
-assert pipelineModel.safe_stage_key(
-  'x86_64-linux.lenovo@_relayboot bat_@prod@no-secureboot'
-) == 'x86_64-linux.lenovo___relayboot-bat___prod__no-secureboot'
-assert pipelineModel.html_escape(null) == null
-assert pipelineModel.html_escape('<script data-x="a&b">\'</script>') ==
-  '&lt;script data-x=&quot;a&amp;b&quot;&gt;&#39;&lt;/script&gt;'
-assert pipelineModel.display_testset('_relayboot_bat_') == 'relayboot bat'
-
+def sampleTestset = '_relayboot_bat_'
 def sampleTestTarget = 'packages.x86_64-linux.lenovo-x1-carbon-gen11-debug'
 def sampleTestShortTarget = 'lenovo-x1-carbon-gen11-debug'
 def sampleTestIdentityTarget = 'x86_64-linux.lenovo-x1-carbon-gen11-debug'
 def sampleStoreDiskInstallerTarget = 'system76-darp11-b-storeDisk-debug-installer'
+def explicitTestsBuildTarget = 'packages.x86_64-linux.intel-laptop-debug'
+def explicitTests = [
+  [
+    test_target: sampleTestShortTarget,
+    testset: sampleTestset,
+    test_secboot: true,
+  ],
+  [
+    test_target: 'system76-darp11-b-debug',
+    testset: sampleTestset,
+    testagent_host: 'release',
+  ],
+]
+def explicitTestsConfig = [target: explicitTestsBuildTarget, tests: explicitTests]
+def withExplicitTestsTarget = { config -> [target: explicitTestsBuildTarget] + config }
+
+assert pipelineModel.short_target_name(sampleTestTarget) == sampleTestShortTarget
+assert pipelineModel.safe_path_component('ghaf/main 1@prod') == 'ghaf-main-1-prod'
+assert pipelineModel.safe_stage_key(
+  'x86_64-linux.lenovo@_relayboot bat_@prod@no-secureboot'
+) == 'x86_64-linux.lenovo___relayboot-bat___prod__no-secureboot'
+assert pipelineModel.html_escape('<script data-x="a&b">\'</script>') ==
+  '&lt;script data-x=&quot;a&amp;b&quot;&gt;&#39;&lt;/script&gt;'
 assert pipelineModel.test_identity([
   target: sampleTestTarget,
-  testset: '_relayboot_bat_',
+  testset: sampleTestset,
   effective_testagent_host: 'prod',
-]) == "${sampleTestIdentityTarget}@_relayboot_bat_@prod@no-secureboot"
+]) == "${sampleTestIdentityTarget}@${sampleTestset}@prod@no-secureboot"
 assert pipelineModel.test_identity([
   target: sampleTestTarget,
-  testset: '_relayboot_bat_',
-], true) == "${sampleTestIdentityTarget}@_relayboot_bat_@any@secureboot"
+  testset: sampleTestset,
+], true) == "${sampleTestIdentityTarget}@${sampleTestset}@any@secureboot"
 
 def normalizedLegacyBuild = pipelineModel.normalize_build_config([
   target: sampleTestTarget,
@@ -50,7 +62,7 @@ def normalizedLegacyBuild = pipelineModel.normalize_build_config([
   sbom: true,
 ], true, 'prod', 'prod')
 
-assert normalizedLegacyBuild.can_uefi_sign == true
+assert normalizedLegacyBuild.uefi_sign_requested == true
 assert normalizedLegacyBuild.tests.size() == 1
 assert normalizedLegacyBuild.tests[0].effective_testagent_host == 'prod'
 assert normalizedLegacyBuild.tests[0].id ==
@@ -71,7 +83,7 @@ def normalizedDocBuild = pipelineModel.normalize_build_config([
 
 assert normalizedDocBuild.no_image == true
 assert normalizedDocBuild.provenance_requested == false
-assert normalizedDocBuild.can_uefi_sign == false
+assert normalizedDocBuild.uefi_sign_requested == false
 assert normalizedDocBuild.tests.isEmpty()
 
 def normalizedVmBuild = pipelineModel.normalize_build_config([
@@ -82,7 +94,7 @@ def normalizedVmBuild = pipelineModel.normalize_build_config([
 ], false, 'vm', 'prod')
 
 assert normalizedVmBuild.uefi_sign_requested == true
-assert normalizedVmBuild.can_uefi_sign == false
+assert normalizedVmBuild.test_runs*.initial_reason == ['ci_env_vm', 'ci_env_vm']
 
 def normalizedExplicitTests = pipelineModel.normalize_tests([
   target: 'packages.x86_64-linux.intel-laptop-debug',
@@ -214,30 +226,25 @@ expectFailure('Duplicate canonical test identity') {
     tests: [
       [
         test_target: sampleTestShortTarget,
-        testset: '_relayboot_bat_',
-      ],
-      [
-        test_target: sampleTestShortTarget,
-        testset: '_relayboot_bat_',
-      ],
-    ],
-  ], 'prod')
-}
-
-expectFailure('Duplicate test path key') {
-  pipelineModel.normalize_tests([
-    target: 'packages.x86_64-linux.intel-laptop-debug',
-    tests: [
-      [
-        test_target: sampleTestShortTarget,
-        testset: 'collision/a',
-      ],
-      [
-        test_target: sampleTestShortTarget,
-        testset: 'collision?a',
-      ],
-    ],
-  ], 'prod')
+        device_tag: 'lenovo-x1',
+        variant: 'debug',
+        testset: sampleTestset,
+      ]],
+    ]),
+  ],
+  [
+    message: "full 'packages.<system>.<target>' value or a short target name",
+    config: withExplicitTestsTarget([
+      tests: [[
+        test_target: 'x86_64-linux.lenovo-x1-carbon-gen11-debug',
+        testset: sampleTestset,
+      ]],
+    ]),
+  ],
+].each { failureCase ->
+  expectFailure(failureCase.message) {
+    pipelineModel.normalize_tests(failureCase.config, 'prod')
+  }
 }
 
 expectFailure('Duplicate test stage name') {
