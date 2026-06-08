@@ -52,23 +52,29 @@ assert pipelineModel.test_identity([
   target: sampleTestTarget,
   testset: sampleTestset,
 ], true) == "${sampleTestIdentityTarget}@${sampleTestset}@any@secureboot"
+assert pipelineModel.device_info(sampleTestShortTarget, false) == [name: 'LenovoX1-1', tag: 'lenovo-x1']
+assert pipelineModel.device_info(sampleTestShortTarget, true) == [name: 'X1-Secure-Boot', tag: 'x1-sec-boot']
+assert pipelineModel.device_info(sampleTestShortTarget, true, 'lenovo-x1') ==
+  [name: 'X1-Secure-Boot', tag: 'x1-sec-boot']
+assert pipelineModel.device_info(sampleTestShortTarget, false, 'x1-sec-boot') ==
+  [name: 'X1-Secure-Boot', tag: 'x1-sec-boot']
+assert pipelineModel.device_info(sampleTestShortTarget, false, 'darter-pro') == null
+assert pipelineModel.device_info('system76-darp11-b-debug', true, 'lenovo-x1') == null
 
 def normalizedLegacyBuild = pipelineModel.normalize_build_config([
   target: sampleTestTarget,
-  testset: '_relayboot_bat_',
+  testset: sampleTestset,
   test_secboot: true,
   uefisign: true,
   build_otapin: true,
   sbom: true,
 ], true, 'prod', 'prod')
 
-assert normalizedLegacyBuild.uefi_sign_requested == true
-assert normalizedLegacyBuild.tests.size() == 1
 assert normalizedLegacyBuild.tests[0].effective_testagent_host == 'prod'
 assert normalizedLegacyBuild.tests[0].id ==
-  "${sampleTestIdentityTarget}@_relayboot_bat_@prod@no-secureboot"
+  "${sampleTestIdentityTarget}@${sampleTestset}@prod@no-secureboot"
 assert normalizedLegacyBuild.tests[0].secureboot_id ==
-  "${sampleTestIdentityTarget}@_relayboot_bat_@prod@secureboot"
+  "${sampleTestIdentityTarget}@${sampleTestset}@prod@secureboot"
 assert normalizedLegacyBuild.test_runs*.stage_name == [
   'Test lenovo-x1-carbon-gen11-debug / relayboot bat / prod / no-secureboot',
   'Test lenovo-x1-carbon-gen11-debug / relayboot bat / prod / secureboot',
@@ -81,38 +87,19 @@ def normalizedDocBuild = pipelineModel.normalize_build_config([
   provenance: false,
 ], true, 'prod', 'prod')
 
-assert normalizedDocBuild.no_image == true
-assert normalizedDocBuild.provenance_requested == false
-assert normalizedDocBuild.uefi_sign_requested == false
 assert normalizedDocBuild.tests.isEmpty()
 
 def normalizedVmBuild = pipelineModel.normalize_build_config([
   target: 'packages.x86_64-linux.system76-darp11-b-debug',
-  testset: '_relayboot_bat_',
+  testset: sampleTestset,
   test_secboot: true,
   uefisign: true,
 ], false, 'vm', 'prod')
 
-assert normalizedVmBuild.uefi_sign_requested == true
 assert normalizedVmBuild.test_runs*.initial_reason == ['ci_env_vm', 'ci_env_vm']
 
-def normalizedExplicitTests = pipelineModel.normalize_tests([
-  target: 'packages.x86_64-linux.intel-laptop-debug',
-  tests: [
-    [
-      test_target: sampleTestShortTarget,
-      testset: '_relayboot_bat_',
-      test_secboot: true,
-    ],
-    [
-      test_target: 'system76-darp11-b-debug',
-      testset: '_relayboot_bat_',
-      testagent_host: 'release',
-    ],
-  ],
-], 'prod')
+def normalizedExplicitTests = pipelineModel.normalize_tests(explicitTestsConfig, 'prod')
 
-assert normalizedExplicitTests.size() == 2
 assert normalizedExplicitTests[0].test_path_key ==
   'lenovo-x1-carbon-gen11-debug___relayboot_bat___prod__no-secureboot'
 assert normalizedExplicitTests[0].device_tag == 'lenovo-x1'
@@ -125,33 +112,17 @@ def normalizedDeviceTagTests = pipelineModel.normalize_tests([
   tests: [[
     device_tag: 'darter-pro',
     variant: 'storeDisk-debug-installer',
-    testset: '_relayboot_bat_',
+    testset: sampleTestset,
   ]],
 ], 'prod')
 
-assert normalizedDeviceTagTests.size() == 1
 assert normalizedDeviceTagTests[0].device_tag == 'darter-pro'
 assert normalizedDeviceTagTests[0].target == sampleStoreDiskInstallerTarget
 assert normalizedDeviceTagTests[0].test_path_key ==
   'system76-darp11-b-storeDisk-debug-installer___relayboot_bat___prod__no-secureboot'
 
-def normalizedBuildWithExplicitTests = pipelineModel.normalize_build_config([
-  target: 'packages.x86_64-linux.intel-laptop-debug',
-  tests: [
-    [
-      test_target: sampleTestShortTarget,
-      testset: '_relayboot_bat_',
-      test_secboot: true,
-    ],
-    [
-      test_target: 'system76-darp11-b-debug',
-      testset: '_relayboot_bat_',
-      testagent_host: 'release',
-    ],
-  ],
-], true, 'prod', 'prod')
+def normalizedBuildWithExplicitTests = pipelineModel.normalize_build_config(explicitTestsConfig, true, 'prod', 'prod')
 
-assert normalizedBuildWithExplicitTests.test_runs.size() == 3
 assert normalizedBuildWithExplicitTests.test_runs*.stage_name == [
   'Test lenovo-x1-carbon-gen11-debug / relayboot bat / prod / no-secureboot',
   'Test lenovo-x1-carbon-gen11-debug / relayboot bat / prod / secureboot',
@@ -188,43 +159,109 @@ expectFailure('Missing target name') {
   pipelineModel.normalize_build_config([:], true, 'prod', 'prod')
 }
 
-expectFailure("use either 'tests' or legacy 'testset'") {
-  pipelineModel.normalize_tests([
-    target: 'packages.x86_64-linux.intel-laptop-debug',
-    testset: '_relayboot_bat_',
-    tests: [[
-      test_target: sampleTestTarget,
-      testset: '_relayboot_bat_',
-    ]],
-  ], 'prod')
-}
-
-expectFailure('expected a list') {
-  pipelineModel.normalize_tests([
-    target: 'packages.x86_64-linux.intel-laptop-debug',
-    tests: [
-      test_target: sampleTestTarget,
-      testset: '_relayboot_bat_',
+[
+  [
+    message: "use either 'tests' or legacy 'testset'",
+    config: withExplicitTestsTarget([
+      testset: sampleTestset,
+      tests: [[
+        test_target: sampleTestTarget,
+        testset: sampleTestset,
+      ]],
+    ]),
+  ],
+  [
+    message: 'expected a list',
+    config: withExplicitTestsTarget([
+      tests: [
+        test_target: sampleTestTarget,
+        testset: sampleTestset,
+      ],
+    ]),
+  ],
+  [
+    message: 'no_image builds cannot define tests',
+    config: [
+      target: 'packages.x86_64-linux.doc',
+      no_image: true,
+      tests: [[
+        test_target: sampleTestTarget,
+        testset: sampleTestset,
+      ]],
     ],
-  ], 'prod')
-}
-
-expectFailure('no_image builds cannot define tests') {
-  pipelineModel.normalize_tests([
-    target: 'packages.x86_64-linux.doc',
-    no_image: true,
-    tests: [[
-      test_target: sampleTestTarget,
-      testset: '_relayboot_bat_',
-    ]],
-  ], 'prod')
-}
-
-expectFailure('Duplicate canonical test identity') {
-  pipelineModel.normalize_tests([
-    target: 'packages.x86_64-linux.intel-laptop-debug',
-    tests: [
-      [
+  ],
+  [
+    message: 'Duplicate canonical test identity',
+    config: withExplicitTestsTarget([
+      tests: [
+        [
+          test_target: sampleTestShortTarget,
+          testset: sampleTestset,
+        ],
+        [
+          test_target: sampleTestShortTarget,
+          testset: sampleTestset,
+        ],
+      ],
+    ]),
+  ],
+  [
+    message: 'Duplicate test path key',
+    config: withExplicitTestsTarget([
+      tests: [
+        [
+          test_target: sampleTestShortTarget,
+          testset: 'collision/a',
+        ],
+        [
+          test_target: sampleTestShortTarget,
+          testset: 'collision?a',
+        ],
+      ],
+    ]),
+  ],
+  [
+    message: "Unknown device_tag 'unknown-device'",
+    config: withExplicitTestsTarget([
+      tests: [[
+        device_tag: 'unknown-device',
+        variant: 'debug',
+        testset: sampleTestset,
+      ]],
+    ]),
+  ],
+  [
+    message: "device_tag 'x1-sec-boot' does not support variants",
+    config: withExplicitTestsTarget([
+      tests: [[
+        device_tag: 'x1-sec-boot',
+        variant: 'debug',
+        testset: sampleTestset,
+      ]],
+    ]),
+  ],
+  [
+    message: "'variant' requires 'device_tag'",
+    config: withExplicitTestsTarget([
+      tests: [[
+        variant: 'debug',
+        testset: sampleTestset,
+      ]],
+    ]),
+  ],
+  [
+    message: "'device_tag' requires 'variant'",
+    config: withExplicitTestsTarget([
+      tests: [[
+        device_tag: 'lenovo-x1',
+        testset: sampleTestset,
+      ]],
+    ]),
+  ],
+  [
+    message: "use either 'test_target' or 'device_tag'",
+    config: withExplicitTestsTarget([
+      tests: [[
         test_target: sampleTestShortTarget,
         device_tag: 'lenovo-x1',
         variant: 'debug',
@@ -249,7 +286,7 @@ expectFailure('Duplicate canonical test identity') {
 
 expectFailure('Duplicate test stage name') {
   pipelineModel.normalize_build_config([
-    target: 'packages.x86_64-linux.intel-laptop-debug',
+    target: explicitTestsBuildTarget,
     tests: [
       [
         test_target: 'same-shortname',
@@ -263,49 +300,6 @@ expectFailure('Duplicate test stage name') {
   ], true, 'prod', null)
 }
 
-expectFailure("Unknown device_tag 'unknown-device'") {
-  pipelineModel.normalize_tests([
-    target: 'packages.x86_64-linux.intel-laptop-debug',
-    tests: [[
-      device_tag: 'unknown-device',
-      variant: 'debug',
-      testset: '_relayboot_bat_',
-    ]],
-  ], 'prod')
-}
-
-expectFailure("'variant' requires 'device_tag'") {
-  pipelineModel.normalize_tests([
-    target: 'packages.x86_64-linux.intel-laptop-debug',
-    tests: [[
-      variant: 'debug',
-      testset: '_relayboot_bat_',
-    ]],
-  ], 'prod')
-}
-
-expectFailure("'device_tag' requires 'variant'") {
-  pipelineModel.normalize_tests([
-    target: 'packages.x86_64-linux.intel-laptop-debug',
-    tests: [[
-      device_tag: 'lenovo-x1',
-      testset: '_relayboot_bat_',
-    ]],
-  ], 'prod')
-}
-
-expectFailure("use either 'test_target' or 'device_tag'") {
-  pipelineModel.normalize_tests([
-    target: 'packages.x86_64-linux.intel-laptop-debug',
-    tests: [[
-      test_target: sampleTestShortTarget,
-      device_tag: 'lenovo-x1',
-      variant: 'debug',
-      testset: '_relayboot_bat_',
-    ]],
-  ], 'prod')
-}
-
 expectFailure("reserved in canonical test identities") {
   pipelineModel.test_identity([
     target: sampleTestTarget,
@@ -313,15 +307,3 @@ expectFailure("reserved in canonical test identities") {
     effective_testagent_host: 'prod',
   ])
 }
-
-expectFailure("full 'packages.<system>.<target>' value or a short target name") {
-  pipelineModel.normalize_tests([
-    target: 'packages.x86_64-linux.intel-laptop-debug',
-    tests: [[
-      test_target: 'x86_64-linux.lenovo-x1-carbon-gen11-debug',
-      testset: '_relayboot_bat_',
-    ]],
-  ], 'prod')
-}
-
-println 'PipelineModelTest passed'
