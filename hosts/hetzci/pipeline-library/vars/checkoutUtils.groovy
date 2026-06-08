@@ -57,6 +57,24 @@ private def checkout_origin_ref(String repoUrl, String branchName, String refspe
   )
 }
 
+private def checkout_branch(String repoUrl, String branchName) {
+  checkout_origin_ref(
+    repoUrl,
+    "origin/${branchName}",
+    "+refs/heads/${branchName}:refs/remotes/origin/${branchName}",
+    [shallow: true, noTags: true, depth: 50]
+  )
+}
+
+private def checkout_tag(String repoUrl, String tagName) {
+  checkout_origin_ref(
+    repoUrl,
+    "refs/tags/${tagName}",
+    "+refs/tags/${tagName}:refs/tags/${tagName}",
+    [shallow: false, noTags: false]
+  )
+}
+
 private def checkout_flexible_ref(String repoUrl, String requestedRef) {
   // Commit SHAs and other unresolved refs need the git plugin's broader ref discovery path.
   checkout scmGit(
@@ -74,7 +92,8 @@ def checkout_ci_test_sources(
   String ci_test_repo_branch,
   String ci_test_repo_url) {
   if (use_flake_pinned_ci_test) {
-    def pinned_src = readFile(file: pinned_source_file).trim()
+    // The pinned-source file lives on the controller outside the workspace.
+    def pinned_src = artifactSupport.run_cmd("cat ${artifactSupport.shell_quote(pinned_source_file)}")
     println("Using flake-pinned ci-test-automation source: ${pinned_src}")
     sh """
       if [ ! -d "${pinned_src}/Robot-Framework/test-suites" ]; then
@@ -107,24 +126,14 @@ def checkout_remote_ref(String repoUrl, String requestedRef, boolean allowSynthe
     if (normalizedRef.startsWith('refs/heads/')) {
       def branchName = trim_prefix(normalizedRef, 'refs/heads/')
       echo "Checking out branch ref '${normalizedRef}' from ${repoUrl}"
-      checkout_origin_ref(
-        repoUrl,
-        "origin/${branchName}",
-        "+refs/heads/${branchName}:refs/remotes/origin/${branchName}",
-        [shallow: true, noTags: true, depth: 50]
-      )
+      checkout_branch(repoUrl, branchName)
       return
     }
 
     if (normalizedRef.startsWith('refs/tags/')) {
       def tagName = trim_prefix(normalizedRef, 'refs/tags/')
       echo "Checking out tag ref '${normalizedRef}' from ${repoUrl}"
-      checkout_origin_ref(
-        repoUrl,
-        "refs/tags/${tagName}",
-        "+refs/tags/${tagName}:refs/tags/${tagName}",
-        [shallow: false, noTags: false]
-      )
+      checkout_tag(repoUrl, tagName)
       return
     }
 
@@ -145,24 +154,14 @@ def checkout_remote_ref(String repoUrl, String requestedRef, boolean allowSynthe
     branchName = trim_prefix(branchName, 'origin/')
     if (remote_ref_exists(repoUrl, 'heads', "refs/heads/${branchName}")) {
       echo "Checking out branch '${branchName}' from ${repoUrl}"
-      checkout_origin_ref(
-        repoUrl,
-        "origin/${branchName}",
-        "+refs/heads/${branchName}:refs/remotes/origin/${branchName}",
-        [shallow: true, noTags: true, depth: 50]
-      )
+      checkout_branch(repoUrl, branchName)
       return
     }
 
     def tagName = trim_prefix(normalizedRef, 'refs/tags/')
     if (remote_ref_exists(repoUrl, 'tags', "refs/tags/${tagName}")) {
       echo "Checking out tag '${tagName}' from ${repoUrl}"
-      checkout_origin_ref(
-        repoUrl,
-        "refs/tags/${tagName}",
-        "+refs/tags/${tagName}:refs/tags/${tagName}",
-        [shallow: false, noTags: false]
-      )
+      checkout_tag(repoUrl, tagName)
       return
     }
 
