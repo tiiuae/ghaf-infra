@@ -12,18 +12,21 @@ def TARGETS = [
   [ target: "packages.x86_64-linux.intel-laptop-debug",
     tests: [
       [
-        test_target: "lenovo-x1-carbon-gen11-debug",
+        device_tag: 'lenovo-x1',
+        variant: 'debug',
         testset: '_relayboot_bat_',
       ],
       [
-        test_target: "system76-darp11-b-debug",
+        device_tag: 'darter-pro',
+        variant: 'debug',
         testset: '_relayboot_bat_',
       ],
     ],
   ],
   [ target: "packages.x86_64-linux.intel-laptop-low-mem-debug",
     tests: [[
-      test_target: "dell-latitude-7330-debug",
+      device_tag: 'dell-7330',
+      variant: 'debug',
       testset: '_relayboot_bat_',
     ]],
   ],

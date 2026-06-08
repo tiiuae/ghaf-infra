@@ -77,9 +77,17 @@ pipeline {
               }
               targetConfig.tests = testMappings.collect { testMapping ->
                 def explicitTest = [
-                  test_target: testMapping.test_target,
                   testset: normalizedTestset,
                 ]
+                if (testMapping.containsKey('test_target')) {
+                  explicitTest.test_target = testMapping.test_target
+                }
+                if (testMapping.containsKey('device_tag')) {
+                  explicitTest.device_tag = testMapping.device_tag
+                }
+                if (testMapping.containsKey('variant')) {
+                  explicitTest.variant = testMapping.variant
+                }
                 if (testMapping.containsKey('test_secboot')) {
                   explicitTest.test_secboot = testMapping.test_secboot
                 }
@@ -144,11 +152,13 @@ pipeline {
                 [ target: "packages.x86_64-linux.intel-laptop-debug", uefisign: params.UEFISIGN ],
                 [
                   [
-                    test_target: "lenovo-x1-carbon-gen11-debug",
+                    device_tag: 'lenovo-x1',
+                    variant: 'debug',
                     test_secboot: params.SECUREBOOT,
                   ],
                   [
-                    test_target: "system76-darp11-b-debug",
+                    device_tag: 'darter-pro',
+                    variant: 'debug',
                   ],
                 ],
               ))
@@ -157,7 +167,8 @@ pipeline {
               TARGETS.push(addExplicitTests(
                 [ target: "packages.x86_64-linux.intel-laptop-debug-installer", uefisigniso: params.UEFISIGN ],
                 [[
-                  test_target: "lenovo-x1-carbon-gen11-debug-installer",
+                  device_tag: 'lenovo-x1',
+                  variant: 'debug-installer',
                 ]],
               ))
             }
@@ -165,7 +176,8 @@ pipeline {
               TARGETS.push(addExplicitTests(
                 [ target: "packages.x86_64-linux.intel-laptop-storeDisk-debug", uefisign: params.UEFISIGN ],
                 [[
-                  test_target: "system76-darp11-b-storeDisk-debug",
+                  device_tag: 'darter-pro',
+                  variant: 'storeDisk-debug',
                 ]],
               ))
             }
@@ -173,7 +185,8 @@ pipeline {
               TARGETS.push(addExplicitTests(
                 [ target: "packages.x86_64-linux.intel-laptop-storeDisk-debug-installer", uefisigniso: params.UEFISIGN ],
                 [[
-                  test_target: "system76-darp11-b-storeDisk-debug-installer",
+                  device_tag: 'darter-pro',
+                  variant: 'storeDisk-debug-installer',
                 ]],
               ))
             }
@@ -181,7 +194,8 @@ pipeline {
               TARGETS.push(addExplicitTests(
                 [ target: "packages.x86_64-linux.intel-laptop-low-mem-debug", uefisign: params.UEFISIGN ],
                 [[
-                  test_target: "dell-latitude-7330-debug",
+                  device_tag: 'dell-7330',
+                  variant: 'debug',
                 ]],
               ))
             }

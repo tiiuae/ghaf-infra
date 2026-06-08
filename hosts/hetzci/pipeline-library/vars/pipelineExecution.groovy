@@ -409,7 +409,8 @@ def create_pipeline(
                       localTestRun.effective_testagent_host,
                       oci_result,
                       localTestRun.secureboot,
-                      ci_env
+                      ci_env,
+                      localTestRun.get('device_tag', null)
                     )
                     persist_test_result(localTestRun, [job: job])
                     artifactSupport.with_controller_workspace(ghaf_checkout) {

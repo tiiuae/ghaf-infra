@@ -48,6 +48,23 @@ def display_testset(String value) {
   return normalized ?: value
 }
 
+private def test_target_catalog() {
+  return [
+    'lenovo-x1': [
+      'debug': 'lenovo-x1-carbon-gen11-debug',
+      'debug-installer': 'lenovo-x1-carbon-gen11-debug-installer',
+    ],
+    'darter-pro': [
+      'debug': 'system76-darp11-b-debug',
+      'storeDisk-debug': 'system76-darp11-b-storeDisk-debug',
+      'storeDisk-debug-installer': 'system76-darp11-b-storeDisk-debug-installer',
+    ],
+    'dell-7330': [
+      'debug': 'dell-latitude-7330-debug',
+    ],
+  ]
+}
+
 private def test_stage_name(Map testRun) {
   if (testRun == null) {
     fail("Missing test run")
@@ -84,24 +101,94 @@ private def validate_test_identity_component(String name, String value) {
   }
 }
 
+private def device_tag_for_test_target(String targetName) {
+  def normalizedTarget = normalize_optional_string(targetName)
+  if (normalizedTarget == null) {
+    return null
+  }
+
+  def shortTarget = short_target_name(normalizedTarget)
+  for (def deviceEntry : test_target_catalog().entrySet()) {
+    for (def variantEntry : deviceEntry.value.entrySet()) {
+      if (variantEntry.value == shortTarget) {
+        return deviceEntry.key
+      }
+    }
+  }
+
+  return null
+}
+
+private def resolve_catalog_test_target(String deviceTag, String variant, String buildTarget, int idx) {
+  def variants = test_target_catalog().get(deviceTag, null)
+  if (!(variants instanceof Map)) {
+    fail("Unknown device_tag '${deviceTag}' for '${buildTarget}' entry #${idx + 1}")
+  }
+
+  def resolvedTarget = normalize_optional_string(variants.get(variant, null))
+  if (!(resolvedTarget instanceof String) || resolvedTarget.isEmpty()) {
+    def supportedVariants = variants.keySet().toList().sort().join(', ')
+    fail(
+      "Unknown variant '${variant}' for device_tag '${deviceTag}' in '${buildTarget}' entry #${idx + 1}; " +
+        "supported variants: ${supportedVariants}"
+    )
+  }
+
+  return [
+    target: resolvedTarget,
+    deviceTag: deviceTag,
+  ]
+}
+
 private def resolve_explicit_test_target(Map testConfig, String buildTarget, int idx) {
   if (testConfig == null) {
     fail("Missing test config")
   }
 
   def explicitTestTarget = normalize_optional_string(testConfig.get('test_target', null))
-  if (!(explicitTestTarget instanceof String) || explicitTestTarget.isEmpty()) {
-    fail("Missing test_target for '${buildTarget}' entry #${idx + 1}")
+  def explicitDeviceTag = normalize_optional_string(testConfig.get('device_tag', null))
+  def explicitVariant = normalize_optional_string(testConfig.get('variant', null))
+
+  if (explicitTestTarget != null) {
+    if (explicitDeviceTag != null || explicitVariant != null) {
+      fail(
+        "Invalid test config for '${buildTarget}' entry #${idx + 1}: " +
+          "use either 'test_target' or 'device_tag' + 'variant', not both"
+      )
+    }
+
+    if (explicitTestTarget.contains('.') && !explicitTestTarget.startsWith('packages.')) {
+      fail(
+        "Invalid explicit test_target '${explicitTestTarget}': " +
+          "use either a full 'packages.<system>.<target>' value or a short target name"
+      )
+    }
+
+    return [
+      target: explicitTestTarget,
+      deviceTag: device_tag_for_test_target(explicitTestTarget),
+    ]
   }
 
-  if (explicitTestTarget.contains('.') && !explicitTestTarget.startsWith('packages.')) {
+  if (explicitDeviceTag == null && explicitVariant == null) {
+    fail("Missing test_target or device_tag for '${buildTarget}' entry #${idx + 1}")
+  }
+
+  if (explicitDeviceTag == null) {
     fail(
-      "Invalid explicit test_target '${explicitTestTarget}': " +
-        "use either a full 'packages.<system>.<target>' value or a short target name"
+      "Missing device_tag for '${buildTarget}' entry #${idx + 1}: " +
+        "'variant' requires 'device_tag'"
     )
   }
 
-  return explicitTestTarget
+  if (explicitVariant == null) {
+    fail(
+      "Missing variant for '${buildTarget}' entry #${idx + 1}: " +
+        "'device_tag' requires 'variant'"
+    )
+  }
+
+  return resolve_catalog_test_target(explicitDeviceTag, explicitVariant, buildTarget, idx)
 }
 
 def test_identity(Map testConfig, boolean secureboot = false) {
@@ -210,7 +297,8 @@ def normalize_tests(Map buildConfig, String defaultTestagentHost = null) {
       fail("Invalid test entry #${idx + 1} for '${rawTarget}': expected a map")
     }
 
-    def testTarget = resolve_explicit_test_target(rawTest, rawTarget, idx)
+    def resolvedTestTarget = resolve_explicit_test_target(rawTest, rawTarget, idx)
+    def testTarget = resolvedTestTarget.target
 
     def testset = rawTest.testset
     if (!(testset instanceof String) || testset.isEmpty()) {
@@ -241,9 +329,12 @@ def normalize_tests(Map buildConfig, String defaultTestagentHost = null) {
 
     def normalizedTest = shallow_copy_map(rawTest)
     normalizedTest.remove('test_target')
+    normalizedTest.remove('device_tag')
+    normalizedTest.remove('variant')
     normalizedTest.target = testTarget
     normalizedTest.shortname = short_target_name(testTarget)
     normalizedTest.testset = testset
+    normalizedTest.device_tag = resolvedTestTarget.deviceTag
     normalizedTest.testagent_host_override = testagentHostOverride
     normalizedTest.effective_testagent_host = effectiveTestagentHost
     normalizedTest.secureboot_requested = securebootRequested

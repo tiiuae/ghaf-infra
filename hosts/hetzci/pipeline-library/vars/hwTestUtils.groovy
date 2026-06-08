@@ -56,18 +56,23 @@ def resolve_test_target(String explicitTestTarget = null, String buildTarget = n
 @NonCPS
 def derive_device_info(String target, boolean secureboot, String deviceTag = null) {
   def devices = device_catalog()
+  def normalizedTarget = target?.trim() ?: ''
   def normalizedDeviceTag = deviceTag?.trim()
   if (normalizedDeviceTag) {
+    if (normalizedDeviceTag == 'lenovo-x1' && secureboot && !normalizedTarget.contains("installer")) {
+      def securebootDevice = devices.find { it.tag == 'x1-sec-boot' }
+      return securebootDevice ? [name: securebootDevice.name, tag: securebootDevice.tag] : null
+    }
     def explicitDevice = devices.find { it.tag == normalizedDeviceTag }
     return explicitDevice ? [name: explicitDevice.name, tag: explicitDevice.tag] : null
   }
-  if (target.contains("lenovo-x1")) {
-    if (secureboot && !target.contains("installer")) {
+  if (normalizedTarget.contains("lenovo-x1")) {
+    if (secureboot && !normalizedTarget.contains("installer")) {
       def securebootDevice = devices.find { it.tag == 'x1-sec-boot' }
       return securebootDevice ? [name: securebootDevice.name, tag: securebootDevice.tag] : null
     }
   }
-  def device = devices.find { it.target_substring && target.contains(it.target_substring) }
+  def device = devices.find { it.target_substring && normalizedTarget.contains(it.target_substring) }
   if (device) {
     return [name: device.name, tag: device.tag]
   }
@@ -193,13 +198,15 @@ def run_hw_test(
   String testagent_host,
   Map oci_result,
   boolean secureboot,
-  String ci_env) {
+  String ci_env,
+  String deviceTag = null) {
   // Keep the blocking downstream wait outside node('built-in') so ghaf-hw-test
   // can acquire a controller executor for its own initialization stages.
   def build_href = "<a href=\"${pipelineModel.html_escape(env.BUILD_URL)}\">" +
     "${pipelineModel.html_escape("${env.JOB_NAME}#${env.BUILD_ID}")}</a>"
   def normalizedTestTarget = testTargetName?.trim()
   def normalizedTestIdentity = testIdentity?.trim()
+  def normalizedDeviceTag = deviceTag?.trim()
   def desc = normalizedTestIdentity ?
     "Triggered by ${build_href}<br>(${pipelineModel.html_escape(normalizedTestIdentity)})" :
     "Triggered by ${build_href}<br>(${pipelineModel.html_escape(buildShortname)})"
@@ -220,6 +227,11 @@ def run_hw_test(
   if (normalizedTestTarget) {
     test_params += [
       string(name: "TEST_TARGET", value: normalizedTestTarget),
+    ]
+  }
+  if (normalizedDeviceTag) {
+    test_params += [
+      string(name: "DEVICE_TAG", value: normalizedDeviceTag),
     ]
   }
   def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
