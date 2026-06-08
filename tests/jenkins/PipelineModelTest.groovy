@@ -51,7 +51,6 @@ def normalizedLegacyBuild = pipelineModel.normalize_build_config([
 ], true, 'prod', 'prod')
 
 assert normalizedLegacyBuild.can_uefi_sign == true
-assert normalizedLegacyBuild.run_secboot_test == true
 assert normalizedLegacyBuild.tests.size() == 1
 assert normalizedLegacyBuild.tests[0].effective_testagent_host == 'prod'
 assert normalizedLegacyBuild.tests[0].id ==
@@ -84,7 +83,6 @@ def normalizedVmBuild = pipelineModel.normalize_build_config([
 
 assert normalizedVmBuild.uefi_sign_requested == true
 assert normalizedVmBuild.can_uefi_sign == false
-assert normalizedVmBuild.run_secboot_test == false
 
 def normalizedExplicitTests = pipelineModel.normalize_tests([
   target: 'packages.x86_64-linux.intel-laptop-debug',

@@ -40,7 +40,6 @@ hosts/hetzci/
 ├── pipeline-library       # Jenkins shared library
 │   └── vars               # Entry points and shared helper scripts
 │       ├── artifactSupport.groovy
-│       ├── artifactUtils.groovy
 │       ├── checkoutUtils.groovy
 │       ├── hwTestUtils.groovy
 │       ├── pipelineExecution.groovy

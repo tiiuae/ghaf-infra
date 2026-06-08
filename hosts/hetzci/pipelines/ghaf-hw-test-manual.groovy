@@ -116,31 +116,30 @@ def init() {
   env.OCI_TARGET = ''
   env.OCI_SOURCE_REF = ''
   if (params.OCI_IMAGE_REF) {
-    def annotations = readJSON(
-      text: artifactUtils.run_cmd("oras manifest fetch --format json '${params.OCI_IMAGE_REF}'")
-    ).content?.annotations ?: [:]
+    def annotations = artifactSupport.oci_annotations(params.OCI_IMAGE_REF)
     env.OCI_TARGET = annotations[TARGET_ANNOTATION] ?: ''
     env.OCI_SOURCE_REF = annotations[SOURCE_REF_ANNOTATION] ?: ''
   }
   env.BUILD_TARGET = hwTestUtils.derive_target_name(params.IMG_URL, env.OCI_TARGET) ?: ''
-  env.TEST_TARGET = hwTestUtils.resolve_test_target(
-    params.TEST_TARGET,
-    env.BUILD_TARGET,
-    params.JOB_SELECTOR?.trim() ?: params.DEVICE_TAG
-  ) ?: ''
+  env.TEST_TARGET =
+    params.TEST_TARGET?.trim() ?: env.BUILD_TARGET ?: (params.JOB_SELECTOR?.trim() ?: params.DEVICE_TAG) ?: ''
   env.JOB_TARGET = env.BUILD_TARGET ?: params.JOB_SELECTOR?.trim() ?: env.TEST_TARGET ?: params.DEVICE_TAG
   def installerTarget = env.BUILD_TARGET ?: env.TEST_TARGET
   env.INSTALLER_FLOW = installerTarget.contains("installer") ? 'true' : 'false'
   def deviceInfo = null
   if (env.TEST_TARGET && !params.DEVICE_TAG) {
-    deviceInfo = hwTestUtils.derive_device_info(env.TEST_TARGET, params.SECUREBOOT)
+    deviceInfo = pipelineModel.device_info(env.TEST_TARGET, params.SECUREBOOT)
     if (!deviceInfo) {
       error("Could not derive DEVICE_TAG from test target '${env.TEST_TARGET}' and DEVICE_TAG is not defined")
     }
   }
   if (params.DEVICE_TAG) {
-    deviceInfo = hwTestUtils.derive_device_info(env.TEST_TARGET, params.SECUREBOOT, params.DEVICE_TAG)
+    deviceInfo = pipelineModel.device_info(env.TEST_TARGET, params.SECUREBOOT, params.DEVICE_TAG)
     if (!deviceInfo) {
+      def explicitTagInfo = pipelineModel.device_info(null, params.SECUREBOOT, params.DEVICE_TAG)
+      if (explicitTagInfo != null && env.TEST_TARGET) {
+        error("DEVICE_TAG '${params.DEVICE_TAG}' does not match TEST_TARGET '${env.TEST_TARGET}'")
+      }
       error("Unknown DEVICE_TAG '${params.DEVICE_TAG}'")
     }
   }
@@ -288,10 +287,8 @@ pipeline {
             script {
               def img_path
               if (params.OCI_IMAGE_REF) {
-                def pullResult = readJSON(
-                  text: artifactUtils.run_cmd("oras pull --format json -o '${TMP_IMG_DIR}' '${params.OCI_IMAGE_REF}'")
-                )
-                img_path = pullResult.files?.find { it.mediaType == IMAGE_MEDIA_TYPE }?.path
+                def pullResult = artifactSupport.oras_pull_json(params.OCI_IMAGE_REF, TMP_IMG_DIR)
+                img_path = artifactSupport.find_oci_pull_file(pullResult, IMAGE_MEDIA_TYPE)
                 if (!img_path) {
                   error("Unable to derive image file from OCI image '${params.OCI_IMAGE_REF}'")
                 }
@@ -354,11 +351,11 @@ pipeline {
                   error("Missing GHAF_FLAKE_REF and unable to derive Ghaf commit from IMG_URL '${params.IMG_URL}'. Set GHAF_FLAKE_REF or enable USE_LEGACY_DD_FLASH.")
                 }
                 println "Building flash-script from GHAF_FLAKE_REF: ${ghafFlakeRef}"
-                def flashScriptPath = artifactUtils.run_cmd(
+                def flashScriptPath = artifactSupport.run_cmd(
                   "nix build --no-link --print-out-paths '${ghafFlakeRef}#packages.x86_64-linux.flash-script'"
                 )
                 // flash-script validates /dev/sdX format; resolve the by-id symlink.
-                def resolved_dev = artifactUtils.run_cmd("/run/wrappers/bin/sudo readlink -f ${dev}")
+                def resolved_dev = artifactSupport.run_cmd("/run/wrappers/bin/sudo readlink -f ${dev}")
                 sh "/run/wrappers/bin/sudo ${flashScriptPath}/bin/flash-script -d ${resolved_dev} -i ${env.FLASH_INPUT_PATH} -f"
               }
               env.FLASHED = 'true'
@@ -424,7 +421,7 @@ pipeline {
       post {
         always {
           script {
-            artifactUtils.archive_robot_artifacts(TMP_IMG_DIR, env.ROBOT_EXECUTED != null)
+            artifactSupport.archive_robot_artifacts(TMP_IMG_DIR, env.ROBOT_EXECUTED != null)
           }
         }
       }

@@ -138,7 +138,7 @@ pipeline {
   post {
     always {
       script {
-        artifactUtils.clean_controller_workdir()
+        artifactSupport.clean_controller_workdir()
       }
     }
   }
