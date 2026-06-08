@@ -92,6 +92,11 @@ private def device_catalog() {
   ]
 }
 
+private def device_catalog_entry(String deviceTag) {
+  def device = device_catalog().get(normalize_optional_string(deviceTag), null)
+  return device instanceof Map ? device : null
+}
+
 private def test_stage_name(Map testRun) {
   if (testRun == null) {
     fail("Missing test run")
@@ -128,20 +133,7 @@ private def validate_test_identity_component(String name, String value) {
   }
 }
 
-def test_target_variants(String deviceTag) {
-  def variants = device_catalog().get(normalize_optional_string(deviceTag), null)?.variants
-  if (!(variants instanceof Map)) {
-    return [:]
-  }
-  return variants
-}
-
-def test_target_for_variant(String deviceTag, String variant) {
-  def resolvedTarget = test_target_variants(deviceTag).get(normalize_optional_string(variant), null)
-  return resolvedTarget instanceof String ? resolvedTarget : null
-}
-
-def device_tag_for_target(String targetName) {
+private def device_tag_for_target(String targetName) {
   def normalizedTarget = normalize_optional_string(targetName)
   if (normalizedTarget == null) {
     return null
@@ -182,20 +174,20 @@ def device_info(String targetName, boolean secureboot, String explicitDeviceTag 
 }
 
 private def device_info_for_tag(String deviceTag) {
-  def device = device_catalog().get(deviceTag, null)
-  if (!(device instanceof Map)) {
+  def device = device_catalog_entry(deviceTag)
+  if (device == null) {
     return null
   }
   return [name: device.name as String, tag: deviceTag]
 }
 
 private def resolve_catalog_test_target(String deviceTag, String variant, String buildTarget, int idx) {
-  def variants = test_target_variants(deviceTag)
-  if (variants.isEmpty()) {
+  def variants = device_catalog_entry(deviceTag)?.variants
+  if (!(variants instanceof Map) || variants.isEmpty()) {
     fail("Unknown device_tag '${deviceTag}' for '${buildTarget}' entry #${idx + 1}")
   }
 
-  def resolvedTarget = normalize_optional_string(test_target_for_variant(deviceTag, variant))
+  def resolvedTarget = normalize_optional_string(variants.get(variant, null))
   if (!(resolvedTarget instanceof String) || resolvedTarget.isEmpty()) {
     def supportedVariants = variants.keySet().toList().sort().join(', ')
     fail(
@@ -261,6 +253,13 @@ private def resolve_explicit_test_target(Map testConfig, String buildTarget, int
   return resolve_catalog_test_target(explicitDeviceTag, explicitVariant, buildTarget, idx)
 }
 
+private def effective_testagent_host(Map testConfig, String defaultHost = null) {
+  return normalize_optional_string(testConfig.get('effective_testagent_host', null)) ?:
+    normalize_optional_string(testConfig.get('testagent_host_override', null)) ?:
+    normalize_optional_string(testConfig.get('testagent_host', null)) ?:
+    normalize_optional_string(defaultHost)
+}
+
 def test_identity(Map testConfig, boolean secureboot = false) {
   if (testConfig == null) {
     fail("Missing test config")
@@ -276,13 +275,7 @@ def test_identity(Map testConfig, boolean secureboot = false) {
     fail("Missing testset for '${testTarget}'")
   }
 
-  def effectiveHost = normalize_optional_string(testConfig.get('effective_testagent_host', null))
-  if (effectiveHost == null) {
-    effectiveHost = normalize_optional_string(testConfig.get('testagent_host_override', null))
-  }
-  if (effectiveHost == null) {
-    effectiveHost = normalize_optional_string(testConfig.get('testagent_host', null))
-  }
+  def effectiveHost = effective_testagent_host(testConfig)
 
   validate_test_identity_component('test target', testTarget)
   validate_test_identity_component('testset', testset)
@@ -389,7 +382,10 @@ def normalize_tests(Map buildConfig, String defaultTestagentHost = null) {
     }
 
     def testagentHostOverride = overrideFromExplicitField ?: overrideFromAlias
-    def effectiveTestagentHost = testagentHostOverride ?: normalize_optional_string(defaultTestagentHost)
+    def effectiveTestagentHost = effective_testagent_host(
+      [testagent_host_override: testagentHostOverride],
+      defaultTestagentHost
+    )
     def securebootRequested = rawTest.get('test_secboot', false)
     def identity = test_identity([
       target: testTarget,
@@ -446,6 +442,20 @@ def normalize_tests(Map buildConfig, String defaultTestagentHost = null) {
   return normalizedTests
 }
 
+private def test_run(Map normalizedTest, String id, String pathKey, boolean secureboot, String skipReason = null) {
+  def run = shallow_copy_map(normalizedTest)
+  run.id = id
+  run.test_path_key = pathKey
+  run.secureboot = secureboot
+  run.stage_name = test_stage_name(run)
+  run.artifacts = "test-results/${pathKey}"
+  if (skipReason != null) {
+    run.initial_status = 'SKIPPED'
+    run.initial_reason = skipReason
+  }
+  return run
+}
+
 private def expand_test_runs(Map buildConfig) {
   if (buildConfig == null) {
     fail("Missing build config")
@@ -466,33 +476,23 @@ private def expand_test_runs(Map buildConfig) {
   def runs = []
 
   normalizedTests.each { normalizedTest ->
-    def normalRun = shallow_copy_map(normalizedTest)
-    normalRun.id = normalizedTest.id
-    normalRun.test_path_key = normalizedTest.test_path_key
-    normalRun.secureboot = false
-    normalRun.stage_name = test_stage_name(normalRun)
-    normalRun.artifacts = "test-results/${normalRun.test_path_key}"
-    if (ciEnv == 'vm') {
-      normalRun.initial_status = 'SKIPPED'
-      normalRun.initial_reason = 'ci_env_vm'
-    }
-    runs << normalRun
+    def skipReason = ciEnv == 'vm' ? 'ci_env_vm' : null
+    runs << test_run(
+      normalizedTest,
+      normalizedTest.id,
+      normalizedTest.test_path_key,
+      false,
+      skipReason
+    )
 
     if (normalizedTest.secureboot_requested) {
-      def securebootRun = shallow_copy_map(normalizedTest)
-      securebootRun.id = normalizedTest.secureboot_id
-      securebootRun.test_path_key = normalizedTest.secureboot_test_path_key
-      securebootRun.secureboot = true
-      securebootRun.stage_name = test_stage_name(securebootRun)
-      securebootRun.artifacts = "test-results/${securebootRun.test_path_key}"
-      if (ciEnv == 'vm') {
-        securebootRun.initial_status = 'SKIPPED'
-        securebootRun.initial_reason = 'ci_env_vm'
-      } else if (!securebootExecutionAllowed) {
-        securebootRun.initial_status = 'SKIPPED'
-        securebootRun.initial_reason = 'secureboot_not_available'
-      }
-      runs << securebootRun
+      runs << test_run(
+        normalizedTest,
+        normalizedTest.secureboot_id,
+        normalizedTest.secureboot_test_path_key,
+        true,
+        skipReason ?: (securebootExecutionAllowed ? null : 'secureboot_not_available')
+      )
     }
   }
 
