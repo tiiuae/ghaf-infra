@@ -11,21 +11,12 @@ private def pipeline_model_call(Closure body) {
   }
 }
 
-private def hw_test_stage_display_name(String buildShortname, List<Map> testRuns) {
-  def runCount = testRuns.size()
-  if (runCount > 1) {
-    return "HW tests ${buildShortname} (${runCount})"
-  }
-  return "HW test ${buildShortname}"
-}
-
 private def ghaf_flake_ref(String repo, String rev) {
   def normalizedRepo = repo.trim()
   if (!normalizedRepo.startsWith("https://")) {
     error("Unsupported Ghaf repository URL '${repo}': expected an HTTPS remote")
   }
-  normalizedRepo = "git+${normalizedRepo}"
-  normalizedRepo = normalizedRepo.replaceAll('/+$', '')
+  normalizedRepo = "git+${normalizedRepo}".replaceAll('/+$', '')
   def separator = normalizedRepo.contains('?') ? '&' : '?'
   return "${normalizedRepo}${separator}rev=${rev}"
 }
@@ -38,6 +29,24 @@ private def withRedundancyRouter(String object, Closure body) {
     println "Proceeding to sign with ${signingEnv}"
     body(signingEnv) // signingEnv object is available for closure
   }
+}
+
+private def run_optional_stage(boolean enabled, String stageName, Closure body) {
+  if (enabled) {
+    stage(stageName) { body() }
+  }
+}
+
+private def empty_signature() { [path: null, signing_key: null, signing_proxy: null] }
+
+private def record_signature(Map target, Map signingCtx, String path = null) {
+  if (path != null) target.path = path
+  target.signing_key = signingCtx.uri
+  target.signing_proxy = signingCtx.socket
+}
+
+private def mark_stage_skipped(String stageName) {
+  org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(stageName)
 }
 
 def create_pipeline(
@@ -82,11 +91,6 @@ def create_pipeline(
     def normalized_test_runs = target_config.test_runs
     def output = "${artifacts_local_dir}/${build_target_name}"
     def local_target_ref = "${ghaf_checkout}#${build_target_name}"
-    def no_image = target_config.no_image
-    def uefi_sign_requested = target_config.uefi_sign_requested
-    def provenance_requested = target_config.provenance_requested
-    def build_otapin_requested = target_config.build_otapin_requested
-    def sbom_requested = target_config.sbom_requested
 
     def manifest = [
       ci_env: ci_env,
@@ -109,11 +113,7 @@ def create_pipeline(
       image: [
         path: null,
         role: null,
-        signature: [
-          path: null,
-          signing_key: null,
-          signing_proxy: null,
-        ],
+        signature: empty_signature(),
       ],
       uefi: [
         signed: false,
@@ -124,11 +124,7 @@ def create_pipeline(
       attestations: [
         provenance: [
           path: null,
-          signature: [
-            path: null,
-            signing_key: null,
-            signing_proxy: null,
-          ],
+          signature: empty_signature(),
         ],
         sbom_csv: [
           path: null,
@@ -168,15 +164,15 @@ def create_pipeline(
       return entry
     }
 
-    if (no_image) {
+    if (target_config.no_image) {
       manifest.uefi.reason = "no_image"
     } else if (!signing_possible) {
       manifest.uefi.reason = "signing_not_possible"
-    } else if (!uefi_sign_requested) {
+    } else if (!target_config.uefi_sign_requested) {
       manifest.uefi.reason = "not_requested"
     }
 
-    pipeline["${build_target_name}"] = {
+    pipeline[build_target_name] = {
       artifactSupport.with_controller_workspace(ghaf_checkout) {
         stage("Build ${build_shortname}") {
           sh "mkdir -v -p ${output}"
@@ -187,159 +183,157 @@ def create_pipeline(
           }
           manifest.build.ts_finished = artifactSupport.run_cmd('date +%s')
         }
-        if (provenance_requested) {
-          stage("Provenance ${build_shortname}") {
-            def ext_params = """
-              {
-                "target": {
-                  "name": "${build_target_name}",
-                  "repository": "${target_repo}",
-                  "ref": "${target_commit}"
-                },
-                "workflow": {
-                  "name": "${host_name}",
-                  "repository": "https://github.com/tiiuae/ghaf-infra",
-                  "ref": "${host_revision}"
-                },
-                "job": "${env.JOB_NAME}",
-                "jobParams": ${JsonOutput.toJson(params)},
-                "buildRun": "${env.BUILD_ID}"
-              }
+        run_optional_stage(
+          target_config.provenance_requested,
+          "Provenance ${build_shortname}"
+        ) {
+          def ext_params = """
+            {
+              "target": {
+                "name": "${build_target_name}",
+                "repository": "${target_repo}",
+                "ref": "${target_commit}"
+              },
+              "workflow": {
+                "name": "${host_name}",
+                "repository": "https://github.com/tiiuae/ghaf-infra",
+                "ref": "${host_revision}"
+              },
+              "job": "${env.JOB_NAME}",
+              "jobParams": ${JsonOutput.toJson(params)},
+              "buildRun": "${env.BUILD_ID}"
+            }
+          """
+          withEnv([
+            'PROVENANCE_BUILD_TYPE=https://github.com/tiiuae/ghaf-infra/blob/ea938e90/slsa/v1.0/L1/buildtype.md',
+            "PROVENANCE_BUILDER_ID=${env.JENKINS_URL}",
+            "PROVENANCE_INVOCATION_ID=${env.BUILD_URL}",
+            "PROVENANCE_TIMESTAMP_BEGIN=${manifest.build.ts_begin}",
+            "PROVENANCE_TIMESTAMP_FINISHED=${manifest.build.ts_finished}",
+            "PROVENANCE_EXTERNAL_PARAMS=${ext_params}"
+          ]) {
+            sh "mkdir -v -p ${output}/attestations"
+            sh """
+              attempt=1; max_attempts=5;
+              while ! provenance ${output}/unsigned-output --recursive --out ${output}/attestations/provenance.json; do
+                echo "provenance attempt=\$attempt failed"
+                if (( \$attempt >= \$max_attempts )); then
+                  exit 1
+                fi
+                attempt=\$(( \$attempt + 1 ))
+                sleep 30
+              done
+              echo "provenance attempt=\$attempt passed"
             """
-            withEnv([
-              'PROVENANCE_BUILD_TYPE=https://github.com/tiiuae/ghaf-infra/blob/ea938e90/slsa/v1.0/L1/buildtype.md',
-              "PROVENANCE_BUILDER_ID=${env.JENKINS_URL}",
-              "PROVENANCE_INVOCATION_ID=${env.BUILD_URL}",
-              "PROVENANCE_TIMESTAMP_BEGIN=${manifest.build.ts_begin}",
-              "PROVENANCE_TIMESTAMP_FINISHED=${manifest.build.ts_finished}",
-              "PROVENANCE_EXTERNAL_PARAMS=${ext_params}"
-            ]) {
-              sh "mkdir -v -p ${output}/attestations"
+            manifest.attestations.provenance.path = "attestations/provenance.json"
+          }
+        }
+        run_optional_stage(
+          target_config.build_otapin_requested,
+          "OTA Build ${build_shortname}"
+        ) {
+          def ota_target = build_target_name.tokenize('.').last()
+          sh """
+            mkdir -v -p ${ota_target}; cd ${ota_target}
+            nixos-rebuild build --fallback --flake .#${ota_target}
+            mv result ${artifacts_local_dir}/otapin.${ota_target}
+            nix-store --add-root ${artifacts_local_dir}/otapin.${ota_target} \
+              -r ${artifacts_local_dir}/otapin.${ota_target}
+          """
+        }
+        run_optional_stage(
+          target_config.sbom_requested,
+          "SBOM ${build_shortname}"
+        ) {
+          def outdir = "${output}/attestations"
+          sh """
+            mkdir -v -p ${outdir}
+            sbomnix '${local_target_ref}' \
+              --csv ${outdir}/sbom.csv \
+              --cdx ${outdir}/sbom.cdx.json \
+              --spdx ${outdir}/sbom.spdx.json
+          """
+          manifest.attestations.sbom_csv.path = "attestations/sbom.csv"
+          manifest.attestations.sbom_cyclonedx.path = "attestations/sbom.cdx.json"
+          manifest.attestations.sbom_spdx.path = "attestations/sbom.spdx.json"
+        }
+        run_optional_stage(
+          signing_possible && target_config.provenance_requested,
+          "Sign (SLSA) provenance ${build_shortname}"
+        ) {
+          lock('signing') {
+            withRedundancyRouter("GhafInfraSignProv") { ctx ->
               sh """
-                attempt=1; max_attempts=5;
-                while ! provenance ${output}/unsigned-output --recursive --out ${output}/attestations/provenance.json; do
-                  echo "provenance attempt=\$attempt failed"
-                  if (( \$attempt >= \$max_attempts )); then
-                    exit 1
-                  fi
-                  attempt=\$(( \$attempt + 1 ))
-                  sleep 30
-                done
-                echo "provenance attempt=\$attempt passed"
+                openssl pkeyutl -sign -rawin \
+                  -inkey "${ctx.uri}" \
+                  -out ${output}/attestations/provenance.json.sig \
+                  -in ${output}/attestations/provenance.json
               """
-              manifest.attestations.provenance.path = "attestations/provenance.json"
+              record_signature(manifest.attestations.provenance.signature, ctx, "attestations/provenance.json.sig")
             }
           }
         }
-        if (build_otapin_requested) {
-          stage("OTA Build ${build_shortname}") {
-            def ota_target = build_target_name.tokenize('.').last()
-            sh """
-              mkdir -v -p ${ota_target}; cd ${ota_target}
-              nixos-rebuild build --fallback --flake .#${ota_target}
-              mv result ${artifacts_local_dir}/otapin.${ota_target}
-              nix-store --add-root ${artifacts_local_dir}/otapin.${ota_target} \
-                -r ${artifacts_local_dir}/otapin.${ota_target}
-            """
+        run_optional_stage(
+          !target_config.no_image,
+          "Find image ${build_shortname}"
+        ) {
+          def img_path = artifactSupport.run_cmd(
+            "find -L ${output}/unsigned-output -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print -quit"
+          )
+          if (!img_path) {
+            error("No image found!")
           }
+          manifest.image.path = img_path - "${output}/"
+          manifest.image.role = artifactSupport.image_role(manifest.image.path)
         }
-        if (sbom_requested) {
-          stage("SBOM ${build_shortname}") {
-            def outdir = "${output}/attestations"
+        run_optional_stage(
+          !target_config.no_image && signing_possible && target_config.uefi_sign_requested,
+          "Sign (UEFI) ${build_shortname}"
+        ) {
+          def tmpdir = artifactSupport.build_tmpdir("uefisign-${build_shortname}")
+          def img_name = artifactSupport.path_basename(manifest.image.path)
+          def signer = build_target_name.contains("nvidia-jetson-orin") ? "uefisign-simple" : "uefisign"
+
+          try {
             sh """
-              mkdir -v -p ${outdir}
-              sbomnix '${local_target_ref}' \
-                --csv ${outdir}/sbom.csv \
-                --cdx ${outdir}/sbom.cdx.json \
-                --spdx ${outdir}/sbom.spdx.json
+              rm -rf '${tmpdir}'
+              mkdir -p '${tmpdir}'
             """
-            manifest.attestations.sbom_csv.path = "attestations/sbom.csv"
-            manifest.attestations.sbom_cyclonedx.path = "attestations/sbom.cdx.json"
-            manifest.attestations.sbom_spdx.path = "attestations/sbom.spdx.json"
-          }
-        }
-        if (signing_possible && provenance_requested) {
-          stage("Sign (SLSA) provenance ${build_shortname}") {
+
             lock('signing') {
-              withRedundancyRouter("GhafInfraSignProv") { ctx ->
+              withRedundancyRouter("uefi-ghaf-db") { ctx ->
                 sh """
-                  openssl pkeyutl -sign -rawin \
-                    -inkey "${ctx.uri}" \
-                    -out ${output}/attestations/provenance.json.sig \
-                    -in ${output}/attestations/provenance.json
+                  ${signer} /etc/jenkins/keys/secboot/DB.pem \
+                    "${ctx.uri}" \
+                    ${output}/${manifest.image.path} \
+                    '${tmpdir}'
                 """
-                manifest.attestations.provenance.signature.path = "attestations/provenance.json.sig"
-                manifest.attestations.provenance.signature.signing_key = ctx.uri
-                manifest.attestations.provenance.signature.signing_proxy = ctx.socket
+                record_signature(manifest.uefi, ctx)
               }
             }
+
+            sh "mv '${tmpdir}/signed_${img_name}' '${output}/${img_name}'"
+            manifest.image.path = img_name
+            manifest.uefi.signed = true
+            manifest.uefi.reason = null
+          } finally {
+            sh "rm -rf '${tmpdir}'"
           }
         }
-        if (!no_image) {
-          stage("Find image ${build_shortname}") {
-            def img_path = artifactSupport.run_cmd(
-              "find -L ${output}/unsigned-output -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print -quit"
-            )
-            if (!img_path) {
-              error("No image found!")
-            }
-            manifest.image.path = img_path - "${output}/"
-            manifest.image.role = artifactSupport.image_role(manifest.image.path)
-          }
-          if (signing_possible) {
-            if (uefi_sign_requested) {
-              stage("Sign (UEFI) ${build_shortname}") {
-                def tmpdir = artifactSupport.build_tmpdir("uefisign-${build_shortname}")
-                def img_name = artifactSupport.path_basename(manifest.image.path)
-
-                def signer = "uefisign"
-                if (build_target_name.contains("nvidia-jetson-orin")) {
-                  signer = "uefisign-simple"
-                }
-
-                try {
-                  sh """
-                    rm -rf '${tmpdir}'
-                    mkdir -p '${tmpdir}'
-                  """
-
-                  lock('signing') {
-                    withRedundancyRouter("uefi-ghaf-db") { ctx ->
-                      sh """
-                        ${signer} /etc/jenkins/keys/secboot/DB.pem \
-                          "${ctx.uri}" \
-                          ${output}/${manifest.image.path} \
-                          '${tmpdir}'
-                      """
-                      manifest.uefi.signing_key = ctx.uri
-                      manifest.uefi.signing_proxy = ctx.socket
-                    }
-                  }
-
-                  sh "mv '${tmpdir}/signed_${img_name}' '${output}/${img_name}'"
-                  manifest.image.path = img_name
-                  manifest.uefi.signed = true
-                  manifest.uefi.reason = null
-                } finally {
-                  sh "rm -rf '${tmpdir}'"
-                }
-              }
-            }
-            stage("Sign (SLSA) image ${build_shortname}") {
-              lock('signing') {
-                def img_name = artifactSupport.path_basename(manifest.image.path)
-                manifest.image.signature.path = "${img_name}.sig"
-                withRedundancyRouter("GhafInfraSignECP256") { ctx ->
-                  sh """
-                    openssl dgst -sha256 -sign \
-                      "${ctx.uri}" \
-                      -out ${output}/${manifest.image.signature.path} \
-                      ${output}/${manifest.image.path}
-                  """
-                  manifest.image.signature.signing_key = ctx.uri
-                  manifest.image.signature.signing_proxy = ctx.socket
-                }
-              }
+        run_optional_stage(
+          !target_config.no_image && signing_possible,
+          "Sign (SLSA) image ${build_shortname}"
+        ) {
+          lock('signing') {
+            withRedundancyRouter("GhafInfraSignECP256") { ctx ->
+              def img_name = artifactSupport.path_basename(manifest.image.path)
+              record_signature(manifest.image.signature, ctx, "${img_name}.sig")
+              sh """
+                openssl dgst -sha256 -sign \
+                  "${ctx.uri}" \
+                  -out ${output}/${manifest.image.signature.path} \
+                  ${output}/${manifest.image.path}
+              """
             }
           }
         }
@@ -354,22 +348,22 @@ def create_pipeline(
 
           artifactSupport.append_to_build_description(artifacts_href, true)
         }
-        if (!no_image) {
-          stage("Publish OCI ${build_shortname}") {
-            withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
-              def job_name = env.JOB_BASE_NAME.replaceFirst('^ghaf-', '')
-              def oci_target_name = build_target_name.replaceFirst('^packages\\.', '')
-              def oci_repository = "ghaf/${job_name}/${oci_target_name}"
-              def oci_result_json = "${output}/oci-result.json"
-              sh """
-                oci-publish target \
-                  --target-dir '${output}' \
-                  --repository '${oci_repository}' \
-                  --tag '${immutable_tag}' \
-                  --result-json '${oci_result_json}'
-              """
-              oci_result = readJSON file: oci_result_json
-            }
+        run_optional_stage(
+          !target_config.no_image,
+          "Publish OCI ${build_shortname}"
+        ) {
+          withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
+            def oci_repository =
+              "ghaf/${env.JOB_BASE_NAME.replaceFirst('^ghaf-', '')}/${build_target_name.replaceFirst('^packages\\.', '')}"
+            def oci_result_json = "${output}/oci-result.json"
+            sh """
+              oci-publish target \
+                --target-dir '${output}' \
+                --repository '${oci_repository}' \
+                --tag '${immutable_tag}' \
+                --result-json '${oci_result_json}'
+            """
+            oci_result = readJSON file: oci_result_json
           }
         }
       }
@@ -377,67 +371,52 @@ def create_pipeline(
       if (!normalized_test_runs.isEmpty()) {
         try {
           def test_branches = [:]
-          def hw_test_stage_name = hw_test_stage_display_name(
-            build_shortname,
-            normalized_test_runs
-          )
-          def all_tests_skipped = normalized_test_runs.every { testRun ->
-            testRun.initial_status == 'SKIPPED'
-          }
-          normalized_test_runs.each { testRun ->
-            def localTestRun = testRun
-            def stageName = localTestRun.stage_name
-            test_branches[stageName] = {
-              stage(stageName) {
+          def runCount = normalized_test_runs.size()
+          def hw_test_stage_name =
+            runCount > 1 ? "HW tests ${build_shortname} (${runCount})" : "HW test ${build_shortname}"
+          def all_tests_skipped = normalized_test_runs.every { it.initial_status == 'SKIPPED' }
+          normalized_test_runs.each { localTestRun ->
+            test_branches[localTestRun.stage_name] = {
+              stage(localTestRun.stage_name) {
                 if (localTestRun.initial_status == 'SKIPPED') {
                   persist_test_result(localTestRun, [:])
-                  def skipMessage =
-                    "Skipping hardware test ${localTestRun.id}: ${localTestRun.initial_reason}"
+                  echo("Skipping hardware test ${localTestRun.id}: ${localTestRun.initial_reason}")
                   // Mark the child stage explicitly as skipped so graph views
                   // do not misattribute sibling failures to this branch.
-                  echo(skipMessage)
-                  org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(stageName)
+                  mark_stage_skipped(localTestRun.stage_name)
                   return
-                } else {
-                  def job = null
-                  try {
-                    job = hwTestUtils.run_hw_test(
-                      build_shortname,
-                      localTestRun.target,
+                }
+
+                def job = null
+                try {
+                  job = hwTestUtils.run_hw_test(
+                    build_shortname,
+                    localTestRun.target,
+                    localTestRun.id,
+                    localTestRun.testset,
+                    localTestRun.effective_testagent_host,
+                    oci_result,
+                    localTestRun.secureboot,
+                    ci_env,
+                    localTestRun.get('device_tag', null)
+                  )
+                  persist_test_result(localTestRun, [job: job])
+                  artifactSupport.with_controller_workspace(ghaf_checkout) {
+                    hwTestUtils.collect_hw_test_result(
                       localTestRun.id,
-                      localTestRun.testset,
-                      localTestRun.effective_testagent_host,
-                      oci_result,
+                      localTestRun.test_path_key,
                       localTestRun.secureboot,
-                      ci_env,
-                      localTestRun.get('device_tag', null)
+                      output,
+                      job
                     )
-                    persist_test_result(localTestRun, [job: job])
-                    artifactSupport.with_controller_workspace(ghaf_checkout) {
-                      hwTestUtils.collect_hw_test_result(
-                        localTestRun.id,
-                        localTestRun.test_path_key,
-                        localTestRun.secureboot,
-                        output,
-                        job
-                      )
-                    }
-                    persist_test_result(localTestRun, [
-                      status: job.result ?: 'UNKNOWN',
-                      job: job,
-                    ])
-                  } catch (Exception e) {
-                    def result = [
-                      status: 'ERROR',
-                      reason: e.message,
-                    ]
-                    if (job != null) {
-                      result.job = job
-                    }
-                    persist_test_result(localTestRun, result)
-                    artifactSupport.append_to_build_description("⛔ ${pipelineModel.html_escape(localTestRun.id)}")
-                    throw e
                   }
+                  persist_test_result(localTestRun, [status: job.result ?: 'UNKNOWN', job: job])
+                } catch (Exception e) {
+                  def result = [status: 'ERROR', reason: e.message]
+                  if (job != null) result.job = job
+                  persist_test_result(localTestRun, result)
+                  artifactSupport.append_to_build_description("⛔ ${pipelineModel.html_escape(localTestRun.id)}")
+                  throw e
                 }
               }
             }
@@ -450,7 +429,7 @@ def create_pipeline(
               test_branches.each { key, value -> value() }
             }
             if (all_tests_skipped) {
-              org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(hw_test_stage_name)
+              mark_stage_skipped(hw_test_stage_name)
             }
           }
         } finally {
@@ -482,22 +461,23 @@ def create_pipeline(
             }
           }
         }
-        if (ci_env != "vm") {
-          stage("Publish OCI test results ${build_shortname}") {
-            artifactSupport.with_controller_workspace(ghaf_checkout) {
-              if (sh(
-                script: "test -d '${output}/test-results'",
-                returnStatus: true
-              ) != 0) {
-                error("Missing test results for ${build_shortname}: ${output}/test-results")
-              }
-              withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
-                sh """
-                  oci-publish test-results \
-                    --results-dir '${output}/test-results' \
-                    --subject-reference '${oci_result.primary.reference}'
-                """
-              }
+        run_optional_stage(
+          ci_env != "vm",
+          "Publish OCI test results ${build_shortname}"
+        ) {
+          artifactSupport.with_controller_workspace(ghaf_checkout) {
+            if (sh(
+              script: "test -d '${output}/test-results'",
+              returnStatus: true
+            ) != 0) {
+              error("Missing test results for ${build_shortname}: ${output}/test-results")
+            }
+            withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
+              sh """
+                oci-publish test-results \
+                  --results-dir '${output}/test-results' \
+                  --subject-reference '${oci_result.primary.reference}'
+              """
             }
           }
         }
