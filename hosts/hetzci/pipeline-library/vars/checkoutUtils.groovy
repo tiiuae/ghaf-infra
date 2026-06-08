@@ -2,14 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 @NonCPS
-private def shell_quote(String value) {
-  if (value == null) {
-    return "''"
-  }
-  return "'${value.replace("'", "'\"'\"'")}'"
-}
-
-@NonCPS
 private def looks_like_hex_ref(String value) {
   return value ==~ /(?i)[0-9a-f]{7,40}/
 }
@@ -20,8 +12,8 @@ private def trim_prefix(String value, String prefix) {
 }
 
 private def remote_ref_exists(String repoUrl, String scope, String refName) {
-  def quotedRepo = shell_quote(repoUrl)
-  def quotedRef = shell_quote(refName)
+  def quotedRepo = artifactSupport.shell_quote(repoUrl)
+  def quotedRef = artifactSupport.shell_quote(refName)
   return sh(
     script: "git ls-remote --exit-code --${scope} --refs ${quotedRepo} ${quotedRef} >/dev/null 2>&1",
     returnStatus: true
@@ -51,47 +43,16 @@ private def git_clone_extension(Map args = [:]) {
   return extension
 }
 
-private def checkout_named_branch(String repoUrl, String branchName) {
-  def refspec = "+refs/heads/${branchName}:refs/remotes/origin/${branchName}"
+private def checkout_origin_ref(String repoUrl, String branchName, String refspec, Map cloneArgs = [:]) {
   checkout scmGit(
-    branches: [[name: "origin/${branchName}"]],
+    branches: [[name: branchName]],
     userRemoteConfigs: [[
       url: repoUrl,
       name: 'origin',
       refspec: refspec,
     ]],
     extensions: [
-      git_clone_extension(shallow: true, noTags: true, timeout: 30, depth: 50, honorRefspec: true),
-    ],
-  )
-}
-
-private def checkout_named_tag(String repoUrl, String tagName) {
-  def refspec = "+refs/tags/${tagName}:refs/tags/${tagName}"
-  checkout scmGit(
-    branches: [[name: "refs/tags/${tagName}"]],
-    userRemoteConfigs: [[
-      url: repoUrl,
-      name: 'origin',
-      refspec: refspec,
-    ]],
-    extensions: [
-      git_clone_extension(shallow: false, noTags: false, timeout: 30, honorRefspec: true),
-    ],
-  )
-}
-
-private def checkout_exact_ref(String repoUrl, String remoteRef, String localRef) {
-  def refspec = "+${remoteRef}:${localRef}"
-  checkout scmGit(
-    branches: [[name: localRef]],
-    userRemoteConfigs: [[
-      url: repoUrl,
-      name: 'origin',
-      refspec: refspec,
-    ]],
-    extensions: [
-      git_clone_extension(shallow: false, noTags: true, timeout: 30, honorRefspec: true),
+      git_clone_extension(cloneArgs + [timeout: 30, honorRefspec: true]),
     ],
   )
 }
@@ -113,7 +74,7 @@ def checkout_ci_test_sources(
   String ci_test_repo_branch,
   String ci_test_repo_url) {
   if (use_flake_pinned_ci_test) {
-    def pinned_src = artifactSupport.run_cmd("cat ${pinned_source_file}")
+    def pinned_src = readFile(file: pinned_source_file).trim()
     println("Using flake-pinned ci-test-automation source: ${pinned_src}")
     sh """
       if [ ! -d "${pinned_src}/Robot-Framework/test-suites" ]; then
@@ -146,20 +107,35 @@ def checkout_remote_ref(String repoUrl, String requestedRef, boolean allowSynthe
     if (normalizedRef.startsWith('refs/heads/')) {
       def branchName = trim_prefix(normalizedRef, 'refs/heads/')
       echo "Checking out branch ref '${normalizedRef}' from ${repoUrl}"
-      checkout_named_branch(repoUrl, branchName)
+      checkout_origin_ref(
+        repoUrl,
+        "origin/${branchName}",
+        "+refs/heads/${branchName}:refs/remotes/origin/${branchName}",
+        [shallow: true, noTags: true, depth: 50]
+      )
       return
     }
 
     if (normalizedRef.startsWith('refs/tags/')) {
       def tagName = trim_prefix(normalizedRef, 'refs/tags/')
       echo "Checking out tag ref '${normalizedRef}' from ${repoUrl}"
-      checkout_named_tag(repoUrl, tagName)
+      checkout_origin_ref(
+        repoUrl,
+        "refs/tags/${tagName}",
+        "+refs/tags/${tagName}:refs/tags/${tagName}",
+        [shallow: false, noTags: false]
+      )
       return
     }
 
     if (normalizedRef.startsWith('refs/pull/')) {
       echo "Checking out exact ref '${normalizedRef}' from ${repoUrl}"
-      checkout_exact_ref(repoUrl, normalizedRef, 'refs/remotes/origin/selected-ref')
+      checkout_origin_ref(
+        repoUrl,
+        'refs/remotes/origin/selected-ref',
+        "+${normalizedRef}:refs/remotes/origin/selected-ref",
+        [shallow: false, noTags: true]
+      )
       return
     }
 
@@ -169,14 +145,24 @@ def checkout_remote_ref(String repoUrl, String requestedRef, boolean allowSynthe
     branchName = trim_prefix(branchName, 'origin/')
     if (remote_ref_exists(repoUrl, 'heads', "refs/heads/${branchName}")) {
       echo "Checking out branch '${branchName}' from ${repoUrl}"
-      checkout_named_branch(repoUrl, branchName)
+      checkout_origin_ref(
+        repoUrl,
+        "origin/${branchName}",
+        "+refs/heads/${branchName}:refs/remotes/origin/${branchName}",
+        [shallow: true, noTags: true, depth: 50]
+      )
       return
     }
 
     def tagName = trim_prefix(normalizedRef, 'refs/tags/')
     if (remote_ref_exists(repoUrl, 'tags', "refs/tags/${tagName}")) {
       echo "Checking out tag '${tagName}' from ${repoUrl}"
-      checkout_named_tag(repoUrl, tagName)
+      checkout_origin_ref(
+        repoUrl,
+        "refs/tags/${tagName}",
+        "+refs/tags/${tagName}:refs/tags/${tagName}",
+        [shallow: false, noTags: false]
+      )
       return
     }
 

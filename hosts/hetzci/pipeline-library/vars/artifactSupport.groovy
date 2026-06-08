@@ -3,7 +3,7 @@
 
 import java.util.regex.Pattern
 
-private def shell_quote(String value) {
+def shell_quote(String value) {
   if (value == null) {
     return "''"
   }

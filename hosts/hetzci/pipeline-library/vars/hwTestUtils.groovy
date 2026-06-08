@@ -26,20 +26,6 @@ def derive_target_name(String imgUrl, String ociTarget) {
   return null
 }
 
-@NonCPS
-def resolve_test_target(String explicitTestTarget = null, String buildTarget = null, String fallbackTarget = null) {
-  def explicit = explicitTestTarget?.trim()
-  if (explicit) {
-    return explicit
-  }
-  def build = buildTarget?.trim()
-  if (build) {
-    return build
-  }
-  def fallback = fallbackTarget?.trim()
-  return fallback ?: null
-}
-
 def extra_tag_suffix(String target, String deviceTag) {
   def filters = []
   if (target.contains("lenovo-x1") || target.contains("darp11-b")) {
@@ -52,18 +38,22 @@ def extra_tag_suffix(String target, String deviceTag) {
   return filters.unique().join('')
 }
 
+private def wrapped_usb_switch(String command) {
+  return "(${command}; rc=\$?; /run/wrappers/bin/sudo udevadm settle --timeout=10 || true; sleep 2; exit \$rc)"
+}
+
 def setup_mount_commands(String conf_file_path, String target, String device_name) {
   if (target.contains("microchip-icicle-")) {
     def muxport = get_test_conf_property(conf_file_path, device_name, 'usb_sd_mux_port')
     return [
-      mount_cmd: "(/run/wrappers/bin/sudo usbsdmux ${muxport} host; rc=\$?; /run/wrappers/bin/sudo udevadm settle --timeout=10 || true; sleep 2; exit \$rc)",
-      unmount_cmd: "(/run/wrappers/bin/sudo usbsdmux ${muxport} dut; rc=\$?; /run/wrappers/bin/sudo udevadm settle --timeout=10 || true; sleep 2; exit \$rc)",
+      mount_cmd: wrapped_usb_switch("/run/wrappers/bin/sudo usbsdmux ${muxport} host"),
+      unmount_cmd: wrapped_usb_switch("/run/wrappers/bin/sudo usbsdmux ${muxport} dut"),
     ]
   }
   def serial = get_test_conf_property(conf_file_path, device_name, 'usbhub_serial')
   return [
-    mount_cmd: "(/run/wrappers/bin/sudo AcronameHubCLI -u 0 -s ${serial}; rc=\$?; /run/wrappers/bin/sudo udevadm settle --timeout=10 || true; sleep 2; exit \$rc)",
-    unmount_cmd: "(/run/wrappers/bin/sudo AcronameHubCLI -u 1 -s ${serial}; rc=\$?; /run/wrappers/bin/sudo udevadm settle --timeout=10 || true; sleep 2; exit \$rc)",
+    mount_cmd: wrapped_usb_switch("/run/wrappers/bin/sudo AcronameHubCLI -u 0 -s ${serial}"),
+    unmount_cmd: wrapped_usb_switch("/run/wrappers/bin/sudo AcronameHubCLI -u 1 -s ${serial}"),
   ]
 }
 
@@ -136,13 +126,9 @@ def assert_flash_target_unmounted(String dev) {
 // Why NonCPS? Jenkins CPS does not handle regex matchers reliably.
 // See: https://stackoverflow.com/a/48465528
 def resolve_ghaf_flake_ref(String explicitFlakeRef, String imgUrl, String ociFlakeRef) {
-  def normalizedFlakeRef = explicitFlakeRef?.trim()
+  def normalizedFlakeRef = explicitFlakeRef?.trim() ?: ociFlakeRef?.trim()
   if (normalizedFlakeRef) {
     return normalizedFlakeRef
-  }
-  def normalizedOciFlakeRef = ociFlakeRef?.trim()
-  if (normalizedOciFlakeRef) {
-    return normalizedOciFlakeRef
   }
   def match = imgUrl =~ /commit_([a-f0-9]{40})/
   if (match) {
@@ -182,18 +168,12 @@ def run_hw_test(
   if (oci_result == null) {
     error("Missing OCI publish result for ${buildShortname}; cannot trigger ghaf-hw-test")
   }
-  test_params += [
-    string(name: "OCI_IMAGE_REF", value: oci_result.primary.reference),
-  ]
+  test_params << string(name: "OCI_IMAGE_REF", value: oci_result.primary.reference)
   if (normalizedTestTarget) {
-    test_params += [
-      string(name: "TEST_TARGET", value: normalizedTestTarget),
-    ]
+    test_params << string(name: "TEST_TARGET", value: normalizedTestTarget)
   }
   if (normalizedDeviceTag) {
-    test_params += [
-      string(name: "DEVICE_TAG", value: normalizedDeviceTag),
-    ]
+    test_params << string(name: "DEVICE_TAG", value: normalizedDeviceTag)
   }
   def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
     parameters: test_params
