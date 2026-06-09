@@ -28,6 +28,57 @@ This repository is a Nix flake for Ghaf CI/CD infrastructure.
 - Shell: format with `shfmt --indent 2`; validate with `shellcheck`.
 - Keep host/service paths lowercase and hyphenated (for example `hosts/ghaf-monitoring`, `services/remote-build`).
 
+## Code Style: Prefer Compact, Human-Maintainable Code
+This repository values straightforward, readable code over excessive abstraction.
+
+When making changes:
+
+- Prefer simple, local, inline code when the logic is only used once.
+- Do not introduce helper functions just to name 2-5 lines of obvious logic.
+- Create helper functions only when they clearly improve maintainability, for example:
+  - the logic is reused in multiple places,
+  - the logic has a clear domain meaning,
+  - the function hides genuinely complex details,
+  - the function makes testing significantly easier,
+  - the caller becomes much easier to understand.
+- Avoid chains of tiny helper functions where understanding the code requires jumping between many definitions.
+- Keep related logic close together unless separation has a clear benefit.
+- Prefer explicit control flow over clever abstractions.
+- Prefer existing project patterns over introducing new abstractions.
+- Avoid speculative generalization. Do not design for future use cases that are not part of the current change.
+- Minimize API surface area. Do not export functions, classes, constants, or modules unless they are needed outside the current file/package.
+- Before adding a new abstraction, check whether the same result can be achieved by simplifying the surrounding code.
+
+As a rule of thumb:
+
+- Inline code is preferred when it is short, obvious, and used once.
+- A helper function is preferred when it removes meaningful duplication, gives a domain concept a useful name, or isolates non-trivial behavior.
+- A new class/module is preferred when there is a real state, lifecycle, interface boundary, ownership concern, or a clear reuse/composition benefit that matches existing project patterns.
+
+When reviewing your own changes, ask:
+
+1. Would a maintainer understand this faster if the logic stayed inline?
+2. Did I add this helper because it is truly useful, or only because the code looked slightly long?
+3. Does this abstraction reduce cognitive load, or does it just move code elsewhere?
+4. Is the new structure consistent with nearby code?
+
+If in doubt, choose the simpler and more local implementation.
+
+## Self-review before submitting changes
+Before finalizing code changes, review the diff and simplify it where possible.
+
+Look specifically for:
+
+- unnecessary helper functions,
+- single-use abstractions,
+- unnecessary classes or modules that do not provide clear reuse, composition, or readability benefits,
+- overly generic names like `process`, `handle`, `manager`, `helper`, or `utils`,
+- logic split across files without a strong reason,
+- new configuration or parameters that are not required by the current task,
+- changes that make the diff larger than necessary.
+
+Prefer the smallest change that solves the problem cleanly.
+
 ## Testing Guidelines
 There is no standalone unit-test suite; validation is check-driven.
 - Run `nix fmt` to catch formatting/lint issues early.
