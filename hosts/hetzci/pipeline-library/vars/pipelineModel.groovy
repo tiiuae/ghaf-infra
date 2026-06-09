@@ -92,18 +92,56 @@ private def device_catalog() {
   ]
 }
 
-private def test_stage_name(Map testRun) {
+private def display_device_tag(Map testRun) {
   if (testRun == null) {
     fail("Missing test run")
   }
+
+  def explicitTag = normalize_optional_string(testRun.get('device_tag', null))
+  if (explicitTag != null) {
+    return explicitTag == 'x1-sec-boot' ? 'lenovo-x1' : explicitTag
+  }
+
+  def inferredInfo = device_info(testRun.target, testRun.get('secureboot', false))
+  if (!(inferredInfo instanceof Map)) {
+    return null
+  }
+
+  def inferredTag = normalize_optional_string(inferredInfo.get('tag', null))
+  if (inferredTag == null) {
+    return null
+  }
+
+  return inferredTag == 'x1-sec-boot' ? 'lenovo-x1' : inferredTag
+}
+
+private def target_stage_subject(Map testRun) {
+  if (testRun == null) {
+    fail("Missing test run")
+  }
+
   def shortname = normalize_optional_string(testRun.get('shortname', null))
   if (shortname == null) {
-    shortname = short_target_name(testRun.target)
+    return short_target_name(testRun.target)
   }
+
+  return shortname
+}
+
+private def test_stage_name(Map testRun, String subject) {
+  if (testRun == null) {
+    fail("Missing test run")
+  }
+
   def testset = display_testset(testRun.testset)
-  def host = normalize_optional_string(testRun.get('effective_testagent_host', null)) ?: 'any'
   def mode = testRun.get('secureboot', false) ? 'secureboot' : 'no-secureboot'
-  return "Test ${shortname} / ${testset} / ${host} / ${mode}".toString()
+  def components = [subject, testset]
+  def host = normalize_optional_string(testRun.get('testagent_host_override', null))
+  if (host != null) {
+    components << host
+  }
+  components << mode
+  return components.join(' / ').toString()
 }
 
 private def normalize_optional_string(value) {
@@ -467,7 +505,6 @@ private def test_run(Map normalizedTest, String id, String pathKey, boolean secu
   run.id = id
   run.test_path_key = pathKey
   run.secureboot = secureboot
-  run.stage_name = test_stage_name(run)
   run.artifacts = "test-results/${pathKey}"
   if (skipReason != null) {
     run.initial_status = 'SKIPPED'
@@ -504,6 +541,21 @@ private def expand_test_runs(
         true,
         skipReason ?: (securebootExecutionAllowed ? null : 'secureboot_not_available')
       )
+    }
+  }
+
+  def preferredStageGroups = [:]
+  runs.each { run ->
+    def preferredStageName = test_stage_name(run, display_device_tag(run) ?: target_stage_subject(run))
+    run.stage_name = preferredStageName
+    preferredStageGroups[preferredStageName] = (preferredStageGroups[preferredStageName] ?: []) + [run]
+  }
+
+  preferredStageGroups.each { String stageName, List<Map> groupedRuns ->
+    if (groupedRuns.size() > 1) {
+      groupedRuns.each { run ->
+        run.stage_name = test_stage_name(run, target_stage_subject(run))
+      }
     }
   }
 
