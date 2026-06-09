@@ -76,8 +76,8 @@ assert normalizedLegacyBuild.tests[0].id ==
 assert normalizedLegacyBuild.tests[0].secureboot_id ==
   "${sampleTestIdentityTarget}@${sampleTestset}@prod@secureboot"
 assert normalizedLegacyBuild.test_runs*.stage_name == [
-  'Test lenovo-x1-carbon-gen11-debug / relayboot bat / prod / no-secureboot',
-  'Test lenovo-x1-carbon-gen11-debug / relayboot bat / prod / secureboot',
+  'lenovo-x1 / relayboot bat / no-secureboot',
+  'lenovo-x1 / relayboot bat / secureboot',
 ]
 
 def normalizedDocBuild = pipelineModel.normalize_build_config([
@@ -124,12 +124,62 @@ assert normalizedDeviceTagTests[0].test_path_key ==
 def normalizedBuildWithExplicitTests = pipelineModel.normalize_build_config(explicitTestsConfig, true, 'prod', 'prod')
 
 assert normalizedBuildWithExplicitTests.test_runs*.stage_name == [
-  'Test lenovo-x1-carbon-gen11-debug / relayboot bat / prod / no-secureboot',
-  'Test lenovo-x1-carbon-gen11-debug / relayboot bat / prod / secureboot',
-  'Test system76-darp11-b-debug / relayboot bat / release / no-secureboot',
+  'lenovo-x1 / relayboot bat / no-secureboot',
+  'lenovo-x1 / relayboot bat / secureboot',
+  'darter-pro / relayboot bat / release / no-secureboot',
 ]
 assert normalizedBuildWithExplicitTests.test_runs[1].initial_status == 'SKIPPED'
 assert normalizedBuildWithExplicitTests.test_runs[1].initial_reason == 'secureboot_not_available'
+
+def normalizedInferredDeviceBuild = pipelineModel.normalize_build_config([
+  target: 'packages.aarch64-linux.nvidia-jetson-orin-agx-debug',
+  testset: sampleTestset,
+], true, 'prod', null)
+
+assert normalizedInferredDeviceBuild.test_runs*.stage_name == [
+  'orin-agx / relayboot bat / no-secureboot',
+]
+
+def normalizedAnyOverrideBuild = pipelineModel.normalize_build_config([
+  target: explicitTestsBuildTarget,
+  tests: [
+    [
+      test_target: sampleTestShortTarget,
+      testset: sampleTestset,
+    ],
+    [
+      test_target: sampleTestShortTarget,
+      testset: sampleTestset,
+      testagent_host: 'any',
+    ],
+  ],
+], true, 'prod', 'prod')
+
+assert normalizedAnyOverrideBuild.test_runs*.stage_name == [
+  'lenovo-x1 / relayboot bat / no-secureboot',
+  'lenovo-x1 / relayboot bat / any / no-secureboot',
+]
+
+def normalizedFallbackDisplayBuild = pipelineModel.normalize_build_config([
+  target: explicitTestsBuildTarget,
+  tests: [
+    [
+      device_tag: 'lenovo-x1',
+      variant: 'debug',
+      testset: sampleTestset,
+    ],
+    [
+      device_tag: 'lenovo-x1',
+      variant: 'debug-installer',
+      testset: sampleTestset,
+    ],
+  ],
+], true, 'prod', null)
+
+assert normalizedFallbackDisplayBuild.test_runs*.stage_name == [
+  'lenovo-x1-carbon-gen11-debug / relayboot bat / no-secureboot',
+  'lenovo-x1-carbon-gen11-debug-installer / relayboot bat / no-secureboot',
+]
 
 def skippedTestEntry = pipelineModel.test_result_entry(normalizedBuildWithExplicitTests.test_runs[1])
 assert skippedTestEntry.status == 'SKIPPED'
