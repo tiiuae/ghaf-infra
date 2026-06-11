@@ -77,6 +77,8 @@ let
       auth = {
         htpasswd.path = config.sops.secrets.zot-htpasswd.path;
 
+        apikey = true;
+
         openid.providers.oidc = {
           name = "Vedenemo Auth";
           issuer = "https://auth.vedenemo.dev";
@@ -110,7 +112,12 @@ let
             anonymousPolicy = [ "read" ];
           };
           "**" = {
-            defaultPolicy = [ "read" ];
+            defaultPolicy = [
+              "read"
+              "create"
+              "update"
+              "delete"
+            ];
             anonymousPolicy = [ "read" ];
           };
         };
