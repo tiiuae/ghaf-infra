@@ -139,12 +139,7 @@ def create_pipeline(
     def result_file_for = { Map testRun ->
       "${output}/test-results/${testRun.test_path_key}/result.json"
     }
-    def write_manifest = { List testEntries = null ->
-      if (testEntries == null) {
-        manifest.remove('tests')
-      } else {
-        manifest.tests = testEntries
-      }
+    def write_manifest = {
       writeFile(
         file: "${output}/manifest.json",
         text: JsonOutput.prettyPrint(JsonOutput.toJson(manifest))
@@ -447,7 +442,6 @@ def create_pipeline(
                   ])
                 }
               }
-              write_manifest(finalTestEntries)
               writeFile(
                 file: "${output}/test-results.json",
                 text: JsonOutput.prettyPrint(JsonOutput.toJson([
