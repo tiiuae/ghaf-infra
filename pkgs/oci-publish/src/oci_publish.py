@@ -190,13 +190,18 @@ def publish_referrer(
 
 
 def create_test_results_archive(results_dir: Path, archive_path: Path) -> None:
-    """Create a tar archive containing the test-results directory."""
+    """Create a tar archive containing the test results."""
     if not results_dir.is_dir():
         fail(f"test results directory is missing: {results_dir}")
+
+    test_results_json = results_dir.parent / "test-results.json"
+    if not test_results_json.is_file():
+        fail(f"test results summary is missing: {test_results_json}")
 
     archive_path.parent.mkdir(parents=True, exist_ok=True)
     with tarfile.open(archive_path, "w") as archive:
         archive.add(results_dir, arcname=results_dir.name, recursive=True)
+        archive.add(test_results_json, arcname=test_results_json.name)
 
 
 def publish_target_artifacts(

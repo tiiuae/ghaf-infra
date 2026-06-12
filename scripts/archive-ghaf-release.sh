@@ -269,7 +269,7 @@ pull_artifacts_from_oci() {
       exit 1
     fi
 
-    if [[ -f "$target_dir/test-results.tar" && ! -d "$target_dir/test-results" ]]; then
+    if [[ -f "$target_dir/test-results.tar" ]]; then
       tar -xf "$target_dir/test-results.tar" -C "$target_dir"
       rm -f "$target_dir/test-results.tar"
     fi
