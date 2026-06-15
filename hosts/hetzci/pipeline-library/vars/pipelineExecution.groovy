@@ -136,6 +136,7 @@ def create_pipeline(
       ],
     ]
     def oci_result = null
+    def isStage1Orin = false
     def result_file_for = { Map testRun ->
       "${output}/test-results/${testRun.test_path_key}/result.json"
     }
@@ -266,16 +267,45 @@ def create_pipeline(
         }
         run_optional_stage(
           !target_config.no_image,
-          "Find image ${build_shortname}"
+          "Resolve artifacts ${build_shortname}"
         ) {
-          def img_path = artifactSupport.run_cmd(
-            "find -L ${output}/unsigned-output -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print -quit"
-          )
-          if (!img_path) {
-            error("No image found!")
+          def flashManifestPath = "${output}/unsigned-output/flash-manifest.json"
+          isStage1Orin = build_target_name.contains("nvidia-jetson-orin") &&
+            sh(script: "test -f '${flashManifestPath}'", returnStatus: true) == 0
+
+          if (isStage1Orin) {
+            def flashManifest = readJSON(file: flashManifestPath, returnPojo: true)
+            def espArtifact = artifactSupport.flash_manifest_artifact(flashManifest, 'esp')
+            def rootArtifact = artifactSupport.flash_manifest_artifact(flashManifest, 'root')
+            if (!espArtifact?.name || !rootArtifact?.name) {
+              error("Expected Orin flash manifest '${flashManifestPath}' to define both esp and root artifacts")
+            }
+
+            sh """
+              rm -rf '${output}/signed-output'
+              mkdir -p '${output}/signed-output'
+              for entry in "${output}"/unsigned-output/*; do
+                name=\$(basename "\$entry")
+                ln -s "../unsigned-output/\$name" '${output}/signed-output/'"\$name"
+              done
+            """
+
+            manifest.image.path = "signed-output/${espArtifact.name}"
+            manifest.image.role = 'disk'
+            manifest.flash_images = [
+              manifest_path: 'signed-output/flash-manifest.json',
+              signed_artifacts_dir: 'signed-output',
+            ]
+          } else {
+            def img_path = artifactSupport.run_cmd(
+              "find -L ${output}/unsigned-output -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print -quit"
+            )
+            if (!img_path) {
+              error("No image found!")
+            }
+            manifest.image.path = img_path - "${output}/"
+            manifest.image.role = artifactSupport.image_role(manifest.image.path)
           }
-          manifest.image.path = img_path - "${output}/"
-          manifest.image.role = artifactSupport.image_role(manifest.image.path)
         }
         run_optional_stage(
           !target_config.no_image && signing_possible && target_config.uefi_sign_requested,
@@ -284,6 +314,12 @@ def create_pipeline(
           def tmpdir = artifactSupport.build_tmpdir("uefisign-${build_shortname}")
           def img_name = artifactSupport.path_basename(manifest.image.path)
           def signer = build_target_name.contains("nvidia-jetson-orin") ? "uefisign-simple" : "uefisign"
+          def input_path = isStage1Orin ?
+            "${output}/unsigned-output/${img_name}" :
+            "${output}/${manifest.image.path}"
+          def signed_output_dir = isStage1Orin ?
+            "${output}/${manifest.flash_images.signed_artifacts_dir}" :
+            output
 
           try {
             sh """
@@ -295,14 +331,22 @@ def create_pipeline(
               sh """
                 ${signer} /etc/jenkins/keys/secboot/DB.pem \
                   "${ctx.uri}" \
-                  ${output}/${manifest.image.path} \
+                  '${input_path}' \
                   '${tmpdir}'
               """
               record_signature(manifest.uefi, ctx)
             }
 
-            sh "mv '${tmpdir}/signed_${img_name}' '${output}/${img_name}'"
-            manifest.image.path = img_name
+            if (isStage1Orin) {
+              sh """
+                rm -f '${signed_output_dir}/${img_name}'
+                mv '${tmpdir}/signed_${img_name}' '${signed_output_dir}/${img_name}'
+              """
+              manifest.image.path = "${manifest.flash_images.signed_artifacts_dir}/${img_name}"
+            } else {
+              sh "mv '${tmpdir}/signed_${img_name}' '${output}/${img_name}'"
+              manifest.image.path = img_name
+            }
             manifest.uefi.signed = true
             manifest.uefi.reason = null
           } finally {
@@ -314,18 +358,43 @@ def create_pipeline(
           "Sign (SLSA) image ${build_shortname}"
         ) {
           withRedundancyRouter("GhafInfraSignECP256") { ctx ->
-            def img_name = artifactSupport.path_basename(manifest.image.path)
-            record_signature(manifest.image.signature, ctx, "${img_name}.sig")
-            sh """
-              openssl dgst -sha256 -sign \
-                "${ctx.uri}" \
-                -out ${output}/${manifest.image.signature.path} \
-                ${output}/${manifest.image.path}
-            """
+            if (isStage1Orin) {
+              def flashManifest = readJSON(
+                file: "${output}/${manifest.flash_images.manifest_path}",
+                returnPojo: true
+              )
+              ['esp', 'root'].each { role ->
+                def artifact = artifactSupport.flash_manifest_artifact(flashManifest, role)
+                if (!artifact?.name) {
+                  error("Missing '${role}' artifact in Orin flash manifest '${manifest.flash_images.manifest_path}'")
+                }
+                def artifactPath = "${output}/${manifest.flash_images.signed_artifacts_dir}/${artifact.name}"
+                def signaturePath = "${artifact.name}.sig"
+                sh """
+                  openssl dgst -sha256 -sign \
+                    "${ctx.uri}" \
+                    -out ${output}/${signaturePath} \
+                    '${artifactPath}'
+                """
+                if (role == 'esp') {
+                  record_signature(manifest.image.signature, ctx, signaturePath)
+                  manifest.image.path = "${manifest.flash_images.signed_artifacts_dir}/${artifact.name}"
+                }
+              }
+            } else {
+              def img_name = artifactSupport.path_basename(manifest.image.path)
+              record_signature(manifest.image.signature, ctx, "${img_name}.sig")
+              sh """
+                openssl dgst -sha256 -sign \
+                  "${ctx.uri}" \
+                  -out ${output}/${manifest.image.signature.path} \
+                  ${output}/${manifest.image.path}
+              """
+            }
           }
         }
         stage("Link artifacts ${build_shortname}") {
-          if (manifest.image.path && !manifest.uefi.signed) {
+          if (manifest.image.path && !manifest.uefi.signed && !isStage1Orin) {
             def img_name = artifactSupport.path_basename(manifest.image.path)
             sh "ln -s ${output}/${manifest.image.path} ${output}/${img_name}"
             manifest.image.path = img_name
@@ -334,10 +403,12 @@ def create_pipeline(
           write_manifest()
 
           artifactSupport.append_to_build_description(artifacts_href, true)
-          artifactSupport.append_to_build_description("OCI Tag: ${pipelineModel.html_escape(immutable_tag)}", true)
+          if (!isStage1Orin) {
+            artifactSupport.append_to_build_description("OCI Tag: ${pipelineModel.html_escape(immutable_tag)}", true)
+          }
         }
         run_optional_stage(
-          !target_config.no_image,
+          !target_config.no_image && !isStage1Orin,
           "Publish OCI ${build_shortname}"
         ) {
           withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
@@ -379,6 +450,15 @@ def create_pipeline(
 
                 def job = null
                 try {
+                  def hwImgUrl = null
+                  def hwFlakeRef = null
+                  def hwFlashTargetDrive = null
+                  if (isStage1Orin) {
+                    def jenkinsRootUrl = env.JENKINS_URL.trim().replaceAll('/+$', '')
+                    hwImgUrl = "${jenkinsRootUrl}/${artifacts}/${build_target_name}"
+                    hwFlakeRef = target_flake_ref
+                    hwFlashTargetDrive = 'usb'
+                  }
                   job = hwTestUtils.run_hw_test(
                     build_shortname,
                     localTestRun.target,
@@ -388,7 +468,10 @@ def create_pipeline(
                     oci_result,
                     localTestRun.secureboot,
                     ci_env,
-                    localTestRun.get('device_tag', null)
+                    localTestRun.get('device_tag', null),
+                    hwImgUrl,
+                    hwFlakeRef,
+                    hwFlashTargetDrive
                   )
                   persist_test_result(localTestRun, [job: job])
                   artifactSupport.with_controller_workspace(ghaf_checkout) {
@@ -453,7 +536,7 @@ def create_pipeline(
           }
         }
         run_optional_stage(
-          ci_env != "vm",
+          ci_env != "vm" && oci_result != null,
           "Publish OCI test results ${build_shortname}"
         ) {
           artifactSupport.with_controller_workspace(ghaf_checkout) {

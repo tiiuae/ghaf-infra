@@ -105,6 +105,70 @@ def path_basename(String path) {
   return idx >= 0 ? path.substring(idx + 1) : path
 }
 
+def orin_artifact_root_urls(String artifactsUrl) {
+  def base = artifactsUrl?.trim()?.replaceAll('/+$', '')
+  if (!base) {
+    error("Missing Orin artifacts URL")
+  }
+  return [
+    root_url: base,
+    signed_artifacts_url: "${base}/signed-output",
+    manifest_url: "${base}/signed-output/flash-manifest.json",
+    provenance_url: "${base}/attestations/provenance.json",
+    provenance_signature_url: "${base}/attestations/provenance.json.sig",
+  ]
+}
+
+@NonCPS
+def flash_manifest_artifact(Map flashManifest, String role) {
+  return flashManifest?.artifacts?.find { it.role == role }
+}
+
+def download_orin_artifact_root_flash_set(String artifactsUrl, String outputDir) {
+  def urls = orin_artifact_root_urls(artifactsUrl)
+  def manifestPath = run_wget(urls.manifest_url, outputDir)
+  def flashManifest = readJSON file: manifestPath, returnPojo: true
+  def transport = flashManifest?.transport ?: ''
+  if (transport != 'initrd-mass-storage') {
+    error("Unsupported Orin flash transport '${transport}' for Orin artifact-root flashing")
+  }
+  def flasher = flashManifest?.flasher ?: [:]
+  def flasherEntrypoint = flasher.entrypoint?.trim()
+  if (!flasherEntrypoint) {
+    error("Missing flasher entrypoint in Orin flash manifest '${manifestPath}'")
+  }
+  if (!(flasherEntrypoint ==~ /bin\/initrd-flash-[A-Za-z0-9._-]+/)) {
+    error("Unsupported flasher entrypoint '${flasherEntrypoint}' in Orin flash manifest '${manifestPath}'")
+  }
+  def espArtifact = flash_manifest_artifact(flashManifest, 'esp')
+  def rootArtifact = flash_manifest_artifact(flashManifest, 'root')
+  if (!espArtifact?.name || !rootArtifact?.name) {
+    error("Expected Orin flash manifest '${manifestPath}' to define both esp and root artifacts")
+  }
+
+  def manifestDirIdx = manifestPath.lastIndexOf('/')
+  def flashImagesDir = manifestDirIdx > 0 ? manifestPath.substring(0, manifestDirIdx) : '.'
+  def espPath = run_wget("${urls.signed_artifacts_url}/${espArtifact.name}", outputDir)
+  def rootPath = run_wget("${urls.signed_artifacts_url}/${rootArtifact.name}", outputDir)
+  def espSigPath = run_wget("${urls.root_url}/${espArtifact.name}.sig", outputDir)
+  def rootSigPath = run_wget("${urls.root_url}/${rootArtifact.name}.sig", outputDir)
+
+  return [
+    manifest: flashManifest,
+    manifest_path: manifestPath,
+    flash_images_dir: flashImagesDir,
+    transport: transport,
+    flasher_entrypoint: flasherEntrypoint,
+    flash_target_drives: flasher.target_drives ?: [],
+    esp_path: espPath,
+    root_path: rootPath,
+    esp_signature_path: espSigPath,
+    root_signature_path: rootSigPath,
+    provenance_url: urls.provenance_url,
+    provenance_signature_url: urls.provenance_signature_url,
+  ]
+}
+
 def image_role(String path) {
   def basename = path_basename(path)
   if (basename == null) {
