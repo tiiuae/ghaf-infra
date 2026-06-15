@@ -31,6 +31,8 @@ in
   networking.hostName = "hetzci-dbg";
   ghaf.nix-cache.caches = [
     "nixos-org"
+    # Temporary: allow ci-dbg to reuse artifacts from the dev cache.
+    "ghaf-dev"
     "ghaf-dbg"
   ];
 
@@ -48,6 +50,7 @@ in
         "ghaf-hw-test-manual"
         "ghaf-hw-test"
         "ghaf-manual"
+        "ghaf-pre-merge-manual"
         "ghaf-release-candidate"
       ];
       withRegistryPublish = true;
