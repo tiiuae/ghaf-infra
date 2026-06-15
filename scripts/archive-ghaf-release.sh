@@ -155,30 +155,41 @@ is_release_target() {
   return 1
 }
 
+read_flash_set_metadata() {
+  local manifest="$1"
+  local manifest_dir
+  manifest_dir=$(dirname "$manifest")
+
+  if ! flash_manifest_rel=$(jq -re '.flash_images.manifest_path' "$manifest"); then
+    print_err "missing flash_images manifest path in manifest: $manifest"
+    exit 1
+  fi
+  if ! signed_dir_rel=$(jq -re '.flash_images.signed_artifacts_dir' "$manifest"); then
+    print_err "missing flash_images signed artifact dir in manifest: $manifest"
+    exit 1
+  fi
+
+  flash_manifest="$manifest_dir/$flash_manifest_rel"
+  if [[ ! -f $flash_manifest ]]; then
+    print_err "missing flash manifest: $flash_manifest"
+    exit 1
+  fi
+  if ! esp_name=$(jq -re '.artifacts[] | select(.role == "esp") | .name' "$flash_manifest"); then
+    print_err "missing esp artifact in flash manifest: $flash_manifest"
+    exit 1
+  fi
+  if ! root_name=$(jq -re '.artifacts[] | select(.role == "root") | .name' "$flash_manifest"); then
+    print_err "missing root artifact in flash manifest: $flash_manifest"
+    exit 1
+  fi
+}
+
 verify_signatures() {
   dir="$1"
   manifest="$dir/manifest.json"
 
   if [[ ! -f $manifest ]]; then
     print_err "missing manifest: $dir"
-    exit 1
-  fi
-  if ! img_rel=$(jq -re '.image.path' "$manifest"); then
-    print_err "missing image entry in manifest: $manifest"
-    exit 1
-  fi
-  img="$dir/$img_rel"
-  if [[ -z $img_rel ]]; then
-    print_err "missing image: $dir"
-    exit 1
-  fi
-  if ! img_sig_rel=$(jq -re '.image.signature.path' "$manifest"); then
-    print_err "missing image signature entry in manifest: $manifest"
-    exit 1
-  fi
-  img_sig="$dir/$img_sig_rel"
-  if [[ -z $img_sig_rel ]]; then
-    print_err "missing image signature: $dir"
     exit 1
   fi
   if ! prov_rel=$(jq -re '.attestations.provenance.path' "$manifest"); then
@@ -199,12 +210,47 @@ verify_signatures() {
     print_err "missing nix_build provenance signature: $dir"
     exit 1
   fi
-  echo "[+] Verifying: $img"
-  if ! verify-signature image "$img" "$img_sig"; then
-    print_err "failed verifying image signature"
-    print_err "  image: $img"
-    print_err "  signature: $img_sig"
-    exit 1
+
+  if jq -e '.flash_images != null' "$manifest" >/dev/null; then
+    read_flash_set_metadata "$manifest"
+    signed_dir="$dir/$signed_dir_rel"
+    for artifact_name in "$esp_name" "$root_name"; do
+      artifact_path="$signed_dir/$artifact_name"
+      signature_path="$dir/$artifact_name.sig"
+      echo "[+] Verifying: $artifact_path"
+      if ! verify-signature image "$artifact_path" "$signature_path"; then
+        print_err "failed verifying image signature"
+        print_err "  image: $artifact_path"
+        print_err "  signature: $signature_path"
+        exit 1
+      fi
+    done
+  else
+    if ! img_rel=$(jq -re '.image.path' "$manifest"); then
+      print_err "missing image entry in manifest: $manifest"
+      exit 1
+    fi
+    img="$dir/$img_rel"
+    if [[ -z $img_rel ]]; then
+      print_err "missing image: $dir"
+      exit 1
+    fi
+    if ! img_sig_rel=$(jq -re '.image.signature.path' "$manifest"); then
+      print_err "missing image signature entry in manifest: $manifest"
+      exit 1
+    fi
+    img_sig="$dir/$img_sig_rel"
+    if [[ -z $img_sig_rel ]]; then
+      print_err "missing image signature: $dir"
+      exit 1
+    fi
+    echo "[+] Verifying: $img"
+    if ! verify-signature image "$img" "$img_sig"; then
+      print_err "failed verifying image signature"
+      print_err "  image: $img"
+      print_err "  signature: $img_sig"
+      exit 1
+    fi
   fi
   if ! verify-signature provenance "$prov" "$prov_sig"; then
     print_err "failed verifying provenance signature"
@@ -301,18 +347,25 @@ prepare_artifacts() {
     mkdir -p "$TMPDIR/$target_name"
     ln -s "$manifest" "$TMPDIR/$target_name/manifest.json"
 
-    if ! image=$(jq -re '.image.path' "$manifest"); then
-      print_err "missing image entry in manifest: $manifest"
-      exit 1
-    fi
-    if ! image_sig=$(jq -re '.image.signature.path' "$manifest"); then
-      print_err "missing image signature entry in manifest: $manifest"
-      exit 1
-    fi
+    if jq -e '.flash_images != null' "$manifest" >/dev/null; then
+      read_flash_set_metadata "$manifest"
+      ln -s "$dir/$signed_dir_rel" "$TMPDIR/$target_name/$signed_dir_rel"
+      ln -s "$dir/$esp_name.sig" "$TMPDIR/$target_name/$esp_name.sig"
+      ln -s "$dir/$root_name.sig" "$TMPDIR/$target_name/$root_name.sig"
+    else
+      if ! image=$(jq -re '.image.path' "$manifest"); then
+        print_err "missing image entry in manifest: $manifest"
+        exit 1
+      fi
+      if ! image_sig=$(jq -re '.image.signature.path' "$manifest"); then
+        print_err "missing image signature entry in manifest: $manifest"
+        exit 1
+      fi
 
-    # build output
-    ln -s "$dir/$image" "$TMPDIR/$target_name/$image"
-    ln -s "$dir/$image_sig" "$TMPDIR/$target_name/$image_sig"
+      # build output
+      ln -s "$dir/$image" "$TMPDIR/$target_name/$image"
+      ln -s "$dir/$image_sig" "$TMPDIR/$target_name/$image_sig"
+    fi
 
     # attestations
     if [[ -d "$dir/attestations" ]]; then
