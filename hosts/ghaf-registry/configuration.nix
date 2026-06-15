@@ -170,6 +170,7 @@ in
     enableACME = true;
     forceSSL = true;
     default = true;
+    http2 = false;
 
     locations."/" = {
       proxyPass = "http://127.0.0.1:${toString zotPort}";
@@ -193,9 +194,6 @@ in
       '';
     };
   };
-
-  environment.systemPackages = [
-  ];
 
   users.groups.zot = { };
   users.users.zot = {
