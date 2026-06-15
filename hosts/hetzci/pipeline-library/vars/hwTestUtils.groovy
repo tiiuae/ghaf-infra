@@ -43,6 +43,9 @@ def orin_flash_script_attr(String buildTarget) {
     throw new IllegalArgumentException("Cannot derive Orin flash-script attribute from target '${buildTarget}'")
   }
   def rewrittenTarget = normalizedTarget.replaceFirst(/^packages\.[^.]+\./, '')
+  if (normalizedTarget.startsWith('packages.aarch64-linux.')) {
+    return "packages.x86_64-linux.${rewrittenTarget}-from-x86_64-flash-script"
+  }
   return "packages.x86_64-linux.${rewrittenTarget}-flash-script"
 }
 
