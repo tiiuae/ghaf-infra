@@ -46,7 +46,7 @@
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B72838C560C", SYMLINK+="ssdSecBoot", MODE="0666", GROUP="dialout"
 
     # Bluetooth Board
-    SUBSYSTEM=="tty", ATTRS{idVendor}=="1366", ATTRS{idProduct}=="1061", ATTRS{serial}=="001050288781", SYMLINK+="ttyBTboard", MODE="0666", GROUP="dialout"
+    SUBSYSTEM=="tty", ATTRS{idVendor}=="1366", ATTRS{idProduct}=="1061", ATTRS{serial}=="001050288781", ENV{ID_USB_INTERFACE_NUM}=="00", SYMLINK+="ttyBTboard", MODE="0666", GROUP="dialout"
 
   '';
 
