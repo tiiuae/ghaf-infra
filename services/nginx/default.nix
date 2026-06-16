@@ -19,10 +19,6 @@
       if config.networking.nameservers == [ ] then [ "1.1.1.1" ] else config.networking.nameservers;
   };
 
-  # Keep the cleanup unit active for one rollout after removing the nginx
-  # dhparams consumer so stateful files under /var/lib/dhparams get removed.
-  security.dhparams.enable = true;
-
   security.acme = {
     acceptTerms = true;
     defaults.email = "trash@unikie.com";
