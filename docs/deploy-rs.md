@@ -38,3 +38,19 @@ deploy -si --ssh-user myuser .#ghaf-monitoring
 ```
 
 Running just `deploy` without any arguments will deploy every host defined in the configuration, even if they have no changes. This is usually not something you want to do.
+
+## Release upgrades
+
+Do not use a normal deploy with immediate activation ('switch') when the target host is still running a different NixOS release than the configuration being deployed, for example `25.11 -> 26.05`.
+
+Those upgrades can fail during activation while reloading systemd user units.
+
+Use a boot deployment instead:
+
+```sh
+deploy --boot .#testagent-release
+```
+
+Then reboot the host into the newly deployed generation.
+
+Note that there is no automatic rollback on the boot deployment.
