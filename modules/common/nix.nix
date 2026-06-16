@@ -72,6 +72,11 @@ in
     Restart = "on-failure";
   };
 
+  # Direct `switch` deployments across NixOS release boundaries can fail during
+  # user-unit activation. Require a `boot` deployment followed by a reboot
+  # instead of switching releases on a running system.
+  system.switch.inhibitors.nixos-release = config.system.nixos.release;
+
   systemd.services.trim-profiles = {
     description = "Delete older profiles";
     serviceConfig.Type = "oneshot";
