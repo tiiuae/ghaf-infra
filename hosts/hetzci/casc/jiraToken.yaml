@@ -1,0 +1,9 @@
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - string:
+              scope: GLOBAL
+              id: "jenkins_jira_token"
+              secret: "${file:/run/secrets/jenkins_jira_token}"
+              description: "Jira token used for Zephyr plugin"
