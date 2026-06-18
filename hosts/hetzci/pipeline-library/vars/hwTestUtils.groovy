@@ -26,6 +26,29 @@ def derive_target_name(String imgUrl, String ociTarget) {
   return null
 }
 
+def is_orin_artifact_root_mode(String testTarget, String buildTarget, String imgUrl, String ociImageRef) {
+  if (ociImageRef?.trim() || !imgUrl?.trim()) {
+    return false
+  }
+  if (imgUrl.trim() ==~ /.*\.(img|raw|zst|iso)$/) {
+    return false
+  }
+  return buildTarget?.trim()?.contains('nvidia-jetson-orin') || testTarget?.trim()?.contains('nvidia-jetson-orin')
+}
+
+@NonCPS
+def orin_flash_script_attr(String buildTarget) {
+  def normalizedTarget = buildTarget?.trim()
+  if (!normalizedTarget?.contains('nvidia-jetson-orin')) {
+    throw new IllegalArgumentException("Cannot derive Orin flash-script attribute from target '${buildTarget}'")
+  }
+  def rewrittenTarget = normalizedTarget.replaceFirst(/^packages\.[^.]+\./, '')
+  if (normalizedTarget.startsWith('packages.aarch64-linux.')) {
+    return "packages.x86_64-linux.${rewrittenTarget}-from-x86_64-flash-script"
+  }
+  return "packages.x86_64-linux.${rewrittenTarget}-flash-script"
+}
+
 def extra_tag_suffix(String target, String deviceTag) {
   def filters = []
   if (target.contains("lenovo-x1") || target.contains("darp11-b")) {
@@ -137,6 +160,72 @@ def resolve_ghaf_flake_ref(String explicitFlakeRef, String imgUrl, String ociFla
   return null
 }
 
+def prepare_orin_artifact_root_flash(
+  String imgUrl,
+  String outputDir,
+  String buildTarget,
+  String testTarget,
+  String requestedDrive = null
+) {
+  def flashSet = artifactSupport.download_orin_artifact_root_flash_set(imgUrl, outputDir)
+  def orinTarget = buildTarget?.trim() ?: testTarget?.trim()
+  def targetDrive = requestedDrive?.trim() ?: 'usb'
+  def supportedDrives = flashSet.flash_target_drives ?: []
+  if (supportedDrives && !supportedDrives.contains(targetDrive)) {
+    error(
+      "Unsupported Orin flash target drive '${targetDrive}' for '${orinTarget}'; " +
+        "supported values: ${supportedDrives.join(', ')}"
+    )
+  }
+  println "Downloaded Orin flash set to workspace: ${flashSet.flash_images_dir}"
+  println "Downloaded ESP signature to workspace: ${flashSet.esp_signature_path}"
+  println "Downloaded root signature to workspace: ${flashSet.root_signature_path}"
+  sh "verify-signature image '${flashSet.esp_path}' '${flashSet.esp_signature_path}'"
+  sh "verify-signature image '${flashSet.root_path}' '${flashSet.root_signature_path}'"
+
+  def flasherPackageAttr = orin_flash_script_attr(orinTarget)
+  println "Orin flash input: ${flashSet.flash_images_dir}"
+  println "Orin flasher entrypoint: ${flashSet.flasher_entrypoint}"
+  println "Orin flasher package attr: ${flasherPackageAttr}"
+
+  return [
+    flash_target_drive: targetDrive,
+    flash_input_path: flashSet.flash_images_dir,
+    flasher_entrypoint: flashSet.flasher_entrypoint,
+    flasher_package_attr: flasherPackageAttr,
+  ]
+}
+
+def run_orin_artifact_root_flash(
+  String explicitFlakeRef,
+  String imgUrl,
+  String ociFlakeRef,
+  String ociImageRef,
+  String flasherPackageAttr,
+  String flasherEntrypoint,
+  String flashTargetDrive,
+  String flashInputPath
+) {
+  def ghafFlakeRef = resolve_ghaf_flake_ref(explicitFlakeRef, imgUrl, ociFlakeRef)
+  if (!ghafFlakeRef) {
+    if (ociImageRef?.trim()) {
+      error("Missing GHAF_FLAKE_REF and unable to derive it from OCI image '${ociImageRef}'")
+    }
+    error("Missing GHAF_FLAKE_REF and unable to derive Ghaf commit from IMG_URL '${imgUrl}'.")
+  }
+
+  println "Building Orin flash-script from GHAF_FLAKE_REF: ${ghafFlakeRef}"
+  def flashScriptPath = artifactSupport.run_cmd(
+    "nix build --no-link --print-out-paths '${ghafFlakeRef}#${flasherPackageAttr}'"
+  )
+  sh """
+    /run/wrappers/bin/sudo '${flashScriptPath}/${flasherEntrypoint}' \
+      --target='${flashTargetDrive}' \
+      --flash-images='${flashInputPath}'
+  """
+  return ghafFlakeRef
+}
+
 def run_hw_test(
   String buildShortname,
   String testTargetName,
@@ -146,7 +235,10 @@ def run_hw_test(
   Map oci_result,
   boolean secureboot,
   String ci_env,
-  String deviceTag = null) {
+  String deviceTag = null,
+  String imgUrl = null,
+  String ghafFlakeRef = null,
+  String flashTargetDrive = null) {
   // Keep the blocking downstream wait outside node('built-in') so ghaf-hw-test
   // can acquire a controller executor for its own initialization stages.
   def build_href = "<a href=\"${pipelineModel.html_escape(env.BUILD_URL)}\">" +
@@ -165,10 +257,19 @@ def run_hw_test(
     booleanParam(name: "RELOAD_ONLY", value: false),
     booleanParam(name: "SECUREBOOT", value: secureboot),
   ]
-  if (oci_result == null) {
-    error("Missing OCI publish result for ${buildShortname}; cannot trigger ghaf-hw-test")
+  if (oci_result != null) {
+    test_params << string(name: "OCI_IMAGE_REF", value: oci_result.primary.reference)
+  } else if (imgUrl?.trim()) {
+    test_params << string(name: "IMG_URL", value: imgUrl.trim())
+    if (ghafFlakeRef?.trim()) {
+      test_params << string(name: "GHAF_FLAKE_REF", value: ghafFlakeRef.trim())
+    }
+    if (flashTargetDrive?.trim()) {
+      test_params << string(name: "FLASH_TARGET_DRIVE", value: flashTargetDrive.trim())
+    }
+  } else {
+    error("Missing OCI publish result or IMG_URL for ${buildShortname}; cannot trigger ghaf-hw-test")
   }
-  test_params << string(name: "OCI_IMAGE_REF", value: oci_result.primary.reference)
   if (normalizedTestTarget) {
     test_params << string(name: "TEST_TARGET", value: normalizedTestTarget)
   }

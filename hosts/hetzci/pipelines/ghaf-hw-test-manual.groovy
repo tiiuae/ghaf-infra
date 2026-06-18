@@ -39,7 +39,8 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
       name: 'IMG_URL',
       defaultValue: '',
       description: '''
-        Target image url. If specified, the target device is flashed with the given image before running the tests.
+        Target image URL. If specified, the target device is flashed with the given image before running the tests.
+        For Orin artifact-root flashing, use the target artifact root URL instead.
         Can be left empty, in which case DEVICE_TAG must be specified. With installer image this is mandatory to give!'''.stripIndent()),
     string(
       name: 'TEST_TARGET',
@@ -52,6 +53,11 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
       description: '''
         Optional pinned Ghaf flake reference for flash-script. Leave empty to derive it from OCI metadata or IMG_URL.
         Set this explicitly for images built from refs that are not fetchable by commit SHA alone, such as PR merge refs.'''.stripIndent()),
+    string(
+      name: 'FLASH_TARGET_DRIVE',
+      defaultValue: 'usb',
+      description: '''
+        Flash target drive for the Orin initrd flasher, for example usb, nvme, or emmc.'''.stripIndent()),
     booleanParam(
       name: 'USE_LEGACY_DD_FLASH',
       defaultValue: false,
@@ -124,6 +130,12 @@ def init() {
   env.TEST_TARGET =
     params.TEST_TARGET?.trim() ?: env.BUILD_TARGET ?: (params.JOB_SELECTOR?.trim() ?: params.DEVICE_TAG) ?: ''
   env.JOB_TARGET = env.BUILD_TARGET ?: params.JOB_SELECTOR?.trim() ?: env.TEST_TARGET ?: params.DEVICE_TAG
+  env.ORIN_ARTIFACT_ROOT_MODE = hwTestUtils.is_orin_artifact_root_mode(
+    env.TEST_TARGET,
+    env.BUILD_TARGET,
+    params.IMG_URL,
+    params.OCI_IMAGE_REF
+  ) ? 'true' : 'false'
   def installerTarget = env.BUILD_TARGET ?: env.TEST_TARGET
   env.INSTALLER_FLOW = installerTarget.contains("installer") ? 'true' : 'false'
   def deviceInfo = null
@@ -275,9 +287,11 @@ pipeline {
                 echo { \\\"Job\\\": \\\"${env.JOB_TARGET}\\\" } > ${TEST_CONFIG_DIR}/${BUILD_NUMBER}.json
                 ls -la ${TEST_CONFIG_DIR}
               """
-              def mountCommands = hwTestUtils.setup_mount_commands(CONF_FILE_PATH, env.TEST_TARGET, env.DEVICE_NAME)
-              env.MOUNT_CMD = mountCommands.mount_cmd
-              env.UNMOUNT_CMD = mountCommands.unmount_cmd
+              if (env.ORIN_ARTIFACT_ROOT_MODE != 'true') {
+                def mountCommands = hwTestUtils.setup_mount_commands(CONF_FILE_PATH, env.TEST_TARGET, env.DEVICE_NAME)
+                env.MOUNT_CMD = mountCommands.mount_cmd
+                env.UNMOUNT_CMD = mountCommands.unmount_cmd
+              }
             }
           }
         }
@@ -292,26 +306,43 @@ pipeline {
                 if (!img_path) {
                   error("Unable to derive image file from OCI image '${params.OCI_IMAGE_REF}'")
                 }
+              } else if (env.ORIN_ARTIFACT_ROOT_MODE == 'true') {
+                if (params.USE_LEGACY_DD_FLASH) {
+                  error("USE_LEGACY_DD_FLASH is not supported for Orin artifact-root flashing")
+                }
+                def flashSetup = hwTestUtils.prepare_orin_artifact_root_flash(
+                  params.IMG_URL,
+                  TMP_IMG_DIR,
+                  env.BUILD_TARGET,
+                  env.TEST_TARGET,
+                  params.FLASH_TARGET_DRIVE
+                )
+                env.FLASH_TARGET_DRIVE = flashSetup.flash_target_drive
+                env.FLASH_INPUT_PATH = flashSetup.flash_input_path
+                env.ORIN_FLASH_ENTRYPOINT = flashSetup.flasher_entrypoint
+                env.ORIN_FLASH_PACKAGE_ATTR = flashSetup.flasher_package_attr
               } else {
                 img_path = artifactSupport.run_wget(params.IMG_URL, TMP_IMG_DIR)
               }
-              println "Downloaded image to workspace: ${img_path}"
-              if (params.USE_LEGACY_DD_FLASH) {
-                // Uncompress for the legacy dd flashing path.
-                if(img_path.endsWith(".zst")) {
-                  sh "zstd -dfv ${img_path}"
-                  // env.IMG_PATH stores the path to the uncompressed image
-                  env.IMG_PATH = img_path.substring(0, img_path.lastIndexOf('.'))
+              if (env.ORIN_ARTIFACT_ROOT_MODE != 'true') {
+                println "Downloaded image to workspace: ${img_path}"
+                if (params.USE_LEGACY_DD_FLASH) {
+                  // Uncompress for the legacy dd flashing path.
+                  if(img_path.endsWith('.zst')) {
+                    sh "zstd -dfv ${img_path}"
+                    // env.IMG_PATH stores the path to the uncompressed image
+                    env.IMG_PATH = img_path.substring(0, img_path.lastIndexOf('.'))
+                  } else {
+                    env.IMG_PATH = img_path
+                  }
+                  println "Uncompressed image at: ${env.IMG_PATH}"
+                  env.INSTALLER_FLOW = env.IMG_PATH.endsWith('.iso') ? 'true' : env.INSTALLER_FLOW
                 } else {
-                  env.IMG_PATH = img_path
+                  // flash-script handles .zst natively; pass the original download path.
+                  env.FLASH_INPUT_PATH = img_path
+                  env.INSTALLER_FLOW = img_path.endsWith('.iso') ? 'true' : env.INSTALLER_FLOW
+                  println "Flash input: ${env.FLASH_INPUT_PATH}"
                 }
-                println "Uncompressed image at: ${env.IMG_PATH}"
-                env.INSTALLER_FLOW = env.IMG_PATH.endsWith(".iso") ? 'true' : env.INSTALLER_FLOW
-              } else {
-                // flash-script handles .zst natively; pass the original download path.
-                env.FLASH_INPUT_PATH = img_path
-                env.INSTALLER_FLOW = img_path.endsWith(".iso") ? 'true' : env.INSTALLER_FLOW
-                println "Flash input: ${env.FLASH_INPUT_PATH}"
               }
             }
           }
@@ -320,48 +351,61 @@ pipeline {
           when { expression { params && (params.IMG_URL || params.OCI_IMAGE_REF) } }
           steps {
             script {
-              def dev = hwTestUtils.resolve_flash_target(CONF_FILE_PATH, env.DEVICE_NAME, env.MOUNT_CMD, env.UNMOUNT_CMD)
-              if (params.USE_LEGACY_DD_FLASH) {
-                // Wipe possible ZFS leftovers, more details here:
-                // https://github.com/tiiuae/ghaf/blob/454b18bc/packages/installer/ghaf-installer.sh#L75
-                if(env.TEST_TARGET.contains("lenovo-x1")) {
-                  echo "Wiping filesystem..."
-                  def SECTOR = 512
-                  def MIB_TO_SECTORS = 20480
-                  // Disk size in 512-byte sectors
-                  def SECTORS = sh(script: "/run/wrappers/bin/sudo blockdev --getsz ${dev}", returnStdout: true).trim()
-                  // Unmount possible mounted filesystems
-                  sh "sync; /run/wrappers/bin/sudo umount -q ${dev}* || true"
-                  // Wipe first 10MiB of disk
-                  sh "/run/wrappers/bin/sudo dd if=/dev/zero of=${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} conv=fsync status=none"
-                  // Wipe last 10MiB of disk
-                  sh "/run/wrappers/bin/sudo dd if=/dev/zero of=${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} seek=\$(( ${SECTORS} - ${MIB_TO_SECTORS} )) conv=fsync status=none"
-                }
-                // Write the image
-                sh "/run/wrappers/bin/sudo dd if=${env.IMG_PATH} of=${dev} bs=1M status=progress conv=fsync"
-              } else {
-                if (env.FLASH_INPUT_PATH.endsWith('.raw')) {
-                  error("flash-script does not support '.raw' images. Enable USE_LEGACY_DD_FLASH to flash '${env.FLASH_INPUT_PATH}' with dd.")
-                }
-                def ghafFlakeRef = hwTestUtils.resolve_ghaf_flake_ref(params.GHAF_FLAKE_REF, params.IMG_URL, env.OCI_SOURCE_REF)
-                if (!ghafFlakeRef) {
-                  if (params.OCI_IMAGE_REF) {
-                    error("Missing GHAF_FLAKE_REF and unable to derive it from OCI image '${params.OCI_IMAGE_REF}'. Set GHAF_FLAKE_REF or enable USE_LEGACY_DD_FLASH.")
-                  }
-                  error("Missing GHAF_FLAKE_REF and unable to derive Ghaf commit from IMG_URL '${params.IMG_URL}'. Set GHAF_FLAKE_REF or enable USE_LEGACY_DD_FLASH.")
-                }
-                println "Building flash-script from GHAF_FLAKE_REF: ${ghafFlakeRef}"
-                def flashScriptPath = artifactSupport.run_cmd(
-                  "nix build --no-link --print-out-paths '${ghafFlakeRef}#packages.x86_64-linux.flash-script'"
+              if (env.ORIN_ARTIFACT_ROOT_MODE == 'true') {
+                hwTestUtils.run_orin_artifact_root_flash(
+                  params.GHAF_FLAKE_REF,
+                  params.IMG_URL,
+                  env.OCI_SOURCE_REF,
+                  params.OCI_IMAGE_REF,
+                  env.ORIN_FLASH_PACKAGE_ATTR,
+                  env.ORIN_FLASH_ENTRYPOINT,
+                  env.FLASH_TARGET_DRIVE,
+                  env.FLASH_INPUT_PATH
                 )
-                // flash-script validates /dev/sdX format; resolve the by-id symlink.
-                def resolved_dev = artifactSupport.run_cmd("/run/wrappers/bin/sudo readlink -f ${dev}")
-                sh "/run/wrappers/bin/sudo ${flashScriptPath}/bin/flash-script -d ${resolved_dev} -i ${env.FLASH_INPUT_PATH} -f"
+              } else {
+                def dev = hwTestUtils.resolve_flash_target(CONF_FILE_PATH, env.DEVICE_NAME, env.MOUNT_CMD, env.UNMOUNT_CMD)
+                if (params.USE_LEGACY_DD_FLASH) {
+                  // Wipe possible ZFS leftovers, more details here:
+                  // https://github.com/tiiuae/ghaf/blob/454b18bc/packages/installer/ghaf-installer.sh#L75
+                  if(env.TEST_TARGET.contains("lenovo-x1")) {
+                    echo "Wiping filesystem..."
+                    def SECTOR = 512
+                    def MIB_TO_SECTORS = 20480
+                    // Disk size in 512-byte sectors
+                    def SECTORS = sh(script: "/run/wrappers/bin/sudo blockdev --getsz ${dev}", returnStdout: true).trim()
+                    // Unmount possible mounted filesystems
+                    sh "sync; /run/wrappers/bin/sudo umount -q ${dev}* || true"
+                    // Wipe first 10MiB of disk
+                    sh "/run/wrappers/bin/sudo dd if=/dev/zero of=${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} conv=fsync status=none"
+                    // Wipe last 10MiB of disk
+                    sh "/run/wrappers/bin/sudo dd if=/dev/zero of=${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} seek=\$(( ${SECTORS} - ${MIB_TO_SECTORS} )) conv=fsync status=none"
+                  }
+                  // Write the image
+                  sh "/run/wrappers/bin/sudo dd if=${env.IMG_PATH} of=${dev} bs=1M status=progress conv=fsync"
+                } else {
+                  if (env.FLASH_INPUT_PATH.endsWith('.raw')) {
+                    error("flash-script does not support '.raw' images. Enable USE_LEGACY_DD_FLASH to flash '${env.FLASH_INPUT_PATH}' with dd.")
+                  }
+                  def ghafFlakeRef = hwTestUtils.resolve_ghaf_flake_ref(params.GHAF_FLAKE_REF, params.IMG_URL, env.OCI_SOURCE_REF)
+                  if (!ghafFlakeRef) {
+                    if (params.OCI_IMAGE_REF) {
+                      error("Missing GHAF_FLAKE_REF and unable to derive it from OCI image '${params.OCI_IMAGE_REF}'. Set GHAF_FLAKE_REF or enable USE_LEGACY_DD_FLASH.")
+                    }
+                    error("Missing GHAF_FLAKE_REF and unable to derive Ghaf commit from IMG_URL '${params.IMG_URL}'. Set GHAF_FLAKE_REF or enable USE_LEGACY_DD_FLASH.")
+                  }
+                  println "Building flash-script from GHAF_FLAKE_REF: ${ghafFlakeRef}"
+                  def flashScriptPath = artifactSupport.run_cmd(
+                    "nix build --no-link --print-out-paths '${ghafFlakeRef}#packages.x86_64-linux.flash-script'"
+                  )
+                  // flash-script validates /dev/sdX format; resolve the by-id symlink.
+                  def resolved_dev = artifactSupport.run_cmd("/run/wrappers/bin/sudo readlink -f ${dev}")
+                  sh "/run/wrappers/bin/sudo ${flashScriptPath}/bin/flash-script -d ${resolved_dev} -i ${env.FLASH_INPUT_PATH} -f"
+                }
+                // Unmount
+                sh "${env.UNMOUNT_CMD}"
+                hwTestUtils.assert_flash_target_unmounted(dev)
               }
               env.FLASHED = 'true'
-              // Unmount
-              sh "${env.UNMOUNT_CMD}"
-              hwTestUtils.assert_flash_target_unmounted(dev)
               currentBuild.description = "${currentBuild.description}<br>✅ Device flashed"
             }
           }

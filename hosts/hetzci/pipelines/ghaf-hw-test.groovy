@@ -31,7 +31,10 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
     string(name: 'CI_TEST_REPO_URL', defaultValue: 'https://github.com/tiiuae/ci-test-automation.git', description: 'Select ci-test-automation repository.'),
     string(name: 'CI_TEST_REPO_BRANCH', defaultValue: 'main', description: 'Select ci-test-automation branch to checkout.'),
     string(name: 'OCI_IMAGE_REF', defaultValue: '', description: 'Published OCI image reference.'),
-    string(name: 'IMG_URL', defaultValue: '', description: 'Target image url.'),
+    string(
+      name: 'IMG_URL',
+      defaultValue: '',
+      description: 'Target image URL. For Orin artifact-root flashing, use the target artifact root URL instead.'),
     string(
       name: 'TEST_TARGET',
       defaultValue: '',
@@ -41,6 +44,10 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
       defaultValue: '',
       description: 'Concrete device tag for agent selection. If empty, derive it from TEST_TARGET.'),
     string(name: 'GHAF_FLAKE_REF', defaultValue: '', description: 'Pinned Ghaf flake reference for flash-script. If empty, derive it from OCI metadata or IMG_URL commit.'),
+    string(
+      name: 'FLASH_TARGET_DRIVE',
+      defaultValue: 'usb',
+      description: 'Flash target drive for the Orin initrd flasher, for example usb, nvme, or emmc.'),
     string(name: 'TESTSET', defaultValue: '_relayboot_', description: 'Target testset, e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.'),
     string(name: 'TESTAGENT_HOST', defaultValue: null, description: 'Target testagent host, e.g.: dev, prod, release'),
     booleanParam(name: 'SECUREBOOT', defaultValue: false, description: 'Test on secure boot enabled hardware'),
@@ -61,7 +68,7 @@ def init() {
   def imgUrl = params.IMG_URL?.trim()
   env.OCI_TARGET = ''
   env.OCI_SOURCE_REF = ''
-    env.OCI_IMAGE_REVISION = ''
+  env.OCI_IMAGE_REVISION = ''
   if (ociImageRef) {
     def annotations = artifactSupport.oci_annotations(ociImageRef)
     env.OCI_TARGET = annotations[TARGET_ANNOTATION] ?: ''
@@ -74,13 +81,20 @@ def init() {
   env.BUILD_TARGET = hwTestUtils.derive_target_name(imgUrl, env.OCI_TARGET) ?: ''
   env.TEST_TARGET = params.TEST_TARGET?.trim() ?: env.BUILD_TARGET ?: ''
   env.JOB_TARGET = env.BUILD_TARGET ?: env.TEST_TARGET
+  env.ORIN_ARTIFACT_ROOT_MODE = hwTestUtils.is_orin_artifact_root_mode(
+    env.TEST_TARGET,
+    env.BUILD_TARGET,
+    imgUrl,
+    ociImageRef
+  ) ? 'true' : 'false'
   env.TESTSET = params.TESTSET ?: ''
-  env.INSTALLER_FLOW = env.BUILD_TARGET.contains("installer") ? 'true' : 'false'
+  def installerTarget = env.BUILD_TARGET ?: env.TEST_TARGET
+  env.INSTALLER_FLOW = installerTarget.contains("installer") ? 'true' : 'false'
   def explicitDeviceTag = params.DEVICE_TAG?.trim()
   // Resolve the target here as well for controller-side fail-fast validation and
   // device/agent selection. The agent-side Resolve target stage repeats this so
   // it can initialize runtime state after node allocation.
-  if (imgUrl && !env.BUILD_TARGET) {
+  if (imgUrl && !env.BUILD_TARGET && !env.TEST_TARGET) {
     error("Unsupported IMG_URL layout '${params.IMG_URL}': expected a path containing commit_<sha>/<target>/...")
   }
   if (!env.TEST_TARGET) {
@@ -288,6 +302,10 @@ pipeline {
                 if (!provenance_path || !sig_path) {
                   error("Unable to derive provenance files from OCI referrer '${provenanceRef}'")
                 }
+              } else if (env.ORIN_ARTIFACT_ROOT_MODE == 'true') {
+                def urls = artifactSupport.orin_artifact_root_urls(params.IMG_URL)
+                provenance_path = artifactSupport.run_wget(urls.provenance_url, TMP_IMG_DIR)
+                sig_path = artifactSupport.run_wget(urls.provenance_signature_url, TMP_IMG_DIR)
               } else {
                 def split = split_img_url(params.IMG_URL)
                 def artifacts_url = split["artifacts_url"]
@@ -314,6 +332,18 @@ pipeline {
                 if (!img_path || !sig_path) {
                   error("Unable to derive image files from OCI image '${params.OCI_IMAGE_REF}'")
                 }
+              } else if (env.ORIN_ARTIFACT_ROOT_MODE == 'true') {
+                def flashSetup = hwTestUtils.prepare_orin_artifact_root_flash(
+                  params.IMG_URL,
+                  TMP_IMG_DIR,
+                  env.BUILD_TARGET,
+                  env.TEST_TARGET,
+                  params.FLASH_TARGET_DRIVE
+                )
+                env.FLASH_TARGET_DRIVE = flashSetup.flash_target_drive
+                env.FLASH_INPUT_PATH = flashSetup.flash_input_path
+                env.ORIN_FLASH_ENTRYPOINT = flashSetup.flasher_entrypoint
+                env.ORIN_FLASH_PACKAGE_ATTR = flashSetup.flasher_package_attr
               } else {
                 img_path = artifactSupport.run_wget(params.IMG_URL, TMP_IMG_DIR)
                 def split = split_img_url(params.IMG_URL)
@@ -323,42 +353,57 @@ pipeline {
                 def sig_url = "${artifacts_url}/${target}/${img_relpath}.sig"
                 sig_path = artifactSupport.run_wget(sig_url, TMP_IMG_DIR)
               }
-              println "Downloaded image to workspace: ${img_path}"
-              println "Downloaded SLSA signature file to workspace: ${sig_path}"
-              sh "verify-signature image ${img_path} ${sig_path}"
-              // flash-script handles .zst natively; pass the original download path.
-              env.FLASH_INPUT_PATH = img_path
-              env.INSTALLER_FLOW = img_path.endsWith(".iso") ? 'true' : env.INSTALLER_FLOW
-              println "Flash input: ${env.FLASH_INPUT_PATH}"
+              if (env.ORIN_ARTIFACT_ROOT_MODE != 'true') {
+                println "Downloaded image to workspace: ${img_path}"
+                println "Downloaded SLSA signature file to workspace: ${sig_path}"
+                sh "verify-signature image ${img_path} ${sig_path}"
+                // flash-script handles .zst natively; pass the original download path.
+                env.FLASH_INPUT_PATH = img_path
+                env.INSTALLER_FLOW = img_path.endsWith('.iso') ? 'true' : env.INSTALLER_FLOW
+                println "Flash input: ${env.FLASH_INPUT_PATH}"
+              }
             }
           }
         }
         stage('Flash') {
           steps {
             script {
-              def mountCommands = hwTestUtils.setup_mount_commands(CONF_FILE_PATH, env.TEST_TARGET, env.DEVICE_NAME)
-              env.MOUNT_CMD = mountCommands.mount_cmd
-              env.UNMOUNT_CMD = mountCommands.unmount_cmd
-              def dev = hwTestUtils.resolve_flash_target(CONF_FILE_PATH, env.DEVICE_NAME, env.MOUNT_CMD, env.UNMOUNT_CMD)
-              def ghafFlakeRef = hwTestUtils.resolve_ghaf_flake_ref(params.GHAF_FLAKE_REF, params.IMG_URL, env.OCI_SOURCE_REF)
-              if (!ghafFlakeRef) {
-                if (params.OCI_IMAGE_REF) {
-                  error("Missing GHAF_FLAKE_REF and unable to derive it from OCI image '${params.OCI_IMAGE_REF}'")
+              if (env.ORIN_ARTIFACT_ROOT_MODE == 'true') {
+                env.GHAF_FLAKE_REF = hwTestUtils.run_orin_artifact_root_flash(
+                  params.GHAF_FLAKE_REF,
+                  params.IMG_URL,
+                  env.OCI_SOURCE_REF,
+                  params.OCI_IMAGE_REF,
+                  env.ORIN_FLASH_PACKAGE_ATTR,
+                  env.ORIN_FLASH_ENTRYPOINT,
+                  env.FLASH_TARGET_DRIVE,
+                  env.FLASH_INPUT_PATH
+                )
+              } else {
+                def ghafFlakeRef = hwTestUtils.resolve_ghaf_flake_ref(params.GHAF_FLAKE_REF, params.IMG_URL, env.OCI_SOURCE_REF)
+                if (!ghafFlakeRef) {
+                  if (params.OCI_IMAGE_REF) {
+                    error("Missing GHAF_FLAKE_REF and unable to derive it from OCI image '${params.OCI_IMAGE_REF}'")
+                  }
+                  error("Missing GHAF_FLAKE_REF and unable to derive Ghaf commit from IMG_URL '${params.IMG_URL}'")
                 }
-                error("Missing GHAF_FLAKE_REF and unable to derive Ghaf commit from IMG_URL '${params.IMG_URL}'")
+                env.GHAF_FLAKE_REF = ghafFlakeRef
+                def mountCommands = hwTestUtils.setup_mount_commands(CONF_FILE_PATH, env.TEST_TARGET, env.DEVICE_NAME)
+                env.MOUNT_CMD = mountCommands.mount_cmd
+                env.UNMOUNT_CMD = mountCommands.unmount_cmd
+                def dev = hwTestUtils.resolve_flash_target(CONF_FILE_PATH, env.DEVICE_NAME, env.MOUNT_CMD, env.UNMOUNT_CMD)
+                println "Building flash-script from GHAF_FLAKE_REF: ${ghafFlakeRef}"
+                def flashScriptPath = artifactSupport.run_cmd(
+                  "nix build --no-link --print-out-paths '${ghafFlakeRef}#packages.x86_64-linux.flash-script'"
+                )
+                // flash-script validates /dev/sdX format; resolve the by-id symlink
+                def resolved_dev = artifactSupport.run_cmd("/run/wrappers/bin/sudo readlink -f ${dev}")
+                sh "/run/wrappers/bin/sudo ${flashScriptPath}/bin/flash-script -d ${resolved_dev} -i ${env.FLASH_INPUT_PATH} -f"
+                // Unmount
+                sh "${env.UNMOUNT_CMD}"
+                hwTestUtils.assert_flash_target_unmounted(dev)
               }
-              env.GHAF_FLAKE_REF = ghafFlakeRef
-              println "Building flash-script from GHAF_FLAKE_REF: ${ghafFlakeRef}"
-              def flashScriptPath = artifactSupport.run_cmd(
-                "nix build --no-link --print-out-paths '${ghafFlakeRef}#packages.x86_64-linux.flash-script'"
-              )
-              // flash-script validates /dev/sdX format; resolve the by-id symlink
-              def resolved_dev = artifactSupport.run_cmd("/run/wrappers/bin/sudo readlink -f ${dev}")
-              sh "/run/wrappers/bin/sudo ${flashScriptPath}/bin/flash-script -d ${resolved_dev} -i ${env.FLASH_INPUT_PATH} -f"
               env.FLASHED = 'true'
-              // Unmount
-              sh "${env.UNMOUNT_CMD}"
-              hwTestUtils.assert_flash_target_unmounted(dev)
             }
           }
         }
