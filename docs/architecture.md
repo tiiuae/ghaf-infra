@@ -230,6 +230,8 @@ The ghaf-infra repository has its own GitHub Actions workflows
 - `codeql.yml` — CodeQL static analysis on Python code.
 - `dependency-review.yml` — blocks PRs that introduce known-vulnerable
   dependencies.
+- `flakevuln.yml` — scheduled and manual vulnerability scanning for
+  `nixosConfigurations.hetzci-prod.config.system.build.toplevel`.
 - `scorecards.yml` — [OSSF Scorecard](https://securityscorecards.dev/)
   supply chain security analysis.
 
