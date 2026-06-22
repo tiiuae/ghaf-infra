@@ -344,12 +344,16 @@ def create_pipeline(
             def oci_repository =
               "ghaf/${env.JOB_BASE_NAME.replaceFirst('^ghaf-', '')}/${build_target_name.replaceFirst('^packages\\.', '')}"
             def oci_result_json = "${output}/oci-result.json"
+            def oci_tags = []
+            oci_tags << "${ci_env}-latest"
+            def oci_alias_args = oci_tags.collect { "--tag '${it}'" }.join(" \\\n                ")
+            def oci_alias_args_block = oci_alias_args ? " \\\n                ${oci_alias_args}" : ""
             sh """
               oci-publish target \
                 --target-dir '${output}' \
                 --repository '${oci_repository}' \
-                --tag '${immutable_tag}' \
-                --result-json '${oci_result_json}'
+                --primary-tag '${immutable_tag}' \
+                --result-json '${oci_result_json}'${oci_alias_args_block}
             """
             oci_result = readJSON file: oci_result_json
           }
@@ -357,6 +361,7 @@ def create_pipeline(
       }
 
       if (!normalized_test_runs.isEmpty()) {
+        def tests_completed = true
         try {
           def test_branches = [:]
           def runCount = normalized_test_runs.size()
@@ -424,6 +429,9 @@ def create_pipeline(
               )
             }
           }
+        } catch (Exception e) {
+          tests_completed = false
+          throw e
         } finally {
           stage("Publish test results ${build_shortname}") {
             artifactSupport.with_controller_workspace(ghaf_checkout) {
@@ -449,26 +457,23 @@ def create_pipeline(
                   tests: finalTestEntries,
                 ]))
               )
-            }
-          }
-        }
-        run_optional_stage(
-          ci_env != "vm",
-          "Publish OCI test results ${build_shortname}"
-        ) {
-          artifactSupport.with_controller_workspace(ghaf_checkout) {
-            if (sh(
-              script: "test -d '${output}/test-results'",
-              returnStatus: true
-            ) != 0) {
-              error("Missing test results for ${build_shortname}: ${output}/test-results")
-            }
-            withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
-              sh """
-                oci-publish test-results \
-                  --results-dir '${output}/test-results' \
-                  --subject-reference '${oci_result.primary.reference}'
-              """
+              if (ci_env != "vm" && tests_completed) {
+                if (sh(
+                  script: "test -d '${output}/test-results'",
+                  returnStatus: true
+                ) != 0) {
+                  error("Missing test results for ${build_shortname}: ${output}/test-results")
+                }
+                withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
+                  sh """
+                    oci-publish test-results \
+                      --results-dir '${output}/test-results' \
+                      --subject-reference '${oci_result.primary.reference}'
+                  """
+                }
+              } else if (ci_env != "vm") {
+                echo("Skipping OCI test result publish for failed ${build_shortname} tests")
+              }
             }
           }
         }

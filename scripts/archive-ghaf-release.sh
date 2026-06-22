@@ -234,7 +234,7 @@ pull_artifacts_from_oci() {
     mkdir -p "$target_dir"
     echo "[+] Pulling release artifacts from OCI: $target_reference"
     manifest_log="$target_dir/oras-manifest-fetch.log"
-    if ! oras manifest fetch --format json "$target_reference" >/dev/null 2>"$manifest_log"; then
+    if ! resolved_digest=$(oras resolve "$target_reference" 2>"$manifest_log"); then
       if grep -Eiq "(not found|manifest unknown|name unknown)" "$manifest_log"; then
         echo "[+] Skipping missing OCI target: $target_reference"
         rm -rf "$target_dir"
@@ -245,18 +245,20 @@ pull_artifacts_from_oci() {
       exit 1
     fi
     rm -f "$manifest_log"
+    resolved_reference="$OCI_REPOSITORY_PREFIX/$oci_target_name@$resolved_digest"
+    printf '%s\n' "$resolved_reference" >"$target_dir/oci-reference"
 
     if ! (
       cd "$target_dir"
-      ghaf-fetch --all "$target_reference"
+      ghaf-fetch --all "$resolved_reference"
     ); then
-      print_err "failed pulling OCI target: $target_reference"
+      print_err "failed pulling OCI target: $resolved_reference"
       exit 1
     fi
 
     manifest="$target_dir/manifest.json"
     if [[ ! -f $manifest ]]; then
-      print_err "missing manifest pulled from OCI reference: $target_reference"
+      print_err "missing manifest pulled from OCI reference: $resolved_reference"
       exit 1
     fi
 
@@ -282,6 +284,30 @@ pull_artifacts_from_oci() {
   fi
 
   ARTIFACTS="$artifactsdir"
+}
+
+tag_oci_release_artifacts() {
+  for dir in "$ARTIFACTS"/*/; do
+    target_name="$(basename "$dir")"
+    if ! is_release_target "$target_name"; then
+      continue
+    fi
+
+    source_reference_file="$dir/oci-reference"
+    if [[ ! -f $source_reference_file ]]; then
+      print_err "missing resolved OCI reference for release artifact: $target_name"
+      exit 1
+    fi
+    source_reference="$(<"$source_reference_file")"
+
+    echo "[+] Tagging OCI release artifact: $source_reference"
+    oras manifest fetch --registry-config "$OCI_REGISTRY_CONFIG" "$source_reference" >/dev/null
+    oras tag \
+      --registry-config "$OCI_REGISTRY_CONFIG" \
+      "$source_reference" \
+      "$GHAF_VERSION" \
+      ghaf-latest
+  done
 }
 
 prepare_artifacts() {
@@ -361,7 +387,19 @@ main() {
 
   # Prepare the release archive from artifacts
   if [[ -n $OCI_TAG ]]; then
+    if [[ -z ${OCI_PASSWORD:-} ]]; then
+      print_err "OCI_PASSWORD is required when tagging release artifacts"
+      exit 1
+    fi
+    exit_unless_command_exists oras
     exit_unless_command_exists ghaf-fetch
+    OCI_REGISTRY_CONFIG="$TMPDIR/oras-auth/config.json"
+    mkdir -p "${OCI_REGISTRY_CONFIG%/*}"
+    printf '%s\n' "$OCI_PASSWORD" | oras login \
+      -u "${OCI_USERNAME:-jenkins}" \
+      --password-stdin \
+      --registry-config "$OCI_REGISTRY_CONFIG" \
+      "${OCI_REPOSITORY_PREFIX%%/*}"
     pull_artifacts_from_oci "$OCI_TAG"
   else
     ARTIFACTS="$(realpath "$ARTIFACTS")"
@@ -372,6 +410,10 @@ main() {
   echo "[+] Uploading release tar archives to Hetzner"
   mc alias set hetzner "$STORAGE_URL" "$ACCESS_KEY" "$SECRET_KEY" >/dev/null
   mc mirror "$TMPDIR/archived" "hetzner/$BUCKET/$GHAF_VERSION"
+
+  if [[ -n $OCI_TAG ]]; then
+    tag_oci_release_artifacts
+  fi
 }
 
 main "$@"

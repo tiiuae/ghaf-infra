@@ -212,8 +212,8 @@ def publish_target_artifacts(
     repository: str,
     common_args: list[str],
     primary_reference: str,
-    immutable_tag: str,
-    mutable_tags: list[str],
+    primary_tag: str,
+    tags: list[str],
     subject_uses_digest: bool,
 ) -> int:
     """Publish the primary artifact, referrers, and result metadata."""
@@ -280,13 +280,13 @@ def publish_target_artifacts(
             signature_relpath=signature_relpath,
         )
 
-    if mutable_tags:
-        run_command(["oras", "tag", *common_args, primary_reference, *mutable_tags])
+    if tags:
+        run_command(["oras", "tag", *common_args, primary_reference, *tags])
 
     result = {
         "target": target,
         "repository": repository,
-        "immutable_tag": immutable_tag,
+        "primary_tag": primary_tag,
         "primary": {
             "artifact_type": TARGET_ARTIFACT_TYPE,
             "media_type": primary_output["mediaType"],
@@ -295,7 +295,7 @@ def publish_target_artifacts(
             "tag_reference": primary_reference,
         },
         "referrers": referrers,
-        "mutable_tags": mutable_tags,
+        "tags": tags,
     }
     write_json(result_json, result)
 
@@ -321,10 +321,10 @@ def publish_target(args: argparse.Namespace) -> int:
     password = os.environ.get("OCI_PASSWORD", "")
     with oras_common_args(registry, username, password) as common_args:
         if os.environ.get("OCI_LAYOUT_PATH", ""):
-            primary_reference = f"{repository}:{args.tag}"
+            primary_reference = f"{repository}:{args.primary_tag}"
             subject_uses_digest = False
         else:
-            primary_reference = f"{registry}/{repository}:{args.tag}"
+            primary_reference = f"{registry}/{repository}:{args.primary_tag}"
             subject_uses_digest = True
         return publish_target_artifacts(
             manifest=manifest,
@@ -333,8 +333,8 @@ def publish_target(args: argparse.Namespace) -> int:
             repository=repository,
             common_args=common_args,
             primary_reference=primary_reference,
-            immutable_tag=args.tag,
-            mutable_tags=list(args.mutable_tags),
+            primary_tag=args.primary_tag,
+            tags=list(args.tags),
             subject_uses_digest=subject_uses_digest,
         )
 
@@ -381,11 +381,9 @@ def build_parser() -> argparse.ArgumentParser:
     target_parser = subparsers.add_parser("target", help="publish one target artifact")
     target_parser.add_argument("-d", "--target-dir", required=True)
     target_parser.add_argument("-r", "--repository", required=True)
-    target_parser.add_argument("-t", "--tag", required=True)
+    target_parser.add_argument("--primary-tag", required=True)
     target_parser.add_argument("-o", "--result-json", required=True)
-    target_parser.add_argument(
-        "-m", "--mutable-tag", action="append", default=[], dest="mutable_tags"
-    )
+    target_parser.add_argument("-t", "--tag", action="append", default=[], dest="tags")
     target_parser.set_defaults(handler=publish_target)
 
     test_results_parser = subparsers.add_parser(
