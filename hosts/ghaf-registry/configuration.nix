@@ -40,6 +40,12 @@ let
             deleteUntagged = true;
             keepTags = [
               {
+                patterns = [
+                  ".*-latest"
+                  "ghaf-.*"
+                ];
+              }
+              {
                 patterns = [ "release-.*" ];
                 # Keep at least three builds in each repository
                 mostRecentlyPushedCount = 3;

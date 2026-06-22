@@ -123,9 +123,11 @@ pipeline {
                   env.BUCKET=params.BUCKET
                 }
                 if (env.OCI_TAG) {
-                  sh """
-                    archive-ghaf-release -o "$OCI_TAG" -t "${params.GHAF_VERSION}"
-                  """
+                  withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
+                    sh """
+                      archive-ghaf-release -o "$OCI_TAG" -t "${params.GHAF_VERSION}"
+                    """
+                  }
                 } else {
                   sh """
                     archive-ghaf-release -a "$ARTIFACTS_DIR" -t "${params.GHAF_VERSION}"
