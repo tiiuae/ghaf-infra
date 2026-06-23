@@ -102,7 +102,6 @@ in
         description = "Devices to create agent nodes for";
         default = [
           "darter-pro"
-          "dell-7330"
           "lenovo-x1"
           "orin-agx"
           "orin-agx-64"

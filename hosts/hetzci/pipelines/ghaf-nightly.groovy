@@ -48,12 +48,7 @@ def TARGETS = [
     testset: null, sbom: true,
   ],
   [ target: "packages.x86_64-linux.intel-laptop-low-mem-debug",
-    sbom: true,
-    tests: [[
-      device_tag: 'dell-7330',
-      variant: 'debug',
-      testset: '_relayboot_regression_',
-    ]],
+    testset: null, sbom: true,
   ],
   [ target: "packages.aarch64-linux.nvidia-jetson-orin-agx-debug",
     testset: '_relayboot_regression_', uefisign: true, sbom: true,
