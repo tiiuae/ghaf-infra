@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
+SPDX-FileCopyrightText: 2022-2026 TII (SSRC) and the Ghaf contributors
 SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 
@@ -37,38 +37,43 @@ The `alias-list` task lists the alias names for ghaf-infra targets. Alias is sim
 
 Current ghaf-infra targets:
 
-╒════════════════════╤════════════════════╤═════════════════╕
-│ alias              │ nixosconfig        │ hostname        │
-╞════════════════════╪════════════════════╪═════════════════╡
-│ ghaf-auth          │ ghaf-auth          │ 37.27.190.109   │
-│ ghaf-fleetdm       │ ghaf-fleetdm       │ 95.216.169.87   │
-│ ghaf-lighthouse    │ ghaf-lighthouse    │ 65.109.141.136  │
-│ ghaf-log           │ ghaf-log           │ 95.217.177.197  │
-│ ghaf-monitoring    │ ghaf-monitoring    │ 135.181.103.32  │
-│ ghaf-webserver     │ ghaf-webserver     │ 37.27.204.82    │
-│ hetz86-1           │ hetz86-1           │ 37.27.170.242   │
-│ hetz86-builder     │ hetz86-builder     │ 65.108.7.79     │
-│ hetz86-dbg-1       │ hetz86-dbg-1       │ 46.62.194.110   │
-│ hetz86-rel-2       │ hetz86-rel-2       │ 65.21.200.168   │
-│ hetzarm            │ hetzarm            │ 65.21.20.242    │
-│ hetzarm-dbg-1      │ hetzarm-dbg-1      │ 46.62.194.107   │
-│ hetzarm-rel-1      │ hetzarm-rel-1      │ 46.62.196.166   │
-│ hetzci-dbg         │ hetzci-dbg         │ 95.216.200.85   │
-│ hetzci-dev         │ hetzci-dev         │ 157.180.119.138 │
-│ hetzci-prod        │ hetzci-prod        │ 157.180.43.236  │
-│ hetzci-release     │ hetzci-release     │ 95.217.210.252  │
-│ nethsm-gateway     │ nethsm-gateway     │ 192.168.70.11   │
-│ testagent-dbg      │ testagent-dbg      │ 172.18.16.26    │
-│ testagent-dev      │ testagent-dev      │ 172.18.16.33    │
-│ testagent-prod     │ testagent-prod     │ 172.18.16.60    │
-│ testagent-release  │ testagent-release  │ 172.18.16.32    │
-│ testagent2-prod    │ testagent2-prod    │ 172.18.16.25    │
-│ uae-azureci-az86-1 │ uae-azureci-az86-1 │ 20.46.48.30     │
-│ uae-azureci-prod   │ uae-azureci-prod   │ 74.162.68.205   │
-│ uae-lab-node1      │ uae-lab-node1      │ 172.19.16.37    │
-│ uae-nethsm-gateway │ uae-nethsm-gateway │ 172.31.141.51   │
-│ uae-testagent-prod │ uae-testagent-prod │ 172.20.16.24    │
-╘════════════════════╧════════════════════╧═════════════════╛
+╒═══════════════════════╤═══════════════════════╤═════════════════╕
+│ alias                 │ nixosconfig           │ hostname        │
+╞═══════════════════════╪═══════════════════════╪═════════════════╡
+│ ghaf-auth             │ ghaf-auth             │ 37.27.190.109   │
+│ ghaf-fleetdm          │ ghaf-fleetdm          │ 95.216.169.87   │
+│ ghaf-lighthouse       │ ghaf-lighthouse       │ 65.109.141.136  │
+│ ghaf-log              │ ghaf-log              │ 95.217.177.197  │
+│ ghaf-monitoring       │ ghaf-monitoring       │ 135.181.103.32  │
+│ ghaf-registry         │ ghaf-registry         │ 89.167.65.27    │
+│ ghaf-webserver        │ ghaf-webserver        │ 37.27.204.82    │
+│ hetz86-1              │ hetz86-1              │ 37.27.170.242   │
+│ hetz86-builder        │ hetz86-builder        │ 65.108.7.79     │
+│ hetz86-dbg-1          │ hetz86-dbg-1          │ 46.62.194.110   │
+│ hetz86-rel-2          │ hetz86-rel-2          │ 65.21.200.168   │
+│ hetzarm               │ hetzarm               │ 65.21.20.242    │
+│ hetzarm-dbg-1         │ hetzarm-dbg-1         │ 46.62.194.107   │
+│ hetzarm-rel-1         │ hetzarm-rel-1         │ 46.62.196.166   │
+│ hetzci-dbg            │ hetzci-dbg            │ 95.216.200.85   │
+│ hetzci-dev            │ hetzci-dev            │ 157.180.119.138 │
+│ hetzci-prod           │ hetzci-prod           │ 157.180.43.236  │
+│ hetzci-release        │ hetzci-release        │ 95.217.210.252  │
+│ nethsm-gateway        │ nethsm-gateway        │ 192.168.70.11   │
+│ testagent-dbg         │ testagent-dbg         │ 172.18.16.26    │
+│ testagent-dev         │ testagent-dev         │ 172.18.16.33    │
+│ testagent-prod        │ testagent-prod        │ 172.18.16.60    │
+│ testagent-release     │ testagent-release     │ 172.18.16.32    │
+│ testagent2-prod       │ testagent2-prod       │ 172.18.16.25    │
+│ uae-azureci-az86-1    │ uae-azureci-az86-1    │ 20.46.48.30     │
+│ uae-azureci-dev       │ uae-azureci-dev       │ 20.174.185.164  │
+│ uae-azureci-hetzarm-1 │ uae-azureci-hetzarm-1 │ 91.98.90.243    │
+│ uae-azureci-prod      │ uae-azureci-prod      │ 74.162.68.205   │
+│ uae-azureci-registry  │ uae-azureci-registry  │ 40.120.125.69   │
+│ uae-lab-node1         │ uae-lab-node1         │ 172.31.107.42   │
+│ uae-nethsm-gateway    │ uae-nethsm-gateway    │ 172.31.141.51   │
+│ uae-testagent-prod    │ uae-testagent-prod    │ 172.20.16.24    │
+│ uae-testagent2-prod   │ uae-testagent2-prod   │ 172.20.16.25    │
+╘═══════════════════════╧═══════════════════════╧═════════════════╛
 
 ```
 
