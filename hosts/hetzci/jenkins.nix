@@ -271,6 +271,7 @@ in
         "jenkins/casc/extraConfig.yaml".source = pkgs.writeText "extraConfig.yaml" (
           builtins.toJSON cfg.extraCasc
         );
+        "jenkins/casc/jiraToken.yaml".source = ./casc/jiraToken.yaml;
       }
       (lib.mkIf cfg.withCachix {
         "jenkins/casc/cachix.yaml".source = ./casc/cachix.yaml;
