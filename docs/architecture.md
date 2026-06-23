@@ -70,15 +70,15 @@ Build results are pushed to three Cachix binary caches:
 ### Test Agents
 
 Test agents are on-prem machines in the Tampere office with physical hardware
-devices (Orin AGX/NX, Lenovo X1, Dell, etc.) attached. They connect to Jenkins
+devices (Orin AGX/NX, Lenovo X1, etc.) attached. They connect to Jenkins
 controllers over the Nebula overlay and run one Jenkins agent service per
 device, effectively acting as a lock for each piece of hardware.
 
 | Host | Variant | Hardware |
 |---|---|---|
 | `testagent-dbg` | dbg | Orin NX |
-| `testagent-dev` | dev | Orin AGX, Orin NX, Orin AGX-64, Lenovo X1, Dell 7330, Darter Pro |
-| `testagent-prod` | prod | Lenovo X1, Dell 7330, Darter Pro |
+| `testagent-dev` | dev | Orin AGX, Orin NX, Orin AGX-64, Lenovo X1, Darter Pro |
+| `testagent-prod` | prod | Lenovo X1, Darter Pro |
 | `testagent2-prod` | prod | (secondary prod agent) |
 | `testagent-release` | release | Orin AGX, Orin NX, Lenovo X1, Darter Pro |
 

@@ -113,7 +113,7 @@ pipeline {
             }
             if (params.dell_latitude_7330_debug) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.dell-latitude-7330-debug", testset: params.TESTSET ])
+                [ target: "packages.x86_64-linux.dell-latitude-7330-debug", testset: null ])
             }
             if (params.nvidia_jetson_orin_agx_debug_from_x86_64) {
               TARGETS.push(
@@ -191,13 +191,8 @@ pipeline {
               ))
             }
             if (params.intel_laptop_low_mem_debug) {
-              TARGETS.push(addExplicitTests(
-                [ target: "packages.x86_64-linux.intel-laptop-low-mem-debug", uefisign: params.UEFISIGN ],
-                [[
-                  device_tag: 'dell-7330',
-                  variant: 'debug',
-                ]],
-              ))
+              TARGETS.push(
+                [ target: "packages.x86_64-linux.intel-laptop-low-mem-debug", uefisign: params.UEFISIGN, testset: null ])
             }
             if (params.intel_laptop_low_mem_debug_installer) {
               TARGETS.push(

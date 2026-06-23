@@ -73,13 +73,6 @@ private def device_catalog() {
     'x1-sec-boot': [
       name: 'X1-Secure-Boot',
     ],
-    'dell-7330': [
-      name: 'Dell7330',
-      target_substrings: ['dell-latitude-7330'],
-      variants: [
-        'debug': 'dell-latitude-7330-debug',
-      ],
-    ],
     'darter-pro': [
       name: 'DarterPRO',
       target_substrings: ['system76-darp11-b'],

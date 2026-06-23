@@ -23,13 +23,6 @@ def TARGETS = [
       ],
     ],
   ],
-  [ target: "packages.x86_64-linux.intel-laptop-low-mem-debug",
-    tests: [[
-      device_tag: 'dell-7330',
-      variant: 'debug',
-      testset: '_relayboot_pre-merge_',
-    ]],
-  ],
   [ target: "packages.aarch64-linux.nvidia-jetson-orin-agx-debug",
     testset: '_relayboot_pre-merge_',
   ],

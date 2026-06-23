@@ -20,7 +20,6 @@
       "orin-nx"
       "orin-agx-64"
       "lenovo-x1"
-      "dell-7330"
       "darter-pro"
     ];
   };
@@ -62,10 +61,6 @@
     SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTFMF0L2", SYMLINK+="ttyX1", MODE="0666", GROUP="dialout"
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S6XPNS0W606188E", SYMLINK+="ssdX1", MODE="0666", GROUP="dialout"
-
-    # Dell 7330
-    # SSD-drive
-    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S6XNNS0W500904J", SYMLINK+="ssdDELL7330", MODE="0666", GROUP="dialout"
 
     # Darter Pro
     SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTFMF6RS", SYMLINK+="ttyDARTER", MODE="0666", GROUP="dialout"
@@ -141,19 +136,6 @@
           usbhub_serial = "0x99EB9D84";
           ext_drive_by-id = "/dev/ssdX1";
           threads = 20;
-        };
-        Dell7330 = {
-          inherit location;
-          device_id = "00-0b-40-32-ff";
-          netvm_hostname = "ghaf-0188756735";
-          serial_port = "NONE";
-          device_ip_address = "172.18.16.23";
-          socket_ip_address = "NONE";
-          plug_type = "NONE";
-          switch_bot = "Dell7330-dev";
-          usbhub_serial = "5AC2B4AD";
-          ext_drive_by-id = "/dev/ssdDELL7330";
-          threads = 8;
         };
         DarterPRO = {
           inherit location;
