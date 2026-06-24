@@ -38,6 +38,7 @@ in
       ];
       withCachix = false;
       withRegistryPublish = true;
+      withJiraToken = true;
     };
     auth = {
       clientID = "hetzci-prod";
