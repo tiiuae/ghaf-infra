@@ -150,6 +150,11 @@ in
       description = "Add capability to publish build artifacts to the OCI registry";
       default = false;
     };
+    withJiraToken = lib.mkOption {
+      type = lib.types.bool;
+      description = "Expose Jira API token as Jenkins credential";
+      default = false;
+    };
   };
   config = {
     sops = {
@@ -169,6 +174,9 @@ in
         })
         (lib.mkIf cfg.withRegistryPublish {
           oci_registry_password.owner = "jenkins";
+        })
+        (lib.mkIf cfg.withJiraToken {
+          jenkins_jira_token.owner = "jenkins";
         })
       ];
     };
@@ -271,7 +279,6 @@ in
         "jenkins/casc/extraConfig.yaml".source = pkgs.writeText "extraConfig.yaml" (
           builtins.toJSON cfg.extraCasc
         );
-        "jenkins/casc/jiraToken.yaml".source = ./casc/jiraToken.yaml;
       }
       (lib.mkIf cfg.withCachix {
         "jenkins/casc/cachix.yaml".source = ./casc/cachix.yaml;
@@ -287,6 +294,9 @@ in
       })
       (lib.mkIf cfg.withRegistryPublish {
         "jenkins/casc/registryPublish.yaml".source = ./casc/registryPublish.yaml;
+      })
+      (lib.mkIf cfg.withJiraToken {
+        "jenkins/casc/jiraToken.yaml".source = ./casc/jiraToken.yaml;
       })
     ];
 
