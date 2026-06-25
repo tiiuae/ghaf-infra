@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   self,
-  inputs,
   lib,
   config,
   machines,
@@ -11,23 +10,13 @@
 {
   imports = [
     ./disk-config.nix
-    inputs.sops-nix.nixosModules.sops
-    inputs.disko.nixosModules.disko
-    ../../nethsm-gateway/prod/nethsm.nix
-  ]
-  ++ (with self.nixosModules; [
-    common
-    team-devenv
-    user-bmg
-    service-openssh
-    service-nebula
-    service-monitoring
-  ]);
+    ../../nethsm-gateway/common.nix
+    self.nixosModules.user-bmg
+  ];
 
   sops = {
     defaultSopsFile = ./secrets.yaml;
     secrets = {
-      loki_password.owner = "alloy";
       nebula-cert.owner = config.nebula.user;
       nebula-key.owner = config.nebula.user;
     };
@@ -37,7 +26,6 @@
 
   # Assign IP configs because dhcp is disabled in network
   networking = {
-    useDHCP = true;
     interfaces.enp3s0 = {
       ipv4.addresses = [
         {
@@ -64,57 +52,8 @@
     ];
   };
 
-  hardware = {
-    enableRedistributableFirmware = true;
-    cpu.intel.updateMicrocode = true;
-  };
-
-  boot = {
-    loader = {
-      systemd-boot.enable = true;
-      efi.canTouchEfiVariables = true;
-    };
-
-    kernelModules = [ "kvm-intel" ];
-    initrd.availableKernelModules = [
-      "xhci_pci"
-      "thunderbolt"
-      "ahci"
-      "nvme"
-      "usbhid"
-      "usb_storage"
-      "sd_mod"
-    ];
-  };
-
   nethsm.host = "192.168.70.20";
   pkcs11.proxy.listenAddr = machines.uae-nethsm-gateway.nebula_ip;
-
-  services.monitoring = {
-    metrics.enable = true;
-    logs = {
-      enable = true;
-      lokiAddress = "https://monitoring.vedenemo.dev";
-      auth.password_file = config.sops.secrets.loki_password.path;
-    };
-
-    alloy.configFiles.nethsm = # hcl
-      ''
-        local.file_match "nethsm" {
-        	path_targets = [{
-        		__address__ = "localhost",
-        		__path__    = "${config.nethsm.logging.file}",
-        		host        = "${config.networking.hostName}",
-        		job         = "nethsm-log",
-        	}]
-        }
-
-        loki.source.file "nethsm" {
-        	targets               = local.file_match.nethsm.targets
-        	forward_to            = [loki.write.default.receiver]
-        }
-      '';
-  };
 
   nebula = {
     enable = true;
@@ -169,8 +108,4 @@
   services.nebula.networks."vedenemo".staticHostMap = {
     "10.42.42.35" = [ "213.42.107.24:4242" ];
   };
-
-  # This server is only exposed to the internal network
-  # fail2ban only causes issues here
-  services.fail2ban.enable = lib.mkForce false;
 }
