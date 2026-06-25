@@ -13,7 +13,7 @@
     ./disk-config.nix
     inputs.sops-nix.nixosModules.sops
     inputs.disko.nixosModules.disko
-    ../../nethsm-gateway/nethsm.nix
+    ../../nethsm-gateway/prod/nethsm.nix
   ]
   ++ (with self.nixosModules; [
     common
