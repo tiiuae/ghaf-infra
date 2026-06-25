@@ -304,8 +304,12 @@ in
     systemd.services.pkcs11-daemon = {
       wantedBy = [ "multi-user.target" ];
       # assumes we want to always bind to a nebula address
-      after = [ "nebula@${config.nebula.networkName}.service" ];
-      requires = [ "nebula@${config.nebula.networkName}.service" ];
+      after = lib.optionals config.nebula.enable [
+        "nebula@${config.nebula.networkName}.service"
+      ];
+      requires = lib.optionals config.nebula.enable [
+        "nebula@${config.nebula.networkName}.service"
+      ];
 
       environment = {
         PKCS11_DAEMON_SOCKET = "tls://${config.pkcs11.proxy.listenAddr}:${toString config.pkcs11.proxy.listenPort}";
