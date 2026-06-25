@@ -18,7 +18,7 @@
     ipv4.addresses = [
       {
         address = "10.255.255.3";
-        prefixLength = 30;
+        prefixLength = 29;
       }
     ];
   };
