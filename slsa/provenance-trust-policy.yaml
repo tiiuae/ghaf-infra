@@ -3,6 +3,16 @@ signature:
   verify: true
 
 criteria:
+  - id: predicate-type-slsa-provenance-v1
+    description: Provenance predicate type is SLSA Provenance v1
+    required: true
+    cel: predicateType == 'https://slsa.dev/provenance/v1'
+
+  - id: build-type-ghaf-jenkins
+    description: Provenance build type is the Ghaf Jenkins Nix build type
+    required: true
+    cel: predicate.buildDefinition.buildType == 'https://github.com/tiiuae/ghaf-infra/blob/ea938e90/slsa/v1.0/L1/buildtype.md'
+
   - id: target-repo-ghaf
     description: Target repository is tiiuae/ghaf
     required: true

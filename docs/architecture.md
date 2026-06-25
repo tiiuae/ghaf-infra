@@ -205,6 +205,19 @@ Object Storage (an S3-compatible service, bucket `ghaf-artifacts`) using
 minio-client. The [ghaf-archive](https://github.com/tiiuae/ghaf-archive) web
 application provides a browsable frontend to the archived releases.
 
+Release image artifacts also get a signed release-policy attestation after
+their configured hardware tests have completed. The policy is configured in
+`slsa/release-policy.yaml`; each criterion runs, and the `required` flag
+determines whether a failed criterion fails the release step. The attestation
+records the per-criterion result for image signature verification, SLSA
+provenance verification, the pre-test provenance trust policy verdict saved in
+`test-results.json`, SBOM presence, and hardware test status. Jenkins signs the
+attestation with the SLSA provenance signing key and publishes it as an OCI
+referrer without changing the already-published target manifest. Release
+archival requires a passing signed release-policy attestation by default and can
+be bypassed only by setting
+`REQUIRE_RELEASE_ATTESTATION=false` for transitional use.
+
 ### Repository CI (ghaf-infra)
 
 The ghaf-infra repository has its own GitHub Actions workflows
