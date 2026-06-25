@@ -136,8 +136,23 @@ def create_pipeline(
       ],
     ]
     def oci_result = null
+    def provenance_policy_passed = null
+    def provenance_policy_failure = null
     def result_file_for = { Map testRun ->
       "${output}/test-results/${testRun.test_path_key}/result.json"
+    }
+    def write_test_results = { List finalTestEntries ->
+      def testResults = [
+        target: build_target_name,
+        tests: finalTestEntries,
+      ]
+      if (provenance_policy_passed != null) {
+        testResults.provenance_policy_passed = provenance_policy_passed
+      }
+      writeFile(
+        file: "${output}/test-results.json",
+        text: JsonOutput.prettyPrint(JsonOutput.toJson(testResults))
+      )
     }
     def write_manifest = {
       writeFile(
@@ -265,6 +280,25 @@ def create_pipeline(
           }
         }
         run_optional_stage(
+          ci_env == "release" && !target_config.no_image && target_config.provenance_requested,
+          "Provenance policy ${build_shortname}"
+        ) {
+          def policy_status = sh(
+            script: """
+            policy-checker '${output}/attestations/provenance.json' \
+              --sig '${output}/attestations/provenance.json.sig' \
+              --policy /etc/jenkins/provenance-trust-policy.yaml
+            """,
+            returnStatus: true
+          )
+          provenance_policy_passed = policy_status == 0
+          write_test_results([])
+          if (!provenance_policy_passed) {
+            provenance_policy_failure = "Provenance trust policy failed for ${build_shortname}"
+            echo(provenance_policy_failure)
+          }
+        }
+        run_optional_stage(
           !target_config.no_image,
           "Find image ${build_shortname}"
         ) {
@@ -360,6 +394,7 @@ def create_pipeline(
         }
       }
 
+      def test_failure_message = null
       if (!normalized_test_runs.isEmpty()) {
         def tests_completed = true
         try {
@@ -430,8 +465,11 @@ def create_pipeline(
             }
           }
         } catch (Exception e) {
+          if (e.getClass().getName() == 'org.jenkinsci.plugins.workflow.steps.FlowInterruptedException') {
+            throw e
+          }
           tests_completed = false
-          throw e
+          test_failure_message = e.message ?: e.toString()
         } finally {
           stage("Publish test results ${build_shortname}") {
             artifactSupport.with_controller_workspace(ghaf_checkout) {
@@ -450,13 +488,7 @@ def create_pipeline(
                   ])
                 }
               }
-              writeFile(
-                file: "${output}/test-results.json",
-                text: JsonOutput.prettyPrint(JsonOutput.toJson([
-                  target: build_target_name,
-                  tests: finalTestEntries,
-                ]))
-              )
+              write_test_results(finalTestEntries)
               if (ci_env != "vm" && tests_completed) {
                 if (sh(
                   script: "test -d '${output}/test-results'",
@@ -477,6 +509,56 @@ def create_pipeline(
             }
           }
         }
+      }
+      run_optional_stage(
+        ci_env == "release" && !target_config.no_image && target_config.provenance_requested,
+        "Release policy ${build_shortname}"
+      ) {
+        artifactSupport.with_controller_workspace(ghaf_checkout) {
+          def outdir = "${output}/attestations"
+          def policy_status = sh(
+            script: """
+            policy-checker release '${output}' \
+              --oci-result '${output}/oci-result.json' \
+              --policy /etc/jenkins/release-policy.yaml \
+              --out '${outdir}/release-policy.json'
+            """,
+            returnStatus: true
+          )
+          if (
+            policy_status != 0 &&
+            sh(script: "test -f '${outdir}/release-policy.json'", returnStatus: true) != 0
+          ) {
+            error("Release policy failed before writing attestation for ${build_shortname}")
+          }
+
+          withRedundancyRouter("GhafInfraSignProv") { ctx ->
+            sh """
+              openssl pkeyutl -sign -rawin \
+                -inkey "${ctx.uri}" \
+                -out ${outdir}/release-policy.json.sig \
+                -in ${outdir}/release-policy.json
+            """
+          }
+
+          withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
+            sh """
+              oci-publish release-attestation \
+                --target-dir '${output}' \
+                --subject-reference '${oci_result.primary.reference}'
+            """
+          }
+
+          if (policy_status != 0) {
+            unstable("Release policy failed for ${build_shortname}")
+          }
+        }
+      }
+      if (test_failure_message != null) {
+        error("Hardware tests failed for ${build_shortname}: ${test_failure_message}")
+      }
+      if (provenance_policy_failure != null) {
+        error(provenance_policy_failure)
       }
     }
   }

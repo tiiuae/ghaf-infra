@@ -26,14 +26,17 @@ TARGET_ARTIFACT_TYPE = "application/vnd.ghaf.image.v1"
 TARGET_CONFIG_MEDIA_TYPE = "application/vnd.ghaf.manifest.v1+json"
 TEST_RESULTS_ARTIFACT_TYPE = "application/vnd.ghaf.test-results.v1"
 TEST_RESULTS_MEDIA_TYPE = "application/x-tar"
+RELEASE_ATTESTATION_ARTIFACT_TYPE = "application/vnd.ghaf.release-attestation.v1+json"
 REFERRER_MEDIA_TYPES = {
     "provenance": "application/vnd.in-toto+json",
+    "release_policy": RELEASE_ATTESTATION_ARTIFACT_TYPE,
     "sbom_cyclonedx": "application/vnd.cyclonedx+json",
     "sbom_spdx": "application/spdx+json",
     "sbom_csv": "text/csv",
 }
 REFERRER_DESCRIPTIONS = {
     "provenance": "SLSA Provenance",
+    "release_policy": "Ghaf release policy attestation",
     "sbom_cyclonedx": "CycloneDX SBOM",
     "sbom_spdx": "SPDX SBOM",
     "sbom_csv": "CSV SBOM",
@@ -257,7 +260,7 @@ def publish_target_artifacts(
     attestations = manifest["attestations"]
 
     referrers: dict[str, Any] = {}
-    for role in REFERRER_MEDIA_TYPES:
+    for role in ("provenance", "sbom_cyclonedx", "sbom_spdx", "sbom_csv"):
         relpath = attestations[role]["path"]
         if not relpath:
             continue
@@ -373,6 +376,32 @@ def publish_test_results(args: argparse.Namespace) -> int:
         return 0
 
 
+def publish_release_attestation(args: argparse.Namespace) -> int:
+    """Publish a release policy attestation as a referrer."""
+    target_dir = Path(args.target_dir).expanduser().resolve()
+    relpath = "attestations/release-policy.json"
+    signature_relpath = "attestations/release-policy.json.sig"
+
+    registry = os.environ.get("OCI_REGISTRY", "registry.vedenemo.dev")
+    username = os.environ.get("OCI_USERNAME", "jenkins")
+    password = os.environ.get("OCI_PASSWORD", "")
+    with oras_common_args(registry, username, password) as common_args:
+        result = publish_referrer(
+            common_args=common_args,
+            subject_reference=args.subject_reference,
+            target_dir=target_dir,
+            role="release_policy",
+            relpath=relpath,
+            signature_relpath=signature_relpath,
+        )
+
+    print(
+        "[+] Published release policy attestation for "
+        f"{args.subject_reference}: {result['digest']}"
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the CLI parser."""
     parser = argparse.ArgumentParser(description="Publish Ghaf OCI artifacts")
@@ -392,6 +421,13 @@ def build_parser() -> argparse.ArgumentParser:
     test_results_parser.add_argument("-d", "--results-dir", required=True)
     test_results_parser.add_argument("-s", "--subject-reference", required=True)
     test_results_parser.set_defaults(handler=publish_test_results)
+
+    release_attestation_parser = subparsers.add_parser(
+        "release-attestation", help="attach release policy attestation"
+    )
+    release_attestation_parser.add_argument("-d", "--target-dir", required=True)
+    release_attestation_parser.add_argument("-s", "--subject-reference", required=True)
+    release_attestation_parser.set_defaults(handler=publish_release_attestation)
 
     return parser
 

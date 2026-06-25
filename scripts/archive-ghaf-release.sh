@@ -24,6 +24,7 @@ BUCKET="${BUCKET:=ghaf-artifacts-dev}"
 ACCESS_KEY="${ACCESS_KEY:=}"
 SECRET_KEY="${SECRET_KEY:=}"
 OCI_REPOSITORY_PREFIX="${OCI_REPOSITORY_PREFIX:=registry.vedenemo.dev/ghaf/release-candidate}"
+REQUIRE_RELEASE_ATTESTATION="${REQUIRE_RELEASE_ATTESTATION:=true}"
 
 release_targets=(
   "packages.aarch64-linux.nvidia-jetson-orin-agx-debug"
@@ -212,6 +213,69 @@ verify_signatures() {
     print_err "  signature: $prov_sig"
     exit 1
   fi
+  verify_release_attestation "$dir"
+}
+
+expected_oci_digest() {
+  dir="$1"
+  if [[ -f "$dir/oci-reference" ]]; then
+    reference="$(<"$dir/oci-reference")"
+    if [[ $reference == *@* ]]; then
+      printf '%s\n' "${reference##*@}"
+      return
+    fi
+  fi
+  if [[ -f "$dir/oci-result.json" ]]; then
+    jq -re '.primary.digest | select(type == "string" and length > 0)' "$dir/oci-result.json"
+    return
+  fi
+  return 1
+}
+
+verify_release_attestation() {
+  dir="$1"
+  if [[ $REQUIRE_RELEASE_ATTESTATION != "true" ]]; then
+    echo "[+] Skipping release attestation verification"
+    return 0
+  fi
+
+  release_attestation="$dir/attestations/release-policy.json"
+  release_attestation_sig="$release_attestation.sig"
+  if [[ ! -f $release_attestation ]]; then
+    print_err "missing release policy attestation: $release_attestation"
+    exit 1
+  fi
+  if [[ ! -f $release_attestation_sig ]]; then
+    print_err "missing release policy attestation signature: $release_attestation_sig"
+    exit 1
+  fi
+
+  if ! verify-signature release "$release_attestation" "$release_attestation_sig"; then
+    print_err "failed verifying release policy attestation signature"
+    print_err "  attestation: $release_attestation"
+    print_err "  signature: $release_attestation_sig"
+    exit 1
+  fi
+
+  if ! jq -e '.predicate.passed == true' "$release_attestation" >/dev/null; then
+    print_err "release policy attestation did not pass: $release_attestation"
+    exit 1
+  fi
+
+  if ! digest="$(expected_oci_digest "$dir")"; then
+    print_err "missing or unreadable OCI digest metadata for release attestation: $dir"
+    exit 1
+  fi
+  if ! attested_digest="$(jq -re '.predicate.artifact.digest' "$release_attestation")"; then
+    print_err "release policy attestation is missing artifact digest: $release_attestation"
+    exit 1
+  fi
+  if [[ $attested_digest != "$digest" ]]; then
+    print_err "release policy attestation digest mismatch"
+    print_err "  expected: $digest"
+    print_err "  attested: $attested_digest"
+    exit 1
+  fi
 }
 
 pull_artifacts_from_oci() {
@@ -255,7 +319,6 @@ pull_artifacts_from_oci() {
       print_err "failed pulling OCI target: $resolved_reference"
       exit 1
     fi
-
     manifest="$target_dir/manifest.json"
     if [[ ! -f $manifest ]]; then
       print_err "missing manifest pulled from OCI reference: $resolved_reference"
@@ -344,7 +407,9 @@ prepare_artifacts() {
     if [[ -d "$dir/attestations" ]]; then
       ln -s "$dir/attestations" "$TMPDIR/$target_name/attestations"
     fi
-
+    if [[ -f "$dir/oci-result.json" ]]; then
+      ln -s "$dir/oci-result.json" "$TMPDIR/$target_name/oci-result.json"
+    fi
     # test-results output
     if [[ -d "$dir/test-results" ]]; then
       ln -s "$dir/test-results" "$TMPDIR/$target_name/test-results"
@@ -377,6 +442,18 @@ main() {
     NONE='\033[0m'
   fi
   argparse "$@"
+  case "${REQUIRE_RELEASE_ATTESTATION,,}" in
+  true | 1 | yes | y | on)
+    REQUIRE_RELEASE_ATTESTATION="true"
+    ;;
+  false | 0 | no | n | off)
+    REQUIRE_RELEASE_ATTESTATION="false"
+    ;;
+  *)
+    print_err "invalid REQUIRE_RELEASE_ATTESTATION value: '$REQUIRE_RELEASE_ATTESTATION' (expected true or false)"
+    exit 1
+    ;;
+  esac
   if [[ $DEBUG == "true" ]]; then set -x; fi
   trap on_exit EXIT
   exit_unless_command_exists mc

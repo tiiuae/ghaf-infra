@@ -215,6 +215,7 @@ in
         ++ lib.optionals cfg.withRegistryPublish [
           pkgs.oras
           self.packages.${pkgs.stdenv.hostPlatform.system}.oci-publish
+          self.packages.${pkgs.stdenv.hostPlatform.system}.policy-checker
         ];
 
       environment = {
@@ -271,6 +272,8 @@ in
     environment.etc = lib.mkMerge [
       {
         "jenkins/nix-fast-build.sh".source = "${self.outPath}/scripts/nix-fast-build.sh";
+        "jenkins/provenance-trust-policy.yaml".source = "${self.outPath}/slsa/provenance-trust-policy.yaml";
+        "jenkins/release-policy.yaml".source = "${self.outPath}/slsa/release-policy.yaml";
         "jenkins/pipelines".source = filteredPipelines;
         "jenkins/pipeline-library".source = pipelineSharedLibrary;
         "jenkins/casc/common.yaml".source = ./casc/common.yaml;
