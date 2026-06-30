@@ -32,6 +32,7 @@ import getpass
 import json
 import logging
 import os
+import re
 import shlex
 import shutil
 import socket
@@ -48,6 +49,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory, mkdtemp
 from typing import Any, TextIO
 
+import yaml
 from deploykit import DeployHost, HostKeyCheck
 from invoke.context import Context
 from invoke.tasks import task
@@ -233,6 +235,31 @@ def _run_json(cmd: list[str]) -> Any:
         _log_error(f"Command failed: {shlex.join(cmd)}\n{detail}")
         sys.exit(1)
     return json.loads(proc.stdout)
+
+
+def _sops_files_from_config(sops_config: Path) -> list[Path]:
+    """Return existing files matched by path_regex entries in a sops config."""
+    root = sops_config.parent
+    sops_data = yaml.safe_load(sops_config.read_text(encoding="utf-8"))
+    path_regexes = [
+        re.compile(rule["path_regex"])
+        for rule in sops_data["creation_rules"]
+        if "path_regex" in rule
+    ]
+
+    sops_files = []
+    for current_root, dirnames, filenames in os.walk(root):
+        dirnames[:] = [dirname for dirname in dirnames if dirname != ".git"]
+        for filename in filenames:
+            path = Path(current_root) / filename
+            relative_path = path.relative_to(root)
+            if any(
+                path_regex.search(relative_path.as_posix())
+                for path_regex in path_regexes
+            ):
+                sops_files.append(relative_path)
+
+    return sorted(sops_files)
 
 
 def _current_output_stream() -> TextIO:
@@ -790,19 +817,13 @@ def alias_list(_c: Context) -> None:
 @task
 def update_sops_files(c: Context) -> None:
     """
-    Update all sops yaml and json files according to .sops.yaml rules.
+    Update all sops files according to .sops.yaml rules.
 
     Example usage:
     inv update-sops-files
     """
-    c.run(
-        r"""
-find . \
-        -type f \
-        \( -iname '*.enc.json' -o -iname 'secrets.yaml' \) \
-        -exec sops updatekeys --yes {} \;
-"""
-    )
+    for sops_file in _sops_files_from_config(Path(".sops.yaml")):
+        c.run(f"sops updatekeys --yes {shlex.quote(sops_file.as_posix())}")
 
 
 @task

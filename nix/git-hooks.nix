@@ -87,6 +87,7 @@
           pycodestyle
           pytest
           pylint
+          pyyaml
           requests
           tabulate
           urllib3
