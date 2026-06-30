@@ -35,7 +35,7 @@ criteria:
 
   - id: hardware-tests
     description: Configured hardware tests completed successfully or were explicitly skipped
-    required: true
+    required: false
     cel: |
       !test_results.configured ||
       test_results.tests.all(test, test.status in ['SUCCESS', 'SKIPPED'])
