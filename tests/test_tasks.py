@@ -725,6 +725,95 @@ def test_decrypt_host_key_respects_yes_on_sops_failure(
     tasks._decrypt_host_key(target, str(tmp_path / "out"), yes=True)
 
 
+def test_sops_files_from_config_matches_existing_creation_rules(tmp_path: Path) -> None:
+    sops_config = tmp_path / ".sops.yaml"
+    sops_config.write_text(
+        "\n".join(
+            [
+                "keys:",
+                "  - &admin age1demo",
+                "creation_rules:",
+                "  - path_regex: hosts/testagent/credentials.yaml$",
+                "    key_groups:",
+                "      - age:",
+                "          - *admin",
+                "  - path_regex: 'services/nebula/ca\\.crt\\.crypt$'",
+                "    key_groups:",
+                "      - age:",
+                "          - *admin",
+                "  - path_regex: hosts/.*/secrets.yaml$",
+                "    key_groups:",
+                "      - age:",
+                "          - *admin",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    for path in [
+        "hosts/testagent/credentials.yaml",
+        "hosts/testagent/dev/secrets.yaml",
+        "services/nebula/ca.crt.crypt",
+        "services/nebula/ca.key.crypt",
+    ]:
+        secret = tmp_path / path
+        secret.parent.mkdir(parents=True, exist_ok=True)
+        secret.write_text("encrypted", encoding="utf-8")
+
+    assert tasks._sops_files_from_config(sops_config) == [
+        Path("hosts/testagent/credentials.yaml"),
+        Path("hosts/testagent/dev/secrets.yaml"),
+        Path("services/nebula/ca.crt.crypt"),
+    ]
+
+
+def test_update_sops_files_uses_sops_config_paths(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    commands: list[str] = []
+
+    class FakeContext:
+        """Minimal invoke context stub that records commands."""
+
+        def run(self, command: str) -> None:
+            commands.append(command)
+
+    (tmp_path / ".sops.yaml").write_text(
+        "\n".join(
+            [
+                "keys:",
+                "  - &admin age1demo",
+                "creation_rules:",
+                "  - path_regex: hosts/testagent/credentials.yaml$",
+                "    key_groups:",
+                "      - age:",
+                "          - *admin",
+                "  - path_regex: services/nebula/ca.key.crypt$",
+                "    key_groups:",
+                "      - age:",
+                "          - *admin",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    for path in [
+        "hosts/testagent/credentials.yaml",
+        "services/nebula/ca.key.crypt",
+        "hosts/testagent/dev/secrets.yaml",
+    ]:
+        secret = tmp_path / path
+        secret.parent.mkdir(parents=True, exist_ok=True)
+        secret.write_text("encrypted", encoding="utf-8")
+
+    monkeypatch.chdir(tmp_path)
+    tasks.update_sops_files.body(FakeContext())
+
+    assert commands == [
+        "sops updatekeys --yes hosts/testagent/credentials.yaml",
+        "sops updatekeys --yes services/nebula/ca.key.crypt",
+    ]
+
+
 def test_warn_and_confirm_exits_when_declined(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
