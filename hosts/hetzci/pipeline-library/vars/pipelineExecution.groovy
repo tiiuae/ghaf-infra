@@ -167,11 +167,54 @@ def create_pipeline(
         stage("Build ${build_shortname}") {
           sh "mkdir -v -p ${output}"
 
-          manifest.build.ts_begin = artifactSupport.run_cmd('date +%s')
           lock(label: 'nix-build', quantity: 1) {
-            sh "nix build --fallback -v .#${build_target_name} --out-link ${output}/unsigned-output"
+            def system = build_target_name.tokenize('.')[1]
+            def remote_stores = readJSON file: '/etc/jenkins/remote-stores.json'
+            def remote_store = remote_stores[system]
+            if (!remote_store) {
+              error("No remote store configured for '${system}'")
+            }
+            def quoted_remote_store = artifactSupport.shell_quote(remote_store)
+
+            manifest.build.ts_begin = artifactSupport.run_cmd('date +%s')
+
+            def build_result = readJSON text: sh(
+              script: """
+                nix build \
+                  --fallback \
+                  --store ${quoted_remote_store} \
+                  --eval-store auto \
+                  --json \
+                  --no-link \
+                  .#${build_target_name}
+              """,
+              returnStdout: true
+            ).trim()
+
+            manifest.build.ts_finished = artifactSupport.run_cmd('date +%s')
+
+            def remote_store_path = build_result[0]?.outputs?.out
+            if (!remote_store_path) {
+              error("Unable to read output path from nix build JSON output")
+            }
+
+            // The SSH builder is trusted, but its local build outputs are not binary-cache signed
+            // so we need --no-check-sigs
+            sh """
+              nix copy \
+                --from ${quoted_remote_store} \
+                --no-check-sigs \
+                ${artifactSupport.shell_quote(remote_store_path)}
+            """
+
+            sh """
+              nix-store --add-root ${output}/unsigned-output \
+                --realise ${artifactSupport.shell_quote(remote_store_path)}
+            """
+
+            manifest.build.remote_store = remote_store
+            manifest.build.remote_output = remote_store_path
           }
-          manifest.build.ts_finished = artifactSupport.run_cmd('date +%s')
         }
         run_optional_stage(
           target_config.provenance_requested,

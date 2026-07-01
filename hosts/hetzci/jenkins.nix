@@ -12,6 +12,24 @@
 let
   cfg = config.hetzci.jenkins;
 
+  remoteStoresFromBuildMachines = builtins.listToAttrs (
+    map (
+      builder:
+      let
+        sshKey = builder.sshKey or null;
+        sshUser = builder.sshUser or null;
+      in
+      {
+        name = builder.system;
+        value =
+          "${builder.protocol}://"
+          + (if sshUser == null then "" else "${sshUser}@")
+          + builder.hostName
+          + (if sshKey == null then "" else "&ssh-key=${sshKey}");
+      }
+    ) config.nix.buildMachines
+  );
+
   # copies only pipelines declared in cfg.pipelines
   filteredPipelines = pkgs.runCommand "pipelines" { } ''
     mkdir -p $out
@@ -263,6 +281,9 @@ in
         builtins.listToAttrs (map mkJenkinsPlugin manifest);
     };
 
+    # Jenkins needs to be trusted user to use nix build --store
+    nix.settings.trusted-users = [ "jenkins" ];
+
     # Caddy needs to be able to access files under /var/lib/jenkins/artifacts.
     # Use traverse-only access on JENKINS_HOME and scope group access to caddy.service.
     users.users.jenkins.homeMode = "710";
@@ -271,6 +292,7 @@ in
     environment.etc = lib.mkMerge [
       {
         "jenkins/nix-fast-build.sh".source = "${self.outPath}/scripts/nix-fast-build.sh";
+        "jenkins/remote-stores.json".text = builtins.toJSON remoteStoresFromBuildMachines;
         "jenkins/pipelines".source = filteredPipelines;
         "jenkins/pipeline-library".source = pipelineSharedLibrary;
         "jenkins/casc/common.yaml".source = ./casc/common.yaml;
