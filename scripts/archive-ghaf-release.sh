@@ -163,22 +163,12 @@ verify_signatures() {
     print_err "missing manifest: $dir"
     exit 1
   fi
-  if ! img_rel=$(jq -re '.image.path' "$manifest"); then
-    print_err "missing image entry in manifest: $manifest"
+  if ! image_count=$(jq -re '(.images // (if .image then [.image] else [] end)) | length' "$manifest"); then
+    print_err "missing images entry in manifest: $manifest"
     exit 1
   fi
-  img="$dir/$img_rel"
-  if [[ -z $img_rel ]]; then
+  if [[ $image_count -eq 0 ]]; then
     print_err "missing image: $dir"
-    exit 1
-  fi
-  if ! img_sig_rel=$(jq -re '.image.signature.path' "$manifest"); then
-    print_err "missing image signature entry in manifest: $manifest"
-    exit 1
-  fi
-  img_sig="$dir/$img_sig_rel"
-  if [[ -z $img_sig_rel ]]; then
-    print_err "missing image signature: $dir"
     exit 1
   fi
   if ! prov_rel=$(jq -re '.attestations.provenance.path' "$manifest"); then
@@ -199,13 +189,25 @@ verify_signatures() {
     print_err "missing nix_build provenance signature: $dir"
     exit 1
   fi
-  echo "[+] Verifying: $img"
-  if ! verify-signature image "$img" "$img_sig"; then
-    print_err "failed verifying image signature"
-    print_err "  image: $img"
-    print_err "  signature: $img_sig"
-    exit 1
-  fi
+  while IFS=$'\t' read -r img_rel img_sig_rel; do
+    img="$dir/$img_rel"
+    if [[ -z $img_rel ]]; then
+      print_err "missing image: $dir"
+      exit 1
+    fi
+    img_sig="$dir/$img_sig_rel"
+    if [[ -z $img_sig_rel ]]; then
+      print_err "missing image signature: $dir"
+      exit 1
+    fi
+    echo "[+] Verifying: $img"
+    if ! verify-signature image "$img" "$img_sig"; then
+      print_err "failed verifying image signature"
+      print_err "  image: $img"
+      print_err "  signature: $img_sig"
+      exit 1
+    fi
+  done < <(jq -re '(.images // (if .image then [.image] else [] end))[] | [.path // "", .signature.path // ""] | @tsv' "$manifest")
   if ! verify-signature provenance "$prov" "$prov_sig"; then
     print_err "failed verifying provenance signature"
     print_err "  provenance: $prov"
@@ -327,18 +329,22 @@ prepare_artifacts() {
     mkdir -p "$TMPDIR/$target_name"
     ln -s "$manifest" "$TMPDIR/$target_name/manifest.json"
 
-    if ! image=$(jq -re '.image.path' "$manifest"); then
-      print_err "missing image entry in manifest: $manifest"
+    if ! image_count=$(jq -re '(.images // (if .image then [.image] else [] end)) | length' "$manifest"); then
+      print_err "missing images entry in manifest: $manifest"
       exit 1
     fi
-    if ! image_sig=$(jq -re '.image.signature.path' "$manifest"); then
-      print_err "missing image signature entry in manifest: $manifest"
+    if [[ $image_count -eq 0 ]]; then
+      print_err "missing image: $dir"
       exit 1
     fi
 
     # build output
-    ln -s "$dir/$image" "$TMPDIR/$target_name/$image"
-    ln -s "$dir/$image_sig" "$TMPDIR/$target_name/$image_sig"
+    while IFS=$'\t' read -r image image_sig; do
+      mkdir -p "$(dirname "$TMPDIR/$target_name/$image")"
+      mkdir -p "$(dirname "$TMPDIR/$target_name/$image_sig")"
+      ln -s "$dir/$image" "$TMPDIR/$target_name/$image"
+      ln -s "$dir/$image_sig" "$TMPDIR/$target_name/$image_sig"
+    done < <(jq -re '(.images // (if .image then [.image] else [] end))[] | [.path // "", .signature.path // ""] | @tsv' "$manifest")
 
     # attestations
     if [[ -d "$dir/attestations" ]]; then

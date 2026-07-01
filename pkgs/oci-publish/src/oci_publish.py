@@ -189,6 +189,19 @@ def publish_referrer(
     return result
 
 
+def normalized_images(manifest: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return manifest images, accepting the legacy single-image field."""
+    images = manifest.get("images")
+    if images is None:
+        image = manifest.get("image")
+        images = [image] if image else []
+
+    if not isinstance(images, list) or not images:
+        fail("manifest must contain at least one image")
+
+    return images
+
+
 def create_test_results_archive(results_dir: Path, archive_path: Path) -> None:
     """Create a tar archive containing the test results."""
     if not results_dir.is_dir():
@@ -220,9 +233,7 @@ def publish_target_artifacts(
     manifest_path = target_dir / "manifest.json"
     result_reference_prefix = f"{primary_reference.rsplit(':', 1)[0]}@"
     target = manifest["target"]
-    image = manifest["image"]
-    image_path = image["path"]
-    image_signature = image["signature"]["path"]
+    images = normalized_images(manifest)
     source = manifest.get("source", {})
     primary_annotations = {
         "org.opencontainers.image.description": "Disk image",
@@ -233,9 +244,13 @@ def publish_target_artifacts(
         TARGET_ANNOTATION: target,
     }
 
-    push_files = [f"{image_path}:application/octet-stream"]
-    if image_signature:
-        push_files.append(f"{image_signature}:{DETACHED_SIGNATURE_MEDIA_TYPE}")
+    push_files = []
+    for image in images:
+        image_path = image["path"]
+        image_signature = image["signature"]["path"]
+        push_files.append(f"{image_path}:application/octet-stream")
+        if image_signature:
+            push_files.append(f"{image_signature}:{DETACHED_SIGNATURE_MEDIA_TYPE}")
 
     primary_output = run_oras(
         [
