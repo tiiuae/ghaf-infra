@@ -108,14 +108,11 @@ def create_pipeline(
         ts_begin: null,
         ts_finished: null,
       ],
-      image: [
-        path: null,
-        role: null,
-        signature: empty_signature(),
-      ],
+      images: [],
       uefi: [
         signed: false,
         reason: null,
+        image_path: null,
         signing_key: null,
         signing_proxy: null,
       ],
@@ -268,21 +265,34 @@ def create_pipeline(
           !target_config.no_image,
           "Find image ${build_shortname}"
         ) {
-          def img_path = artifactSupport.run_cmd(
-            "find -L ${output}/unsigned-output -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print -quit"
+          def img_paths = artifactSupport.run_cmd(
+            "find -L ${output}/unsigned-output -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print | sort"
           )
-          if (!img_path) {
+          def images = img_paths.split('\n').findAll { it }
+          if (images.isEmpty()) {
             error("No image found!")
           }
-          manifest.image.path = img_path - "${output}/"
-          manifest.image.role = artifactSupport.image_role(manifest.image.path)
+          manifest.images = images.collect { img_path ->
+            def relpath = img_path - "${output}/"
+            [
+              path: relpath,
+              role: artifactSupport.image_role(relpath),
+              signature: empty_signature(),
+            ]
+          }
         }
         run_optional_stage(
           !target_config.no_image && signing_possible && target_config.uefi_sign_requested,
           "Sign (UEFI) ${build_shortname}"
         ) {
           def tmpdir = artifactSupport.build_tmpdir("uefisign-${build_shortname}")
-          def img_name = artifactSupport.path_basename(manifest.image.path)
+          def uefi_image = null
+          if (manifest.images.size() == 1) {
+            uefi_image = manifest.images[0]
+          } else {
+            error("UEFI signing for multi-image target ${build_shortname} is not implemented yet")
+          }
+          def img_name = artifactSupport.path_basename(uefi_image.path)
           def signer = build_target_name.contains("nvidia-jetson-orin") ? "uefisign-simple" : "uefisign"
 
           try {
@@ -295,15 +305,19 @@ def create_pipeline(
               sh """
                 ${signer} /etc/jenkins/keys/secboot/DB.pem \
                   "${ctx.uri}" \
-                  ${output}/${manifest.image.path} \
+                  ${output}/${uefi_image.path} \
                   '${tmpdir}'
               """
               record_signature(manifest.uefi, ctx)
             }
 
-            sh "mv '${tmpdir}/signed_${img_name}' '${output}/${img_name}'"
-            manifest.image.path = img_name
+            sh """
+              mkdir -p '${output}/images'
+              mv '${tmpdir}/signed_${img_name}' '${output}/images/${img_name}'
+            """
+            uefi_image.path = "images/${img_name}"
             manifest.uefi.signed = true
+            manifest.uefi.image_path = "images/${img_name}"
             manifest.uefi.reason = null
           } finally {
             sh "rm -rf '${tmpdir}'"
@@ -314,21 +328,28 @@ def create_pipeline(
           "Sign (SLSA) image ${build_shortname}"
         ) {
           withRedundancyRouter("GhafInfraSignECP256") { ctx ->
-            def img_name = artifactSupport.path_basename(manifest.image.path)
-            record_signature(manifest.image.signature, ctx, "${img_name}.sig")
-            sh """
-              openssl dgst -sha256 -sign \
-                "${ctx.uri}" \
-                -out ${output}/${manifest.image.signature.path} \
-                ${output}/${manifest.image.path}
-            """
+            sh "mkdir -p ${output}/images"
+            manifest.images.each { image ->
+              def img_name = artifactSupport.path_basename(image.path)
+              record_signature(image.signature, ctx, "images/${img_name}.sig")
+              sh """
+                openssl dgst -sha256 -sign \
+                  "${ctx.uri}" \
+                  -out ${output}/${image.signature.path} \
+                  ${output}/${image.path}
+              """
+            }
           }
         }
         stage("Link artifacts ${build_shortname}") {
-          if (manifest.image.path && !manifest.uefi.signed) {
-            def img_name = artifactSupport.path_basename(manifest.image.path)
-            sh "ln -s ${output}/${manifest.image.path} ${output}/${img_name}"
-            manifest.image.path = img_name
+          sh "mkdir -p ${output}/images"
+          manifest.images.each { image ->
+            def img_name = artifactSupport.path_basename(image.path)
+            def image_link = "images/${img_name}"
+            if (image.path && image.path != image_link) {
+              sh "ln -s ${output}/${image.path} ${output}/${image_link}"
+              image.path = image_link
+            }
           }
 
           write_manifest()
@@ -361,6 +382,9 @@ def create_pipeline(
       }
 
       if (!normalized_test_runs.isEmpty()) {
+        if (manifest.images.size() != 1) {
+          error("Multi-image hardware tests are not implemented for ${build_shortname}; found ${manifest.images.size()} images")
+        }
         def tests_completed = true
         try {
           def test_branches = [:]
