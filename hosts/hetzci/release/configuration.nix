@@ -23,6 +23,9 @@ let
     cpus = 16;
     ramGiB = 30;
   };
+
+  x86BuilderSshKey = "/etc/ssh/certs/hetz86-rel-2-builder";
+  armBuilderSshKey = "/etc/ssh/certs/hetzarm-rel-1-builder";
 in
 {
   imports = [
@@ -84,12 +87,20 @@ in
   nix.settings.min-free = lib.mkOverride 60 controllerDisk.minFreeBytes;
   nix.settings.max-free = lib.mkOverride 60 controllerDisk.maxFreeBytes;
 
+  # install-release copies these generated private keys as root-owned extra files.
+  # Jenkins opens them directly through the remote-store ssh-key URI.
+  systemd.tmpfiles.rules = [
+    "z ${x86BuilderSshKey} 0400 jenkins root - -"
+    "z ${armBuilderSshKey} 0400 jenkins root - -"
+  ];
+
   # Configure (release) remote builders
   nix = {
     distributedBuilds = true;
     buildMachines =
       let
         commonOptions = {
+          protocol = "ssh-ng";
           supportedFeatures = [
             "kvm"
             "nixos-test"
@@ -107,7 +118,7 @@ in
             maxJobs = x86Builder.maxJobs;
             speedFactor = 12;
             sshUser = "hetz86-rel-2-builder";
-            sshKey = "/etc/ssh/certs/hetz86-rel-2-builder";
+            sshKey = x86BuilderSshKey;
           }
         )
         (
@@ -118,7 +129,7 @@ in
             maxJobs = armBuilder.maxJobs;
             speedFactor = 2;
             sshUser = "hetzarm-rel-1-builder";
-            sshKey = "/etc/ssh/certs/hetzarm-rel-1-builder";
+            sshKey = armBuilderSshKey;
           }
         )
       ];

@@ -65,7 +65,10 @@ in
   sops = {
     defaultSopsFile = ./secrets.yaml;
     secrets = {
-      vedenemo_builder_ssh_key.owner = "root";
+      vedenemo_builder_ssh_key = {
+        owner = "jenkins";
+        mode = "0400";
+      };
     };
   };
 
@@ -95,6 +98,7 @@ in
     buildMachines =
       let
         commonOptions = {
+          protocol = "ssh-ng";
           speedFactor = 10;
           supportedFeatures = [
             "kvm"

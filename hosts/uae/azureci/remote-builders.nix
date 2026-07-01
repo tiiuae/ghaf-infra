@@ -24,7 +24,10 @@ in
 {
   sops = {
     secrets = {
-      azureci_builder_ssh_key.owner = "root";
+      azureci_builder_ssh_key = {
+        owner = "jenkins";
+        mode = "0400";
+      };
     };
   };
 
@@ -33,6 +36,7 @@ in
     buildMachines =
       let
         commonOptions = {
+          protocol = "ssh-ng";
           speedFactor = 10;
           supportedFeatures = [
             "kvm"
