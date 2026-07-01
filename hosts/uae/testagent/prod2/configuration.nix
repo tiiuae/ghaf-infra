@@ -46,6 +46,7 @@
     variant = "prod";
     hardware = [
       "orin-agx"
+      "orin-nx"
     ];
   };
 
@@ -58,6 +59,10 @@
     SUBSYSTEM=="tty", KERNEL=="ttyACM[0-9]*", ATTRS{serial}=="TOPO4C3FB81A", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="ttyAGX1", MODE="0666", GROUP="dialout"
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B7283C099A7", SYMLINK+="ssdORINAGX1", MODE="0666", GROUP="dialout"
+    # Orin nx
+    SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTD0W9KS", SYMLINK+="ttyORINNX1", MODE="0666", GROUP="dialout"
+    # SSD-drive
+    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B7283C099B0", SYMLINK+="ssdORINNX1", MODE="0666", GROUP="dialout"
   '';
 
   # Details of the hardware devices connected to this host
@@ -70,8 +75,8 @@
         relay_serial_port = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_B0013I2U-if00-port0";
         OrinAGX1 = {
           inherit location;
-          device_id = "00-b2-e1-cb-48";
-          netvm_hostname = "ghaf-3001142088";
+          device_id = "00-00-05-b1-05";
+          netvm_hostname = "ghaf-0000372997";
           serial_port = "/dev/ttyAGX1";
           relay_number = 2;
           device_ip_address = "172.20.16.55";
@@ -80,6 +85,20 @@
           switch_bot = "NONE";
           usbhub_serial = "F997E1F8";
           ext_drive_by-id = "/dev/ssdORINAGX1";
+          threads = 12;
+        };
+        OrinNX1 = {
+          inherit location;
+          device_id = "00-b2-e1-cb-48";
+          netvm_hostname = "ghaf-3001142088";
+          serial_port = "/dev/ttyORINNX1";
+          relay_number = 3;
+          device_ip_address = "172.20.16.35";
+          socket_ip_address = "NONE";
+          plug_type = "NONE";
+          switch_bot = "NONE";
+          usbhub_serial = "BE15637A";
+          ext_drive_by-id = "/dev/ssdORINNX1";
           threads = 12;
         };
       };
