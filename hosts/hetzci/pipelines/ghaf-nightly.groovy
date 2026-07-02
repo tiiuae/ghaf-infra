@@ -78,6 +78,9 @@ def TARGETS = [
   [ target: "packages.x86_64-linux.intel-laptop-storeDisk-debug",
     testset: null, sbom: true,
   ],
+  [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-sysupdate",
+    uefisign: true, sbom: true,
+  ],
 ]
 
 pipeline {

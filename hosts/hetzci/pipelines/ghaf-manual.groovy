@@ -16,6 +16,7 @@ properties([
     booleanParam(name: 'doc', defaultValue: false, description: 'Build target packages.x86_64-linux.doc'),
     booleanParam(name: 'lenovo_x1_carbon_gen11_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.lenovo-x1-carbon-gen11-debug'),
     booleanParam(name: 'lenovo_x1_carbon_gen11_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-installer'),
+    booleanParam(name: 'lenovo_x1_carbon_gen11_debug_sysupdate', defaultValue: false, description: 'Build target packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-sysupdate'),
     booleanParam(name: 'dell_latitude_7230_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.dell-latitude-7230-debug'),
     booleanParam(name: 'dell_latitude_7330_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.dell-latitude-7330-debug'),
     booleanParam(name: 'nvidia_jetson_orin_agx_debug_from_x86_64', defaultValue: false, description: 'Build target packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64'),
@@ -106,6 +107,10 @@ pipeline {
             if (params.lenovo_x1_carbon_gen11_debug_installer) {
               TARGETS.push(
                 [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-installer", uefisigniso: params.UEFISIGN, testset: params.TESTSET ])
+            }
+            if (params.lenovo_x1_carbon_gen11_debug_sysupdate) {
+              TARGETS.push(
+                [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-sysupdate", uefisign: params.UEFISIGN, testset: params.TESTSET ])
             }
             if (params.dell_latitude_7230_debug) {
               TARGETS.push(
