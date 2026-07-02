@@ -9,10 +9,11 @@ usage() {
   cat <<EOF
 Usage: $(basename "$0") MODE ARTIFACT SIGNATURE
 
-Verify the signature of image or provenance file with the currently valid certificates.
+Verify the signature of image, provenance, or release attestation file with the
+currently valid certificates.
 
 Options:
-  MODE: either 'provenance' or 'image'.
+  MODE: either 'provenance', 'release', or 'image'.
   ARTIFACT: the original file to verify.
   SIGNATURE: the signature file to verify against.
 EOF
@@ -29,6 +30,13 @@ SIGNATURE=$3
 verify-provenance() {
   echo "Using certificate $PROV_CERT"
   openssl pkeyutl -verify -inkey "$PROV_CERT" -certin -sigfile "$SIGNATURE" -in "$ARTIFACT" -rawin
+}
+
+verify-release() {
+  # Release policy attestations are signed with the provenance signing key for now.
+  # Keep a separate mode so callers do not need to change if a dedicated release
+  # signing key is introduced later.
+  verify-provenance
 }
 
 verify-image() {
@@ -50,6 +58,12 @@ elif [[ $1 == "provenance" ]]; then
     exit 1
   fi
   verify-provenance
+elif [[ $1 == "release" ]]; then
+  if [[ -z $PROV_CERT ]]; then
+    echo 'Certificate PROV_CERT is not defined in the running environment!'
+    exit 1
+  fi
+  verify-release
 else
   usage
 fi

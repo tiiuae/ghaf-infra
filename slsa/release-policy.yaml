@@ -1,0 +1,41 @@
+version: '1.0'
+name: Ghaf Release Policy
+uri: https://github.com/tiiuae/ghaf-infra/blob/main/slsa/release-policy.yaml
+
+criteria:
+  - id: release-builder
+    description: Artifact provenance identifies a release CI builder
+    required: true
+    cel: |
+      files.provenance &&
+      provenance.predicate.runDetails.builder.id in [
+        'https://ci-release.vedenemo.dev/',
+        'https://ci-release.uaenorth.cloudapp.azure.com/'
+      ]
+
+  - id: image-signature
+    description: Image signature exists and verifies successfully
+    required: true
+    cel: files.image && files.image_signature && signatures.image.verified
+
+  - id: provenance-signature
+    description: SLSA provenance signature exists and verifies successfully
+    required: true
+    cel: files.provenance && files.provenance_signature && signatures.provenance.verified
+
+  - id: provenance-policy
+    description: SLSA provenance satisfies the configured provenance trust policy
+    required: true
+    cel: provenance_policy.passed
+
+  - id: sbom-present
+    description: SBOM outputs are present
+    required: true
+    cel: files.sbom_csv && files.sbom_cyclonedx && files.sbom_spdx
+
+  - id: hardware-tests
+    description: Configured hardware tests completed successfully or were explicitly skipped
+    required: false
+    cel: |
+      !test_results.configured ||
+      test_results.tests.all(test, test.status in ['SUCCESS', 'SKIPPED'])
