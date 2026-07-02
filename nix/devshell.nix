@@ -33,7 +33,6 @@
           echo ""
           echo "This shell provides following helper commands:"
           echo " - update-jenkins-plugins hosts/hetzci"
-          echo " - update-jenkins-plugins hosts/uae/azureci"
           echo ""
         '';
 
