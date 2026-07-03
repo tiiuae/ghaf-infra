@@ -86,6 +86,7 @@ def create_pipeline(
     }
     def build_target_name = target_config.target
     def build_shortname = target_config.shortname
+    def is_sysupdate_target = build_target_name.endsWith('-sysupdate')
     def normalized_test_runs = target_config.test_runs
     def output = "${artifacts_local_dir}/${build_target_name}"
     def local_target_ref = "${ghaf_checkout}#${build_target_name}"
@@ -171,6 +172,8 @@ def create_pipeline(
 
     if (target_config.no_image) {
       manifest.uefi.reason = "no_image"
+    } else if (is_sysupdate_target && target_config.uefi_sign_requested) {
+      manifest.uefi.reason = "sysupdate_efi_signing_not_implemented"
     } else if (!signing_possible) {
       manifest.uefi.reason = "signing_not_possible"
     } else if (!target_config.uefi_sign_requested) {
@@ -342,24 +345,45 @@ def create_pipeline(
           !target_config.no_image,
           "Find image ${build_shortname}"
         ) {
-          def img_paths = artifactSupport.run_cmd(
-            "find -L ${output}/unsigned-output -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print | sort"
-          )
-          def images = img_paths.split('\n').findAll { it }
-          if (images.isEmpty()) {
-            error("No image found!")
-          }
-          manifest.images = images.collect { img_path ->
-            def relpath = img_path - "${output}/"
-            [
-              path: relpath,
-              role: artifactSupport.image_role(relpath),
-              signature: empty_signature(),
-            ]
+          if (is_sysupdate_target) {
+            def sysupdate_manifest_path = artifactSupport.run_cmd(
+              "find -L ${output}/unsigned-output -maxdepth 1 -name '*.manifest' -print -quit"
+            )
+            def sysupdate_manifest = readJSON file: sysupdate_manifest_path
+            def images = [[path: sysupdate_manifest_path, role: 'sysupdate-manifest']]
+            ['root', 'verity', 'kernel'].each { role ->
+              images << [
+                path: "${output}/unsigned-output/${sysupdate_manifest[role].file}",
+                role: "sysupdate-${role}",
+              ]
+            }
+            manifest.images = images.collect { image ->
+              [
+                path: image.path - "${output}/",
+                role: image.role,
+                signature: empty_signature(),
+              ]
+            }
+          } else {
+            def img_paths = artifactSupport.run_cmd(
+              "find -L ${output}/unsigned-output -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print | sort"
+            )
+            def images = img_paths.split('\n').findAll { it }
+            if (images.isEmpty()) {
+              error("No image found!")
+            }
+            manifest.images = images.collect { img_path ->
+              def relpath = img_path - "${output}/"
+              [
+                path: relpath,
+                role: artifactSupport.image_role(relpath),
+                signature: empty_signature(),
+              ]
+            }
           }
         }
         run_optional_stage(
-          !target_config.no_image && signing_possible && target_config.uefi_sign_requested,
+          !target_config.no_image && !is_sysupdate_target && signing_possible && target_config.uefi_sign_requested,
           "Sign (UEFI) ${build_shortname}"
         ) {
           def tmpdir = artifactSupport.build_tmpdir("uefisign-${build_shortname}")
@@ -446,12 +470,13 @@ def create_pipeline(
             oci_tags << "${ci_env}-latest"
             def oci_alias_args = oci_tags.collect { "--tag '${it}'" }.join(" \\\n                ")
             def oci_alias_args_block = oci_alias_args ? " \\\n                ${oci_alias_args}" : ""
+            def oci_sysupdate_arg = is_sysupdate_target ? " \\\n                --sysupdate" : ""
             sh """
               oci-publish target \
                 --target-dir '${output}' \
                 --repository '${oci_repository}' \
                 --primary-tag '${immutable_tag}' \
-                --result-json '${oci_result_json}'${oci_alias_args_block}
+                --result-json '${oci_result_json}'${oci_sysupdate_arg}${oci_alias_args_block}
             """
             oci_result = readJSON file: oci_result_json
           }
