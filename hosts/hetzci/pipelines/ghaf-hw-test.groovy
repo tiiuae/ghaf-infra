@@ -257,7 +257,6 @@ pipeline {
               env.FLASHED = 'false'
               sh """
                 mkdir -p ${TEST_CONFIG_DIR}
-                rm -f ${TEST_CONFIG_DIR}/*.json
                 ln -sv ${CONF_FILE_PATH} ${TEST_CONFIG_DIR}
                 echo { \\\"Job\\\": \\\"${env.JOB_TARGET}\\\" } > ${TEST_CONFIG_DIR}/${BUILD_NUMBER}.json
                 ls -la ${TEST_CONFIG_DIR}
