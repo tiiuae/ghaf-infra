@@ -27,6 +27,15 @@ TARGET_CONFIG_MEDIA_TYPE = "application/vnd.ghaf.manifest.v1+json"
 TEST_RESULTS_ARTIFACT_TYPE = "application/vnd.ghaf.test-results.v1"
 TEST_RESULTS_MEDIA_TYPE = "application/x-tar"
 RELEASE_ATTESTATION_ARTIFACT_TYPE = "application/vnd.ghaf.release-attestation.v1+json"
+SYSUPDATE_MANIFEST_MEDIA_TYPE = "application/vnd.ghaf.ota.manifest.v1+json"
+SYSUPDATE_KERNEL_MEDIA_TYPE = "application/vnd.ghaf.ota.uki.v1+efi"
+SYSUPDATE_ROOT_MEDIA_TYPE = "application/vnd.ghaf.ota.root.v1+raw"
+SYSUPDATE_VERITY_MEDIA_TYPE = "application/vnd.ghaf.ota.verity.v1+raw"
+SYSUPDATE_MEDIA_TYPES = {
+    "root": SYSUPDATE_ROOT_MEDIA_TYPE,
+    "verity": SYSUPDATE_VERITY_MEDIA_TYPE,
+    "kernel": SYSUPDATE_KERNEL_MEDIA_TYPE,
+}
 REFERRER_MEDIA_TYPES = {
     "provenance": "application/vnd.in-toto+json",
     "release_policy": RELEASE_ATTESTATION_ARTIFACT_TYPE,
@@ -100,6 +109,23 @@ def annotation_args(annotations: dict[str, str]) -> list[str]:
     ]
 
 
+@contextmanager
+def staged_oci_layers(
+    target_dir: Path, files: list[tuple[str, str]]
+) -> Iterator[tuple[Path, list[str]]]:
+    """Stage layer inputs so ORAS records normalized layer paths."""
+    with tempfile.TemporaryDirectory(prefix="oci-layers-") as staging_dir_name:
+        staging_dir = Path(staging_dir_name)
+        push_files = []
+        for relpath, media_type in files:
+            layer_path = relpath.removeprefix("images/")
+            link_path = staging_dir / layer_path
+            link_path.parent.mkdir(parents=True, exist_ok=True)
+            link_path.symlink_to(target_dir / relpath)
+            push_files.append(f"{layer_path}:{media_type}")
+        yield staging_dir, push_files
+
+
 def normalize_repository(repository: str) -> str:
     """Normalize and validate an OCI repository path."""
     normalized = repository.strip().lower()
@@ -117,15 +143,16 @@ def normalize_repository(repository: str) -> str:
 
 
 @contextmanager
-def oras_common_args(
-    registry: str, username: str, password: str
-) -> Iterator[list[str]]:
-    """Return ORAS auth arguments and keep temporary registry config alive."""
+def oras_publish_context() -> Iterator[tuple[list[str], str, bool]]:
+    """Return ORAS arguments and reference mode, keeping auth config alive."""
     layout_path = os.environ.get("OCI_LAYOUT_PATH", "")
     if layout_path:
-        yield ["--oci-layout-path", layout_path]
+        yield ["--oci-layout-path", layout_path], "", False
         return
 
+    registry = os.environ.get("OCI_REGISTRY", "registry.vedenemo.dev")
+    username = os.environ.get("OCI_USERNAME", "jenkins")
+    password = os.environ.get("OCI_PASSWORD", "")
     if not password:
         fail("OCI_PASSWORD is required when publishing to the registry")
 
@@ -147,7 +174,7 @@ def oras_common_args(
             stdin_text=f"{password}\n",
         )
 
-        yield ["--registry-config", str(registry_config)]
+        yield ["--registry-config", str(registry_config)], f"{registry}/", True
 
 
 def publish_referrer(
@@ -192,6 +219,38 @@ def publish_referrer(
     return result
 
 
+def publish_attestations(
+    *,
+    manifest: dict[str, Any],
+    common_args: list[str],
+    subject_reference: str,
+    target_dir: Path,
+) -> dict[str, Any]:
+    """Attach attestation referrers declared in the build manifest."""
+    referrers: dict[str, Any] = {}
+    attestations = manifest["attestations"]
+    for role in ("provenance", "sbom_cyclonedx", "sbom_spdx", "sbom_csv"):
+        relpath = attestations[role]["path"]
+        if not relpath:
+            continue
+
+        signature_relpath = None
+        signature = attestations[role].get("signature")
+        if signature:
+            signature_relpath = attestations[role]["signature"]["path"]
+
+        referrers[role] = publish_referrer(
+            common_args=common_args,
+            subject_reference=subject_reference,
+            target_dir=target_dir,
+            role=role,
+            relpath=relpath,
+            signature_relpath=signature_relpath,
+        )
+
+    return referrers
+
+
 def normalized_images(manifest: dict[str, Any]) -> list[dict[str, Any]]:
     """Return manifest images, accepting the legacy single-image field."""
     images = manifest.get("images")
@@ -203,6 +262,45 @@ def normalized_images(manifest: dict[str, Any]) -> list[dict[str, Any]]:
         fail("manifest must contain at least one image")
 
     return images
+
+
+def parse_sysupdate_artifacts(
+    *, manifest: dict[str, Any], target_dir: Path
+) -> tuple[dict[str, Any], str, str | None, list[dict[str, str]]]:
+    """Parse signed sysupdate image entries and return OCI file entries."""
+    images = normalized_images(manifest)
+    sysupdate_manifest_image = next(
+        image
+        for image in images
+        if image.get("role") == "sysupdate-manifest"
+        or image["path"].endswith(".manifest")
+    )
+    sysupdate_manifest_path = sysupdate_manifest_image["path"]
+    sysupdate_manifest = read_json(target_dir / sysupdate_manifest_path)
+    sysupdate_manifest_signature_path = sysupdate_manifest_image.get(
+        "signature", {}
+    ).get("path")
+
+    images_by_name = {Path(image["path"]).name: image for image in images}
+    files = []
+    for role in ("kernel", "root", "verity"):
+        image = images_by_name[sysupdate_manifest[role]["file"]]
+        file_entry = {
+            "role": role,
+            "path": image["path"],
+            "media_type": SYSUPDATE_MEDIA_TYPES[role],
+        }
+        signature_relpath = image.get("signature", {}).get("path")
+        if signature_relpath:
+            file_entry["signature_path"] = signature_relpath
+        files.append(file_entry)
+
+    return (
+        sysupdate_manifest,
+        sysupdate_manifest_path,
+        sysupdate_manifest_signature_path,
+        files,
+    )
 
 
 def create_test_results_archive(results_dir: Path, archive_path: Path) -> None:
@@ -247,56 +345,42 @@ def publish_target_artifacts(
         TARGET_ANNOTATION: target,
     }
 
-    push_files = []
+    layer_files = []
     for image in images:
         image_path = image["path"]
         image_signature = image["signature"]["path"]
-        push_files.append(f"{image_path}:application/octet-stream")
+        layer_files.append((image_path, "application/octet-stream"))
         if image_signature:
-            push_files.append(f"{image_signature}:{DETACHED_SIGNATURE_MEDIA_TYPE}")
+            layer_files.append((image_signature, DETACHED_SIGNATURE_MEDIA_TYPE))
 
-    primary_output = run_oras(
-        [
-            "push",
-            *common_args,
-            *annotation_args(primary_annotations),
-            "--disable-path-validation",
-            "--artifact-type",
-            TARGET_ARTIFACT_TYPE,
-            "--config",
-            f"{manifest_path}:{TARGET_CONFIG_MEDIA_TYPE}",
-            primary_reference,
-            *push_files,
-        ],
-        cwd=target_dir,
-    )
+    with staged_oci_layers(target_dir, layer_files) as (staging_dir, push_files):
+        primary_output = run_oras(
+            [
+                "push",
+                *common_args,
+                *annotation_args(primary_annotations),
+                "--disable-path-validation",
+                "--artifact-type",
+                TARGET_ARTIFACT_TYPE,
+                "--config",
+                f"{manifest_path}:{TARGET_CONFIG_MEDIA_TYPE}",
+                primary_reference,
+                *push_files,
+            ],
+            cwd=staging_dir,
+        )
     primary_digest = primary_output["digest"]
 
-    attestations = manifest["attestations"]
-
-    referrers: dict[str, Any] = {}
-    for role in ("provenance", "sbom_cyclonedx", "sbom_spdx", "sbom_csv"):
-        relpath = attestations[role]["path"]
-        if not relpath:
-            continue
-
-        signature_relpath = None
-        signature = attestations[role].get("signature")
-        if signature:
-            signature_relpath = attestations[role]["signature"]["path"]
-
-        referrers[role] = publish_referrer(
-            common_args=common_args,
-            subject_reference=(
-                f"{result_reference_prefix}{primary_digest}"
-                if subject_uses_digest
-                else primary_reference
-            ),
-            target_dir=target_dir,
-            role=role,
-            relpath=relpath,
-            signature_relpath=signature_relpath,
-        )
+    referrers = publish_attestations(
+        manifest=manifest,
+        common_args=common_args,
+        subject_reference=(
+            f"{result_reference_prefix}{primary_digest}"
+            if subject_uses_digest
+            else primary_reference
+        ),
+        target_dir=target_dir,
+    )
 
     if tags:
         run_command(["oras", "tag", *common_args, primary_reference, *tags])
@@ -322,6 +406,113 @@ def publish_target_artifacts(
     return 0
 
 
+def publish_sysupdate_artifacts(
+    *,
+    manifest: dict[str, Any],
+    target_dir: Path,
+    result_json: Path,
+    repository: str,
+    common_args: list[str],
+    primary_reference: str,
+    primary_tag: str,
+    tags: list[str],
+    subject_uses_digest: bool,
+) -> int:
+    """Publish sysupdate artifacts, referrers, and result metadata."""
+    result_reference_prefix = f"{primary_reference.rsplit(':', 1)[0]}@"
+    target = manifest["target"]
+    source = manifest.get("source", {})
+    (
+        sysupdate_manifest,
+        sysupdate_manifest_path,
+        sysupdate_manifest_signature_path,
+        files,
+    ) = parse_sysupdate_artifacts(manifest=manifest, target_dir=target_dir)
+
+    annotations = {
+        "org.opencontainers.image.description": "OTA update",
+        "org.opencontainers.image.title": target,
+        "org.opencontainers.image.source": source.get("repository", ""),
+        "org.opencontainers.image.revision": source.get("revision", ""),
+        SOURCE_REF_ANNOTATION: source.get("flake_ref", ""),
+        TARGET_ANNOTATION: target,
+        "org.ghaf.ota.version": sysupdate_manifest.get("version", ""),
+        "org.ghaf.ota.system": sysupdate_manifest.get("system", ""),
+    }
+
+    layer_files = []
+    if sysupdate_manifest_signature_path:
+        layer_files.append(
+            (sysupdate_manifest_signature_path, DETACHED_SIGNATURE_MEDIA_TYPE)
+        )
+    for file in files:
+        layer_files.append((file["path"], file["media_type"]))
+        signature_path = file.get("signature_path")
+        if signature_path:
+            layer_files.append((signature_path, DETACHED_SIGNATURE_MEDIA_TYPE))
+
+    with staged_oci_layers(target_dir, layer_files) as (staging_dir, push_files):
+        primary_output = run_oras(
+            [
+                "push",
+                *common_args,
+                *annotation_args(annotations),
+                "--disable-path-validation",
+                "--artifact-type",
+                SYSUPDATE_MANIFEST_MEDIA_TYPE,
+                "--config",
+                f"{target_dir / sysupdate_manifest_path}:{SYSUPDATE_MANIFEST_MEDIA_TYPE}",
+                primary_reference,
+                *push_files,
+            ],
+            cwd=staging_dir,
+        )
+    primary_digest = primary_output["digest"]
+
+    referrers = publish_attestations(
+        manifest=manifest,
+        common_args=common_args,
+        subject_reference=(
+            f"{result_reference_prefix}{primary_digest}"
+            if subject_uses_digest
+            else primary_reference
+        ),
+        target_dir=target_dir,
+    )
+
+    if tags:
+        run_command(["oras", "tag", *common_args, primary_reference, *tags])
+
+    result = {
+        "target": target,
+        "repository": repository,
+        "primary_tag": primary_tag,
+        "primary": {
+            "artifact_type": SYSUPDATE_MANIFEST_MEDIA_TYPE,
+            "media_type": primary_output["mediaType"],
+            "digest": primary_digest,
+            "reference": f"{result_reference_prefix}{primary_digest}",
+            "tag_reference": primary_reference,
+        },
+        "sysupdate": {
+            "version": sysupdate_manifest.get("version"),
+            "system": sysupdate_manifest.get("system"),
+            "root_verity_hash": sysupdate_manifest.get("root_verity_hash"),
+            "manifest_path": sysupdate_manifest_path,
+            "files": files,
+        },
+        "referrers": referrers,
+        "tags": tags,
+    }
+    write_json(result_json, result)
+
+    print(
+        f"[+] Published {target} sysupdate as {result_reference_prefix}{primary_digest}"
+    )
+    print(f"[+] Wrote publish result: {result_json}")
+    return 0
+
+
 def publish_target(args: argparse.Namespace) -> int:
     """Publish one target artifact and its referrers."""
     target_dir = Path(args.target_dir).expanduser().resolve()
@@ -334,17 +525,16 @@ def publish_target(args: argparse.Namespace) -> int:
     manifest = read_json(manifest_path)
     repository = normalize_repository(args.repository)
 
-    registry = os.environ.get("OCI_REGISTRY", "registry.vedenemo.dev")
-    username = os.environ.get("OCI_USERNAME", "jenkins")
-    password = os.environ.get("OCI_PASSWORD", "")
-    with oras_common_args(registry, username, password) as common_args:
-        if os.environ.get("OCI_LAYOUT_PATH", ""):
-            primary_reference = f"{repository}:{args.primary_tag}"
-            subject_uses_digest = False
-        else:
-            primary_reference = f"{registry}/{repository}:{args.primary_tag}"
-            subject_uses_digest = True
-        return publish_target_artifacts(
+    with oras_publish_context() as (
+        common_args,
+        reference_prefix,
+        subject_uses_digest,
+    ):
+        primary_reference = f"{reference_prefix}{repository}:{args.primary_tag}"
+        publish_artifacts = (
+            publish_sysupdate_artifacts if args.sysupdate else publish_target_artifacts
+        )
+        return publish_artifacts(
             manifest=manifest,
             target_dir=target_dir,
             result_json=result_json,
@@ -361,10 +551,11 @@ def publish_test_results(args: argparse.Namespace) -> int:
     """Publish test results as a referrer attached to a target artifact."""
     results_dir = Path(args.results_dir).expanduser().resolve()
 
-    registry = os.environ.get("OCI_REGISTRY", "registry.vedenemo.dev")
-    username = os.environ.get("OCI_USERNAME", "jenkins")
-    password = os.environ.get("OCI_PASSWORD", "")
-    with oras_common_args(registry, username, password) as common_args:
+    with oras_publish_context() as (
+        common_args,
+        _reference_prefix,
+        _subject_uses_digest,
+    ):
         with tempfile.TemporaryDirectory(prefix="oci-test-results-") as archive_dir:
             archive_path = Path(archive_dir) / "test-results.tar"
             create_test_results_archive(results_dir, archive_path)
@@ -397,10 +588,11 @@ def publish_release_attestation(args: argparse.Namespace) -> int:
     relpath = "attestations/release-policy.json"
     signature_relpath = "attestations/release-policy.json.sig"
 
-    registry = os.environ.get("OCI_REGISTRY", "registry.vedenemo.dev")
-    username = os.environ.get("OCI_USERNAME", "jenkins")
-    password = os.environ.get("OCI_PASSWORD", "")
-    with oras_common_args(registry, username, password) as common_args:
+    with oras_publish_context() as (
+        common_args,
+        _reference_prefix,
+        _subject_uses_digest,
+    ):
         result = publish_referrer(
             common_args=common_args,
             subject_reference=args.subject_reference,
@@ -428,6 +620,11 @@ def build_parser() -> argparse.ArgumentParser:
     target_parser.add_argument("--primary-tag", required=True)
     target_parser.add_argument("-o", "--result-json", required=True)
     target_parser.add_argument("-t", "--tag", action="append", default=[], dest="tags")
+    target_parser.add_argument(
+        "--sysupdate",
+        action="store_true",
+        help="publish target as a sysupdate artifact",
+    )
     target_parser.set_defaults(handler=publish_target)
 
     test_results_parser = subparsers.add_parser(
