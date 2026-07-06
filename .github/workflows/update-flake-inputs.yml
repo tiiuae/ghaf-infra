@@ -53,7 +53,6 @@ jobs:
             # Load shellHook-defined helpers (like update-jenkins-plugins) in this CI shell.
             source <(nix print-dev-env)
             update-jenkins-plugins hosts/hetzci
-            update-jenkins-plugins hosts/uae/azureci
           '
 
       - name: Configure git identity for commit hooks
@@ -73,7 +72,6 @@ jobs:
           add-paths: |
             flake.lock
             hosts/hetzci/plugins.json
-            hosts/uae/azureci/plugins.json
           committer: github-actions[bot] <github-actions@users.noreply.github.com>
           author: github-actions[bot] <github-actions@users.noreply.github.com>
           commit-message: |
@@ -83,6 +81,4 @@ jobs:
           signoff: true
           title: "flake.lock: Update flake inputs and Jenkins plugins"
           body: |
-            This PR updates all flake inputs in `flake.lock` and refreshes Jenkins plugins manifests:
-            - `hosts/hetzci/plugins.json`
-            - `hosts/uae/azureci/plugins.json`
+            This PR updates all flake inputs in `flake.lock` and refreshes Jenkins plugins manifest.
