@@ -31,6 +31,7 @@ def TARGETS = [
       device_tag: 'lenovo-x1',
       variant: 'debug-installer',
       testset: '_relayboot_regression_',
+      test_secboot: true,
     ]],
   ],
   [ target: "packages.x86_64-linux.intel-laptop-storeDisk-debug-installer",
