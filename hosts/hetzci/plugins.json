@@ -79,9 +79,9 @@
   },
   {
     "name": "caffeine-api",
-    "version": "3.2.3-194.v31a_b_f7a_b_5a_81",
-    "url": "https://updates.jenkins.io/download/plugins/caffeine-api/3.2.3-194.v31a_b_f7a_b_5a_81/caffeine-api.hpi",
-    "sha256": "1vs3dk7w07p981z5rwxyswdjpwghb8cqfqv6zr77kawrgriiiqlk"
+    "version": "3.2.4-208.v7e2da_a_7db_82b_",
+    "url": "https://updates.jenkins.io/download/plugins/caffeine-api/3.2.4-208.v7e2da_a_7db_82b_/caffeine-api.hpi",
+    "sha256": "1wda79albq3k696a0qv5myxk38698fdm42af0j16a6h35yx59qj0"
   },
   {
     "name": "checks-api",
@@ -133,9 +133,9 @@
   },
   {
     "name": "configuration-as-code",
-    "version": "2089.v970a_0b_a_8cc6d",
-    "url": "https://updates.jenkins.io/download/plugins/configuration-as-code/2089.v970a_0b_a_8cc6d/configuration-as-code.hpi",
-    "sha256": "1h9rx9mc53mjcr851xd5vmwi58hvqgk4p1az5am82z3g4vwk6iq8"
+    "version": "2095.vef6db_3a_b_5b_9c",
+    "url": "https://updates.jenkins.io/download/plugins/configuration-as-code/2095.vef6db_3a_b_5b_9c/configuration-as-code.hpi",
+    "sha256": "0xg8v8lqsnw9fplfc8g36mpfs07mw8h6dvjaqc2ad32xffld9647"
   },
   {
     "name": "configuration-as-code-groovy",
@@ -151,9 +151,9 @@
   },
   {
     "name": "credentials",
-    "version": "1502.v5c95e620ddfe",
-    "url": "https://updates.jenkins.io/download/plugins/credentials/1502.v5c95e620ddfe/credentials.hpi",
-    "sha256": "1k8bp93n79kzbvgsybrni53275hc0dcgf749nihj78ik8hsnxqq5"
+    "version": "1506.v948b_b_b_7dec44",
+    "url": "https://updates.jenkins.io/download/plugins/credentials/1506.v948b_b_b_7dec44/credentials.hpi",
+    "sha256": "03gcs1anzj6j0wrx05hyn018vzn0j4xkn8zhwkjzghvji09hk4zv"
   },
   {
     "name": "credentials-binding",
@@ -217,9 +217,9 @@
   },
   {
     "name": "git-client",
-    "version": "6.6.0",
-    "url": "https://updates.jenkins.io/download/plugins/git-client/6.6.0/git-client.hpi",
-    "sha256": "1g0695gypgwcsy8jihxa9msczq5s79i5kjlzcaf0313q3j8v1fca"
+    "version": "6.6.1",
+    "url": "https://updates.jenkins.io/download/plugins/git-client/6.6.1/git-client.hpi",
+    "sha256": "13vkl4f8xmbry7n552vm3aqkw5kv5k0251x1fvkf9qjippiq1av9"
   },
   {
     "name": "git-server",
@@ -241,9 +241,9 @@
   },
   {
     "name": "github-branch-source",
-    "version": "1967.1969.v205fd594c821",
-    "url": "https://updates.jenkins.io/download/plugins/github-branch-source/1967.1969.v205fd594c821/github-branch-source.hpi",
-    "sha256": "04xbhciznfyivrwycb27qldq3vp05iyxr48rq0y137ra378xsx7g"
+    "version": "1967.1970.vd86979736546",
+    "url": "https://updates.jenkins.io/download/plugins/github-branch-source/1967.1970.vd86979736546/github-branch-source.hpi",
+    "sha256": "158fldfyzil53w8f3p6wl3qr48vf2pcg1mvik8xmainhlyxcvkxb"
   },
   {
     "name": "github-pullrequest",
@@ -277,15 +277,15 @@
   },
   {
     "name": "jackson2-api",
-    "version": "2.21.2-436.v29efdb_7418ff",
-    "url": "https://updates.jenkins.io/download/plugins/jackson2-api/2.21.2-436.v29efdb_7418ff/jackson2-api.hpi",
-    "sha256": "1b0z8qzk4cchgddygqzj6n8a81pny8rxrmncppm6bfjdif28ih1x"
+    "version": "2.22.0-439.vb_b_43658d6176",
+    "url": "https://updates.jenkins.io/download/plugins/jackson2-api/2.22.0-439.vb_b_43658d6176/jackson2-api.hpi",
+    "sha256": "0xvl0qdv7nr0jpwpfzadd9hjx6y151sh26vgnjy8hz2a77g8s6c6"
   },
   {
     "name": "jackson3-api",
-    "version": "3.2.0-83.vfb_04cee1ea_0f",
-    "url": "https://updates.jenkins.io/download/plugins/jackson3-api/3.2.0-83.vfb_04cee1ea_0f/jackson3-api.hpi",
-    "sha256": "0iivb4g4x59l5a9lf959nxavqd27zmi23s9rivnnqklqp7914lrs"
+    "version": "3.2.0-89.v014d02108ea_7",
+    "url": "https://updates.jenkins.io/download/plugins/jackson3-api/3.2.0-89.v014d02108ea_7/jackson3-api.hpi",
+    "sha256": "1rf157jm67kw5fd2n61rmw13ry497vvbasfpf7npa2jrvk867qcd"
   },
   {
     "name": "jakarta-activation-api",
@@ -391,9 +391,9 @@
   },
   {
     "name": "lockable-resources",
-    "version": "1524.v2c727b_b_e56ef",
-    "url": "https://updates.jenkins.io/download/plugins/lockable-resources/1524.v2c727b_b_e56ef/lockable-resources.hpi",
-    "sha256": "0d7c4sfh1hv6nk8699g4lys9gdjapk000pycmd4kvza4q576lm2s"
+    "version": "1537.v68d014129e68",
+    "url": "https://updates.jenkins.io/download/plugins/lockable-resources/1537.v68d014129e68/lockable-resources.hpi",
+    "sha256": "0rw3dygwlwi8ybh96f7c8pkmbihrxh8aw9j6w3d89ng7nfwjl9l2"
   },
   {
     "name": "mailer",
@@ -457,9 +457,9 @@
   },
   {
     "name": "oss-symbols-api",
-    "version": "463.vff8a_5631a_09d",
-    "url": "https://updates.jenkins.io/download/plugins/oss-symbols-api/463.vff8a_5631a_09d/oss-symbols-api.hpi",
-    "sha256": "0cbdplssdzpvgm4xy3dgnd29k0qk3qyg1cyxqw7ig3c72yliwin5"
+    "version": "465.v25d9fdc88c26",
+    "url": "https://updates.jenkins.io/download/plugins/oss-symbols-api/465.v25d9fdc88c26/oss-symbols-api.hpi",
+    "sha256": "0wqpq2gdza0gp4adxm7sdimkzhjd1apsv4a9jhyxa0d1ppv338fy"
   },
   {
     "name": "parameterized-trigger",
@@ -481,9 +481,9 @@
   },
   {
     "name": "pipeline-graph-view",
-    "version": "949.v1cf0f01ca_cfa_",
-    "url": "https://updates.jenkins.io/download/plugins/pipeline-graph-view/949.v1cf0f01ca_cfa_/pipeline-graph-view.hpi",
-    "sha256": "1zxq9hka3ial4qxa2d3vhbz89540lavidp0axa8llisfb072pbxp"
+    "version": "957.v404a_2b_4f9b_6f",
+    "url": "https://updates.jenkins.io/download/plugins/pipeline-graph-view/957.v404a_2b_4f9b_6f/pipeline-graph-view.hpi",
+    "sha256": "1p5mrymigpya2w87g0pafhwas31b6lllzima4h53lz6p9vv1183a"
   },
   {
     "name": "pipeline-groovy-lib",
@@ -493,9 +493,9 @@
   },
   {
     "name": "pipeline-input-step",
-    "version": "551.vdff487c5998c",
-    "url": "https://updates.jenkins.io/download/plugins/pipeline-input-step/551.vdff487c5998c/pipeline-input-step.hpi",
-    "sha256": "05ncyyaaq4gxbqhgq2gky78k8fl7plfkr3sl5f8j1k726b6xamwc"
+    "version": "560.v56198a_642157",
+    "url": "https://updates.jenkins.io/download/plugins/pipeline-input-step/560.v56198a_642157/pipeline-input-step.hpi",
+    "sha256": "0dd1j1rclz1szm45mjmwh4i9p38laa1prp34g1f4w7ndbrsbnqbw"
   },
   {
     "name": "pipeline-milestone-step",
@@ -607,9 +607,9 @@
   },
   {
     "name": "script-security",
-    "version": "1402.v94c9ce464861",
-    "url": "https://updates.jenkins.io/download/plugins/script-security/1402.v94c9ce464861/script-security.hpi",
-    "sha256": "1d5kb4wnvhrbf8djglkzm6mxsdzaw5xdiw6ryyp33s21m5cz55ki"
+    "version": "1402.1405.vc96e74964250",
+    "url": "https://updates.jenkins.io/download/plugins/script-security/1402.1405.vc96e74964250/script-security.hpi",
+    "sha256": "139jm2yx5wijc83wpn1dmnj1hi8vfy71a048a2lpj3gda2rngbn1"
   },
   {
     "name": "scriptler",
@@ -709,9 +709,9 @@
   },
   {
     "name": "vsphere-cloud",
-    "version": "3.512.vfb_0824b_5068c",
-    "url": "https://updates.jenkins.io/download/plugins/vsphere-cloud/3.512.vfb_0824b_5068c/vsphere-cloud.hpi",
-    "sha256": "061vfd2b2fjxz1jkjxm43h04nqpv885vp85500cc1ng104gy3ivr"
+    "version": "4.530.v1b_68fb_22777c",
+    "url": "https://updates.jenkins.io/download/plugins/vsphere-cloud/4.530.v1b_68fb_22777c/vsphere-cloud.hpi",
+    "sha256": "1l7zkcp27ff47yynibza5zjskpay25xz2808qrl1ylp7mcx3hs0l"
   },
   {
     "name": "woodstox-core-api",
@@ -739,9 +739,9 @@
   },
   {
     "name": "workflow-cps",
-    "version": "4331.v9d06ed4658ff",
-    "url": "https://updates.jenkins.io/download/plugins/workflow-cps/4331.v9d06ed4658ff/workflow-cps.hpi",
-    "sha256": "0aclpix71vr1idgh5ji6mrqnhvlxqy4kx14f4nh0l84256bs4fgm"
+    "version": "4350.vcc65d4958821",
+    "url": "https://updates.jenkins.io/download/plugins/workflow-cps/4350.vcc65d4958821/workflow-cps.hpi",
+    "sha256": "1h907ar0gqgba6gm6dr9z5dcz23dpr377gdifqc53df85yn8flw5"
   },
   {
     "name": "workflow-durable-task-step",
