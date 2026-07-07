@@ -21,9 +21,24 @@ def oci_annotations(String reference) {
 }
 
 def oras_pull_json(String reference, String outputDir) {
-  return readJSON(
-    text: run_cmd("oras pull --format json -o '${outputDir}' '${reference}'")
-  )
+  def pullResult = null
+  retry(3) {
+    def pullDir = "${outputDir}/oras-pull-${UUID.randomUUID()}"
+    def quotedPullDir = shell_quote(pullDir)
+    def quotedReference = shell_quote(reference)
+    echo "Pulling OCI artifact '${reference}' into ${pullDir}"
+    sh "rm -rf ${quotedPullDir} && mkdir -p ${quotedPullDir}"
+    try {
+      pullResult = readJSON(
+        text: run_cmd("oras pull --format json -o ${quotedPullDir} ${quotedReference}")
+      )
+    } catch (err) {
+      echo "ORAS pull failed for '${reference}', removing partial output from ${pullDir}"
+      sh "rm -rf ${quotedPullDir} || true"
+      throw err
+    }
+  }
+  return pullResult
 }
 
 @NonCPS
