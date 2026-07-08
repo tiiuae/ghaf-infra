@@ -109,23 +109,6 @@ def annotation_args(annotations: dict[str, str]) -> list[str]:
     ]
 
 
-@contextmanager
-def staged_oci_layers(
-    target_dir: Path, files: list[tuple[str, str]]
-) -> Iterator[tuple[Path, list[str]]]:
-    """Stage layer inputs so ORAS records normalized layer paths."""
-    with tempfile.TemporaryDirectory(prefix="oci-layers-") as staging_dir_name:
-        staging_dir = Path(staging_dir_name)
-        push_files = []
-        for relpath, media_type in files:
-            layer_path = relpath.removeprefix("images/")
-            link_path = staging_dir / layer_path
-            link_path.parent.mkdir(parents=True, exist_ok=True)
-            link_path.symlink_to(target_dir / relpath)
-            push_files.append(f"{layer_path}:{media_type}")
-        yield staging_dir, push_files
-
-
 def normalize_repository(repository: str) -> str:
     """Normalize and validate an OCI repository path."""
     normalized = repository.strip().lower()
@@ -345,30 +328,29 @@ def publish_target_artifacts(
         TARGET_ANNOTATION: target,
     }
 
-    layer_files = []
+    push_files = []
     for image in images:
         image_path = image["path"]
         image_signature = image["signature"]["path"]
-        layer_files.append((image_path, "application/octet-stream"))
+        push_files.append(f"{image_path}:application/octet-stream")
         if image_signature:
-            layer_files.append((image_signature, DETACHED_SIGNATURE_MEDIA_TYPE))
+            push_files.append(f"{image_signature}:{DETACHED_SIGNATURE_MEDIA_TYPE}")
 
-    with staged_oci_layers(target_dir, layer_files) as (staging_dir, push_files):
-        primary_output = run_oras(
-            [
-                "push",
-                *common_args,
-                *annotation_args(primary_annotations),
-                "--disable-path-validation",
-                "--artifact-type",
-                TARGET_ARTIFACT_TYPE,
-                "--config",
-                f"{manifest_path}:{TARGET_CONFIG_MEDIA_TYPE}",
-                primary_reference,
-                *push_files,
-            ],
-            cwd=staging_dir,
-        )
+    primary_output = run_oras(
+        [
+            "push",
+            *common_args,
+            *annotation_args(primary_annotations),
+            "--disable-path-validation",
+            "--artifact-type",
+            TARGET_ARTIFACT_TYPE,
+            "--config",
+            f"{manifest_path}:{TARGET_CONFIG_MEDIA_TYPE}",
+            primary_reference,
+            *push_files,
+        ],
+        cwd=target_dir,
+    )
     primary_digest = primary_output["digest"]
 
     referrers = publish_attestations(
@@ -440,33 +422,32 @@ def publish_sysupdate_artifacts(
         "org.ghaf.ota.system": sysupdate_manifest.get("system", ""),
     }
 
-    layer_files = []
+    push_files = []
     if sysupdate_manifest_signature_path:
-        layer_files.append(
-            (sysupdate_manifest_signature_path, DETACHED_SIGNATURE_MEDIA_TYPE)
+        push_files.append(
+            f"{sysupdate_manifest_signature_path}:{DETACHED_SIGNATURE_MEDIA_TYPE}"
         )
     for file in files:
-        layer_files.append((file["path"], file["media_type"]))
+        push_files.append(f"{file['path']}:{file['media_type']}")
         signature_path = file.get("signature_path")
         if signature_path:
-            layer_files.append((signature_path, DETACHED_SIGNATURE_MEDIA_TYPE))
+            push_files.append(f"{signature_path}:{DETACHED_SIGNATURE_MEDIA_TYPE}")
 
-    with staged_oci_layers(target_dir, layer_files) as (staging_dir, push_files):
-        primary_output = run_oras(
-            [
-                "push",
-                *common_args,
-                *annotation_args(annotations),
-                "--disable-path-validation",
-                "--artifact-type",
-                SYSUPDATE_MANIFEST_MEDIA_TYPE,
-                "--config",
-                f"{target_dir / sysupdate_manifest_path}:{SYSUPDATE_MANIFEST_MEDIA_TYPE}",
-                primary_reference,
-                *push_files,
-            ],
-            cwd=staging_dir,
-        )
+    primary_output = run_oras(
+        [
+            "push",
+            *common_args,
+            *annotation_args(annotations),
+            "--disable-path-validation",
+            "--artifact-type",
+            SYSUPDATE_MANIFEST_MEDIA_TYPE,
+            "--config",
+            f"{target_dir / sysupdate_manifest_path}:{SYSUPDATE_MANIFEST_MEDIA_TYPE}",
+            primary_reference,
+            *push_files,
+        ],
+        cwd=target_dir,
+    )
     primary_digest = primary_output["digest"]
 
     referrers = publish_attestations(

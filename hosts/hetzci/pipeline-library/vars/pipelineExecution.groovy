@@ -172,8 +172,6 @@ def create_pipeline(
 
     if (target_config.no_image) {
       manifest.uefi.reason = "no_image"
-    } else if (is_sysupdate_target && target_config.uefi_sign_requested) {
-      manifest.uefi.reason = "sysupdate_efi_signing_not_implemented"
     } else if (!signing_possible) {
       manifest.uefi.reason = "signing_not_possible"
     } else if (!target_config.uefi_sign_requested) {
@@ -354,7 +352,7 @@ def create_pipeline(
             ['root', 'verity', 'kernel'].each { role ->
               images << [
                 path: "${output}/unsigned-output/${sysupdate_manifest[role].file}",
-                role: "sysupdate-${role}",
+                role: role,
               ]
             }
             manifest.images = images.collect { image ->
@@ -383,18 +381,20 @@ def create_pipeline(
           }
         }
         run_optional_stage(
-          !target_config.no_image && !is_sysupdate_target && signing_possible && target_config.uefi_sign_requested,
+          !target_config.no_image && signing_possible && target_config.uefi_sign_requested,
           "Sign (UEFI) ${build_shortname}"
         ) {
           def tmpdir = artifactSupport.build_tmpdir("uefisign-${build_shortname}")
           def uefi_image = null
-          if (manifest.images.size() == 1) {
+          if (!is_sysupdate_target && manifest.images.size() == 1) {
             uefi_image = manifest.images[0]
           } else {
-            error("UEFI signing for multi-image target ${build_shortname} is not implemented yet")
+            uefi_image = manifest.images.find { it.role == 'kernel' }
+            if (uefi_image == null) {
+              error("UEFI signing for multi-image target requires an image with role 'kernel'")
+            }
           }
           def img_name = artifactSupport.path_basename(uefi_image.path)
-          def signer = build_target_name.contains("nvidia-jetson-orin") ? "uefisign-simple" : "uefisign"
 
           try {
             sh """
@@ -402,20 +402,52 @@ def create_pipeline(
               mkdir -p '${tmpdir}'
             """
 
-            withRedundancyRouter("uefi-ghaf-db") { ctx ->
-              sh """
-                ${signer} /etc/jenkins/keys/secboot/DB.pem \
-                  "${ctx.uri}" \
-                  ${output}/${uefi_image.path} \
-                  '${tmpdir}'
-              """
-              record_signature(manifest.uefi, ctx)
-            }
+            if (is_sysupdate_target) {
+              def sysupdate_manifest_image = manifest.images.find { it.role == 'sysupdate-manifest' }
+              if (sysupdate_manifest_image == null) {
+                error("sysupdate manifest not found")
+              }
+              def sysupdate_manifest_name = artifactSupport.path_basename(sysupdate_manifest_image.path)
 
-            sh """
-              mkdir -p '${output}/images'
-              mv '${tmpdir}/signed_${img_name}' '${output}/images/${img_name}'
-            """
+              withRedundancyRouter("uefi-ghaf-db") { ctx ->
+                sh """
+                  uefi-sign-sysupdate /etc/jenkins/keys/secboot/DB.pem \
+                    "${ctx.uri}" \
+                    '${output}/${uefi_image.path}' \
+                    '${tmpdir}/${img_name}'
+                """
+                record_signature(manifest.uefi, ctx)
+              }
+
+              sh """
+                uefi-sign-sysupdate rehash \
+                  '${tmpdir}/${img_name}' \
+                  '${output}/${sysupdate_manifest_image.path}' \
+                  '${tmpdir}/${sysupdate_manifest_name}'
+              """
+              sh """
+                mkdir -p '${output}/images'
+                mv '${tmpdir}/${img_name}' '${output}/images/${img_name}'
+                mv '${tmpdir}/${sysupdate_manifest_name}' '${output}/images/${sysupdate_manifest_name}'
+              """
+              sysupdate_manifest_image.path = "images/${sysupdate_manifest_name}"
+            } else {
+              def signer = build_target_name.contains("nvidia-jetson-orin") ? "uefisign-simple" : "uefisign"
+              withRedundancyRouter("uefi-ghaf-db") { ctx ->
+                sh """
+                  ${signer} /etc/jenkins/keys/secboot/DB.pem \
+                    "${ctx.uri}" \
+                    ${output}/${uefi_image.path} \
+                    '${tmpdir}'
+                """
+                record_signature(manifest.uefi, ctx)
+              }
+
+              sh """
+                mkdir -p '${output}/images'
+                mv '${tmpdir}/signed_${img_name}' '${output}/images/${img_name}'
+              """
+            }
             uefi_image.path = "images/${img_name}"
             manifest.uefi.signed = true
             manifest.uefi.image_path = "images/${img_name}"

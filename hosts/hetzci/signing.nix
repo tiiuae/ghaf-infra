@@ -58,6 +58,7 @@ let
       uefisign
       uefisigniso
       uefisign-simple
+      uefi-sign-sysupdate
     ])
     ++ (with self.packages.${pkgs.stdenv.hostPlatform.system}; [
       verify-signature
