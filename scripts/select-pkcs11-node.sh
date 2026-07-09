@@ -36,7 +36,7 @@ set -e
 
 usage() {
   cat <<EOF
-Usage: $(basename "$0") OBJECT
+Usage: $(basename "$0") [--regions REGIONS] [--tokens TOKENS] OBJECT
 
 Finds the first pkcs11 signing node that works.
 
@@ -44,46 +44,123 @@ This script can either be sourced to populate the environment,
 or executed normally to return json stdout for further processing.
 
 Options:
+  --regions REGIONS: comma-separated region list to try, defaults to ROUTER_PKCS11_REGIONS
+  --tokens TOKENS: comma-separated token list to try, defaults to ROUTER_PKCS11_TOKENS
   OBJECT: The key that should be found on the node to consider it healthy
 
 Environment:
+  ROUTER_PKCS11_REGIONS: comma-separated region list to try. Default: tampere,uae
+  ROUTER_PKCS11_TOKENS: comma-separated token list to try. Default: NetHSM,YubiHSM
   YUBIHSM_PIN: set to the pin of YubiHSM. When not specified, it's read from /run/secrets
 EOF
 }
 
-if [[ $# -ne 1 ]]; then
+ROUTER_PKCS11_REGIONS="${ROUTER_PKCS11_REGIONS:-tampere,uae}"
+ROUTER_PKCS11_TOKENS="${ROUTER_PKCS11_TOKENS:-NetHSM,YubiHSM}"
+OBJECT=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+  --regions)
+    if [[ $# -lt 2 ]]; then
+      usage
+      # shellcheck disable=SC2317
+      return 1 2>/dev/null || exit 1
+    fi
+    ROUTER_PKCS11_REGIONS="$2"
+    shift 2
+    ;;
+  --tokens)
+    if [[ $# -lt 2 ]]; then
+      usage
+      # shellcheck disable=SC2317
+      return 1 2>/dev/null || exit 1
+    fi
+    ROUTER_PKCS11_TOKENS="$2"
+    shift 2
+    ;;
+  --)
+    shift
+    if [[ $# -ne 1 || -n $OBJECT ]]; then
+      usage
+      # shellcheck disable=SC2317
+      return 1 2>/dev/null || exit 1
+    fi
+    OBJECT="$1"
+    shift
+    ;;
+  -*)
+    usage
+    # shellcheck disable=SC2317
+    return 1 2>/dev/null || exit 1
+    ;;
+  *)
+    if [[ -n $OBJECT ]]; then
+      usage
+      # shellcheck disable=SC2317
+      return 1 2>/dev/null || exit 1
+    fi
+    OBJECT="$1"
+    shift
+    ;;
+  esac
+done
+
+if [[ -z $OBJECT ]]; then
   usage
   # shellcheck disable=SC2317
   return 1 2>/dev/null || exit 1
 fi
 
-OBJECT="$1"
 YUBIHSM_PIN="${YUBIHSM_PIN:-$(cat /run/secrets/yubihsm-pin 2>/dev/null || true)}"
 
 # the default timeout for unreachable pkcs11 proxy is minutes, we want to exit much earlier than that
 SOCKET_TIMEOUT="${SOCKET_TIMEOUT:-30s}"
 
+if [[ -z $ROUTER_PKCS11_REGIONS || $ROUTER_PKCS11_REGIONS == ,* || $ROUTER_PKCS11_REGIONS == *, || $ROUTER_PKCS11_REGIONS == *,,* ]]; then
+  echo "Error: ROUTER_PKCS11_REGIONS/--regions contains an empty region" 1>&2
+  # shellcheck disable=SC2317
+  return 1 2>/dev/null || exit 1
+fi
+
+if [[ -z $ROUTER_PKCS11_TOKENS || $ROUTER_PKCS11_TOKENS == ,* || $ROUTER_PKCS11_TOKENS == *, || $ROUTER_PKCS11_TOKENS == *,,* ]]; then
+  echo "Error: ROUTER_PKCS11_TOKENS/--tokens contains an empty token" 1>&2
+  # shellcheck disable=SC2317
+  return 1 2>/dev/null || exit 1
+fi
+
 if [[ -z $YUBIHSM_PIN ]]; then
   echo "Warning: YUBIHSM_PIN is empty. Connection to YubiHSMs will most likely fail." 1>&2
 fi
 
-# tokens are tried in this order
-PKCS11_TOKENS=(
-  "NetHSM"
-  "YubiHSM"
-)
+IFS=, read -r -a PKCS11_TOKENS <<<"$ROUTER_PKCS11_TOKENS"
+IFS=, read -r -a PKCS11_REGIONS <<<"$ROUTER_PKCS11_REGIONS"
 
 # sockets are tried in this order
-PKCS11_SOCKETS=(
-  "tls://nethsm-gateway.sumu.vedenemo.dev:2345"
-  "tls://uae-nethsm-gateway.sumu.vedenemo.dev:2345"
-)
+PKCS11_SOCKETS=()
+for region in "${PKCS11_REGIONS[@]}"; do
+  case "$region" in
+  tampere)
+    PKCS11_SOCKETS+=("tampere=tls://nethsm-gateway.sumu.vedenemo.dev:2345")
+    ;;
+  uae)
+    PKCS11_SOCKETS+=("uae=tls://uae-nethsm-gateway.sumu.vedenemo.dev:2345")
+    ;;
+  *)
+    echo "Error: unsupported region '$region'" 1>&2
+    # shellcheck disable=SC2317
+    return 1 2>/dev/null || exit 1
+    ;;
+  esac
+done
 
 for token in "${PKCS11_TOKENS[@]}"; do
-  for socket in "${PKCS11_SOCKETS[@]}"; do
+  for socket_config in "${PKCS11_SOCKETS[@]}"; do
+    region="${socket_config%%=*}"
+    socket="${socket_config#*=}"
     uri="pkcs11:token=$token;object=$OBJECT"
 
-    echo "[>] Checking $token on $socket" 1>&2
+    echo "[>] Checking $token on $socket ($region)" 1>&2
     if GNUTLS_PIN="$YUBIHSM_PIN" \
       PKCS11_PROXY_SOCKET="$socket" \
       timeout "$SOCKET_TIMEOUT" \
@@ -99,20 +176,24 @@ for token in "${PKCS11_TOKENS[@]}"; do
         export PKCS11_PROXY_SOCKET="$socket"
         export PKCS11_TOKEN="$token"
         export PKCS11_URI="$uri"
+        export PKCS11_REGION="$region"
         echo "Exported into environment:"
         echo "> PKCS11_PROXY_SOCKET=$socket"
         echo "> PKCS11_TOKEN=$token"
         echo "> PKCS11_URI=$uri"
+        echo "> PKCS11_REGION=$region"
         return 0
       else
         jq -n \
           --arg socket "$socket" \
           --arg token "$token" \
           --arg uri "$uri" \
+          --arg region "$region" \
           '{
             socket: $socket,
             token: $token,
-            uri: $uri
+            uri: $uri,
+            region: $region
           }'
         exit 0
       fi
