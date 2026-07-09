@@ -51,5 +51,6 @@
 
   services.jenkins.environment = {
     OCI_REGISTRY = "registry.uaenorth.cloudapp.azure.com";
+    ROUTER_PKCS11_REGIONS = "uae,tampere";
   };
 }
