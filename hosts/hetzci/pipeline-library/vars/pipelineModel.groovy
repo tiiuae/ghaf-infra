@@ -580,6 +580,7 @@ def normalize_build_config(
   def normalized = shallow_copy_map(targetConfig)
   normalized.shortname = short_target_name(targetName)
   normalized.no_image = normalized.get('no_image', false)
+  normalized.sysupdate = normalized.get('sysupdate', false)
   def uefiSignRequested = normalized.get('uefisign', false) || normalized.get('uefisigniso', false)
   normalized.uefi_sign_requested = uefiSignRequested
   normalized.provenance_requested = normalized.get('provenance', true)

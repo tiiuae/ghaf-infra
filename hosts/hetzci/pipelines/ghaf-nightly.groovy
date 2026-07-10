@@ -79,7 +79,7 @@ def TARGETS = [
     testset: null, sbom: true,
   ],
   [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-sysupdate",
-    uefisign: true, sbom: true,
+    sysupdate: true, uefisign: true, sbom: true,
   ],
 ]
 

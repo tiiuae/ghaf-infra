@@ -86,7 +86,7 @@ def create_pipeline(
     }
     def build_target_name = target_config.target
     def build_shortname = target_config.shortname
-    def is_sysupdate_target = build_target_name.endsWith('-sysupdate')
+    def is_sysupdate_target = target_config.sysupdate
     def normalized_test_runs = target_config.test_runs
     def output = "${artifacts_local_dir}/${build_target_name}"
     def local_target_ref = "${ghaf_checkout}#${build_target_name}"
