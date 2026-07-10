@@ -110,7 +110,7 @@ pipeline {
             }
             if (params.lenovo_x1_carbon_gen11_debug_sysupdate) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-sysupdate", uefisign: params.UEFISIGN, testset: params.TESTSET ])
+                [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-sysupdate", sysupdate: true, uefisign: params.UEFISIGN, testset: params.TESTSET ])
             }
             if (params.dell_latitude_7230_debug) {
               TARGETS.push(
