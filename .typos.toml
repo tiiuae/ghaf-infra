@@ -9,6 +9,13 @@ extend-ignore-re = [
   ".*https?://.*",
 ]
 
+[files]
+extend-exclude = [
+  "*.tf",
+  "*.tfvars",
+  ".terraform/"
+]
+
 [default.extend-words]
 certin = "certin"
 hel = "hel"
