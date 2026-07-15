@@ -75,8 +75,8 @@
         relay_serial_port = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_B0013I2U-if00-port0";
         OrinAGX1 = {
           inherit location;
-          device_id = "00-00-05-b1-05";
-          netvm_hostname = "ghaf-0000372997";
+          device_id = "00-48-98-73-41";
+          netvm_hostname = "ghaf-1217950529";
           serial_port = "/dev/ttyAGX1";
           relay_number = 2;
           device_ip_address = "172.20.16.55";
