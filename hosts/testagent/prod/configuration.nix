@@ -8,6 +8,7 @@
 {
   imports = [
     ../agents-common.nix
+    ../finland.nix
     ./hardware-configuration.nix
   ];
 

@@ -7,6 +7,7 @@
 {
   imports = [
     ../agents-common.nix
+    ../finland.nix
     ./disk-config.nix
   ];
 

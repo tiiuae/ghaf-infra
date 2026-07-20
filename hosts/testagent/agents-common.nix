@@ -48,177 +48,161 @@ let
       '';
   };
 
-  relayPython = (
-    pkgs.python3.withPackages (
-      ps: with ps; [
-        fastapi
-        uvicorn
-        jinja2
-        python-multipart
-        requests
-        pyserial
-      ]
-    )
+  relayPython = pkgs.python3.withPackages (
+    ps: with ps; [
+      fastapi
+      uvicorn
+      jinja2
+      python-multipart
+      requests
+      pyserial
+    ]
   );
 
   relay-board-exporter = pkgs.writeScriptBin "relay-board-exporter" ''
     #!${relayPython}/bin/python3
     ${builtins.readFile ./relay_board_exporter.py}
   '';
-
-  keySource = inputs.ghaf-infra-pki.packages.${pkgs.stdenv.hostPlatform.system}.yubi-slsa-pki;
 in
 {
+  options.services.testagent.credentialsFile = lib.mkOption {
+    type = lib.types.path;
+    description = "SOPS file containing shared test-agent credentials.";
+  };
+
   imports = [
     ./agent.nix
-    ./gc.nix
     inputs.sops-nix.nixosModules.sops
     inputs.disko.nixosModules.disko
     self.nixosModules.service-monitoring
   ]
   ++ (with self.nixosModules; [
     common
-    service-nebula
     service-openssh
     team-devenv
-    team-testers
   ]);
 
-  sops.secrets =
-    let
-      credential = {
-        sopsFile = ./credentials.yaml;
-        owner = "jenkins";
-      };
-    in
-    {
-      dut-pass = credential;
-      plug-login = credential;
-      plug-pass = credential;
-      switch-token = credential;
-      switch-secret = credential;
-      wifi-ssid = credential;
-      wifi-password = credential;
-      pi-login = credential;
-      pi-pass = credential;
-      # used for ssh connections
-      ssh_host_ed25519_key.owner = "jenkins";
-
-      fleetdm_enroll_secret = credential;
-      fleetdm_api_token = credential;
-
-      # Per-host secrets sourced via defaultSopsFile
-      metrics_password.owner = "alloy";
-      nebula-cert.owner = config.nebula.user;
-      nebula-key.owner = config.nebula.user;
-    };
-
-  networking.useDHCP = true;
-
-  boot.loader = {
-    systemd-boot.enable = true;
-    efi.canTouchEfiVariables = true;
-  };
-
-  hardware = {
-    enableRedistributableFirmware = true;
-    cpu.intel.updateMicrocode = true;
-  };
-
-  services.udev.packages = [
-    self.packages.${pkgs.stdenv.hostPlatform.system}.brainstem
-    pkgs.usbsdmux
-  ];
-
-  # packages available in all user sessions
-  environment.systemPackages = [
-    connect-script
-    disconnect-script
-    relay-board-exporter
-  ]
-  ++ (with self.packages.${pkgs.stdenv.hostPlatform.system}; [
-    brainstem
-    policy-checker
-  ])
-  ++ (with inputs.robot-framework.packages.${pkgs.stdenv.hostPlatform.system}; [
-    ghaf-robot
-    KMTronic
-  ])
-  ++ (with pkgs; [
-    socat
-    minicom
-    usbsdmux
-    jq
-    curl
-    grafana-loki
-    openssl
-    (python3.withPackages (ps: with ps; [ pyserial ]))
-  ]);
-
-  # This server is only exposed to the internal network
-  # fail2ban only causes issues here
-  services.fail2ban.enable = lib.mkForce false;
-
-  nebula = {
-    enable = true;
-    cert = config.sops.secrets.nebula-cert.path;
-    key = config.sops.secrets.nebula-key.path;
-  };
-
-  services.nebula.networks."vedenemo".firewall = {
-    inbound = [
+  config = {
+    sops.secrets =
+      let
+        credential = {
+          sopsFile = config.services.testagent.credentialsFile;
+          owner = "jenkins";
+        };
+      in
       {
-        port = 8000;
-        proto = "tcp";
-        groups = [ "scraper" ];
-      }
+        dut-pass = credential;
+        plug-login = credential;
+        plug-pass = credential;
+        switch-token = credential;
+        switch-secret = credential;
+        wifi-ssid = credential;
+        wifi-password = credential;
+        pi-login = credential;
+        pi-pass = credential;
+        # used for ssh connections
+        ssh_host_ed25519_key.owner = "jenkins";
+
+        # Per-host secrets sourced via defaultSopsFile
+        metrics_password.owner = "alloy";
+      };
+
+    networking.useDHCP = true;
+
+    boot.loader = {
+      systemd-boot.enable = true;
+      efi.canTouchEfiVariables = true;
+    };
+
+    hardware = {
+      enableRedistributableFirmware = true;
+      cpu.intel.updateMicrocode = true;
+    };
+
+    services.udev.packages = [
+      self.packages.${pkgs.stdenv.hostPlatform.system}.brainstem
+      pkgs.usbsdmux
     ];
-  };
 
-  # Trigger UDEV rules
-  system.activationScripts.udevTrigger = ''
-    echo "==> Triggering udev rules..."
-    /run/current-system/sw/bin/udevadm trigger --subsystem-match=tty
-    /run/current-system/sw/bin/udevadm trigger --subsystem-match=block
-  '';
-
-  services.monitoring = {
-    metrics.enable = true;
-    logs = {
-      enable = true;
-      lokiAddress = "https://monitoring.vedenemo.dev";
-      auth.password_file = config.sops.secrets.metrics_password.path;
-    };
-  };
-
-  systemd.services.relay-board-metric-exporter = {
-    description = "KMTronic Relay Board Prometheus Exporter";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
-
-    serviceConfig = {
-      Type = "simple";
-      ExecStart = "${relay-board-exporter}/bin/relay-board-exporter";
-      Restart = "on-failure";
-      RestartSec = "5s";
-    };
-    path = with pkgs; [
-      bash
-      jq
-      socat
-      coreutils
-      gawk
+    # packages available in all user sessions
+    environment.systemPackages = [
+      connect-script
+      disconnect-script
       relay-board-exporter
-      inputs.robot-framework.packages.${pkgs.stdenv.hostPlatform.system}.KMTronic
-    ];
+    ]
+    ++ (with self.packages.${pkgs.stdenv.hostPlatform.system}; [
+      brainstem
+      policy-checker
+    ])
+    ++ (with inputs.robot-framework.packages.${pkgs.stdenv.hostPlatform.system}; [
+      ghaf-robot
+      KMTronic
+    ])
+    ++ (with pkgs; [
+      socat
+      minicom
+      usbsdmux
+      jq
+      curl
+      grafana-loki
+      openssl
+      (python3.withPackages (ps: with ps; [ pyserial ]))
+    ]);
+
+    # This server is only exposed to the internal network
+    # fail2ban only causes issues here
+    services.fail2ban.enable = lib.mkForce false;
+
+    # Trigger UDEV rules
+    system.activationScripts.udevTrigger = ''
+      echo "==> Triggering udev rules..."
+      /run/current-system/sw/bin/udevadm trigger --subsystem-match=tty
+      /run/current-system/sw/bin/udevadm trigger --subsystem-match=block
+    '';
+
+    services.monitoring = {
+      metrics.enable = true;
+      logs = {
+        enable = true;
+        lokiAddress = "https://monitoring.vedenemo.dev";
+        auth.password_file = config.sops.secrets.metrics_password.path;
+      };
+    };
+
+    systemd.services.relay-board-metric-exporter = {
+      description = "KMTronic Relay Board Prometheus Exporter";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "network-online.target" ];
+      wants = [ "network-online.target" ];
+
+      serviceConfig = {
+        Type = "simple";
+        ExecStart = "${relay-board-exporter}/bin/relay-board-exporter";
+        Restart = "on-failure";
+        RestartSec = "5s";
+      };
+      path = with pkgs; [
+        bash
+        jq
+        socat
+        coreutils
+        gawk
+        relay-board-exporter
+        inputs.robot-framework.packages.${pkgs.stdenv.hostPlatform.system}.KMTronic
+      ];
+    };
+
+    environment.etc."jenkins/provenance-trust-policy.yaml".source =
+      "${self.outPath}/slsa/provenance-trust-policy.yaml";
+
+    environment.etc."jenkins/ci-test-automation-pinned-source".text = inputs.robot-framework.outPath;
+
+    nix.gc = {
+      automatic = true;
+      dates = "daily";
+      randomizedDelaySec = "45min";
+      persistent = false;
+      options = "--delete-older-than 14d";
+    };
   };
-
-  environment.etc."jenkins/provenance-trust-policy.yaml".source =
-    "${self.outPath}/slsa/provenance-trust-policy.yaml";
-
-  environment.etc."jenkins/GhafInfraSignECP256.pem".source =
-    "${keySource}/share/ghaf-infra-pki/slsa/GhafInfraSignECP256.pem";
-
-  environment.etc."jenkins/ci-test-automation-pinned-source".text = inputs.robot-framework.outPath;
 }

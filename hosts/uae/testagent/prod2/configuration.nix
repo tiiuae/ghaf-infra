@@ -10,7 +10,8 @@
 }:
 {
   imports = [
-    ../agents-common.nix
+    ../../../testagent/agents-common.nix
+    ../uae.nix
     ./disk-config.nix
     (modulesPath + "/profiles/qemu-guest.nix")
     inputs.sops-nix.nixosModules.sops
