@@ -199,9 +199,9 @@
   },
   {
     "name": "favorite",
-    "version": "2.263.v941d21defef7",
-    "url": "https://updates.jenkins.io/download/plugins/favorite/2.263.v941d21defef7/favorite.hpi",
-    "sha256": "1cxkfvhqmnxbr9nnw656sq9d1y5wg2jwgx5991d2qyjwh85pbm1z"
+    "version": "2.267.vb_90d08408081",
+    "url": "https://updates.jenkins.io/download/plugins/favorite/2.267.vb_90d08408081/favorite.hpi",
+    "sha256": "05gk1rnrq894rk51lpnzx13yax2zjdjn8w5bdzan4i2n0m2ckj38"
   },
   {
     "name": "font-awesome-api",
@@ -385,15 +385,15 @@
   },
   {
     "name": "junit",
-    "version": "1413.v736fa_5b_61d80",
-    "url": "https://updates.jenkins.io/download/plugins/junit/1413.v736fa_5b_61d80/junit.hpi",
-    "sha256": "0k96l34sg6ygh7rqi3vn3dr53qgm0k7i72m0nl2jmhcnxd230fiv"
+    "version": "1415.vcb_3245e24402",
+    "url": "https://updates.jenkins.io/download/plugins/junit/1415.vcb_3245e24402/junit.hpi",
+    "sha256": "086dqf37bb4s3ynvkzn37n0dykcprphqsnw2sr11l3x394nd226c"
   },
   {
     "name": "lockable-resources",
-    "version": "1537.v68d014129e68",
-    "url": "https://updates.jenkins.io/download/plugins/lockable-resources/1537.v68d014129e68/lockable-resources.hpi",
-    "sha256": "0rw3dygwlwi8ybh96f7c8pkmbihrxh8aw9j6w3d89ng7nfwjl9l2"
+    "version": "1539.v4db_b_fc1cc115",
+    "url": "https://updates.jenkins.io/download/plugins/lockable-resources/1539.v4db_b_fc1cc115/lockable-resources.hpi",
+    "sha256": "0vkmg0r7v89j2w2bhlzrainn5y1cfgks3jsng2ns1aa5mj8pprxm"
   },
   {
     "name": "mailer",
@@ -409,9 +409,9 @@
   },
   {
     "name": "matrix-auth",
-    "version": "3.2.10",
-    "url": "https://updates.jenkins.io/download/plugins/matrix-auth/3.2.10/matrix-auth.hpi",
-    "sha256": "05ik18iyqvlfx1ccz5dh05q21kazkbrkw5r7pxb2a353k0v00g92"
+    "version": "3.3",
+    "url": "https://updates.jenkins.io/download/plugins/matrix-auth/3.3/matrix-auth.hpi",
+    "sha256": "0j1rc5gsris6b5s68xw2l4nmpnsgc3wvqr32q7a7426yy4bakxxq"
   },
   {
     "name": "matrix-project",
@@ -751,9 +751,9 @@
   },
   {
     "name": "workflow-job",
-    "version": "1571.1580.v18e46842c125",
-    "url": "https://updates.jenkins.io/download/plugins/workflow-job/1571.1580.v18e46842c125/workflow-job.hpi",
-    "sha256": "1wn85wl1hfjdqln2fkwpchq1lkwaipz8mx1njq86ra0cb21acm7g"
+    "version": "1590.v49101d088542",
+    "url": "https://updates.jenkins.io/download/plugins/workflow-job/1590.v49101d088542/workflow-job.hpi",
+    "sha256": "0qdlqwx33b076zkvz9f9zxjbqpvjn0jff0nqgmbjnk312fvgi4r9"
   },
   {
     "name": "workflow-multibranch",
