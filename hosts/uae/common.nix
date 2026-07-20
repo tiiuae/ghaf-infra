@@ -16,8 +16,6 @@ in
     self.nixosModules.service-monitoring
   ];
 
-  services.monitoring.logs.lokiAddress = lib.mkDefault defaultLoki;
-
   sops = {
     secrets = lib.mkMerge [
       (lib.mkIf config.services.monitoring.logs.enable {
@@ -34,6 +32,7 @@ in
     metrics.enable = lib.mkDefault true;
     logs = {
       enable = lib.mkDefault true;
+      lokiAddress = lib.mkDefault defaultLoki;
       auth.password_file = config.sops.secrets.loki_password.path;
     };
   };
