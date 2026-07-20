@@ -15,6 +15,17 @@ jenkins:
             name: testagents
             permissions:
               - Agent/Connect
+        - group:
+            name: 'tiiuae:ci-dev-admins'
+            permissions:
+              - Overall/Read
+              - Overall/SystemRead
+              - Job/Build
+              - Job/Cancel
+              - Job/Read
+              - Job/Configure
+              - Run/Replay
+              - Run/Update
   securityRealm:
     reverseProxy:
       customLogOutUrl: /oauth2/sign_out
