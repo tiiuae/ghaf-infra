@@ -110,9 +110,9 @@
             enable = true;
             excludes = [
               "^LICENSES/.*"
-              ".*\.yaml"
-              ".*\.crypt"
-              ".*/plugins\.json"
+              ".*\\.yaml"
+              ".*\\.crypt"
+              ".*/plugins\\.json"
             ];
             settings = {
               configPath = "${self.outPath}/.typos.toml";
