@@ -8,7 +8,8 @@
 {
   imports = [
     ./disk-config.nix
-    ../agents-common.nix
+    ../../../testagent/agents-common.nix
+    ../uae.nix
   ]
   ++ (with self.nixosModules; [
     team-devenv
