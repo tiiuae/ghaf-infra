@@ -189,7 +189,7 @@ private def inferred_device_info(String targetName, boolean secureboot) {
     return null
   }
 
-  if (normalizedTarget.contains('lenovo-x1') && secureboot && !normalizedTarget.contains('installer')) {
+  if (normalizedTarget.contains('lenovo-x1') && secureboot) {
     return info_for_device_tag('x1-sec-boot')
   }
 
