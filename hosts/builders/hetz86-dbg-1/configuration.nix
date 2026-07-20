@@ -6,16 +6,6 @@
   lib,
   ...
 }:
-let
-  tuning = import ../../lib/nix-tuning.nix { inherit lib; };
-
-  # Current host sizing: 16 vCPU, 30 GiB RAM, ~337 GiB root disk.
-  disk = tuning.mkDiskThresholds 337;
-  build = tuning.mkBuildLimits {
-    cpus = 16;
-    ramGiB = 30;
-  };
-in
 {
   imports = [
     ./disk-config.nix
@@ -44,6 +34,14 @@ in
   networking.hostName = "hetz86-dbg-1";
   boot.kernelModules = [ "kvm-amd" ];
 
+  # Current host sizing: 16 vCPU, 30 GiB RAM, ~337 GiB root disk.
+  builder.tuning = {
+    enable = true;
+    cpus = 16;
+    ramGiB = 30;
+    diskGiB = 337;
+  };
+
   cachix-push = {
     cacheName = "ghaf-dbg";
   };
@@ -53,10 +51,5 @@ in
     "ghaf-dbg"
   ];
   nix.settings.trusted-users = [ "@wheel" ];
-  nix.settings.max-jobs = lib.mkForce build.maxJobs;
-  nix.settings.cores = lib.mkForce build.cores;
-  nix.settings.min-free = lib.mkForce disk.minFreeBytes;
-  nix.settings.max-free = lib.mkForce disk.maxFreeBytes;
-
   system.stateVersion = lib.mkForce "25.11";
 }

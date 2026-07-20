@@ -3,19 +3,8 @@
 {
   self,
   inputs,
-  lib,
   ...
 }:
-let
-  tuning = import ../../lib/nix-tuning.nix { inherit lib; };
-
-  # Current host sizing: 96 vCPU, 251 GiB RAM, ~1760 GiB root (/nix) disk.
-  disk = tuning.mkDiskThresholds 1760;
-  build = tuning.mkBuildLimits {
-    cpus = 96;
-    ramGiB = 251;
-  };
-in
 {
   imports = [
     ./disk-config.nix
@@ -46,6 +35,14 @@ in
   networking.hostName = "hetz86-rel-2";
   boot.kernelModules = [ "kvm-amd" ];
 
+  # Current host sizing: 96 vCPU, 251 GiB RAM, ~1760 GiB root (/nix) disk.
+  builder.tuning = {
+    enable = true;
+    cpus = 96;
+    ramGiB = 251;
+    diskGiB = 1760;
+  };
+
   cachix-push = {
     cacheName = "ghaf-release";
   };
@@ -57,11 +54,6 @@ in
     };
     logs.enable = true;
   };
-
-  nix.settings.max-jobs = lib.mkForce build.maxJobs;
-  nix.settings.cores = lib.mkForce build.cores;
-  nix.settings.min-free = lib.mkForce disk.minFreeBytes;
-  nix.settings.max-free = lib.mkForce disk.maxFreeBytes;
 
   users.users.hetz86-rel-2-builder = {
     isNormalUser = true;

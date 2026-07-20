@@ -8,16 +8,6 @@
   lib,
   ...
 }:
-let
-  tuning = import ../../../../lib/nix-tuning.nix { inherit lib; };
-
-  # Current host sizing: 16 vCPU, 32 GiB RAM, ~1024 GiB /nix disk.
-  disk = tuning.mkDiskThresholds 1024;
-  build = tuning.mkBuildLimits {
-    cpus = 16;
-    ramGiB = 32;
-  };
-in
 {
   imports = [
     ./disk-config.nix
@@ -39,12 +29,15 @@ in
 
   networking.hostName = "uae-azureci-hetzarm-1";
 
-  sops.defaultSopsFile = ./secrets.yaml;
+  # Current host sizing: 16 vCPU, 32 GiB RAM, ~1024 GiB /nix disk.
+  builder.tuning = {
+    enable = true;
+    cpus = 16;
+    ramGiB = 32;
+    diskGiB = 1024;
+  };
 
-  nix.settings.max-jobs = lib.mkForce build.maxJobs;
-  nix.settings.cores = lib.mkForce build.cores;
-  nix.settings.min-free = lib.mkForce disk.minFreeBytes;
-  nix.settings.max-free = lib.mkForce disk.maxFreeBytes;
+  sops.defaultSopsFile = ./secrets.yaml;
 
   environment.systemPackages = with pkgs; [
     screen
