@@ -65,7 +65,7 @@ jobs:
           persist-credentials: false
           allow-unsafe-pr-checkout: true
       - name: Install nix
-        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
+        uses: cachix/install-nix-action@630ae543ea3a38a9a4166f03376c02c50f408342
       - name: Add builders to ssh_known_hosts
         shell: bash
         run: |
