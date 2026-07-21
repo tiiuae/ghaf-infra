@@ -15,6 +15,7 @@ let
 
   zotDataDir = "/var/lib/zot";
   zotPort = 5000;
+  isS3Storage = (cfg.storageConfig.storageDriver.name or null) == "s3";
 
   zotConfig = {
     storage = {
@@ -168,7 +169,7 @@ in
       enableACME = true;
       forceSSL = true;
       default = true;
-      http2 = false;
+      http2 = lib.mkIf isS3Storage false;
 
       locations."/" = {
         proxyPass = "http://127.0.0.1:${toString zotPort}";
