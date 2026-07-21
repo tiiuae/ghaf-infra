@@ -267,7 +267,7 @@
     system = "x86_64-linux";
     machine = {
       ip = "172.31.107.42";
-      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINXec/ZGWCbBTaSi4dYOhVMWt/BUlSaIuvU/k9Ciap3P";
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILyRfgDRs0PjhAju910VM2jArPoNZMGJSUp+GCJYlAD4";
     };
   };
 
