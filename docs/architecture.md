@@ -131,7 +131,7 @@ signing operations without direct access to the HSM.
 | Host | Location | NetHSM address |
 |---|---|---|
 | `nethsm-gateway` | Tampere office | 192.168.70.10 (isolated ethernet) |
-| `uae-nethsm-gateway` | UAE site | local network |
+| `uae-nethsm-gateway` | UAE site | 172.31.141.51 (isolated sectech vlan in masdar) |
 
 Each gateway runs a `pkcs11-proxy` daemon on a TLS port reachable from the
 Nebula network. Requests are encrypted with a host-specific key from sops
@@ -146,9 +146,13 @@ and connects back via the Nebula overlay.
 |---|---|
 | `uae-azureci-prod` | Azure-hosted Jenkins controller (ci-prod.uaenorth.cloudapp.azure.com) |
 | `uae-azureci-az86-1` | x86_64 builder in Azure for uae-azureci-prod |
-| `uae-testagent-prod` | On-prem test agent with hardware devices |
+| `uae-azureci-hetzarm-1` | ARM builder in Hetzner UAE for uae-azureci-prod |
+| `uae-testagent-prod` | On-prem test agent with Intel hardware devices |
+| `uae-testagent2-prod` | On-prem test agent with Orin hardware devices |
 | `uae-lab-node1` | Lab node with Kubernetes tooling |
 | `uae-nethsm-gateway` | NetHSM signing gateway (see above) |
+| `uae-azureci-dev` | Azure-hosted Dev Jenkins controller (ci-dev.uaenorth.cloudapp.azure.com) |
+| `uae-azureci-registry` | UAE [Zot](https://zotregistry.dev/) OCI registry in Azure (registry.uaenorth.cloudapp.azure.com), OIDC-authenticated via ghaf-auth |
 
 ## CI/CD Pipeline Flow
 
