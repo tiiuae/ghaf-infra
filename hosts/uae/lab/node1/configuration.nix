@@ -45,10 +45,6 @@
   boot = {
     # use predictable network interface names (eth0)
     kernelParams = [ "net.ifnames=0" ];
-    loader = {
-      systemd-boot.enable = true;
-      systemd-boot.configurationLimit = 5;
-    };
   };
 
   environment.systemPackages = with pkgs; [

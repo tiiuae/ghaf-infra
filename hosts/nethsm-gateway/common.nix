@@ -30,12 +30,9 @@
     cpu.intel.updateMicrocode = true;
   };
 
-  boot = {
-    loader = {
-      systemd-boot.enable = true;
-      efi.canTouchEfiVariables = true;
-    };
+  boot.loader.efi.canTouchEfiVariables = true;
 
+  boot = {
     kernelModules = [ "kvm-intel" ];
     initrd.availableKernelModules = [
       "xhci_pci"

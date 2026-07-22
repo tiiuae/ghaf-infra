@@ -34,11 +34,6 @@
     networkConfig.DHCP = "ipv4";
   };
 
-  boot.loader = {
-    systemd-boot.enable = true;
-    systemd-boot.configurationLimit = 5;
-  };
-
   environment.systemPackages = with pkgs; [
     efibootmgr
   ];

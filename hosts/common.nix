@@ -21,6 +21,13 @@ in
     "ghaf-dev"
   ];
 
+  boot.loader.systemd-boot = {
+    enable = true;
+    configurationLimit = 3;
+  };
+
+  boot.loader.timeout = 1;
+
   # revision of the flake the configuration was built from.
   # $ nixos-version --configuration-revision
   system.configurationRevision = toString (
