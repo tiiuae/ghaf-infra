@@ -25,18 +25,9 @@ in
   # disable firewall on hetzner internal network
   networking.firewall.trustedInterfaces = [ "eth1" ];
 
-  boot = {
-    # disable predictable NIC names as they vary between hetzner servers
-    # this forces the creation of standard names like eth0 and eth1
-    kernelParams = [ "net.ifnames=0" ];
-
-    # grub boot loader with EFI
-    loader.grub = {
-      efiSupport = true;
-      efiInstallAsRemovable = true;
-      configurationLimit = 3;
-    };
-  };
+  # disable predictable NIC names as they vary between hetzner servers
+  # this forces the creation of standard names like eth0 and eth1
+  boot.kernelParams = [ "net.ifnames=0" ];
 
   warnings = [
     (lib.mkIf

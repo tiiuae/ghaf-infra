@@ -82,18 +82,6 @@ in
       "virtio_gpu"
     ];
 
-    # EFI configurations for boot
-    # boot.loader.grub = {
-    #  efiSupport = true;
-    #  efiInstallAsRemovable = true;
-    # };
-
-    # Switch to systemd-boot on Azure
-    boot.loader = {
-      systemd-boot.enable = true;
-      systemd-boot.configurationLimit = 5;
-    };
-
     environment.systemPackages = with pkgs; [
       efibootmgr
     ];

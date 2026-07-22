@@ -109,10 +109,7 @@ in
 
     networking.useDHCP = true;
 
-    boot.loader = {
-      systemd-boot.enable = true;
-      efi.canTouchEfiVariables = true;
-    };
+    boot.loader.efi.canTouchEfiVariables = true;
 
     hardware = {
       enableRedistributableFirmware = true;
