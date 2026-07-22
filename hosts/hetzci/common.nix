@@ -5,6 +5,7 @@
   pkgs,
   inputs,
   lib,
+  options,
   ...
 }:
 {
@@ -34,7 +35,15 @@
       value = "8192";
     }
   ];
-  systemd.user.extraConfig = "DefaultLimitNOFILE=8192";
+  systemd.user =
+    if options.systemd.user ? settings then
+      {
+        settings.Manager.DefaultLimitNOFILE = "8192";
+      }
+    else
+      {
+        extraConfig = "DefaultLimitNOFILE=8192";
+      };
 
   # Enable early out-of-memory killing.
   # Make nix builds more likely to be killed over more important services.
