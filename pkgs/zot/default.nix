@@ -10,7 +10,7 @@
 }:
 
 let
-  version = "2.1.14";
+  version = "2.1.18";
   asset = if stdenv.hostPlatform.isAarch64 then "zot-linux-arm64" else "zot-linux-amd64";
 in
 stdenvNoCC.mkDerivation {
@@ -19,7 +19,7 @@ stdenvNoCC.mkDerivation {
 
   src = fetchurl {
     url = "https://github.com/project-zot/zot/releases/download/v${version}/${asset}";
-    sha256 = "sha256-yW4jlOHZTd00OfOxnR0rcH5by/NP7ElTKAW/PNc0v8c=";
+    sha256 = "sha256-o1mgrxWdtnWLJPjibWokSq6VyvP/OCxGKHX0LZ4IKJg=";
   };
 
   dontUnpack = true;

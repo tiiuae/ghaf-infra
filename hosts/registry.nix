@@ -122,7 +122,7 @@ let
         metrics.users = [ "prometheus" ];
       };
     };
-    log.level = "info";
+    log.level = "warn";
     extensions = {
       ui.enable = true;
       search.enable = true;
