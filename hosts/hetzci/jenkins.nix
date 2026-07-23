@@ -125,6 +125,7 @@ in
           "orin-agx-64"
           "orin-nx"
           "x1-sec-boot"
+          "darter-sec-boot"
         ];
       };
       testagentHosts = lib.mkOption {

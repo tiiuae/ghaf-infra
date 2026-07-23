@@ -22,6 +22,7 @@ def TARGETS = [
         device_tag: 'darter-pro',
         variant: 'debug',
         testset: '_relayboot_regression_',
+        test_secboot: true,
       ],
     ],
   ],

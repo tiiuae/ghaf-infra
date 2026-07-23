@@ -69,7 +69,7 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
         script: [
           classpath: [],
           sandbox: true,
-          script: "return ['orin-agx','orin-agx-64','orin-nx','lenovo-x1','darter-pro', 'x1-sec-boot']"
+          script: "return ['orin-agx','orin-agx-64','orin-nx','lenovo-x1','darter-pro', 'x1-sec-boot', 'darter-sec-boot']"
         ]
       ]
     ],
