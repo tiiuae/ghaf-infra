@@ -73,6 +73,9 @@ private def device_catalog() {
     'x1-sec-boot': [
       name: 'X1-Secure-Boot',
     ],
+    'darter-sec-boot': [
+      name: 'Darter-Secure-Boot',
+    ],
     'darter-pro': [
       name: 'DarterPRO',
       target_substrings: ['system76-darp11-b'],

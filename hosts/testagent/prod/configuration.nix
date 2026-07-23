@@ -21,6 +21,7 @@
       "lenovo-x1"
       "darter-pro"
       "x1-sec-boot"
+      "darter-sec-boot"
     ];
   };
 
@@ -35,6 +36,11 @@
     SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTFMF0X0", SYMLINK+="ttyDARTER", MODE="0666", GROUP="dialout"
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B72838C556F", SYMLINK+="ssdDARTER", MODE="0666", GROUP="dialout"
+
+    # Darter Pro Secure Boot
+    SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTDMABUO", SYMLINK+="ttyDARTERSB", MODE="0666", GROUP="dialout"
+    # SSD-drive
+    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B72836E78E0", SYMLINK+="ssdDARTERSB", MODE="0666", GROUP="dialout"
 
     # Lenovo X1 Secure Boot
     SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTEOG7I4", SYMLINK+="ttyX1SB", MODE="0666", GROUP="dialout"
@@ -98,6 +104,19 @@
           usbhub_serial = "78493F26";
           ext_drive_by-id = "/dev/ssdSecBoot";
           threads = 20;
+        };
+        Darter-Secure-Boot = {
+          inherit location;
+          device_id = "00-4f-32-0a-e1";
+          netvm_hostname = "ghaf-1328679649";
+          serial_port = "/dev/ttyDARTERSB";
+          device_ip_address = "172.18.16.14";
+          socket_ip_address = "NONE";
+          plug_type = "NONE";
+          switch_bot = "DarterSB-prod";
+          usbhub_serial = "FF62140D";
+          ext_drive_by-id = "/dev/ssdDARTERSB";
+          threads = 16;
         };
       };
     };
