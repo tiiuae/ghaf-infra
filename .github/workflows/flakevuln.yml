@@ -39,4 +39,5 @@ jobs:
                   targets: |
                       nixosConfigurations.hetzci-prod.config.system.build.toplevel
                   unstable-ref: github:NixOS/nixpkgs/nixos-unstable
+                  whitelist: .github/flakevuln/manual_analysis.csv
                   nixprs: true
