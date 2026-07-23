@@ -1,0 +1,563 @@
+vuln_id,whitelist,package,version_local,version_nixpkgs,version_upstream,comment
+CVE-2024-9410,True,ada,3.4.4,3.4.4,3.4.4,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2018-13162,True,alex,3.5.4.2,3.5.4.2,3.5.4.2,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-43138,True,async,2.2.6,2.2.6,2.2.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-26720,True,avahi,0.8,0.8,,False positive / version data issue: avahi findings do not map cleanly to the Nixpkgs 0.8 package; current Nixpkgs carries the relevant CVE patches or the issue is distro-specific.
+CVE-2025-59529,True,avahi,0.8,0.8,,False positive / version data issue: avahi findings do not map cleanly to the Nixpkgs 0.8 package; current Nixpkgs carries the relevant CVE patches or the issue is distro-specific.
+CVE-2025-68276,True,avahi,0.8,0.8,,False positive / version data issue: avahi findings do not map cleanly to the Nixpkgs 0.8 package; current Nixpkgs carries the relevant CVE patches or the issue is distro-specific.
+CVE-2025-68468,True,avahi,0.8,0.8,,False positive / version data issue: avahi findings do not map cleanly to the Nixpkgs 0.8 package; current Nixpkgs carries the relevant CVE patches or the issue is distro-specific.
+CVE-2025-68471,True,avahi,0.8,0.8,,False positive / version data issue: avahi findings do not map cleanly to the Nixpkgs 0.8 package; current Nixpkgs carries the relevant CVE patches or the issue is distro-specific.
+CVE-2026-24401,True,avahi,0.8,0.8,,Patched in the scanned derivation: flakevuln run 29970797071 reported a CVE-specific Nix patch for this package.
+CVE-2026-34933,True,avahi,0.8,0.8,,Patched in the scanned derivation: flakevuln run 29970797071 reported a CVE-specific Nix patch for this package.
+CVE-2014-6271,True,bash,2.05b,,,Build-time bootstrap artifact: all current rows for this CVE/package key are bash 2.05b or bash 2.05b-builder derivations in the build closure; runtime bash 5.x is scanned separately.
+CVE-2014-7169,True,bash,2.05b,,,Build-time bootstrap artifact: all current rows for this CVE/package key are bash 2.05b or bash 2.05b-builder derivations in the build closure; runtime bash 5.x is scanned separately.
+CVE-2016-7543,True,bash,2.05b,,,Build-time bootstrap artifact: all current rows for this CVE/package key are bash 2.05b or bash 2.05b-builder derivations in the build closure; runtime bash 5.x is scanned separately.
+CVE-2016-9401,True,bash,2.05b,,,Build-time bootstrap artifact: all current rows for this CVE/package key are bash 2.05b or bash 2.05b-builder derivations in the build closure; runtime bash 5.x is scanned separately.
+CVE-2019-18276,True,bash,2.05b,,,Build-time bootstrap artifact: all current rows for this CVE/package key are bash 2.05b or bash 2.05b-builder derivations in the build closure; runtime bash 5.x is scanned separately.
+CVE-2019-9924,True,bash,2.05b,,,Build-time bootstrap artifact: all current rows for this CVE/package key are bash 2.05b or bash 2.05b-builder derivations in the build closure; runtime bash 5.x is scanned separately.
+CVE-2014-6271,True,bash,2.05b-builder,,,Build-time bootstrap artifact: all current rows for this CVE/package key are bash 2.05b or bash 2.05b-builder derivations in the build closure; runtime bash 5.x is scanned separately.
+CVE-2014-7169,True,bash,2.05b-builder,,,Build-time bootstrap artifact: all current rows for this CVE/package key are bash 2.05b or bash 2.05b-builder derivations in the build closure; runtime bash 5.x is scanned separately.
+CVE-2016-7543,True,bash,2.05b-builder,,,Build-time bootstrap artifact: all current rows for this CVE/package key are bash 2.05b or bash 2.05b-builder derivations in the build closure; runtime bash 5.x is scanned separately.
+CVE-2016-9401,True,bash,2.05b-builder,,,Build-time bootstrap artifact: all current rows for this CVE/package key are bash 2.05b or bash 2.05b-builder derivations in the build closure; runtime bash 5.x is scanned separately.
+CVE-2019-18276,True,bash,2.05b-builder,,,Build-time bootstrap artifact: all current rows for this CVE/package key are bash 2.05b or bash 2.05b-builder derivations in the build closure; runtime bash 5.x is scanned separately.
+CVE-2019-9924,True,bash,2.05b-builder,,,Build-time bootstrap artifact: all current rows for this CVE/package key are bash 2.05b or bash 2.05b-builder derivations in the build closure; runtime bash 5.x is scanned separately.
+OSV-2024-112,True,boost,1.89.0,1.91.0,1.91.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2024-914,True,boost,1.89.0,1.91.0,1.91.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-58251,True,busybox,1.37.0,1.37.0,1.36.1,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2023-298,True,cairo,1.18.4,1.109,1.109,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2026-14363,True,cargo,1.94.1,0.4.9,0.4.9,"Incorrect package: CVE affects the MediaWiki Cargo extension, not Rust Cargo."
+CVE-2026-14363,True,cargo,1.95.0,0.4.9,0.4.9,"Incorrect package: CVE affects the MediaWiki Cargo extension, not Rust Cargo."
+CVE-2026-39837,True,cargo,1.94.1,0.4.9,0.4.9,"Incorrect package: CVE affects the MediaWiki Cargo extension, not Rust Cargo."
+CVE-2026-39837,True,cargo,1.95.0,0.4.9,0.4.9,"Incorrect package: CVE affects the MediaWiki Cargo extension, not Rust Cargo."
+CVE-2026-39839,True,cargo,1.94.1,0.4.9,0.4.9,"Incorrect package: CVE affects the MediaWiki Cargo extension, not Rust Cargo."
+CVE-2026-39839,True,cargo,1.95.0,0.4.9,0.4.9,"Incorrect package: CVE affects the MediaWiki Cargo extension, not Rust Cargo."
+CVE-2026-39840,True,cargo,1.94.1,0.4.9,0.4.9,"Incorrect package: CVE affects the MediaWiki Cargo extension, not Rust Cargo."
+CVE-2026-39840,True,cargo,1.95.0,0.4.9,0.4.9,"Incorrect package: CVE affects the MediaWiki Cargo extension, not Rust Cargo."
+CVE-2026-39841,True,cargo,1.94.1,0.4.9,0.4.9,"Incorrect package: CVE affects the MediaWiki Cargo extension, not Rust Cargo."
+CVE-2026-39841,True,cargo,1.95.0,0.4.9,0.4.9,"Incorrect package: CVE affects the MediaWiki Cargo extension, not Rust Cargo."
+CVE-2026-58519,True,cargo,1.94.1,0.4.9,0.4.9,"Incorrect package: CVE affects the MediaWiki Cargo extension, not Rust Cargo."
+CVE-2026-58519,True,cargo,1.95.0,0.4.9,0.4.9,"Incorrect package: CVE affects the MediaWiki Cargo extension, not Rust Cargo."
+CVE-2026-58521,True,cargo,1.94.1,0.4.9,0.4.9,"Incorrect package: CVE affects the MediaWiki Cargo extension, not Rust Cargo."
+CVE-2026-58521,True,cargo,1.95.0,0.4.9,0.4.9,"Incorrect package: CVE affects the MediaWiki Cargo extension, not Rust Cargo."
+CVE-2019-10010,True,commonmark,0.2.6.1,0.2.6.1,0.3,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2026-30838,True,commonmark,0.2.6.1,0.2.6.1,0.3,Incorrect package: CVE affects PHP league/commonmark; scanned derivation is Haskell commonmark 0.2.6.1.
+CVE-2017-18589,True,cookie,0.5.1,0.5.1,0.5.1,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2010-4226,True,cpio,2.15,2.15,2.15,False positive: issue is specific to OpenSuSE packaging and does not apply to GNU cpio in Nixpkgs.
+CVE-2023-7216,True,cpio,2.15,2.15,2.15,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2018-6553,True,cups,2.4.16,2.4.19,2.4.19,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2018-6553,True,cups,2.4.19,2.4.19,2.4.19,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-27776,True,curl,0.4.49,,,False positive: generic package-name match for curl; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2022-27781,True,curl,0.4.49,,,False positive: generic package-name match for curl; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2022-27782,True,curl,0.4.49,,,False positive: generic package-name match for curl; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2022-32206,True,curl,0.4.49,,,False positive: generic package-name match for curl; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2022-32221,True,curl,0.4.49,,,False positive: generic package-name match for curl; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2022-35252,True,curl,0.4.49,,,False positive: generic package-name match for curl; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2022-43552,True,curl,0.4.49,,,False positive: generic package-name match for curl; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2023-28319,True,curl,0.4.49,,,False positive: generic package-name match for curl; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2023-28320,True,curl,0.4.49,,,False positive: generic package-name match for curl; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2023-28321,True,curl,0.4.49,,,False positive: generic package-name match for curl; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2023-28322,True,curl,0.4.49,,,False positive: generic package-name match for curl; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2022-42010,True,dbus,0.9.10,0.97,0.97,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-42010,True,dbus,1,0.97,0.97,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-42011,True,dbus,0.9.10,0.97,0.97,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-42011,True,dbus,1,0.97,0.97,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-42012,True,dbus,0.9.10,0.97,0.97,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-42012,True,dbus,1,0.97,0.97,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-13278,True,Diff,1.0.2,1.0.2,1.0.2,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2023-1398,True,file,5.45,5.48,5.48,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2023-505,True,file,5.45,5.48,5.48,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2007-1397,True,fish,4.7.1,4.8.1,4.8.1,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2024-678,True,flac,1.5.0,1.5.0,1.5.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2020-26304,True,foundation,0.0.30,0.0.30,0.0.30,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2026-40469,True,gawk,5.3.2,5.4.0,5.4.1,Not applicable to this target: CVE is limited to 32-bit gawk builds; target host platform is x86_64-linux.
+CVE-2026-40469,True,gawk,5.4.0,5.4.0,5.4.1,Not applicable to this target: CVE is limited to 32-bit gawk builds; target host platform is x86_64-linux.
+CVE-2021-21684,True,git,2.53.0,2.54.0,2.55.0,"Incorrect package: Impacts Jenkins git plugin, not git. Issue gets included to the report due to vulnix's design decision to avoid false negatives with the cost of false positives: https://github.com/nix-community/vulnix/blob/f56f3ac857626171b95e51d98cb6874278f789d3/src/vulnix/vulnerability.py#L90-L96."
+CVE-2021-21684,True,git,2.54.0,2.54.0,2.55.0,"Incorrect package: Impacts Jenkins git plugin, not git. Issue gets included to the report due to vulnix's design decision to avoid false negatives with the cost of false positives: https://github.com/nix-community/vulnix/blob/f56f3ac857626171b95e51d98cb6874278f789d3/src/vulnix/vulnerability.py#L90-L96."
+CVE-2022-30947,True,git,2.53.0,2.54.0,2.55.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-30947,True,git,2.54.0,2.54.0,2.55.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-36882,True,git,2.53.0,2.54.0,2.55.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-36882,True,git,2.54.0,2.54.0,2.55.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-36883,True,git,2.53.0,2.54.0,2.55.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-36883,True,git,2.54.0,2.54.0,2.55.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-36884,True,git,2.53.0,2.54.0,2.55.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-36884,True,git,2.54.0,2.54.0,2.55.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-38663,True,git,2.53.0,2.54.0,2.55.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-38663,True,git,2.54.0,2.54.0,2.55.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-66413,True,git,2.53.0,2.54.0,2.55.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2012-2055,True,github,1.47.0,,,False positive: generic package-name match for github; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2020-10517,True,github,1.47.0,,,False positive: generic package-name match for github; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2020-10518,True,github,1.47.0,,,False positive: generic package-name match for github; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2020-10519,True,github,1.47.0,,,False positive: generic package-name match for github; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2024-2443,True,github,1.47.0,,,False positive: generic package-name match for github; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2024-5566,True,github,1.47.0,,,False positive: generic package-name match for github; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2024-5746,True,github,1.47.0,,,False positive: generic package-name match for github; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2024-5795,True,github,1.47.0,,,False positive: generic package-name match for github; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2024-5815,True,github,1.47.0,,,False positive: generic package-name match for github; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2024-5816,True,github,1.47.0,,,False positive: generic package-name match for github; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2024-5817,True,github,1.47.0,,,False positive: generic package-name match for github; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2024-6336,True,github,1.47.0,,,False positive: generic package-name match for github; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2024-6337,True,github,1.47.0,,,False positive: generic package-name match for github; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2024-6395,True,github,1.47.0,,,False positive: generic package-name match for github; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2024-6800,True,github,1.47.0,,,False positive: generic package-name match for github; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2024-8263,True,github,1.47.0,,,False positive: generic package-name match for github; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2024-8770,True,github,1.47.0,,,False positive: generic package-name match for github; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2022-3219,True,gnupg,2.4.9,2.4.9,2.5.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-32989,True,gnutls,3.8.12,3.8.13,3.8.13,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-32989,True,gnutls,3.8.13,3.8.13,3.8.13,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-32990,True,gnutls,3.8.12,3.8.13,3.8.13,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-32990,True,gnutls,3.8.13,3.8.13,3.8.13,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-49292,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-49292,True,go,1.24.13-linux-amd64-bootstrap,1.27rc2,1.26.5,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-49292,True,go,1.25.12,1.27rc2,1.26.5,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-49292,True,go,1.26.2,1.27rc2,1.26.5,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-49292,True,go,1.26.4,1.27rc2,1.26.5,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2017-5436,True,graphite2,1.3.14,1.3.15,1.3.15,NVD data issue: CPE entry does not correctly state the version numbers.
+CVE-2013-4577,True,grub,2.12,2.12,2.14,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2026-12891,True,gstreamer,1.26.11,1.28.4,1.28.5,"Incorrect package for this target: CVE affects gst-plugins-bad, but the scanned closure contains gstreamer/gst-plugins-base and no gst-plugins-bad derivation."
+CVE-2026-12892,True,gstreamer,1.26.11,1.28.4,1.28.5,"Incorrect package for this target: CVE affects gst-plugins-bad, but the scanned closure contains gstreamer/gst-plugins-base and no gst-plugins-bad derivation."
+OSV-2023-137,True,harfbuzz,12.3.0,13.2.1,14.2.1,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-4276,True,hedgehog,1.5,1.7,1.7,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-4276,True,hedgehog,1.5-r2.cabal,1.7,1.7,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2020-35669,True,http,0.2.12,,,"Incorrect package: scanned component is the Rust crate http 0.2.12 in the build closure; CVE affects the Dart http package, not the Rust crate."
+CVE-2014-9826,True,imagemagick,7.1.2-24,7.1.2-27,7.1.2.27,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2016-7538,True,imagemagick,7.1.2-24,7.1.2-27,7.1.2.27,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2017-5506,True,imagemagick,7.1.2-24,7.1.2-27,7.1.2.27,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-5341,True,imagemagick,7.1.2-24,7.1.2-27,7.1.2.27,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2017-13099,True,instant,0.1.13,,,"Incorrect package: scanned component is the Rust crate instant 0.1.13 in the build closure; CVE affects wolfSSL/Aruba Instant products, not the Rust crate."
+CVE-2024-9453,True,jenkins,2.555.3,2.568.1,2.574,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2026-32316,True,jq,1.8.1,1.8.2,1.8.2,Patched in the scanned derivation: flakevuln run 29970797071 reported a CVE-specific Nix patch for this package.
+CVE-2026-33947,True,jq,1.8.1,1.8.2,1.8.2,Patched in the scanned derivation: flakevuln run 29970797071 reported a CVE-specific Nix patch for this package.
+CVE-2026-33948,True,jq,1.8.1,1.8.2,1.8.2,Patched in the scanned derivation: flakevuln run 29970797071 reported a CVE-specific Nix patch for this package.
+CVE-2026-33948,True,jq,1.8.1-binlore,1.8.2,1.8.2,Patched in the scanned derivation: flakevuln run 29970797071 reported a CVE-specific Nix patch for this package.
+CVE-2026-39979,True,jq,1.8.1,1.8.2,1.8.2,Patched in the scanned derivation: flakevuln run 29970797071 reported a CVE-specific Nix patch for this package.
+CVE-2026-39979,True,jq,1.8.1-binlore,1.8.2,1.8.2,Patched in the scanned derivation: flakevuln run 29970797071 reported a CVE-specific Nix patch for this package.
+CVE-2026-54679,True,jq,1.8.1,1.8.2,1.8.2,Not applicable to this target: CVE is documented as 32-bit-only; target host platform is x86_64-linux.
+CVE-2026-54679,True,jq,1.8.1-binlore,1.8.2,1.8.2,Not applicable to this target: CVE is documented as 32-bit-only; target host platform is x86_64-linux.
+OSV-2024-396,True,jq,1.8.1,1.8.2,1.8.2,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2024-440,True,jq,1.8.1,1.8.2,1.8.2,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2026-5121,True,libarchive,3.8.6,3.8.8,3.8.8,Not applicable to this target: CVE describes a 32-bit-only libarchive issue; target host platform is x86_64-linux.
+OSV-2023-1307,True,libbpf,1.6.3,1.7.0,1.7.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2023-1307,True,libbpf,1.7.0,1.7.0,1.7.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2023-877,True,libbpf,1.6.3,1.7.0,1.7.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2023-877,True,libbpf,1.7.0,1.7.0,1.7.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2020-2308,True,libheif,1.23.0,1.23.1,1.23.1,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2023-1129,True,libheif,1.23.0,1.23.1,1.23.1,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2022-608,True,libjxl,0.11.2,0.11.2,0.12.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2022-725,True,libjxl,0.11.2,0.11.2,0.12.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2024-395,True,libpcap,1.10.6,1.10.6,1.10.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2025-202,True,librsvg,2.62.1,2.62.3,2.62.3,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2020-1420,True,libsass,3.6.6,3.6.6,3.6.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2020-862,True,libsass,3.6.6,3.6.6,3.6.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2021-508,True,libsass,3.6.6,3.6.6,3.6.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2022-896,True,libsass,3.6.6,3.6.6,3.6.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-52356,True,libtiff,4.7.1,4.7.1,4.7.2,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-6228,True,libtiff,4.7.1,4.7.1,4.7.2,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-6277,True,libtiff,4.7.1,4.7.1,4.7.2,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2024-1164,True,libultrahdr,1.4.0,1.4.0,1.4.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-6021,True,libxml2,2.15.1,2.15.3,2.15.3,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-6021,True,libxml2,2.15.3,2.15.3,2.15.3,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-6170,True,libxml2,2.15.1,2.15.3,2.15.3,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-6170,True,libxml2,2.15.3,2.15.3,2.15.3,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2021-777,True,libxml2,2.15.1,2.15.3,2.15.3,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2021-777,True,libxml2,2.15.3,2.15.3,2.15.3,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2024-698,True,libxml2,2.15.1,2.15.3,2.15.3,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2024-698,True,libxml2,2.15.3,2.15.3,2.15.3,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-10911,True,libxslt,1.1.45,1.1.45,1.1.45,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-7425,True,libxslt,1.1.45,1.1.45,1.1.45,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2013-6393,True,libyaml,0.1.4,0.1.4,0.1.4,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2014-2525,True,libyaml,0.1.4,0.1.4,0.1.4,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-43410,True,mercurial,7.1.2,7.2.2,7.2.3,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-43410,True,mercurial,7.1.2-vendor,7.2.2,7.2.3,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-43410,True,mercurial,7.1.2-vendor-staging,7.2.2,7.2.3,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-4860,True,metrics,4.2.37-494.v06f9a_939d33a_,,,False positive: generic package-name match for metrics; scanner could not confirm a matching Repology version for the actual Nix package.
+CVE-2021-35047,True,network,3.2.8.0,3.2.8.0,3.2.8.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-35048,True,network,3.2.8.0,3.2.8.0,3.2.8.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-35049,True,network,3.2.8.0,3.2.8.0,3.2.8.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-35050,True,network,3.2.8.0,3.2.8.0,3.2.8.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-0486,True,network,3.2.8.0,3.2.8.0,3.2.8.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-0997,True,network,3.2.8.0,3.2.8.0,3.2.8.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-24388,True,network,3.2.8.0,3.2.8.0,3.2.8.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-24389,True,network,3.2.8.0,3.2.8.0,3.2.8.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-24390,True,network,3.2.8.0,3.2.8.0,3.2.8.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-24391,True,network,3.2.8.0,3.2.8.0,3.2.8.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-24392,True,network,3.2.8.0,3.2.8.0,3.2.8.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-24393,True,network,3.2.8.0,3.2.8.0,3.2.8.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-24394,True,network,3.2.8.0,3.2.8.0,3.2.8.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-4336,True,ninja,1.13.2,1.13.2,1.13.2,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-27297,True,nix,0.23.2,,,False positive / scanner metadata issue: generic Nix package name with no Repology match for the reported affected product.
+CVE-2024-27297,True,nix,0.29.0,,,False positive / scanner metadata issue: generic Nix package name with no Repology match for the reported affected product.
+CVE-2024-27297,True,nix,0.31.1,,,False positive / scanner metadata issue: generic Nix package name with no Repology match for the reported affected product.
+CVE-2019-17365,True,nix,0.23.2,,,"Incorrect package: scanned components are Rust crate nix 0.x derivations in the build closure, not the Nix package manager; Nix 2.x derivations are scanned separately."
+CVE-2019-17365,True,nix,0.29.0,,,"Incorrect package: scanned components are Rust crate nix 0.x derivations in the build closure, not the Nix package manager; Nix 2.x derivations are scanned separately."
+CVE-2019-17365,True,nix,0.31.1,,,"Incorrect package: scanned components are Rust crate nix 0.x derivations in the build closure, not the Nix package manager; Nix 2.x derivations are scanned separately."
+CVE-2023-39327,True,openjpeg,2.5.4,2.5.4,2.5.4,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-39328,True,openjpeg,2.5.4,2.5.4,2.5.4,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-39329,True,openjpeg,2.5.4,2.5.4,2.5.4,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2025-219,True,openjpeg,2.5.4,2.5.4,2.5.4,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2022-1188,True,opensc,0.27.1,0.27.1,0.27.1,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2022-1201,True,opensc,0.27.1,0.27.1,0.27.1,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2023-395,True,opensc,0.27.1,0.27.1,0.27.1,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2007-2768,True,openssh,10.3p1,10.4p1,10.4p1,False positive: legacy OpenSSH CVE metadata does not apply to the current OpenSSH package version.
+CVE-2008-3844,True,openssh,10.3p1,10.4p1,10.4p1,False positive: legacy OpenSSH CVE metadata does not apply to the current OpenSSH package version.
+CVE-2014-9278,True,openssh,10.3p1,10.4p1,10.4p1,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2026-3497,True,openssh,10.3p1,10.4p1,10.4p1,Not applicable to this target: CVE affects downstream distribution GSSAPI patches and explicitly does not affect upstream OpenSSH.
+CVE-2026-55653,True,openssh,10.3p1,10.4p1,10.4p1,"Not applicable to this target: CVE is for Red Hat Enterprise Linux OpenSSH patch behavior, not upstream Nixpkgs OpenSSH."
+CVE-2026-55654,True,openssh,10.3p1,10.4p1,10.4p1,"Not applicable to this target: CVE is for Red Hat Enterprise Linux OpenSSH patch behavior, not upstream Nixpkgs OpenSSH."
+CVE-2026-55655,True,openssh,10.3p1,10.4p1,10.4p1,"Not applicable to this target: CVE is for Red Hat Enterprise Linux OpenSSH patch behavior, not upstream Nixpkgs OpenSSH."
+CVE-2025-47436,True,orc,0.4.41,1.2.1.4,1.2.1.4,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2026-2100,True,p11-kit,0.26.2,0.26.2,0.26.4,Not affected: CVE affected range is p11-kit <0.26.2; scanned version is 0.26.2.
+OSV-2023-197,True,p11-kit,0.26.2,0.26.2,0.26.4,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2015-4155,True,parallel,3.2.2.0,3.3.0.0,3.3.0.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2015-4156,True,parallel,3.2.2.0,3.3.0.0,3.3.0.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-37769,True,pixman,0.46.4,0.46.4,0.46.4,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-3177,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-27043,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-6597,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-0397,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-0450,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-11168,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-12718,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-3219,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-3220,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-4030,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-4032,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-49050,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-49050,True,python,3.14.2,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-49050,True,python,3.14.4,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-50602,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-5642,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-6923,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-8088,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-0938,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-11468,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-11468,True,python,3.14.2,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-15282,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-15282,True,python,3.14.2,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-15366,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-15366,True,python,3.14.2,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-15366,True,python,3.14.4,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-15367,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-15367,True,python,3.14.2,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-15367,True,python,3.14.4,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-1795,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-4138,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-4330,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-4435,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-4516,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-4517,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-49714,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-49714,True,python,3.14.2,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-49714,True,python,3.14.4,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-6069,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-8194,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-8291,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2026-12003,True,python,2.7.18.12,3.14.6,3.14.6,Not applicable to this target: CVE is Windows-only or Windows install-layout specific; target host platform is x86_64-linux.
+CVE-2026-12003,True,python,3.14.2,3.14.6,3.14.6,Not applicable to this target: CVE is Windows-only or Windows install-layout specific; target host platform is x86_64-linux.
+CVE-2026-12003,True,python,3.14.4,3.14.6,3.14.6,Not applicable to this target: CVE is Windows-only or Windows install-layout specific; target host platform is x86_64-linux.
+CVE-2026-3298,True,python,3.14.2,3.14.6,3.14.6,Not applicable to this target: CVE is Windows-only or Windows install-layout specific; target host platform is x86_64-linux.
+CVE-2026-3298,True,python,3.14.4,3.14.6,3.14.6,Not applicable to this target: CVE is Windows-only or Windows install-layout specific; target host platform is x86_64-linux.
+CVE-2026-3479,True,python,2.7.18.12,3.14.6,3.14.6,Not a real target vulnerability: CVE record is disputed and states there is no vulnerability under the intended security model.
+CVE-2026-3479,True,python,3.14.2,3.14.6,3.14.6,Not a real target vulnerability: CVE record is disputed and states there is no vulnerability under the intended security model.
+CVE-2022-36073,True,rubygems,3.7.2,,,False positive: affected RubyGems versions are older than the 3.7.x package in this closure.
+CVE-2021-33594,True,safe,0.3.21,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-33594,True,safe,0.3.21-r1.cabal,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-33595,True,safe,0.3.21,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-33595,True,safe,0.3.21-r1.cabal,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-33596,True,safe,0.3.21,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-33596,True,safe,0.3.21-r1.cabal,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-40834,True,safe,0.3.21,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-40834,True,safe,0.3.21-r1.cabal,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-40835,True,safe,0.3.21,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-40835,True,safe,0.3.21-r1.cabal,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-44751,True,safe,0.3.21,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-44751,True,safe,0.3.21-r1.cabal,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-28868,True,safe,0.3.21,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-28868,True,safe,0.3.21-r1.cabal,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-28869,True,safe,0.3.21,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-28869,True,safe,0.3.21-r1.cabal,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-28870,True,safe,0.3.21,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-28870,True,safe,0.3.21-r1.cabal,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-28872,True,safe,0.3.21,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-28872,True,safe,0.3.21-r1.cabal,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-28873,True,safe,0.3.21,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-28873,True,safe,0.3.21-r1.cabal,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-38163,True,safe,0.3.21,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-38163,True,safe,0.3.21-r1.cabal,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-38164,True,safe,0.3.21,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-38164,True,safe,0.3.21-r1.cabal,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-47524,True,safe,0.3.21,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-47524,True,safe,0.3.21-r1.cabal,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-28794,True,ShellCheck,0.11.0,0.11.0,0.11.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2000-0006,True,strace,7.1,7.1,7.1,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-21524,True,stringbuilder,0.5.1,0.5.1,0.5.1,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2026-41907,True,uuid,1.20.0,1.2-2,1.2-2,Incorrect package: CVE affects uuidjs/uuid; scanned derivation is Rust crate uuid 1.20.0.
+CVE-2026-41988,True,uuid,1.20.0,1.2-2,1.2-2,Incorrect package: CVE affects uuidjs/uuid; scanned derivation is Rust crate uuid 1.20.0.
+CVE-2021-27400,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-3024,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-38554,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-41802,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-41316,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-0620,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-0665,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-2121,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-24999,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-25000,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-6337,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-2048,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2024-8365,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-4166,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-6011,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-6014,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-6037,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2026-5807,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,Incorrect package: CVE affects the Vault server product; scanned derivation is Haskell vault 0.3.1.6.
+CVE-2015-7777,True,void,0.7.4,0.7.4,0.7.4,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-2145,True,warp,3.4.9,3.4.13,3.4.14,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-2225,True,warp,3.4.9,3.4.13,3.4.14,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-3320,True,warp,3.4.9,3.4.13,3.4.14,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-3512,True,warp,3.4.9,3.4.13,3.4.14,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-4428,True,warp,3.4.9,3.4.13,3.4.14,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-4457,True,warp,3.4.9,3.4.13,3.4.14,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-0238,True,warp,3.4.9,3.4.13,3.4.14,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-0652,True,warp,3.4.9,3.4.13,3.4.14,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-0654,True,warp,3.4.9,3.4.13,3.4.14,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-1412,True,warp,3.4.9,3.4.13,3.4.14,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-1862,True,warp,3.4.9,3.4.13,3.4.14,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-2754,True,warp,3.4.9,3.4.13,3.4.14,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2025-0651,True,warp,3.4.9,3.4.13,3.4.14,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-4235,True,yaml,0.11.11.2,0.11.11.2,0.11.11.2,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-4235,True,yaml,0.11.11.2-r2.cabal,0.11.11.2,0.11.11.2,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-3064,True,yaml,0.11.11.2,0.11.11.2,0.11.11.2,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-3064,True,yaml,0.11.11.2-r2.cabal,0.11.11.2,0.11.11.2,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2021-33454,True,yasm,1.3.0,1.3.0,1.3.0,Issue is not fixed upstream. Other distributions have triaged the issue as minor or 'no security impact'.
+CVE-2021-33455,True,yasm,1.3.0,1.3.0,1.3.0,Issue is not fixed upstream. Other distributions have triaged the issue as minor or 'no security impact'.
+CVE-2021-33456,True,yasm,1.3.0,1.3.0,1.3.0,Issue is not fixed upstream. Other distributions have triaged the issue as minor or 'no security impact'.
+CVE-2021-33457,True,yasm,1.3.0,1.3.0,1.3.0,Issue is not fixed upstream. Other distributions have triaged the issue as minor or 'no security impact'.
+CVE-2021-33458,True,yasm,1.3.0,1.3.0,1.3.0,Issue is not fixed upstream. Other distributions have triaged the issue as minor or 'no security impact'.
+CVE-2021-33459,True,yasm,1.3.0,1.3.0,1.3.0,Issue is not fixed upstream. Other distributions have triaged the issue as minor or 'no security impact'.
+CVE-2021-33460,True,yasm,1.3.0,1.3.0,1.3.0,Issue is not fixed upstream. Other distributions have triaged the issue as minor or 'no security impact'.
+CVE-2021-33461,True,yasm,1.3.0,1.3.0,1.3.0,Issue is not fixed upstream. Other distributions have triaged the issue as minor or 'no security impact'.
+CVE-2021-33462,True,yasm,1.3.0,1.3.0,1.3.0,Issue is not fixed upstream. Other distributions have triaged the issue as minor or 'no security impact'.
+CVE-2021-33463,True,yasm,1.3.0,1.3.0,1.3.0,Issue is not fixed upstream. Other distributions have triaged the issue as minor or 'no security impact'.
+CVE-2021-33464,True,yasm,1.3.0,1.3.0,1.3.0,Issue is not fixed upstream. Other distributions have triaged the issue as minor or 'no security impact'.
+CVE-2021-33465,True,yasm,1.3.0,1.3.0,1.3.0,Issue is not fixed upstream. Other distributions have triaged the issue as minor or 'no security impact'.
+CVE-2021-33466,True,yasm,1.3.0,1.3.0,1.3.0,Issue is not fixed upstream. Other distributions have triaged the issue as minor or 'no security impact'.
+CVE-2021-33467,True,yasm,1.3.0,1.3.0,1.3.0,Issue is not fixed upstream. Other distributions have triaged the issue as minor or 'no security impact'.
+CVE-2021-33468,True,yasm,1.3.0,1.3.0,1.3.0,Issue is not fixed upstream. Other distributions have triaged the issue as minor or 'no security impact'.
+CVE-2023-30402,True,yasm,1.3.0,1.3.0,1.3.0,"Crash in CLI tool, no security impact."
+CVE-2023-31972,True,yasm,1.3.0,1.3.0,1.3.0,"Crash in CLI tool, no security impact."
+CVE-2023-31973,True,yasm,1.3.0,1.3.0,1.3.0,"Crash in CLI tool, no security impact."
+CVE-2023-31974,True,yasm,1.3.0,1.3.0,1.3.0,"Crash in CLI tool, no security impact."
+CVE-2023-31975,True,yasm,1.3.0,1.3.0,1.3.0,"Memory leak in CLI tool, no security impact."
+CVE-2023-51258,True,yasm,1.3.0,1.3.0,1.3.0,False positive / no practical security impact: yasm parser crash or leak in CLI tooling; retained as scanner-noise suppression.
+CVE-2026-26055,True,yoke,0.8.1,,,Incorrect package: CVE affects yokecd/Yoke ATC; scanned derivation is Rust crate yoke 0.8.1.
+CVE-2026-26056,True,yoke,0.8.1,,,Incorrect package: CVE affects yokecd/Yoke ATC; scanned derivation is Rust crate yoke 0.8.1.
+CVE-2002-0059,True,zlib,0.7.1.1,0.7.1.1,0.7.1.1,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2022-37434,True,zlib,0.7.1.1,0.7.1.1,0.7.1.1,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-45853,True,zlib,0.7.1.1,0.7.1.1,0.7.1.1,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-6992,True,zlib,0.7.1.1,0.7.1.1,0.7.1.1,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-6992,True,zlib,1.3.1,1.3.2,1.3.2,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2023-6992,True,zlib,1.3.2,1.3.2,1.3.2,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2026-22184,True,zlib,0.7.1.1,0.7.1.1,0.7.1.1,"Incorrect package / no target impact: scanned row is Haskell zlib 0.7.1.1; CVE concerns contrib/untgz, not the core compression library."
+CVE-2026-27820,True,zlib,0.7.1.1,0.7.1.1,0.7.1.1,"Incorrect package: CVE affects Ruby's zlib extension; scanned row is C zlib or Haskell zlib, not Ruby zlib."
+CVE-2026-27820,True,zlib,1.3.1,1.3.2,1.3.2,"Incorrect package: CVE affects Ruby's zlib extension; scanned row is C zlib or Haskell zlib, not Ruby zlib."
+CVE-2026-27820,True,zlib,1.3.2,1.3.2,1.3.2,"Incorrect package: CVE affects Ruby's zlib extension; scanned row is C zlib or Haskell zlib, not Ruby zlib."
+CVE-2022-26691,True,cups,2.4.16,2.4.19,2.4.19,Target-specific false positive: CVE is an Apple macOS privilege issue; scanned CUPS component is in an x86_64-linux target.
+CVE-2022-26691,True,cups,2.4.19,2.4.19,2.4.19,Target-specific false positive: CVE is an Apple macOS privilege issue; scanned CUPS component is in an x86_64-linux target.
+CVE-2026-7009,True,curl,8.19.0,8.21.0,8.21.0_4,Target-specific false positive: CVE affects libcurl built with Apple SecTrust; scanned curl component is for x86_64-linux without Apple SecTrust.
+CVE-2013-1944,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2014-3613,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2014-3620,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2015-3153,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2016-0754,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2016-0755,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2016-4606,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2016-4802,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2016-8615,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2016-8616,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2016-8617,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2016-8618,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2016-8619,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2016-8620,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2016-8621,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2016-8623,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2016-8624,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2016-8625,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2016-9586,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2016-9594,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2017-2629,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2017-9502,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2019-5443,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2020-8284,True,curl,0.4.49,,,"Incorrect package: scanned component is the Rust crate curl 0.4.49 in the build closure, not curl/libcurl; actual curl/libcurl derivations are scanned separately as curl 8.x."
+CVE-2024-21485,True,dash,0.5.13.2,,,Incorrect package: CVE is for Plotly/Python dash and dash-core/html components; scanned component is the dash POSIX shell for x86_64-linux.
+CVE-2024-21485,True,dash,0.5.13.3,,,Incorrect package: CVE is for Plotly/Python dash and dash-core/html components; scanned component is the dash POSIX shell for x86_64-linux.
+CVE-2021-37322,True,gcc,4.6.4,15.2.0,16.1.0,Build-time bootstrap artifact: all current rows for this CVE/package key are gcc 4.6.4 bootstrap compiler derivations in the build closure; current gcc 15.x rows are scanned separately.
+CVE-2023-4039,True,gcc,10.4.0,15.2.0,16.1.0,Target-specific false positive: CVE is limited to GCC/Arm GNU Toolchain targeting AArch64; scanned component is an x86_64-linux build.
+CVE-2023-4039,True,gcc,15.2.0,15.2.0,16.1.0,Target-specific false positive: CVE is limited to GCC/Arm GNU Toolchain targeting AArch64; scanned component is an x86_64-linux build.
+CVE-2023-4039,True,gcc,4.6.4,15.2.0,16.1.0,Target-specific false positive: CVE is limited to GCC/Arm GNU Toolchain targeting AArch64; scanned component is an x86_64-linux build.
+CVE-2002-2439,True,gcc,4.6.4,15.2.0,16.1.0,Build-time bootstrap artifact: all current rows for this CVE/package key are gcc 4.6.4 bootstrap compiler derivations in the build closure; current gcc 15.x rows are scanned separately.
+CVE-2015-5276,True,gcc,4.6.4,15.2.0,16.1.0,Build-time bootstrap artifact: all current rows for this CVE/package key are gcc 4.6.4 bootstrap compiler derivations in the build closure; current gcc 15.x rows are scanned separately.
+CVE-2018-12886,True,gcc,4.6.4,15.2.0,16.1.0,Build-time bootstrap artifact: all current rows for this CVE/package key are gcc 4.6.4 bootstrap compiler derivations in the build closure; current gcc 15.x rows are scanned separately.
+CVE-2019-15847,True,gcc,4.6.4,15.2.0,16.1.0,Build-time bootstrap artifact: all current rows for this CVE/package key are gcc 4.6.4 bootstrap compiler derivations in the build closure; current gcc 15.x rows are scanned separately.
+CVE-2017-7476,True,gnulib,0a01f67,,,Version false positive: CVE affects Gnulib before 2017-04-26; scanned revision 0a01f6737dc5666c730bdfe6a038da53a4156cc2 is from 2024-10-01.
+CVE-2017-7476,True,gnulib,9f48fb9,,,Version false positive: CVE affects Gnulib before 2017-04-26; scanned revision 9f48fb992a3d7e96610c4ce8be969cff2d61a01b is from 2022-02-12.
+CVE-2018-17942,True,gnulib,0a01f67,,,Version false positive: CVE affects Gnulib before 2018-09-23; scanned revision 0a01f6737dc5666c730bdfe6a038da53a4156cc2 is from 2024-10-01.
+CVE-2018-17942,True,gnulib,9f48fb9,,,Version false positive: CVE affects Gnulib before 2018-09-23; scanned revision 9f48fb992a3d7e96610c4ce8be969cff2d61a01b is from 2022-02-12.
+CVE-2025-0913,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Target-specific false positive: CVE describes Go os.OpenFile O_CREATE|O_EXCL behavior on Windows symlink targets; scanned component is the Linux amd64 bootstrap Go in an x86_64-linux target.
+CVE-2025-22873,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2025-4674,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2025-47906,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2025-47907,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2025-47912,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2025-58185,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2025-58187,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2025-58188,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2025-58189,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2025-61723,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2025-61724,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2025-61726,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2025-61727,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2025-61728,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2025-61729,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2025-61730,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2025-61731,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2025-61732,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2025-68119,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2025-68121,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-25679,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-25679,True,go,1.24.13-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-27139,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-27139,True,go,1.24.13-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-27140,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-27140,True,go,1.24.13-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-27142,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-27142,True,go,1.24.13-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-27143,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-27143,True,go,1.24.13-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-27144,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-27144,True,go,1.24.13-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-32280,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-32280,True,go,1.24.13-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-32281,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-32281,True,go,1.24.13-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-32282,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-32282,True,go,1.24.13-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-32283,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-32283,True,go,1.24.13-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-32288,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-32288,True,go,1.24.13-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-32289,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-32289,True,go,1.24.13-linux-amd64-bootstrap,1.27rc2,1.26.5,Build-time bootstrap artifact: all current rows for this CVE/package key are Go linux-amd64 bootstrap toolchain derivations in the build closure. Non-bootstrap Go rows remain active where they share a key.
+CVE-2026-39836,True,go,1.22.12-linux-amd64-bootstrap,1.27rc2,1.26.5,Target-specific false positive: CVE affects Windows-only Go net behavior; scanned Go component is for linux-amd64 in an x86_64-linux target.
+CVE-2026-39836,True,go,1.24.13-linux-amd64-bootstrap,1.27rc2,1.26.5,Target-specific false positive: CVE affects Windows-only Go net behavior; scanned Go component is for linux-amd64 in an x86_64-linux target.
+CVE-2026-39836,True,go,1.26.2,1.27rc2,1.26.5,Target-specific false positive: CVE affects Windows-only Go net behavior; scanned target is x86_64-linux.
+CVE-2022-1271,True,gzip,1.2.4,1.14,1.14,Build-time bootstrap artifact: all current rows for this CVE/package key are gzip 1.2.4 bootstrap derivations in the build closure; current gzip 1.14 rows remain active for their own CVEs.
+CVE-2001-1228,True,gzip,1.2.4,1.14,1.14,Build-time bootstrap artifact: all current rows for this CVE/package key are gzip 1.2.4 bootstrap derivations in the build closure; current gzip 1.14 rows remain active for their own CVEs.
+CVE-2003-0367,True,gzip,1.2.4,1.14,1.14,Build-time bootstrap artifact: all current rows for this CVE/package key are gzip 1.2.4 bootstrap derivations in the build closure; current gzip 1.14 rows remain active for their own CVEs.
+CVE-2004-0603,True,gzip,1.2.4,1.14,1.14,Build-time bootstrap artifact: all current rows for this CVE/package key are gzip 1.2.4 bootstrap derivations in the build closure; current gzip 1.14 rows remain active for their own CVEs.
+CVE-2004-1349,True,gzip,1.2.4,1.14,1.14,Build-time bootstrap artifact: all current rows for this CVE/package key are gzip 1.2.4 bootstrap derivations in the build closure; current gzip 1.14 rows remain active for their own CVEs.
+CVE-2005-0758,True,gzip,1.2.4,1.14,1.14,Build-time bootstrap artifact: all current rows for this CVE/package key are gzip 1.2.4 bootstrap derivations in the build closure; current gzip 1.14 rows remain active for their own CVEs.
+CVE-2005-0988,True,gzip,1.2.4,1.14,1.14,Build-time bootstrap artifact: all current rows for this CVE/package key are gzip 1.2.4 bootstrap derivations in the build closure; current gzip 1.14 rows remain active for their own CVEs.
+CVE-2005-1228,True,gzip,1.2.4,1.14,1.14,Build-time bootstrap artifact: all current rows for this CVE/package key are gzip 1.2.4 bootstrap derivations in the build closure; current gzip 1.14 rows remain active for their own CVEs.
+CVE-2009-2624,True,gzip,1.2.4,1.14,1.14,Build-time bootstrap artifact: all current rows for this CVE/package key are gzip 1.2.4 bootstrap derivations in the build closure; current gzip 1.14 rows remain active for their own CVEs.
+CVE-2010-0001,True,gzip,1.2.4,1.14,1.14,Build-time bootstrap artifact: all current rows for this CVE/package key are gzip 1.2.4 bootstrap derivations in the build closure; current gzip 1.14 rows remain active for their own CVEs.
+CVE-2016-2563,True,kitty,0.47.0,,,Incorrect package: CVE affects the PuTTY-derived KiTTY SCP utility; scanned component is the Kovid Goyal kitty terminal emulator for x86_64-linux.
+CVE-2023-48795,True,kitty,0.47.0,,,"Incorrect package/implementation: CVE affects SSH transport implementations; scanned component is the Kovid Goyal kitty terminal emulator, not an SSH transport library."
+CVE-2024-23749,True,kitty,0.47.0,,,Incorrect package: CVE is for KiTTY Windows PuTTY fork; scanned component is the kitty terminal emulator for x86_64-linux.
+CVE-2024-25003,True,kitty,0.47.0,,,Incorrect package: CVE is for KiTTY Windows PuTTY fork; scanned component is the kitty terminal emulator for x86_64-linux.
+CVE-2024-25004,True,kitty,0.47.0,,,Incorrect package: CVE is for KiTTY Windows PuTTY fork; scanned component is the kitty terminal emulator for x86_64-linux.
+CVE-2021-4048,True,lapack,3,3.12.1,3.12.1,Incorrect local version: Nixpkgs lapack-3 is an ABI shim over OpenBLAS 0.3.32/0.3.33 and liblapack headers 3.12.1; CVE affects LAPACK through 3.10.0 or OpenBLAS before 0.3.18.
+CVE-2026-58050,True,libssh2,1.11.1,1.11.1,1.11.1,Target-specific false positive: CVE is limited to 32-bit platforms; scanned libssh2 component is built for x86_64-linux.
+CVE-2019-17178,True,lodepng,3.12.1,,,Incorrect implementation: CVE names HuffmanTree_makeFromFrequencies in C lodepng.c through 2019-09-28; scanned crate is the pure-Rust lodepng 3.12.1 rewrite and does not contain that C function.
+CVE-2023-51767,True,openssh,10.3p1,10.4p1,10.4p1,Version false positive: current CVE data says OpenSSH through 10.0 is affected; scanned OpenSSH is 10.3p1. The CVE is also disputed by upstream as a platform Rowhammer issue.
+CVE-2026-31789,True,openssl,3.6.1,4.0.1,4.0.1,Target-specific false positive: CVE is limited to 32-bit platforms; scanned OpenSSL component is built for x86_64-linux.
+CVE-2026-8376,True,perl,5.42.0,5.42.0,5.44.0,Target-specific false positive: CVE is limited to 32-bit Perl builds; scanned Perl component is built for x86_64-linux.
+CVE-2026-8376,True,perl,5.42.0-binlore,5.42.0,5.44.0,Target-specific false positive: CVE is limited to 32-bit Perl builds; scanned Perl component is built for x86_64-linux.
+CVE-2026-8376,True,perl,5.42.0-env,5.42.0,5.44.0,Target-specific false positive: CVE is limited to 32-bit Perl builds; scanned Perl component is built for x86_64-linux.
+CVE-2021-3572,True,pip,20.3.4-source,25.3,26.1.2,No target impact: scanned component is the fetched pip-20.3.4-source artifact in the build-time graph; CVE concerns pip installer behavior rather than a target runtime package.
+CVE-2023-5752,True,pip,20.3.4-source,25.3,26.1.2,No target impact: scanned component is the fetched pip-20.3.4-source artifact in the build-time graph; CVE concerns pip VCS install behavior rather than a target runtime package.
+CVE-2026-8643,True,pip,20.3.4-source,25.3,26.1.2,No target impact: scanned component is the fetched pip-20.3.4-source artifact in the build-time graph; CVE concerns pip wheel installation behavior rather than a target runtime package.
+CVE-2007-4559,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2015-5652,True,python,2.7.18.12,3.14.6,3.14.6,Target-specific false positive: CVE affects python.exe on Windows; scanned CPython component is in an x86_64-linux target.
+CVE-2017-17522,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2017-18207,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2021-23336,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2021-3733,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2022-0391,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2022-26488,True,python,2.7.18.12,3.14.6,3.14.6,Target-specific false positive: CVE affects Windows Python installer/search-path behavior; scanned CPython component is in an x86_64-linux target.
+CVE-2022-45061,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2022-48560,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2022-48564,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2022-48565,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2022-48566,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2023-24329,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2023-36632,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2023-40217,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2024-6232,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2024-7592,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2024-9287,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2025-12084,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2025-12781,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2025-13836,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2025-13837,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2025-6075,True,python,2.7.18.12,3.14.6,3.14.6,Build-time bootstrap artifact: all current rows for this CVE/package key are python 2.7.18.12 in the build closure; Python 3 rows are left active where they share a CVE/package key.
+CVE-2026-3087,True,python,2.7.18.12,3.14.6,3.14.6,Target-specific false positive: CVE affects Windows absolute paths in ZIP extraction; scanned CPython component is in an x86_64-linux target.
+CVE-2026-3087,True,python,3.14.2,3.14.6,3.14.6,Target-specific false positive: CVE affects Windows absolute paths in ZIP extraction; scanned CPython component is in an x86_64-linux target.
+CVE-2026-3087,True,python,3.14.4,3.14.6,3.14.6,Target-specific false positive: CVE affects Windows absolute paths in ZIP extraction; scanned CPython component is in an x86_64-linux target.
+CVE-2022-40897,True,setuptools,44.0.0-source,82.0.1,83.0.0,No target impact: scanned component is the fetched setuptools-44.0.0-source artifact in the build-time graph; CVE concerns setuptools package-index behavior rather than a target runtime package.
+CVE-2025-47273,True,setuptools,44.0.0-source,82.0.1,83.0.0,No target impact: scanned component is the fetched setuptools-44.0.0-source artifact in the build-time graph; CVE concerns setuptools PackageIndex download behavior rather than a target runtime package.
+CVE-2026-59890,True,setuptools,44.0.0-source,82.0.1,83.0.0,Target-specific false positive: CVE requires macOS APFS/HFS+ Unicode normalization behavior; scanned setuptools source component is in an x86_64-linux target.
+CVE-2022-40898,True,wheel,0.37.1-source,0.47.0,0.47.0,No target impact: scanned component is the fetched wheel-0.37.1-source artifact in the build-time graph; CVE concerns wheel CLI processing rather than a target runtime package.
+CVE-2026-22184,True,zlib,1.3.1,1.3.2,1.3.2,No target impact: CVE is limited to the contrib/untgz demonstration utility not installed by the scanned Nix zlib 1.3.1 output.
+CVE-2009-3654,True,boost,1.89.0,1.91.0,1.91.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2020-11104,True,cereal,0.5.8.3,0.5.8.3,0.5.8.3,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2020-11105,True,cereal,0.5.8.3,0.5.8.3,0.5.8.3,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2017-16098,True,charset,0.3.12,0.3.12,0.3.12,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2008-0595,True,dbus,0.9.10,0.97,0.97,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2008-0595,True,dbus,1,0.97,0.97,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2008-3834,True,dbus,0.9.10,0.97,0.97,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2008-3834,True,dbus,1,0.97,0.97,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2008-4311,True,dbus,0.9.10,0.97,0.97,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2008-4311,True,dbus,1,0.97,0.97,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2009-1189,True,dbus,0.9.10,0.97,0.97,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2009-1189,True,dbus,1,0.97,0.97,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2019-12749,True,dbus,0.9.10,0.97,0.97,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2019-12749,True,dbus,1,0.97,0.97,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2015-2987,True,ed,1.22.5,1.22.5,1.22.5,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2015-1773,True,flex,2.6.4,2.6.4,2.6.4,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2019-14860,True,fuse,2.9.9,3.10.0,,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2019-14860,True,fuse,2.9.9-closefrom-glibc-2-34.patch?id=8a970396fca7aca2d5a761b8e7a8242f1eef14c9,3.10.0,,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2019-14860,True,fuse,3.17.4,3.10.0,,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2019-14900,True,fuse,2.9.9,3.10.0,,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2019-14900,True,fuse,2.9.9-closefrom-glibc-2-34.patch?id=8a970396fca7aca2d5a761b8e7a8242f1eef14c9,3.10.0,,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2019-14900,True,fuse,3.17.4,3.10.0,,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2018-1000110,True,git,2.53.0,2.54.0,2.55.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2018-1000110,True,git,2.54.0,2.54.0,2.55.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2018-1000182,True,git,2.53.0,2.54.0,2.55.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2018-1000182,True,git,2.54.0,2.54.0,2.55.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2019-1003010,True,git,2.53.0,2.54.0,2.55.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2019-1003010,True,git,2.54.0,2.54.0,2.55.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2020-2136,True,git,2.53.0,2.54.0,2.55.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2020-2136,True,git,2.54.0,2.54.0,2.55.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2016-6287,True,http-client,0.7.19,0.7.19,0.7.19,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2020-11021,True,http-client,0.7.19,0.7.19,0.7.19,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2026-55628,True,imagemagick,7.1.2-24,7.1.2-27,7.1.2.27,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2003-0856,True,iproute,1.7.15,1.7.15,1.7.15,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2015-4155,True,parallel,3.2.2.0-r10.cabal,3.3.0.0,3.3.0.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2015-4156,True,parallel,3.2.2.0-r10.cabal,3.3.0.0,3.3.0.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2020-1171,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2020-1171,True,python,3.14.2,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2020-1171,True,python,3.14.4,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2020-1192,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2020-1192,True,python,3.14.2,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2020-1192,True,python,3.14.4,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2020-17163,True,python,2.7.18.12,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2020-17163,True,python,3.14.2,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2020-17163,True,python,3.14.4,3.14.6,3.14.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2019-11644,True,safe,0.3.21,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2019-11644,True,safe,0.3.21-r1.cabal,0.3.21,0.3.21,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2014-2545,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2014-7194,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2015-5711,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2018-19786,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2020-13223,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2020-25594,True,vault,0.3.1.6,0.3.1.6,0.3.2.0,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
