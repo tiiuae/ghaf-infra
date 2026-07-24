@@ -239,7 +239,13 @@ pipeline {
           steps {
             script {
               env.TARGET = env.TEST_TARGET
-              env.DEVICE_BOOT_TAG = env.DEVICE_TAG == 'x1-sec-boot' ? 'lenovo-x1' : env.DEVICE_TAG
+              if (env.DEVICE_TAG == 'x1-sec-boot'){
+                env.DEVICE_BOOT_TAG = 'lenovo-x1'
+              } else if (env.DEVICE_TAG == 'darter-sec-boot'){
+                env.DEVICE_BOOT_TAG = 'darter-pro'
+              } else {
+                 env.DEVICE_BOOT_TAG = env.DEVICE_TAG
+              }
               currentBuild.description = "${env.TEST_AGENT_LABEL}<br>${env.TEST_TARGET}"
               println("Using BUILD_TARGET: ${env.BUILD_TARGET}")
               println("Using TEST_TARGET: ${env.TEST_TARGET}")
