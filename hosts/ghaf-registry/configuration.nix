@@ -17,7 +17,6 @@
   ++ (with self.nixosModules; [
     common
     service-openssh
-    service-nginx
     team-devenv
   ]);
 
