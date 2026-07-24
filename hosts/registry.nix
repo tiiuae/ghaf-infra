@@ -4,7 +4,6 @@
 {
   config,
   lib,
-  machines,
   pkgs,
   self,
   ...
@@ -14,8 +13,8 @@ let
   inherit (self.packages.${pkgs.stdenv.hostPlatform.system}) zot;
 
   zotDataDir = "/var/lib/zot";
-  zotPort = 5000;
-  isS3Storage = (cfg.storageConfig.storageDriver.name or null) == "s3";
+  zotPort = 443;
+  acmeDirectory = config.security.acme.certs.${cfg.domain}.directory;
 
   zotConfig = {
     storage = {
@@ -69,9 +68,13 @@ let
     // cfg.storageConfig;
 
     http = {
-      address = "127.0.0.1";
+      address = "0.0.0.0";
       port = zotPort;
       externalUrl = "https://${cfg.domain}";
+      tls = {
+        cert = "${acmeDirectory}/fullchain.pem";
+        key = "${acmeDirectory}/key.pem";
+      };
 
       auth = {
         htpasswd.path = config.sops.secrets.zot-htpasswd.path;
@@ -165,32 +168,18 @@ in
       };
     };
 
-    services.nginx.virtualHosts.${cfg.domain} = {
-      enableACME = true;
-      forceSSL = true;
-      default = true;
-      http2 = lib.mkIf isS3Storage false;
+    networking.firewall.allowedTCPPorts = [
+      80
+      zotPort
+    ];
 
-      locations."/" = {
-        proxyPass = "http://127.0.0.1:${toString zotPort}";
-        # nginx buffering causes pulls to fail occasionally when using s3 backend
-        extraConfig = ''
-          client_max_body_size 0;
-          proxy_buffering off;
-          proxy_request_buffering off;
-          proxy_max_temp_file_size 0;
-          proxy_read_timeout 3600s;
-          proxy_send_timeout 3600s;
-          client_body_timeout 3600s;
-        '';
-      };
-
-      locations."/metrics" = lib.mkIf cfg.metrics.enable {
-        proxyPass = "http://127.0.0.1:${toString zotPort}/metrics";
-        extraConfig = ''
-          allow ${machines.ghaf-monitoring.internal_ip};
-          deny all;
-        '';
+    security.acme = {
+      acceptTerms = true;
+      defaults.email = "trash@unikie.com";
+      certs.${cfg.domain} = {
+        group = "zot";
+        listenHTTP = ":80";
+        reloadServices = [ "zot.service" ];
       };
     };
 
@@ -209,10 +198,18 @@ in
     systemd.services.zot = {
       description = "zot OCI registry";
       wantedBy = [ "multi-user.target" ];
-      after = [ "network-online.target" ];
-      wants = [ "network-online.target" ];
+      after = [
+        "acme-${cfg.domain}.service"
+        "network-online.target"
+      ];
+      wants = [
+        "acme-${cfg.domain}.service"
+        "network-online.target"
+      ];
 
       serviceConfig = {
+        AmbientCapabilities = [ "CAP_NET_BIND_SERVICE" ];
+        CapabilityBoundingSet = [ "CAP_NET_BIND_SERVICE" ];
         Type = "simple";
         User = "zot";
         Group = "zot";
