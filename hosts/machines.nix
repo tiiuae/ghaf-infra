@@ -333,9 +333,9 @@
     module = ./uae/azureci/registry/configuration.nix;
     system = "x86_64-linux";
     machine = {
-      ip = "40.120.125.69";
-      internal_ip = "10.51.16.7";
-      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJYc0ODoayp9f7UpoLNjce57xDa15COh6tPwxHgd/6Yb";
+      ip = "74.162.68.150";
+      internal_ip = "10.51.16.8";
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINGB2M/sVPzlVGXwEHZBBlB8Wd+uQKFFqBGUr+sMC1yl";
     };
   };
 
