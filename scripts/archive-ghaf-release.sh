@@ -23,7 +23,8 @@ STORAGE_URL="${STORAGE_URL:=https://hel1.your-objectstorage.com}"
 BUCKET="${BUCKET:=ghaf-artifacts-dev}"
 ACCESS_KEY="${ACCESS_KEY:=}"
 SECRET_KEY="${SECRET_KEY:=}"
-OCI_REPOSITORY_PREFIX="${OCI_REPOSITORY_PREFIX:=registry.vedenemo.dev/ghaf/release-candidate}"
+OCI_REGISTRY="${OCI_REGISTRY:=registry.vedenemo.dev}"
+OCI_REPOSITORY="${OCI_REPOSITORY:=/ghaf/release-candidate}"
 REQUIRE_RELEASE_ATTESTATION="${REQUIRE_RELEASE_ATTESTATION:=true}"
 
 release_targets=(
@@ -294,7 +295,7 @@ pull_artifacts_from_oci() {
   for target_name in "${release_targets[@]}"; do
     oci_target_name="${target_name#packages.}"
     oci_target_name="${oci_target_name,,}"
-    target_reference="$OCI_REPOSITORY_PREFIX/$oci_target_name:$tag"
+    target_reference="$OCI_REGISTRY$OCI_REPOSITORY/$oci_target_name:$tag"
     target_dir="$artifactsdir/$target_name"
 
     mkdir -p "$target_dir"
@@ -311,7 +312,7 @@ pull_artifacts_from_oci() {
       exit 1
     fi
     rm -f "$manifest_log"
-    resolved_reference="$OCI_REPOSITORY_PREFIX/$oci_target_name@$resolved_digest"
+    resolved_reference="$OCI_REGISTRY$OCI_REPOSITORY/$oci_target_name@$resolved_digest"
     printf '%s\n' "$resolved_reference" >"$target_dir/oci-reference"
 
     if ! (
@@ -482,7 +483,7 @@ main() {
       -u "${OCI_USERNAME:-jenkins}" \
       --password-stdin \
       --registry-config "$OCI_REGISTRY_CONFIG" \
-      "${OCI_REPOSITORY_PREFIX%%/*}"
+      "$OCI_REGISTRY"
     pull_artifacts_from_oci "$OCI_TAG"
   else
     ARTIFACTS="$(realpath "$ARTIFACTS")"
