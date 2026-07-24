@@ -132,10 +132,12 @@ def ghaf_robot_test(String testname='relayboot') {
   if (testname.contains('turnoff')) {
     env.INCLUDE_TEST_TAGS = testname
   } else {
-    def bootTag =
-        env.DEVICE_TAG == 'x1-sec-boot' ? 'lenovo-x1' :
-        env.DEVICE_TAG == 'darter-sec-boot' ? 'darter-pro' :
-        env.DEVICE_TAG
+    def bootTag = env.DEVICE_TAG
+    if (bootTag == 'x1-sec-boot') {
+        bootTag = 'lenovo-x1'
+    } else if (bootTag == 'darter-sec-boot') {
+        bootTag = 'darter-pro'
+    }
     env.INCLUDE_TEST_TAGS = "${bootTag}AND${testname}${env.EXTRATAG}"
   }
   dir("Robot-Framework/test-suites") {
