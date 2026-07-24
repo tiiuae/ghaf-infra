@@ -44,6 +44,7 @@ Running just `deploy` without any arguments will deploy every host defined in th
 Do not use a normal deploy with immediate activation ('switch') when the target host is still running a different NixOS release than the configuration being deployed, for example `25.11 -> 26.05`.
 
 Those upgrades can fail during activation while reloading systemd user units.
+The shared host module therefore add a `system.switch.inhibitors.nixos-release` guard so the switch is refused before activation starts.
 
 Use a boot deployment instead:
 
