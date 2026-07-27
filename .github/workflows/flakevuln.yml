@@ -34,10 +34,19 @@ jobs:
                   persist-credentials: false
 
             - name: Run flakevuln
-              uses: tiiuae/flakevuln@9a98dd90933c5250a34f86db580ca6d9f8ed41d1
+              uses: tiiuae/flakevuln@3f2d9747337d8aae97e50fc1f2a49f460ea9c641
               with:
                   targets: |
                       nixosConfigurations.hetzci-prod.config.system.build.toplevel
                   unstable-ref: github:NixOS/nixpkgs/nixos-unstable
                   whitelist: .github/flakevuln/manual_analysis.csv
                   nixprs: true
+
+            - name: Upload flakevuln findings
+              if: ${{ always() }}
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: flakevuln-findings-${{ github.run_id }}
+                  path: ${{ runner.temp }}/flakevuln/findings.json
+                  if-no-files-found: warn
+                  retention-days: 30
