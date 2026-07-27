@@ -95,7 +95,12 @@ private def display_device_tag(Map testRun) {
 
   def explicitTag = normalize_optional_string(testRun.get('device_tag', null))
   if (explicitTag != null) {
-    return explicitTag == 'x1-sec-boot' ? 'lenovo-x1' : explicitTag
+    if (explicitTag == 'x1-sec-boot') {
+      return 'lenovo-x1'
+    } else if (explicitTag == 'darter-sec-boot') {
+      return 'darter-pro'
+    }
+    return explicitTag
   }
 
   def inferredInfo = device_info(testRun.target, testRun.get('secureboot', false))
@@ -108,7 +113,12 @@ private def display_device_tag(Map testRun) {
     return null
   }
 
-  return inferredTag == 'x1-sec-boot' ? 'lenovo-x1' : inferredTag
+  if (inferredTag == 'x1-sec-boot') {
+    return 'lenovo-x1'
+  } else if (inferredTag == 'darter-sec-boot') {
+    return 'darter-pro'
+  }
+  return inferredTag
 }
 
 private def target_stage_subject(Map testRun) {
@@ -196,6 +206,10 @@ private def inferred_device_info(String targetName, boolean secureboot) {
     return info_for_device_tag('x1-sec-boot')
   }
 
+  if (normalizedTarget.contains('system76-darp11-b') && secureboot) {
+    return info_for_device_tag('darter-sec-boot')
+  }
+
   return device_catalog().findResult { String deviceTag, Map device ->
     def targetSubstrings = device.target_substrings
     if (targetSubstrings instanceof List && targetSubstrings.any { normalizedTarget.contains(it as String) }) {
@@ -220,10 +234,16 @@ def device_info(String targetName, boolean secureboot, String explicitDeviceTag 
     }
 
     def explicitTag = normalizedDeviceTag
-    if (explicitTag == 'lenovo-x1' && inferredInfo.tag == 'x1-sec-boot') {
+    if (
+      (explicitTag == 'lenovo-x1' && inferredInfo.tag == 'x1-sec-boot') ||
+      (explicitTag == 'darter-pro' && inferredInfo.tag == 'darter-sec-boot')
+    ) {
       return inferredInfo
     }
-    if (explicitTag == 'x1-sec-boot' && inferredInfo.tag == 'lenovo-x1') {
+    if (
+      (explicitTag == 'x1-sec-boot' && inferredInfo.tag == 'lenovo-x1') ||
+      (explicitTag == 'darter-sec-boot' && inferredInfo.tag == 'darter-pro')
+    ) {
       return explicitInfo
     }
 
