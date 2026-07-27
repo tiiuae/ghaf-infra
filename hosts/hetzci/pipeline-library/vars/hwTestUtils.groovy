@@ -35,7 +35,7 @@ def extra_tag_suffix(String target, String deviceTag) {
   if (target.contains("lenovo-x1")) {
     filters.add(deviceTag == 'x1-sec-boot' ? 'NOTexcl-secboot' : 'NOTsecboot-only')
   }
-  if (target.contains("darter")) {
+  if (target.contains("darp11-b")) {
     filters.add(deviceTag == 'darter-sec-boot' ? 'NOTexcl-secboot' : 'NOTsecboot-only')
   }
   return filters.unique().join('')

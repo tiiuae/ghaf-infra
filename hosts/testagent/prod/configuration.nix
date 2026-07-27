@@ -107,8 +107,8 @@
         };
         Darter-Secure-Boot = {
           inherit location;
-          device_id = "00-4f-32-0a-e1";
-          netvm_hostname = "ghaf-1328679649";
+          device_id = "00-b9-63-24-20";
+          netvm_hostname = "ghaf-3110282272";
           serial_port = "/dev/ttyDARTERSB";
           device_ip_address = "172.18.16.14";
           socket_ip_address = "NONE";

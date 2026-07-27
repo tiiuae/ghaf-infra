@@ -164,6 +164,7 @@ pipeline {
                   [
                     device_tag: 'darter-pro',
                     variant: 'debug',
+                    test_secboot: params.SECUREBOOT,
                   ],
                 ],
               ))
