@@ -11,6 +11,7 @@
 {
   imports = [
     ./disk-config.nix
+    ../../../common.nix
     ../../../registry.nix
     ../../azureci/azure-common.nix
     (modulesPath + "/profiles/qemu-guest.nix")
@@ -25,8 +26,8 @@
 
   sops.defaultSopsFile = ./secrets.yaml;
 
-  # this server has been initialized with 25.11 with nixos-anywhere
-  system.stateVersion = lib.mkForce "25.11";
+  # this server has been initialized with 26.05 with nixos-anywhere
+  system.stateVersion = lib.mkForce "26.05";
 
   hardware.enableRedistributableFirmware = true;
   networking.hostName = "uae-azureci-registry";
