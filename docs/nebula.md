@@ -41,7 +41,7 @@ This will tell you the groups that the host (10.42.42.11) is part of, if you for
 
 ## Certificate Authority
 
-The CA key and cert are stored encrypted in `services/nebula/ca.{key,crt}`.
+The CA key and cert are stored encrypted in `modules/nebula/ca.{key,crt}`.
 These can be decrypted with SOPS, given you have the rights:
 
 ```sh
@@ -84,7 +84,7 @@ The script will print the cert and key in a format that can be easily copy-paste
 ## Nix configuration
 
 To add a new host into the network, you should have the certificate and key in `secrets.yaml`,
-then import the `service-nebula` module.
+then import the `nebula` module.
 
 Set secret owner as `config.nebula.user` (this is defined in the module).
 
@@ -105,7 +105,7 @@ nebula = {
 };
 ```
 
-Remember to update `.sops.yaml` and then run `sops updatekeys services/nebula/ca.crt.crypt`.
+Remember to update `.sops.yaml` and then run `sops updatekeys modules/nebula/ca.crt.crypt`.
 The new host should be able to decrypt `ca.crt.crypt` for nebula to run.
 
 ## Onboarding checklist
@@ -126,9 +126,9 @@ host already exists in the infrastructure (see
 4. **Add cert and key to secrets** — copy the script output into the host's
    `secrets.yaml` (the `nebula-cert` and `nebula-key` fields).
 5. **Update `.sops.yaml`** — add the host's age key anchor to the
-   `services/nebula/ca.crt.crypt` creation rule so the host can decrypt it.
-6. **Re-encrypt** — run `sops updatekeys services/nebula/ca.crt.crypt`.
-7. **Configure NixOS** — import the `service-nebula` module in the host's
+   `modules/nebula/ca.crt.crypt` creation rule so the host can decrypt it.
+6. **Re-encrypt** — run `sops updatekeys modules/nebula/ca.crt.crypt`.
+7. **Configure NixOS** — import the `nebula` module in the host's
    `configuration.nix` and enable it (see [Nix configuration](#nix-configuration)
    above).
 8. **Add `nebula_ip`** — set the `nebula_ip` field in `hosts/machines.nix`
@@ -138,7 +138,7 @@ host already exists in the infrastructure (see
 ## Firewall groups
 
 Groups are assigned when signing a host certificate and are used in the
-Nebula firewall rules defined in `services/nebula/default.nix`.
+Nebula firewall rules defined in `modules/nebula/default.nix`.
 
 | Group | Purpose |
 |---|---|

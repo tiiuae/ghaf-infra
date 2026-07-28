@@ -15,8 +15,8 @@
   ]
   ++ (with self.nixosModules; [
     common
-    service-openssh
-    service-nebula
+    openssh
+    nebula
     team-devenv
   ]);
 

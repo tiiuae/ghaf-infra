@@ -18,7 +18,7 @@
   ]
   ++ (with self.nixosModules; [
     common
-    service-openssh
+    openssh
     user-bmg
     user-fayad
     team-devenv

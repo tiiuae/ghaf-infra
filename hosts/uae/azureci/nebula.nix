@@ -8,7 +8,7 @@
 }:
 {
   imports = [
-    self.nixosModules.service-nebula
+    self.nixosModules.nebula
   ];
 
   sops = {

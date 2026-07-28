@@ -38,7 +38,7 @@ service modules the host needs, and user modules:
   ]
   ++ (with self.nixosModules; [
     common
-    service-openssh
+    openssh
     # add other service modules as needed
   ]);
 

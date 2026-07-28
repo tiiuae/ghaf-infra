@@ -28,7 +28,7 @@ in
   ]
   ++ (with self.nixosModules; [
     common
-    service-openssh
+    openssh
     team-devenv
     user-github
     user-remote-build

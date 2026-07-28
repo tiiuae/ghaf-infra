@@ -737,7 +737,7 @@ def test_sops_files_from_config_matches_existing_creation_rules(tmp_path: Path) 
                 "    key_groups:",
                 "      - age:",
                 "          - *admin",
-                "  - path_regex: 'services/nebula/ca\\.crt\\.crypt$'",
+                "  - path_regex: 'modules/nebula/ca\\.crt\\.crypt$'",
                 "    key_groups:",
                 "      - age:",
                 "          - *admin",
@@ -753,8 +753,8 @@ def test_sops_files_from_config_matches_existing_creation_rules(tmp_path: Path) 
     for path in [
         "hosts/testagent/credentials.yaml",
         "hosts/testagent/dev/secrets.yaml",
-        "services/nebula/ca.crt.crypt",
-        "services/nebula/ca.key.crypt",
+        "modules/nebula/ca.crt.crypt",
+        "modules/nebula/ca.key.crypt",
     ]:
         secret = tmp_path / path
         secret.parent.mkdir(parents=True, exist_ok=True)
@@ -763,7 +763,7 @@ def test_sops_files_from_config_matches_existing_creation_rules(tmp_path: Path) 
     assert tasks._sops_files_from_config(sops_config) == [
         Path("hosts/testagent/credentials.yaml"),
         Path("hosts/testagent/dev/secrets.yaml"),
-        Path("services/nebula/ca.crt.crypt"),
+        Path("modules/nebula/ca.crt.crypt"),
     ]
 
 
@@ -788,7 +788,7 @@ def test_update_sops_files_uses_sops_config_paths(
                 "    key_groups:",
                 "      - age:",
                 "          - *admin",
-                "  - path_regex: services/nebula/ca.key.crypt$",
+                "  - path_regex: modules/nebula/ca.key.crypt$",
                 "    key_groups:",
                 "      - age:",
                 "          - *admin",
@@ -798,7 +798,7 @@ def test_update_sops_files_uses_sops_config_paths(
     )
     for path in [
         "hosts/testagent/credentials.yaml",
-        "services/nebula/ca.key.crypt",
+        "modules/nebula/ca.key.crypt",
         "hosts/testagent/dev/secrets.yaml",
     ]:
         secret = tmp_path / path
@@ -810,7 +810,7 @@ def test_update_sops_files_uses_sops_config_paths(
 
     assert commands == [
         "sops updatekeys --yes hosts/testagent/credentials.yaml",
-        "sops updatekeys --yes services/nebula/ca.key.crypt",
+        "sops updatekeys --yes modules/nebula/ca.key.crypt",
     ]
 
 

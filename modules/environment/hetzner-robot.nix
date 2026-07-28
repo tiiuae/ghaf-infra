@@ -3,6 +3,7 @@
 {
   lib,
   config,
+  pkgs,
   ...
 }:
 {
@@ -32,5 +33,9 @@
     "nvme" # NVMe drives
     "usbhid" # USB devices
     "xhci_pci" # USB 3.0
+  ];
+
+  environment.systemPackages = with pkgs; [
+    efibootmgr
   ];
 }
