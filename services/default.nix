@@ -2,12 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   flake.nixosModules = {
-    service-binary-cache = import ./binary-cache;
-    service-nginx = import ./nginx;
-    service-monitoring = import ./monitoring;
-    service-openssh = import ./openssh;
-    service-remote-build = import ./remote-build;
-    service-rclone-http = import ./rclone-http;
-    service-nebula = import ./nebula;
+    service-nginx = ./nginx;
+    service-monitoring = ./monitoring;
+    service-openssh = ./openssh;
+    service-nebula = ./nebula;
   };
 }
