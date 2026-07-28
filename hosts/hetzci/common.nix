@@ -15,7 +15,7 @@
   ]
   ++ (with self.nixosModules; [
     common
-    service-openssh
+    openssh
     team-devenv
     team-testers
   ]);

@@ -18,7 +18,7 @@
   ]
   ++ (with self.nixosModules; [
     common
-    service-openssh
+    openssh
     team-devenv
     user-remote-build
   ]);

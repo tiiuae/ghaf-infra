@@ -10,7 +10,7 @@
 
 {
   imports = [
-    self.nixosModules.service-monitoring
+    self.nixosModules.monitoring
     inputs.sops-nix.nixosModules.sops
     ./nix-caches.nix
     ./nix.nix

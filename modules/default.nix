@@ -8,5 +8,9 @@
     hetzner-robot = ./environment/hetzner-robot.nix;
     zot-registry = ./zot-registry.nix;
     zramSwap = ./zramswap.nix;
+    nginx = ./nginx.nix;
+    monitoring = ./monitoring.nix;
+    openssh = ./openssh.nix;
+    nebula = ./nebula;
   };
 }

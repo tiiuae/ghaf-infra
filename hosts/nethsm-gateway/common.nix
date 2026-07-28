@@ -15,8 +15,8 @@
   ++ (with self.nixosModules; [
     common
     team-devenv
-    service-openssh
-    service-nebula
+    openssh
+    nebula
   ]);
 
   sops.secrets.loki_password.owner = "alloy";

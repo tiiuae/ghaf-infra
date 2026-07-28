@@ -122,7 +122,6 @@
           ./hosts
           ./modules
           ./nix
-          ./services
           ./users
           ./scripts
         ];

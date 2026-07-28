@@ -13,7 +13,7 @@ let
 in
 {
   imports = [
-    self.nixosModules.service-nebula
+    self.nixosModules.nebula
     self.nixosModules.team-testers
   ];
 

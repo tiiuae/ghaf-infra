@@ -15,7 +15,7 @@
   ++ (with self.nixosModules; [
     common
     zot-registry
-    service-openssh
+    openssh
     team-devenv
   ]);
 

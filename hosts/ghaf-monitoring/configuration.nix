@@ -47,9 +47,9 @@ in
   ]
   ++ (with self.nixosModules; [
     common
-    service-openssh
-    service-nebula
-    service-nginx
+    openssh
+    nebula
+    nginx
     team-devenv
   ]);
 

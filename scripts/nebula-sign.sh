@@ -15,8 +15,8 @@ trap 'rm -rf -- "$TMPDIR"' EXIT
 FLAKE_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
 cd "$TMPDIR"
 
-sops decrypt "$FLAKE_ROOT"/services/nebula/ca.key.crypt >"ca.key"
-sops decrypt "$FLAKE_ROOT"/services/nebula/ca.crt.crypt >"ca.crt"
+sops decrypt "$FLAKE_ROOT"/modules/nebula/ca.key.crypt >"ca.key"
+sops decrypt "$FLAKE_ROOT"/modules/nebula/ca.crt.crypt >"ca.crt"
 
 nebula-cert sign \
   -out-crt host.crt \

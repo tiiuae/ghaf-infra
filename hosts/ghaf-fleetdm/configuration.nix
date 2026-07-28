@@ -15,8 +15,8 @@
   ]
   ++ (with self.nixosModules; [
     common
-    service-openssh
-    service-nginx
+    openssh
+    nginx
     team-devenv
     user-vadikas
   ]);
