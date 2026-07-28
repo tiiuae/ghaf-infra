@@ -29,7 +29,7 @@ in
 
   system.stateVersion = lib.mkForce "25.11";
   networking.hostName = "hetzci-dbg";
-  ghaf.nix-cache.caches = [
+  nix.caches = [
     "nixos-org"
     "ghaf-dbg"
   ];

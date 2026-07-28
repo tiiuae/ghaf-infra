@@ -27,6 +27,7 @@
     ];
   };
 
+  system.stateVersion = "23.11";
   networking.hostName = "testagent2-prod";
   services.testagent = {
     variant = "prod";

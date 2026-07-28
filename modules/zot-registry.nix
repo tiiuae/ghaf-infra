@@ -16,7 +16,7 @@ let
   zotPort = 443;
   acmeDirectory = config.security.acme.certs.${cfg.domain}.directory;
 
-  zotConfig = {
+  zotConfig = lib.recursiveUpdate {
     storage = {
       rootDirectory = zotDataDir;
       dedupe = false;
@@ -64,8 +64,7 @@ let
           }
         ];
       };
-    }
-    // cfg.storageConfig;
+    };
 
     http = {
       address = "0.0.0.0";
@@ -131,7 +130,7 @@ let
       search.enable = true;
       metrics.enable = cfg.metrics.enable;
     };
-  };
+  } cfg.extraConfig;
   zotConfigFile = pkgs.writeText "zot_config.json" (builtins.toJSON zotConfig);
 in
 {
@@ -144,10 +143,10 @@ in
       type = lib.types.str;
       description = "Public registry domain.";
     };
-    storageConfig = lib.mkOption {
+    extraConfig = lib.mkOption {
       type = lib.types.attrs;
       default = { };
-      description = "Site-specific Zot storage configuration.";
+      description = "Additional Zot configuration merged with the defaults.";
     };
     metrics.enable = lib.mkEnableOption "Zot metrics";
   };

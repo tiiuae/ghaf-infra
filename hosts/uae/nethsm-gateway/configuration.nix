@@ -22,6 +22,7 @@
     };
   };
 
+  system.stateVersion = "23.11";
   networking.hostName = "uae-nethsm-gateway";
 
   # Assign IP configs because dhcp is disabled in network

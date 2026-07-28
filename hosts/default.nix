@@ -84,11 +84,6 @@ let
   );
 in
 {
-  flake.nixosModules = {
-    # shared modules
-    common = import ./common.nix;
-  };
-
   flake.lib = {
     inherit mkNixOS hostsBySystem;
   };

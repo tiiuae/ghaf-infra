@@ -23,6 +23,7 @@
     };
   };
 
+  system.stateVersion = "23.11";
   networking.hostName = "uae-testagent-prod";
   services.testagent = {
     variant = "prod";

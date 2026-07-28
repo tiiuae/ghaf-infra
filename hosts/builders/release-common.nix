@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 { ... }:
 {
-  ghaf.nix-cache.caches = [
+  nix.caches = [
     "nixos-org"
     "ghaf-release"
   ];

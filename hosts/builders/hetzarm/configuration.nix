@@ -11,7 +11,7 @@
     ../developers.nix
     ../builders-common.nix
     ../cachix-push.nix
-    ../../hetzner-robot.nix
+    self.nixosModules.hetzner-robot
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
@@ -29,6 +29,7 @@
     };
   };
 
+  system.stateVersion = "23.11";
   networking.hostName = "hetzarm";
 
   # Current host sizing: 80 vCPU, 250 GiB RAM, ~3520 GiB /nix disk.

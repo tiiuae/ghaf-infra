@@ -20,6 +20,7 @@
     };
   };
 
+  system.stateVersion = "23.11";
   networking.hostName = "nethsm-gateway";
 
   # NetHSM connected directly to the ethernet port

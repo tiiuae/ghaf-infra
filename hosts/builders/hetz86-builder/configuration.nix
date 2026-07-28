@@ -23,7 +23,7 @@ in
     ../developers.nix
     ../builders-common.nix
     ../cross-compilation.nix
-    ../../hetzner-robot.nix
+    self.nixosModules.hetzner-robot
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
@@ -41,6 +41,7 @@ in
     };
   };
 
+  system.stateVersion = "23.11";
   networking.hostName = "hetz86-builder";
   boot.kernelModules = [ "kvm-amd" ];
 

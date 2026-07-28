@@ -11,15 +11,13 @@
 {
   imports = [
     ./disk-config.nix
-    ../../../common.nix
-    ../../../registry.nix
     ../../azureci/azure-common.nix
     (modulesPath + "/profiles/qemu-guest.nix")
     inputs.disko.nixosModules.disko
-    inputs.sops-nix.nixosModules.sops
   ]
   ++ (with self.nixosModules; [
     common
+    zot-registry
     service-openssh
     team-devenv
   ]);

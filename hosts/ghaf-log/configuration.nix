@@ -10,9 +10,8 @@
 {
   imports = [
     ./disk-config.nix
-    ../hetzner-cloud.nix
+    self.nixosModules.hetzner-cloud
     ./loki.nix
-    inputs.sops-nix.nixosModules.sops
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
