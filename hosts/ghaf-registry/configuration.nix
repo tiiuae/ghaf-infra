@@ -9,13 +9,12 @@
 {
   imports = [
     ./disk-config.nix
-    ../registry.nix
-    ../hetzner-cloud.nix
-    inputs.sops-nix.nixosModules.sops
+    self.nixosModules.hetzner-cloud
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
     common
+    zot-registry
     service-openssh
     team-devenv
   ]);
@@ -28,7 +27,7 @@
     clientId = "zot-registry";
     domain = "registry.vedenemo.dev";
     metrics.enable = true;
-    storageConfig.storageDriver = {
+    extraConfig.storage.storageDriver = {
       name = "s3";
       bucket = "oci-artifacts";
       region = "hel1";

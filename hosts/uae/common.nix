@@ -13,7 +13,6 @@ in
 {
   imports = [
     self.nixosModules.service-nebula
-    self.nixosModules.service-monitoring
   ];
 
   sops = {

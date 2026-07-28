@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   self,
-  inputs,
   lib,
+  inputs,
   config,
   pkgs,
   ...
@@ -12,22 +12,6 @@ let
   asGB = size: toString (size * 1024 * 1024 * 1024);
 in
 {
-  imports = [
-    ./nix-cache.nix
-  ];
-
-  ghaf.nix-cache.caches = lib.mkDefault [
-    "nixos-org"
-    "ghaf-dev"
-  ];
-
-  boot.loader.systemd-boot = {
-    enable = true;
-    configurationLimit = 3;
-  };
-
-  boot.loader.timeout = 1;
-
   # revision of the flake the configuration was built from.
   # $ nixos-version --configuration-revision
   system.configurationRevision = toString (
@@ -88,33 +72,6 @@ in
     Restart = "on-failure";
   };
 
-  # Common network configuration
-  networking.firewall.enable = true;
-  networking.enableIPv6 = false;
-
-  # Allow password-less sudo for wheel users
-  security.sudo.enable = true;
-  security.sudo.wheelNeedsPassword = false;
-  # Contents of the user and group files will be replaced on system activation
-  # Ref: https://search.nixos.org/options?channel=unstable&show=users.mutableUsers
-  users.mutableUsers = false;
-
-  # Set your time zone
-  time.timeZone = "UTC";
-
-  # List packages installed in system profile
-  environment.systemPackages = with pkgs; [
-    wget
-    curl
-    vim
-    git
-    htop
-    nix-info
-  ];
-
-  # Shell
-  programs.bash.completion.enable = true;
-
   systemd.services.trim-profiles = {
     description = "Delete older profiles";
     serviceConfig.Type = "oneshot";
@@ -124,6 +81,4 @@ in
     startAt = "03:00";
   };
 
-  # https://nixos.wiki/wiki/FAQ/When_do_I_update_stateVersion
-  system.stateVersion = lib.mkDefault "23.11";
 }

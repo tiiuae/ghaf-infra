@@ -10,8 +10,7 @@
 }:
 {
   imports = [
-    ../zramswap.nix
-    inputs.sops-nix.nixosModules.sops
+    self.nixosModules.zramSwap
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [

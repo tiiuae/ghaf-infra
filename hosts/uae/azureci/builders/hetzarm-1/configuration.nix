@@ -11,7 +11,7 @@
 {
   imports = [
     ./disk-config.nix
-    ../../../../hetzner-robot.nix
+    self.nixosModules.hetzner-robot
     ../../../../builders/builders-common.nix
     (modulesPath + "/profiles/qemu-guest.nix")
     inputs.disko.nixosModules.disko

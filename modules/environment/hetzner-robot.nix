@@ -1,19 +1,11 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 {
-  self,
   lib,
-  inputs,
   config,
-  pkgs,
   ...
 }:
 {
-  imports = [
-    inputs.sops-nix.nixosModules.sops
-    self.nixosModules.service-monitoring
-  ];
-
   sops.secrets = lib.mkIf config.services.monitoring.logs.enable {
     loki_password.owner = "alloy";
   };
@@ -23,20 +15,16 @@
     auth.password_file = config.sops.secrets.loki_password.path;
   };
 
-  hardware.enableRedistributableFirmware = true;
-
-  networking.useNetworkd = true;
-  networking.useDHCP = false;
-  networking.usePredictableInterfaceNames = false;
+  networking = {
+    useNetworkd = true;
+    useDHCP = false;
+    usePredictableInterfaceNames = false;
+  };
 
   systemd.network.networks."10-uplink" = {
     matchConfig.Name = "eth0";
     networkConfig.DHCP = "ipv4";
   };
-
-  environment.systemPackages = with pkgs; [
-    efibootmgr
-  ];
 
   boot.initrd.availableKernelModules = [
     "ahci" # modern SATA devices

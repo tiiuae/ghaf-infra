@@ -5,14 +5,16 @@
 # it needs by name.
 #
 # Usage:
-#   ghaf.nix-cache.caches = [ "nixos-org" ];
-#   ghaf.nix-cache.caches = [ "nixos-org" "ghaf-release" ];
-#   ghaf.nix-cache.caches = [ "nixos-org" "ghaf-dev" ];
-#   ghaf.nix-cache.caches = [ "nixos-org" "ghaf-dbg" ];
-{ config, lib, ... }:
+#   nix.caches = [ "nixos-org" ];
+#   nix.caches = [ "nixos-org" "ghaf-release" ];
+#   nix.caches = [ "nixos-org" "ghaf-dev" ];
+#   nix.caches = [ "nixos-org" "ghaf-dbg" ];
+{
+  config,
+  lib,
+  ...
+}:
 let
-  cfg = config.ghaf.nix-cache;
-
   knownCaches = {
     nixos-org = {
       url = "https://cache.nixos.org/";
@@ -32,10 +34,10 @@ let
     };
   };
 
-  selectedCaches = map (name: knownCaches.${name}) cfg.caches;
+  selectedCaches = map (name: knownCaches.${name}) config.nix.caches;
 in
 {
-  options.ghaf.nix-cache.caches = lib.mkOption {
+  options.nix.caches = lib.mkOption {
     type = lib.types.nonEmptyListOf (lib.types.enum (builtins.attrNames knownCaches));
     description = "Binary caches to use.";
   };

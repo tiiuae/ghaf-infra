@@ -12,7 +12,7 @@
     ../builders-common.nix
     ../cross-compilation.nix
     ../cachix-push.nix
-    ../../hetzner-robot.nix
+    self.nixosModules.hetzner-robot
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
@@ -30,6 +30,7 @@
     };
   };
 
+  system.stateVersion = "23.11";
   networking.hostName = "hetz86-1";
   boot.kernelModules = [ "kvm-amd" ];
 

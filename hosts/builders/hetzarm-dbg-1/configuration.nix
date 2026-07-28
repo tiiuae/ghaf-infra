@@ -12,9 +12,8 @@
     ./disk-config.nix
     ../builders-common.nix
     ../cachix-push.nix
-    ../../hetzner-cloud.nix
-    ../../zramswap.nix
-    inputs.sops-nix.nixosModules.sops
+    self.nixosModules.hetzner-cloud
+    self.nixosModules.zramSwap
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
@@ -48,7 +47,7 @@
     cacheName = "ghaf-dbg";
   };
 
-  ghaf.nix-cache.caches = [
+  nix.caches = [
     "nixos-org"
     "ghaf-dbg"
   ];

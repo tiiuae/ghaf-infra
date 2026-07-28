@@ -12,9 +12,8 @@
     ../cross-compilation.nix
     ../cachix-push.nix
     ../release-common.nix
-    ../../zramswap.nix
-    ../../hetzner-robot.nix
-    inputs.sops-nix.nixosModules.sops
+    self.nixosModules.zramSwap
+    self.nixosModules.hetzner-robot
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [

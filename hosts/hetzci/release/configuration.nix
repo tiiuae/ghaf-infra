@@ -39,7 +39,7 @@ in
 
   system.stateVersion = "26.05";
   networking.hostName = "hetzci-release";
-  ghaf.nix-cache.caches = [
+  nix.caches = [
     "nixos-org"
     "ghaf-release"
   ];

@@ -13,6 +13,7 @@
 
   sops.defaultSopsFile = ./secrets.yaml;
 
+  system.stateVersion = "23.11";
   networking.hostName = "testagent-dev";
   services.testagent = {
     variant = "dev";

@@ -9,7 +9,6 @@
 }:
 {
   imports = [
-    inputs.sops-nix.nixosModules.sops
     inputs.disko.nixosModules.disko
     ./nethsm.nix
   ]
@@ -17,7 +16,6 @@
     common
     team-devenv
     service-openssh
-    service-monitoring
     service-nebula
   ]);
 

@@ -17,7 +17,6 @@
     ../../../../builders/cross-compilation.nix
     (modulesPath + "/profiles/qemu-guest.nix")
     inputs.disko.nixosModules.disko
-    inputs.sops-nix.nixosModules.sops
   ]
   ++ (with self.nixosModules; [
     common

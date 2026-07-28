@@ -120,6 +120,7 @@
 
         imports = [
           ./hosts
+          ./modules
           ./nix
           ./services
           ./users

@@ -9,7 +9,7 @@
 {
   imports = [
     self.nixosModules.service-nebula
-    ../hetzner-cloud.nix
+    self.nixosModules.hetzner-cloud
   ];
 
   sops = {

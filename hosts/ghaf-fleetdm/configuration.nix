@@ -8,10 +8,9 @@
 }:
 {
   imports = [
-    inputs.sops-nix.nixosModules.sops
     inputs.disko.nixosModules.disko
     ./disk-config.nix
-    ../hetzner-cloud.nix
+    self.nixosModules.hetzner-cloud
     ./fleet.nix
   ]
   ++ (with self.nixosModules; [
