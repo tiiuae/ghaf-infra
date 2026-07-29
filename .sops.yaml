@@ -155,6 +155,8 @@ creation_rules:
     - age:
       - *ghaf-webserver
       - *cazfi
+      - *jrautiola
+      - *hrosten
   - path_regex: hosts/ghaf-auth/secrets.yaml$
     key_groups:
     - age:
