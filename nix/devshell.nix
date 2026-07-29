@@ -66,6 +66,7 @@
             minio-client
             tree
             oras
+            hcloud
           ])
           ++ (with inputs'; [
             deploy-rs.packages.default
