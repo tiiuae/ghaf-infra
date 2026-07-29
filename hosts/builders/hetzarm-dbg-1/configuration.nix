@@ -31,6 +31,7 @@
   };
 
   networking.hostName = "hetzarm-dbg-1";
+  virtualisation.hetzner.withEfiSupport = true;
 
   # Current host sizing: 16 vCPU, 30 GiB RAM, ~300 GiB root disk.
   builder.tuning = {
