@@ -22,6 +22,7 @@
   sops.defaultSopsFile = ./secrets.yaml;
   system.stateVersion = lib.mkForce "26.05";
   networking.hostName = "ghaf-registry";
+  virtualisation.hetzner.withEfiSupport = true;
 
   services.zot-registry = {
     clientId = "zot-registry";
