@@ -26,7 +26,7 @@
   # List packages installed in system profile
   environment.systemPackages = with pkgs; [ emacs ];
 
-  system.stateVersion = lib.mkForce "24.05";
+  system.stateVersion = lib.mkForce "26.05";
   networking.hostName = "ghaf-webserver";
 
   services.nginx.virtualHosts."vedenemo.dev" = {
