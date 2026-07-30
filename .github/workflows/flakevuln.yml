@@ -20,6 +20,7 @@ permissions:
 jobs:
     scan:
         name: Scan hetzci-prod vulnerabilities
+        if: ${{ github.repository == 'tiiuae/ghaf-infra' }}
         runs-on: ubuntu-latest
         timeout-minutes: 180
         steps:
