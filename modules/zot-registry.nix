@@ -19,11 +19,10 @@ let
   zotConfig = lib.recursiveUpdate {
     storage = {
       rootDirectory = zotDataDir;
-      dedupe = false;
+      dedupe = true;
       gc = true;
-      gcInterval = "1h";
+      gcInterval = "24h";
       retention = {
-        delay = "24h";
         policies = [
           {
             repositories = [ "ghaf/**" ];
@@ -77,7 +76,9 @@ let
 
       auth = {
         htpasswd.path = config.sops.secrets.zot-htpasswd.path;
+        sessionKeysFile = config.sops.templates."zot-session-keys.json".path;
         apikey = true;
+
         openid.providers.oidc = {
           name = "Vedenemo Auth";
           issuer = "https://auth.vedenemo.dev";
@@ -129,6 +130,7 @@ let
       ui.enable = true;
       search.enable = true;
       metrics.enable = cfg.metrics.enable;
+      scrub.enable = true;
     };
   } cfg.extraConfig;
   zotConfigFile = pkgs.writeText "zot_config.json" (builtins.toJSON zotConfig);
@@ -155,8 +157,8 @@ in
     sops = {
       secrets = {
         auth-client-secret.owner = "zot";
-        zot-s3-credentials.owner = "zot";
         zot-htpasswd.owner = "zot";
+        zot-hashkey.owner = "zot";
       };
       templates."zot-oidc-credentials.json" = {
         owner = "zot";
@@ -165,6 +167,13 @@ in
           clientsecret = config.sops.placeholder.auth-client-secret;
         };
       };
+      templates."zot-session-keys.json" = {
+        owner = "zot";
+        content = builtins.toJSON {
+          hashKey = config.sops.placeholder.zot-hashkey;
+        };
+      };
+
     };
 
     networking.firewall.allowedTCPPorts = [
@@ -216,7 +225,6 @@ in
         Restart = "always";
         RestartSec = "5s";
         UMask = "0027";
-        EnvironmentFile = config.sops.secrets.zot-s3-credentials.path;
         WorkingDirectory = zotDataDir;
         ReadWritePaths = [ zotDataDir ];
       };
