@@ -35,7 +35,7 @@ jobs:
                   persist-credentials: false
 
             - name: Run flakevuln
-              uses: tiiuae/flakevuln@3f2d9747337d8aae97e50fc1f2a49f460ea9c641
+              uses: tiiuae/flakevuln@4cad247c0575c1407214f9f62e5aa2784bdb8e53
               with:
                   targets: |
                       nixosConfigurations.hetzci-prod.config.system.build.toplevel
