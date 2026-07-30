@@ -20,21 +20,13 @@
   ]);
 
   sops.defaultSopsFile = ./secrets.yaml;
-  system.stateVersion = lib.mkForce "25.11";
+  system.stateVersion = lib.mkForce "26.05";
   networking.hostName = "ghaf-registry";
 
   services.zot-registry = {
     clientId = "zot-registry";
     domain = "registry.vedenemo.dev";
     metrics.enable = true;
-    extraConfig.storage.storageDriver = {
-      name = "s3";
-      bucket = "oci-artifacts";
-      region = "hel1";
-      forcepathstyle = true;
-      regionendpoint = "https://hel1.your-objectstorage.com";
-      chunksize = toString (32 * 1024 * 1024);
-    };
   };
 
   services.monitoring = {

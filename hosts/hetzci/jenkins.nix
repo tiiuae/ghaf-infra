@@ -239,7 +239,7 @@ in
 
       environment = {
         CI_ENV = cfg.envType;
-        OCI_REGISTRY = lib.mkDefault "registry.uaenorth.cloudapp.azure.com";
+        OCI_REGISTRY = lib.mkDefault "registry.vedenemo.dev";
       };
 
       extraJavaOptions = [
