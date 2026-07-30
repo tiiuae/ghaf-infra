@@ -244,7 +244,6 @@ The ghaf-infra repository has its own GitHub Actions workflows
 
 - `actions-security-analysis.yml` — runs [zizmor](https://woodruffw.github.io/zizmor/)
   to audit workflow files for security issues.
-- `codeql.yml` — CodeQL static analysis on Python code.
 - `dependency-review.yml` — blocks PRs that introduce known-vulnerable
   dependencies.
 - `flakevuln.yml` — scheduled and manual vulnerability scanning for
