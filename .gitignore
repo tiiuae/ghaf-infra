@@ -12,3 +12,4 @@ result-*
 ca.key
 **/__pycache__/*
 .codex
+/.flakevuln/
