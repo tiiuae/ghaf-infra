@@ -134,6 +134,8 @@ CVE-2025-6021,True,libxml2,2.15.1,,2.15.3,2.15.3,False positive: scanner triage 
 CVE-2025-6021,True,libxml2,2.15.3,,2.15.3,2.15.3,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
 CVE-2025-6170,True,libxml2,2.15.1,,2.15.3,2.15.3,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
 CVE-2025-6170,True,libxml2,2.15.3,,2.15.3,2.15.3,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+OSV-2021-777,True,libxml2,2.15.1,,2.15.3,2.15.3,Fixed upstream in libxml2 2.9.13; the scanned 2.15.1 package is newer than the fixed release.
+OSV-2021-777,True,libxml2,2.15.3,,2.15.3,2.15.3,Fixed upstream in libxml2 2.9.13; the scanned 2.15.3 package is newer than the fixed release.
 CVE-2025-10911,True,libxslt,1.1.45,,1.1.45,1.1.45,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
 CVE-2025-7425,True,libxslt,1.1.45,,1.1.45,1.1.45,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
 CVE-2013-6393,True,libyaml,0.1.4,,0.1.4,0.1.4,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
@@ -491,6 +493,7 @@ CVE-2019-12749,True,dbus,0.9.10,,0.97,0.97,False positive: scanner triage classi
 CVE-2019-12749,True,dbus,1,,0.97,0.97,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
 CVE-2015-2987,True,ed,1.22.5,,1.22.5,1.22.5,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
 CVE-2015-1773,True,flex,2.6.4,,2.6.4,2.6.4,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2019-6293,True,flex,2.6.4,,2.6.4,2.6.4,NVD data issue: CPE entry does not correctly state the version numbers.
 CVE-2019-14860,True,fuse,2.9.9,,3.10.0,,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
 CVE-2019-14860,True,fuse,2.9.9-closefrom-glibc-2-34.patch?id=8a970396fca7aca2d5a761b8e7a8242f1eef14c9,,3.10.0,,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
 CVE-2019-14860,True,fuse,3.17.4,,3.10.0,,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
