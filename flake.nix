@@ -20,7 +20,7 @@
 
   inputs = {
     # Nixpkgs
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
     # Allows us to structure the flake with the NixOS module system
     flake-parts.url = "github:hercules-ci/flake-parts";
@@ -71,7 +71,6 @@
     robot-framework = {
       url = "github:tiiuae/ci-test-automation";
       inputs = {
-        nixpkgs.follows = "nixpkgs";
         flake-utils.follows = "flake-utils";
       };
     };
@@ -114,8 +113,6 @@
         systems = [
           "x86_64-linux"
           "aarch64-linux"
-          "x86_64-darwin"
-          "aarch64-darwin"
         ];
 
         imports = [

@@ -37,7 +37,7 @@ in
     ../signing.nix
   ];
 
-  system.stateVersion = "26.05";
+  system.stateVersion = "26.11";
   networking.hostName = "hetzci-release";
   nix.caches = [
     "nixos-org"

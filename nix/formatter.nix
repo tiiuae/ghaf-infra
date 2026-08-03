@@ -11,6 +11,13 @@
         in
         pkgs.writeShellScriptBin "pre-commit-run" ''
           set -eu
+          unset PYTHONPATH
+          export PATH="${
+            pkgs.lib.makeBinPath [
+              pkgs.coreutils
+              pkgs.git
+            ]
+          }"
 
           # Run all hooks except pylint first, then lint only changed Python files.
           SKIP=pylint ${pkgs.lib.getExe package} run --all-files --config ${configFile}
