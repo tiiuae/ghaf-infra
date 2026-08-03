@@ -192,8 +192,7 @@ class _ContextLoguruHandler(logging.Handler):
             raise
         # Logging handlers are expected to swallow formatting/write errors and
         # delegate them to handleError instead of crashing the caller.
-        # pylint: disable=broad-exception-caught
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             self.handleError(record)
 
 
@@ -672,8 +671,7 @@ def _install_release_hosts(c: Context, tmpdir: Path) -> None:
                 future.result()
             # Worker installs may raise SystemExit via helper guards; keep going so
             # all parallel host failures are surfaced before the task aborts.
-            # pylint: disable=broad-exception-caught
-            except (Exception, SystemExit) as err:
+            except (Exception, SystemExit) as err:  # pylint: disable=broad-exception-caught
                 failures.append(alias)
                 detail = _install_error_summary(err)
                 _log_error(f"Release install failed for '{alias}': {detail}")
