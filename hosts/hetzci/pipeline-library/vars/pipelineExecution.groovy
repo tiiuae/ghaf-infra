@@ -180,10 +180,9 @@ def create_pipeline(
 
     pipeline[build_target_name] = {
       artifactSupport.with_controller_workspace(ghaf_checkout) {
-        stage("Build ${build_shortname}") {
-          sh "mkdir -v -p ${output}"
-
-          lock(label: 'nix-build', quantity: 1) {
+        lock(label: 'nix-build', quantity: 1) {
+          stage("Build ${build_shortname}") {
+            sh "mkdir -v -p ${output}"
             def system = build_target_name.tokenize('.')[1]
             def remote_stores = readJSON file: '/etc/jenkins/remote-stores.json'
             def remote_store = remote_stores[system]
@@ -231,52 +230,50 @@ def create_pipeline(
             manifest.build.remote_store = remote_store
             manifest.build.remote_output = remote_store_path
           }
-        }
-        run_optional_stage(
-          target_config.provenance_requested,
-          "Provenance ${build_shortname}"
-        ) {
-          def ext_params = """
-            {
-              "target": {
-                "name": "${build_target_name}",
-                "repository": "${target_repo}",
-                "ref": "${target_commit}"
-              },
-              "workflow": {
-                "name": "${host_name}",
-                "repository": "https://github.com/tiiuae/ghaf-infra",
-                "ref": "${host_revision}"
-              },
-              "job": "${env.JOB_NAME}",
-              "jobParams": ${JsonOutput.toJson(params)},
-              "buildRun": "${env.BUILD_ID}"
-            }
-          """
-          withEnv([
-            'PROVENANCE_BUILD_TYPE=https://github.com/tiiuae/ghaf-infra/blob/ea938e90/slsa/v1.0/L1/buildtype.md',
-            "PROVENANCE_BUILDER_ID=${env.JENKINS_URL}",
-            "PROVENANCE_INVOCATION_ID=${env.BUILD_URL}",
-            "PROVENANCE_TIMESTAMP_BEGIN=${manifest.build.ts_begin}",
-            "PROVENANCE_TIMESTAMP_FINISHED=${manifest.build.ts_finished}",
-            "PROVENANCE_EXTERNAL_PARAMS=${ext_params}"
-          ]) {
-            sh "mkdir -v -p ${output}/attestations"
-            sh """
-              attempt=1; max_attempts=5;
-              while ! provenance ${output}/unsigned-output --recursive --out ${output}/attestations/provenance.json; do
-                echo "provenance attempt=\$attempt failed"
-                if (( \$attempt >= \$max_attempts )); then
-                  exit 1
-                fi
-                attempt=\$(( \$attempt + 1 ))
-                sleep 30
-              done
-              echo "provenance attempt=\$attempt passed"
+
+          run_optional_stage(
+            target_config.provenance_requested,
+            "Provenance ${build_shortname}"
+          ) {
+            def ext_params = """
+              {
+                "target": {
+                  "name": "${build_target_name}",
+                  "repository": "${target_repo}",
+                  "ref": "${target_commit}"
+                },
+                "workflow": {
+                  "name": "${host_name}",
+                  "repository": "https://github.com/tiiuae/ghaf-infra",
+                  "ref": "${host_revision}"
+                },
+                "job": "${env.JOB_NAME}",
+                "jobParams": ${JsonOutput.toJson(params)},
+                "buildRun": "${env.BUILD_ID}"
+              }
             """
-            manifest.attestations.provenance.path = "attestations/provenance.json"
+            withEnv([
+              'PROVENANCE_BUILD_TYPE=https://github.com/tiiuae/ghaf-infra/blob/ea938e90/slsa/v1.0/L1/buildtype.md',
+              "PROVENANCE_BUILDER_ID=${env.JENKINS_URL}",
+              "PROVENANCE_INVOCATION_ID=${env.BUILD_URL}",
+              "PROVENANCE_TIMESTAMP_BEGIN=${manifest.build.ts_begin}",
+              "PROVENANCE_TIMESTAMP_FINISHED=${manifest.build.ts_finished}",
+              "PROVENANCE_EXTERNAL_PARAMS=${ext_params}"
+            ]) {
+              sh "mkdir -v -p ${output}/attestations"
+              retry(5) {
+                sh """
+                  provenance ${output}/unsigned-output \
+                    --recursive \
+                    --out ${output}/attestations/provenance.json \
+                    || { sleep 30; exit 1; }
+                """
+              }
+              manifest.attestations.provenance.path = "attestations/provenance.json"
+            }
           }
         }
+
         run_optional_stage(
           target_config.build_otapin_requested,
           "OTA Build ${build_shortname}"
