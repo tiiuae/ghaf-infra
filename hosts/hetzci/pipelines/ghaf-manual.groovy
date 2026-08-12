@@ -20,6 +20,7 @@ properties([
     booleanParam(name: 'dell_latitude_7230_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.dell-latitude-7230-debug'),
     booleanParam(name: 'dell_latitude_7330_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.dell-latitude-7330-debug'),
     booleanParam(name: 'nvidia_jetson_orin_agx_debug_from_x86_64', defaultValue: false, description: 'Build target packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64'),
+    booleanParam(name: 'nvidia_jetson_orin_agx_accelerated_guivm_debug_from_x86_64', defaultValue: false, description: 'Build target packages.x86_64-linux.nvidia-jetson-orin-agx-accelerated-guivm-debug-from-x86_64'),
     booleanParam(name: 'nvidia_jetson_orin_nx_debug_from_x86_64', defaultValue: false, description: 'Build target packages.x86_64-linux.nvidia-jetson-orin-nx-debug-from-x86_64'),
     booleanParam(name: 'nvidia_jetson_orin_agx_debug', defaultValue: false, description: 'Build target packages.aarch64-linux.nvidia-jetson-orin-agx-debug'),
     booleanParam(name: 'nvidia_jetson_orin_nx_debug', defaultValue: false, description: 'Build target packages.aarch64-linux.nvidia-jetson-orin-nx-debug'),
@@ -123,6 +124,11 @@ pipeline {
             if (params.nvidia_jetson_orin_agx_debug_from_x86_64) {
               TARGETS.push(
                 [ target: "packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64", uefisign: params.UEFISIGN, testset: params.TESTSET ])
+            }
+            if (params.nvidia_jetson_orin_agx_accelerated_guivm_debug_from_x86_64) {
+              TARGETS.push(
+                [ target: "packages.x86_64-linux.nvidia-jetson-orin-agx-accelerated-guivm-debug-from-x86_64",
+                  no_image: true, testset: null, provenance: false ])
             }
             if (params.nvidia_jetson_orin_nx_debug_from_x86_64) {
               TARGETS.push(
