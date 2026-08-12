@@ -768,18 +768,47 @@ def _git_revision_info(revisions: Iterable[str] | None = None) -> dict[str, list
     return git_info
 
 
-def _read_deployed_revision(target_alias: str) -> tuple[str, str]:
-    """Read the currently deployed revision from one target host."""
+def _read_deployed_revision(target_alias: str) -> tuple[str, str, str]:
+    """Read the currently deployed revision and reboot state from one target host."""
     host = _get_deploy_host(target_alias)
+    command = """
+revision="$(nixos-version --configuration-revision 2>/dev/null || true)"
+[ -n "$revision" ] || revision="(unknown)"
+printf '%s\\n' "$revision"
+
+booted="$(readlink \
+  /run/booted-system/initrd \
+  /run/booted-system/kernel \
+  /run/booted-system/kernel-modules 2>/dev/null)" &&
+current="$(readlink \
+  /run/current-system/initrd \
+  /run/current-system/kernel \
+  /run/current-system/kernel-modules 2>/dev/null)" || {
+  printf '%s\\n' "(unknown)"
+  exit 0
+}
+
+if [ "$booted" = "$current" ]; then
+  printf '%s\\n' "no"
+else
+  printf '%s\\n' "yes"
+fi
+""".strip()
     try:
-        return target_alias, _remote_stdout(
+        lines = _remote_stdout(
             host,
-            "nixos-version --configuration-revision",
+            command,
             timeout=5,
             suppress_stderr=True,
-        )
-    except subprocess.TimeoutExpired:
-        return target_alias, "(unknown)"
+        ).splitlines()
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return target_alias, "(unknown)", "(unknown)"
+
+    revision = lines[0] if lines else "(unknown)"
+    reboot_needed = lines[1] if len(lines) > 1 else "(unknown)"
+    if reboot_needed not in {"yes", "no", "(unknown)"}:
+        reboot_needed = "(unknown)"
+    return target_alias, revision, reboot_needed
 
 
 def _format_revision_link(rev: str) -> str:
@@ -998,30 +1027,52 @@ def print_revision(_c: Context, alias: str = "") -> None:
     inv print-revision
     inv print-revision --alias=hetzci-release
     """
-    header_row = ["alias", "revision", "revision date", "revision subject"]
     git_info_def = ["", "", ""]
     target_aliases = [alias] if alias else list(TARGETS.all().keys())
-    max_workers = min(32, len(target_aliases))
     _log_info(f"Probing {len(target_aliases)} host(s) (up to 5s each)")
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        deployed_revisions = list(executor.map(_read_deployed_revision, target_aliases))
+    command_logger = logging.getLogger("deploykit.command")
+    command_logger_disabled = command_logger.disabled
+    command_logger.disabled = True
+    try:
+        with ThreadPoolExecutor(max_workers=min(32, len(target_aliases))) as executor:
+            deployed_revisions = list(
+                executor.map(_read_deployed_revision, target_aliases)
+            )
+    finally:
+        command_logger.disabled = command_logger_disabled
 
     git_info = _git_revision_info(
         rev
-        for _, rev in deployed_revisions
+        for _, rev, _ in deployed_revisions
         if rev != "(unknown)" and "-dirty" not in rev
     )
     table_rows = []
 
-    for target_alias, rev in deployed_revisions:
+    for target_alias, rev, reboot_needed in deployed_revisions:
         git_date = git_info.get(rev, git_info_def)[1]
         git_subj = git_info.get(rev, git_info_def)[2]
         table_rows.append(
-            [target_alias, _format_revision_link(rev), git_date, git_subj]
+            [
+                target_alias,
+                _format_revision_link(rev),
+                reboot_needed,
+                git_date,
+                git_subj,
+            ]
         )
 
-    table_rows.sort(reverse=True, key=lambda row: row[2])  # sort by git_date
-    table = tabulate(table_rows, headers=header_row, tablefmt="fancy_outline")
+    table_rows.sort(reverse=True, key=lambda row: row[3])  # sort by git_date
+    table = tabulate(
+        table_rows,
+        headers=[
+            "alias",
+            "revision",
+            "reboot needed",
+            "revision date",
+            "revision subject",
+        ],
+        tablefmt="fancy_outline",
+    )
     _print_output(f"\nCurrently deployed revision(s):\n\n{table}")
 
 

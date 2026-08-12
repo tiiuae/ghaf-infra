@@ -108,6 +108,27 @@ def test_remote_stdout_passes_requested_timeout_and_stderr_pipe() -> None:
     ]
 
 
+def test_read_deployed_revision_reports_reboot_state(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[dict[str, object]] = []
+
+    def fake_run(**kwargs: object) -> SimpleNamespace:
+        calls.append(kwargs)
+        return SimpleNamespace(stdout="abc123\nyes\n")
+
+    monkeypatch.setattr(
+        tasks, "_get_deploy_host", lambda _alias: SimpleNamespace(run=fake_run)
+    )
+
+    assert tasks._read_deployed_revision("alpha") == ("alpha", "abc123", "yes")
+    command = calls[0]["cmd"]
+    assert isinstance(command, str)
+    assert "nixos-version --configuration-revision" in command
+    assert "/run/booted-system/kernel" in command
+    assert "/run/current-system/kernel-modules" in command
+
+
 def test_assert_stateversion_exits_when_confirmation_is_rejected(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -911,30 +932,31 @@ def test_print_revision_collects_remote_hosts_before_git_lookup(
         def __exit__(self, *_args: object) -> None:
             return None
 
-        def map(self, func: object, aliases: list[str]) -> list[tuple[str, str]]:
+        def map(self, func: object, aliases: list[str]) -> list[tuple[str, str, str]]:
             """Apply the submitted function in-order for deterministic tests."""
             assert self.max_workers == len(aliases)
             assert func is tasks._read_deployed_revision
+            assert logging.getLogger("deploykit.command").disabled
             return [func(alias) for alias in aliases]
 
-    revisions = {
-        "alpha": "abc123",
-        "beta": "abc123",
-        "gamma": "dirtyrev-dirty",
-        "delta": "(unknown)",
+    host_states = {
+        "alpha": ("abc123", "no"),
+        "beta": ("abc123", "yes"),
+        "gamma": ("dirtyrev-dirty", "no"),
+        "delta": ("(unknown)", "(unknown)"),
     }
 
     monkeypatch.setattr(
         tasks,
         "TARGETS",
         SimpleNamespace(
-            all=lambda: OrderedDict((alias, object()) for alias in revisions)
+            all=lambda: OrderedDict((alias, object()) for alias in host_states)
         ),
     )
     monkeypatch.setattr(
         tasks,
         "_read_deployed_revision",
-        lambda alias: (alias, revisions[alias]),
+        lambda alias: (alias, *host_states[alias]),
     )
     monkeypatch.setattr(
         tasks,
@@ -948,12 +970,16 @@ def test_print_revision_collects_remote_hosts_before_git_lookup(
     monkeypatch.setattr(tasks, "ThreadPoolExecutor", FakeExecutor)
 
     tasks.print_revision.body(None, alias="")
+    assert not logging.getLogger("deploykit.command").disabled
 
     output = capsys.readouterr().out
     assert "alpha" in output
     assert "beta" in output
     assert "gamma" in output
     assert "delta" in output
+    assert "reboot needed" in output
+    assert "yes" in output
+    assert "no" in output
     assert "2026-01-01" in output
     assert "initial commit" in output
 
