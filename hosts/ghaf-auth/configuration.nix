@@ -79,6 +79,7 @@ in
                 teams = [
                   "devenv-fi"
                   "phone"
+                  "ci-dev-admins"
                 ];
               }
             ];
