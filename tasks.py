@@ -52,7 +52,8 @@ from typing import Any, TextIO
 import yaml
 from deploykit import DeployHost, HostKeyCheck
 from invoke.context import Context
-from invoke.tasks import task
+from invoke.parser.argument import Argument
+from invoke.tasks import Task, task
 from loguru import logger
 from tabulate import tabulate
 
@@ -100,6 +101,8 @@ RELEASE_TESTAGENT_URL = "https://ci-release.vedenemo.dev"
 RELEASE_CONNECT_ATTEMPTS = 3
 RELEASE_CONNECT_SLEEP_SEC = 5
 RELEASE_DEPLOY_SSH_PROBE_TIMEOUT_SEC = 5
+REBOOT_SHUTDOWN_TIMEOUT_SEC = 120
+REBOOT_START_TIMEOUT_SEC = 600
 
 
 ################################################################################
@@ -738,15 +741,23 @@ def _can_connect(host: str, port: int, timeout: int | float = 1) -> bool:
         return False
 
 
-def _wait_for_port(host: str, port: int, shutdown: bool = False) -> None:
+def _wait_for_port(
+    host: str,
+    port: int,
+    shutdown: bool = False,
+    timeout: int | float | None = None,
+) -> bool:
     """Wait for `host`:`port`."""
+    deadline = time.monotonic() + timeout if timeout is not None else None
     while True:
         time.sleep(1)
         if _can_connect(host, port):
             if not shutdown:
-                break
+                return True
         elif shutdown:
-            break
+            return True
+        if deadline is not None and time.monotonic() >= deadline:
+            return False
 
 
 def _git_revision_info(revisions: Iterable[str] | None = None) -> dict[str, list[str]]:
@@ -809,6 +820,25 @@ fi
     if reboot_needed not in {"yes", "no", "(unknown)"}:
         reboot_needed = "(unknown)"
     return target_alias, revision, reboot_needed
+
+
+def _read_deployed_revisions(
+    target_aliases: Iterable[str],
+) -> list[tuple[str, str, str]]:
+    """Read deployed revision state from multiple target hosts."""
+    aliases = list(target_aliases)
+    if not aliases:
+        return []
+
+    _log_info(f"Probing {len(aliases)} host(s) (up to 5s each)")
+    command_logger = logging.getLogger("deploykit.command")
+    command_logger_disabled = command_logger.disabled
+    command_logger.disabled = True
+    try:
+        with ThreadPoolExecutor(max_workers=min(32, len(aliases))) as executor:
+            return list(executor.map(_read_deployed_revision, aliases))
+    finally:
+        command_logger.disabled = command_logger_disabled
 
 
 def _format_revision_link(rev: str) -> str:
@@ -1000,23 +1030,178 @@ def _run_install(
     _log_status_info(f"[{alias}] install: finished")
 
 
-@task
-def reboot(_c: Context, alias: str) -> None:
+class _ConditionalRebootAliasArgument(Argument):
+    """Allow reboot's positional alias to be omitted for alternate modes."""
+
+    optional_when: list[Argument]
+
+    @property
+    def value(self) -> Any:
+        if self._value is not None:
+            return self._value
+        if any(arg.value for arg in self.optional_when):
+            return ""
+        return None
+
+    @value.setter
+    def value(self, value: str) -> None:
+        self.set_value(value, cast=True)
+
+
+class _RebootTask(Task):
+    """Invoke task variant for reboot's optional alternate modes."""
+
+    def get_arguments(self, ignore_unknown_help: bool | None = None) -> list[Argument]:
+        arguments = super().get_arguments(ignore_unknown_help=ignore_unknown_help)
+        args_by_name = {arg.name: arg for arg in arguments}
+        alias_arg = args_by_name["alias"]
+        reboot_alias_arg = _ConditionalRebootAliasArgument(
+            names=alias_arg.names,
+            kind=alias_arg.kind,
+            default=alias_arg.default,
+            help=alias_arg.help,
+            positional=alias_arg.positional,
+            optional=alias_arg.optional,
+            incrementable=alias_arg.incrementable,
+            attr_name=alias_arg.attr_name,
+        )
+        reboot_alias_arg.optional_when = [
+            args_by_name["needs_reboot"],
+            args_by_name["aliases"],
+        ]
+        arguments[arguments.index(alias_arg)] = reboot_alias_arg
+        return arguments
+
+
+@task(klass=_RebootTask, positional=["alias"])
+def reboot(
+    _c: Context,
+    alias: str = "",
+    aliases: str = "",
+    needs_reboot: bool = False,
+    yes: bool = False,
+) -> None:
     """
-    Reboot host identified as `alias`.
+    Reboot host identified as `alias`, selected aliases, or hosts needing reboot.
 
     Example usage:
     inv reboot hetzci-release
+    inv reboot --aliases hetzci-release,hetzci-dbg
+    inv reboot --needs-reboot --yes
     """
+    if needs_reboot:
+        if alias or aliases:
+            _log_error("Use --needs-reboot, an alias, or --aliases, not a mix")
+            sys.exit(1)
+
+        target_aliases = [
+            target_alias
+            for target_alias, _revision, reboot_needed in _read_deployed_revisions(
+                TARGETS.all()
+            )
+            if reboot_needed == "yes"
+        ]
+        if not target_aliases:
+            _log_status_info("No hosts need reboot")
+            return
+
+        target_list = ", ".join(target_aliases)
+        if not _confirm(
+            f"Reboot {len(target_aliases)} host(s) needing reboot: "
+            f"{target_list}? [y/N] ",
+            yes,
+        ):
+            _log_status_info("reboot: cancelled")
+            return
+
+        _reboot_hosts(
+            target_aliases,
+            f"Rebooted {len(target_aliases)} host(s) needing reboot",
+        )
+        return
+
+    if aliases:
+        if alias:
+            _log_error("Use either an alias or --aliases, not both")
+            sys.exit(1)
+
+        target_aliases = list(
+            dict.fromkeys(
+                target_alias.strip()
+                for target_alias in aliases.split(",")
+                if target_alias.strip()
+            )
+        )
+        if not target_aliases:
+            _log_error("--aliases must include at least one alias")
+            sys.exit(1)
+
+        for target_alias in target_aliases:
+            TARGETS.get(target_alias)
+
+        target_list = ", ".join(target_aliases)
+        if len(target_aliases) > 1 and not _confirm(
+            f"Reboot {len(target_aliases)} host(s): {target_list}? [y/N] ",
+            yes,
+        ):
+            _log_status_info("reboot: cancelled")
+            return
+
+        _reboot_hosts(target_aliases, f"Rebooted {len(target_aliases)} host(s)")
+        return
+
+    if not alias:
+        _log_error("Alias is required unless --needs-reboot is set")
+        sys.exit(1)
+
+    if not _reboot_host(alias):
+        sys.exit(1)
+
+
+def _reboot_hosts(target_aliases: list[str], success_message: str) -> None:
+    """Reboot multiple target hosts and exit with a summary on failure."""
+    failures = []
+    for target_alias in target_aliases:
+        if not _reboot_host(target_alias):
+            failures.append(target_alias)
+    if failures:
+        _log_error(f"Reboot failed on {len(failures)} host(s): {', '.join(failures)}")
+        sys.exit(1)
+    _log_status_info(success_message)
+
+
+def _reboot_host(alias: str) -> bool:
+    """Reboot one target host and wait for it to come back."""
     host = _get_deploy_host(alias)
-    host.run("sudo reboot &")
+    try:
+        host.run("sudo reboot &")
+    except subprocess.CalledProcessError as err:
+        _log_error(f"[{alias}] reboot: command failed: {err}")
+        return False
 
     _log_status_info(f"[{alias}] reboot: waiting for {host.host} to shut down")
     port = host.port or 22
-    _wait_for_port(host.host, port, shutdown=True)
+    if not _wait_for_port(
+        host.host,
+        port,
+        shutdown=True,
+        timeout=REBOOT_SHUTDOWN_TIMEOUT_SEC,
+    ):
+        _log_error(
+            f"[{alias}] reboot: {host.host}:{port} did not shut down "
+            f"within {REBOOT_SHUTDOWN_TIMEOUT_SEC}s"
+        )
+        return False
 
     _log_status_info(f"[{alias}] reboot: waiting for {host.host} to start")
-    _wait_for_port(host.host, port)
+    if not _wait_for_port(host.host, port, timeout=REBOOT_START_TIMEOUT_SEC):
+        _log_error(
+            f"[{alias}] reboot: {host.host}:{port} did not start "
+            f"within {REBOOT_START_TIMEOUT_SEC}s"
+        )
+        return False
+    _log_status_info(f"[{alias}] reboot: host is back up")
+    return True
 
 
 @task
@@ -1030,15 +1215,7 @@ def print_revision(_c: Context, alias: str = "") -> None:
     inv print-revision --alias=hetzci-release
     """
     targets = OrderedDict([(alias, TARGETS.get(alias))]) if alias else TARGETS.all()
-    _log_info(f"Probing {len(targets)} host(s) (up to 5s each)")
-    command_logger = logging.getLogger("deploykit.command")
-    command_logger_disabled = command_logger.disabled
-    command_logger.disabled = True
-    try:
-        with ThreadPoolExecutor(max_workers=min(32, len(targets))) as executor:
-            deployed_revisions = list(executor.map(_read_deployed_revision, targets))
-    finally:
-        command_logger.disabled = command_logger_disabled
+    deployed_revisions = _read_deployed_revisions(targets)
 
     git_info = _git_revision_info(
         rev

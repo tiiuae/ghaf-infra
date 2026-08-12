@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 
-# pylint: disable=missing-function-docstring, protected-access, too-few-public-methods, wrong-import-position
+# pylint: disable=missing-function-docstring, protected-access, too-few-public-methods, too-many-lines, wrong-import-position
 
 """Tests for extracted helper logic in tasks.py."""
 
@@ -17,6 +17,8 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from invoke.collection import Collection
+from invoke.program import Program
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -918,8 +920,6 @@ def test_git_revision_info_limits_lookup_to_selected_hashes(
 def test_print_revision_collects_remote_hosts_before_git_lookup(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """print_revision should only ask git for clean deployed revisions."""
-
     class FakeExecutor:
         """Minimal executor stub for deterministic tests."""
 
@@ -933,7 +933,6 @@ def test_print_revision_collects_remote_hosts_before_git_lookup(
             return None
 
         def map(self, func: object, aliases: list[str]) -> list[tuple[str, str, str]]:
-            """Apply the submitted function in-order for deterministic tests."""
             assert self.max_workers == len(aliases)
             assert func is tasks._read_deployed_revision
             assert logging.getLogger("deploykit.command").disabled
@@ -982,6 +981,97 @@ def test_print_revision_collects_remote_hosts_before_git_lookup(
         "dirtyrev1234-dirty|2026-01-01|initial commit"
     )
     assert all(value in output for value in expected.split("|"))
+
+
+def test_reboot_needs_reboot_only_reboots_matching_hosts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rebooted: list[str] = []
+    targets = OrderedDict((alias, object()) for alias in ["alpha", "beta", "gamma"])
+
+    monkeypatch.setattr(tasks, "TARGETS", SimpleNamespace(all=lambda: targets))
+    monkeypatch.setattr(
+        tasks,
+        "_read_deployed_revisions",
+        lambda _aliases: [
+            ("alpha", "abc123", "yes"),
+            ("beta", "abc123", "no"),
+            ("gamma", "(unknown)", "(unknown)"),
+        ],
+    )
+    monkeypatch.setattr(tasks, "_confirm", lambda _prompt, yes: yes)
+    monkeypatch.setattr(
+        tasks, "_reboot_host", lambda alias: rebooted.append(alias) or True
+    )
+
+    tasks.reboot.body(None, needs_reboot=True, yes=True)
+
+    assert rebooted == ["alpha"]
+
+
+def test_reboot_needs_reboot_continues_and_exits_on_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rebooted: list[str] = []
+    targets = OrderedDict((alias, object()) for alias in ["alpha", "beta"])
+
+    monkeypatch.setattr(tasks, "TARGETS", SimpleNamespace(all=lambda: targets))
+    monkeypatch.setattr(
+        tasks,
+        "_read_deployed_revisions",
+        lambda _aliases: [
+            ("alpha", "abc123", "yes"),
+            ("beta", "abc123", "yes"),
+        ],
+    )
+    monkeypatch.setattr(tasks, "_confirm", lambda _prompt, yes: yes)
+    monkeypatch.setattr(
+        tasks,
+        "_reboot_host",
+        lambda alias: rebooted.append(alias) or alias != "alpha",
+    )
+
+    with pytest.raises(SystemExit) as err:
+        tasks.reboot.body(None, needs_reboot=True, yes=True)
+
+    assert err.value.code == 1
+    assert rebooted == ["alpha", "beta"]
+
+
+def test_reboot_cli_accepts_positional_alias_and_flag_modes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rebooted: list[str] = []
+    targets = OrderedDict((alias, object()) for alias in ["alpha", "beta", "gamma"])
+
+    monkeypatch.setattr(
+        tasks,
+        "TARGETS",
+        SimpleNamespace(get=lambda alias: targets[alias], all=lambda: targets),
+    )
+    monkeypatch.setattr(
+        tasks,
+        "_read_deployed_revisions",
+        lambda _aliases: [("gamma", "abc123", "yes")],
+    )
+    monkeypatch.setattr(tasks, "_confirm", lambda _prompt, yes: yes)
+    monkeypatch.setattr(
+        tasks, "_reboot_host", lambda alias: rebooted.append(alias) or True
+    )
+
+    def run_reboot(*args: str) -> None:
+        Program(namespace=Collection(tasks.reboot), version="test").run(
+            argv=["inv", "reboot", *args],
+            exit=False,
+        )
+
+    run_reboot("alpha")
+    run_reboot("--alias", "alpha")
+    run_reboot("--aliases", "beta")
+    run_reboot("--aliases", "alpha,beta,alpha", "--yes")
+    run_reboot("--needs-reboot", "--yes")
+
+    assert rebooted == ["alpha", "alpha", "beta", "alpha", "beta", "gamma"]
 
 
 def test_targets_get_exits_on_unknown_alias(

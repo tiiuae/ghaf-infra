@@ -22,7 +22,7 @@ Available tasks:
   install             Install `alias` configuration using nixos-anywhere, deploying host private key.
   install-release     Initialize hetzner release environment
   print-keys          Decrypt host private key, print ssh and age public keys for `alias` config.
-  reboot              Reboot host identified as `alias`.
+  reboot              Reboot host identified as `alias`, selected aliases, or hosts needing reboot.
   update-sops-files   Update all sops yaml and json files according to .sops.yaml rules.
 ```
 
@@ -143,8 +143,47 @@ It runs the `install` task non-interactively on all the release environment host
 The `reboot` task reboots the host identified by the given alias. It triggers a reboot, waits for the host to go down, and then waits for it to come back up:
 
 ```bash
-❯ inv reboot --alias hetzarm
+❯ inv reboot hetzarm
 ```
+
+You can also pass one or more explicit aliases through `--aliases`. Multiple aliases are comma-separated:
+
+```bash
+❯ inv reboot --aliases hetzci-release
+❯ inv reboot --aliases hetzci-release,hetzci-dbg,hetzci-dev
+```
+
+It can also reboot every host where the currently running kernel, initrd, or kernel modules differ from the active system profile:
+
+```bash
+❯ inv reboot --needs-reboot
+```
+
+The `--needs-reboot` mode probes all targets, skips hosts with `no` or `(unknown)` reboot state, asks for confirmation, and reboots the matching hosts sequentially. Explicit `--aliases` mode asks for confirmation when more than one host is listed. Without `--yes`, answer `y` to continue; any other answer cancels before rebooting hosts. Use `--yes` to skip these confirmation prompts.
+
+The output looks like this, with timestamps and hosts depending on the current fleet state:
+
+```text
+❯ inv reboot --needs-reboot
+2026-08-12 10:15:00 | INFO     | Probing 34 host(s) (up to 5s each)
+Reboot 2 host(s) needing reboot: uae-azureci-dev, uae-azureci-prod? [y/N] y
+2026-08-12 10:15:04 | INFO     | [uae-azureci-dev] reboot: waiting for 20.174.185.164 to shut down
+2026-08-12 10:15:22 | INFO     | [uae-azureci-dev] reboot: waiting for 20.174.185.164 to start
+2026-08-12 10:16:01 | INFO     | [uae-azureci-dev] reboot: host is back up
+2026-08-12 10:16:01 | INFO     | [uae-azureci-prod] reboot: waiting for 74.162.68.205 to shut down
+2026-08-12 10:16:19 | INFO     | [uae-azureci-prod] reboot: waiting for 74.162.68.205 to start
+2026-08-12 10:16:58 | INFO     | [uae-azureci-prod] reboot: host is back up
+2026-08-12 10:16:58 | INFO     | Rebooted 2 host(s) needing reboot
+```
+
+With `--yes`, the probe, per-host wait logs, and final summary are the same, but the confirmation prompt is omitted:
+
+```bash
+❯ inv reboot --needs-reboot --yes
+❯ inv reboot --aliases hetzci-release,hetzci-dbg,hetzci-dev --yes
+```
+
+The task confirms each reboot by waiting for the host's SSH port to disappear and then become reachable again. For reboot waits, shutdown must happen within 120 seconds and startup within 600 seconds. In single-host mode, a failed reboot command or timeout exits with an error. In multi-host modes, the task logs failed hosts, continues with the remaining selected hosts, and exits with an error summary if any host failed.
 
 ## print-keys
 
