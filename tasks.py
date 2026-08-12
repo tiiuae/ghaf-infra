@@ -866,7 +866,7 @@ def alias_list(_c: Context) -> None:
     Example usage:
     inv alias-list
     """
-    table_rows = [["alias", "nixosconfig", "hostname"]]
+    table_rows = [["alias", "nixosconfig", "host address"]]
     for alias, host in TARGETS.all().items():
         table_rows.append([alias, host.nixosconfig, host.hostname])
     table = tabulate(table_rows, headers="firstrow", tablefmt="fancy_outline")
@@ -1243,7 +1243,7 @@ def print_revision(_c: Context, alias: str = "") -> None:
             table_rows,
             headers=[
                 "alias",
-                "hostname",
+                "host address",
                 "needs reboot",
                 "revision (rev)",
                 "rev date",
