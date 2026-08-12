@@ -813,12 +813,14 @@ fi
 
 def _format_revision_link(rev: str) -> str:
     """Format a revision as a terminal hyperlink when applicable."""
-    if "-dirty" in rev or rev == "(unknown)":
+    if rev == "(unknown)":
         return rev
+    if rev.endswith("-dirty"):
+        return f"{rev.removesuffix('-dirty')[:12]}-dirty"
 
     # Format as terminal link: https://github.com/Alhadis/OSC8-Adoption/
     url = f"https://github.com/tiiuae/ghaf-infra/commit/{rev}"
-    return f"\033]8;;{url}\033\\{rev}\033]8;;\033\\"
+    return f"\033]8;;{url}\033\\{rev[:12]}\033]8;;\033\\"
 
 
 ################################################################################
@@ -1027,17 +1029,14 @@ def print_revision(_c: Context, alias: str = "") -> None:
     inv print-revision
     inv print-revision --alias=hetzci-release
     """
-    git_info_def = ["", "", ""]
-    target_aliases = [alias] if alias else list(TARGETS.all().keys())
-    _log_info(f"Probing {len(target_aliases)} host(s) (up to 5s each)")
+    targets = OrderedDict([(alias, TARGETS.get(alias))]) if alias else TARGETS.all()
+    _log_info(f"Probing {len(targets)} host(s) (up to 5s each)")
     command_logger = logging.getLogger("deploykit.command")
     command_logger_disabled = command_logger.disabled
     command_logger.disabled = True
     try:
-        with ThreadPoolExecutor(max_workers=min(32, len(target_aliases))) as executor:
-            deployed_revisions = list(
-                executor.map(_read_deployed_revision, target_aliases)
-            )
+        with ThreadPoolExecutor(max_workers=min(32, len(targets))) as executor:
+            deployed_revisions = list(executor.map(_read_deployed_revision, targets))
     finally:
         command_logger.disabled = command_logger_disabled
 
@@ -1049,31 +1048,33 @@ def print_revision(_c: Context, alias: str = "") -> None:
     table_rows = []
 
     for target_alias, rev, reboot_needed in deployed_revisions:
-        git_date = git_info.get(rev, git_info_def)[1]
-        git_subj = git_info.get(rev, git_info_def)[2]
         table_rows.append(
             [
                 target_alias,
-                _format_revision_link(rev),
+                targets[target_alias].hostname,
                 reboot_needed,
-                git_date,
-                git_subj,
+                _format_revision_link(rev),
+                git_info.get(rev, ["", "", ""])[1],
+                git_info.get(rev, ["", "", ""])[2],
             ]
         )
 
-    table_rows.sort(reverse=True, key=lambda row: row[3])  # sort by git_date
-    table = tabulate(
-        table_rows,
-        headers=[
-            "alias",
-            "revision",
-            "reboot needed",
-            "revision date",
-            "revision subject",
-        ],
-        tablefmt="fancy_outline",
+    table_rows.sort(reverse=True, key=lambda row: row[4])  # sort by git_date
+    _print_output(
+        "\nCurrently deployed revision(s):\n\n"
+        + tabulate(
+            table_rows,
+            headers=[
+                "alias",
+                "hostname",
+                "needs reboot",
+                "revision (rev)",
+                "rev date",
+                "rev subject",
+            ],
+            tablefmt="fancy_outline",
+        )
     )
-    _print_output(f"\nCurrently deployed revision(s):\n\n{table}")
 
 
 ################################################################################
