@@ -32,6 +32,8 @@ In the following sections, we will explain the intended usage of the most common
 
 The `alias-list` task lists the alias names for ghaf-infra targets. Alias is simply a name given for the combination of nixosConfig and hostname. All ghaf-infra tasks that need to identify a target, accept an alias name as an argument.
 
+This is a fast local inventory command: it evaluates target metadata and does not contact the remote hosts. Use it when you need the `nixosconfig` name or want to discover aliases before install, build, or deployment work. Use `print-revision` when you need the current remote deployment state.
+
 ```bash
 ❯ inv alias-list
 
@@ -156,7 +158,7 @@ age1abc123...
 
 ## print-revision
 
-The `print-revision` task prints currently deployed ghaf-infra git revision for the given `alias` host:
+The `print-revision` task probes the remote host and prints the currently deployed ghaf-infra git revision for the given `alias` host:
 
 ```bash
 ❯ inv print-revision --alias=hetzarm
@@ -164,19 +166,20 @@ The `print-revision` task prints currently deployed ghaf-infra git revision for 
 
 Currently deployed revision(s):
 
-╒═════════╤══════════════════════════════════════════╤═════════════════╤═════════════════╤══════════════════════════════════╕
-│ alias   │ revision                                 │ reboot needed   │ revision date   │ revision subject                 │
-╞═════════╪══════════════════════════════════════════╪═════════════════╪═════════════════╪══════════════════════════════════╡
-│ hetzarm │ 34415d537396d2ec39d4403a9a8f48150cf1ee40 │ no              │ 2025-09-18      │ Remove older profile generations │
-╘═════════╧══════════════════════════════════════════╧═════════════════╧═════════════════╧══════════════════════════════════╛
+╒═════════╤══════════════╤════════════════╤══════════════════╤════════════╤══════════════════════════════════════╕
+│ alias   │ hostname     │ needs reboot   │ revision (rev)   │ rev date   │ rev subject                          │
+╞═════════╪══════════════╪════════════════╪══════════════════╪════════════╪══════════════════════════════════════╡
+│ hetzarm │ 65.21.20.242 │ no             │ 4966d195a6a1     │ 2026-08-06 │ hosts/hetzci: update Jenkins plugins │
+╘═════════╧══════════════╧════════════════╧══════════════════╧════════════╧══════════════════════════════════════╛
 ```
 
 The output table includes the following details:
 - `alias`: Target ghaf-infra host `alias` name
-- `revision`: Ghaf-infra git commit revision currently deployed on the target host. This detail is read from the remote host with command `nixos-version --configuration-revision`. On [OSC 8 compatible](https://github.com/Alhadis/OSC8-Adoption/) terminals, `revision` is a hyperlink to ghaf-infra github
-- `reboot needed`: Whether booted `initrd`, `kernel`, or `kernel-modules` differ from the current system closure. `yes` means rebooting is required to activate the current boot artifacts, `no` means they match, and `(unknown)` means the remote probe failed
-- `revision date`: Git log [committer date](https://git-scm.com/docs/git-log#Documentation/git-log.txt-cs) in short format
-- `revision subject`: Git log [commit subject](https://git-scm.com/docs/git-log#Documentation/git-log.txt-s)
+- `hostname`: Target host address, matching the `hostname` column in `inv alias-list`
+- `needs reboot`: Whether booted `initrd`, `kernel`, or `kernel-modules` differ from the current system closure. `yes` means rebooting is required to activate the current boot artifacts, `no` means they match, and `(unknown)` means the remote probe failed
+- `revision (rev)`: Ghaf-infra git commit revision currently deployed on the target host. This detail is read from the remote host with command `nixos-version --configuration-revision`. The table shows a short revision prefix, keeping `-dirty` when the deployed system was built from a dirty tree. On [OSC 8 compatible](https://github.com/Alhadis/OSC8-Adoption/) terminals, clean revisions are hyperlinks to the full ghaf-infra github commit
+- `rev date`: Git log [committer date](https://git-scm.com/docs/git-log#Documentation/git-log.txt-cs) in short format
+- `rev subject`: Git log [commit subject](https://git-scm.com/docs/git-log#Documentation/git-log.txt-s)
 
 If `alias` is not specified, `print-revision` lists the deployed git revisions for all ghaf-infra hosts sorted by the git revision date:
 
@@ -186,30 +189,15 @@ If `alias` is not specified, `print-revision` lists the deployed git revisions f
 
 Currently deployed revision(s):
 
-╒═══════════════════╤════════════════════════════════════════════════╤═════════════════╤═════════════════╤═══════════════════════════════════════════════════════════╕
-│ alias             │ revision                                       │ reboot needed   │ revision date   │ revision subject                                          │
-╞═══════════════════╪════════════════════════════════════════════════╪═════════════════╪═════════════════╪═══════════════════════════════════════════════════════════╡
-│ hetz86-rel-2      │ 86a1b0c2148e63ff2f01ea9d69b50b8710240b68       │ no              │ 2025-10-06      │ Increase retry timeout on provenance failure              │
-│ hetzarm-rel-1     │ 86a1b0c2148e63ff2f01ea9d69b50b8710240b68       │ no              │ 2025-10-06      │ Increase retry timeout on provenance failure              │
-│ hetzci-prod       │ 86a1b0c2148e63ff2f01ea9d69b50b8710240b68       │ yes             │ 2025-10-06      │ Increase retry timeout on provenance failure              │
-│ hetzci-release    │ 86a1b0c2148e63ff2f01ea9d69b50b8710240b68       │ no              │ 2025-10-06      │ Increase retry timeout on provenance failure              │
-│ ghaf-log          │ 0162221a15159e6053db6b85697ff2e91865f8e5       │ no              │ 2025-09-22      │ Start using zramswap module on hosts that enable zramSwap │
-│ ghaf-webserver    │ 0162221a15159e6053db6b85697ff2e91865f8e5       │ no              │ 2025-09-22      │ Start using zramswap module on hosts that enable zramSwap │
-│ hetz86-1          │ 34415d537396d2ec39d4403a9a8f48150cf1ee40       │ no              │ 2025-09-18      │ Remove older profile generations                          │
-│ hetzarm           │ 34415d537396d2ec39d4403a9a8f48150cf1ee40       │ no              │ 2025-09-18      │ Remove older profile generations                          │
-│ hetz86-builder    │ f92334fe58d657712627bd317349920251c50785       │ no              │ 2025-08-07      │ developers: Add Gayathri                                  │
-│ ghaf-auth         │ 5e579ac4eae173ad3e36ea5267a6b9f2a19729b1       │ no              │                 │                                                           │
-│ ghaf-lighthouse   │ 268bc910409fd8579747a78526ec8ffac4bb3813-dirty │ no              │                 │                                                           │
-│ ghaf-monitoring   │ 86a1b0c2148e63ff2f01ea9d69b50b8710240b68-dirty │ yes             │                 │                                                           │
-│ hetzci-dev        │ d7ae303867280371259f018bf4e0f5ed13f73552-dirty │ no              │                 │                                                           │
-│ nethsm-gateway    │ d7ae303867280371259f018bf4e0f5ed13f73552-dirty │ no              │                 │                                                           │
-│ testagent-dbg     │ `(unknown)`                                    │ `(unknown)`     │                 │                                                           │
-│ testagent-dev     │ 45b4da02c49f23f5619590d286252a5de28a34e4-dirty │ no              │                 │                                                           │
-│ testagent-prod    │ 9066891fe09531a6cea9aadb3412bca595c93fe4       │ no              │                 │                                                           │
-│ testagent-release │ 05335d38fc73964286cc5faca486f5b1f9b7953e-dirty │ no              │                 │                                                           │
-│ testagent2-prod   │ fa149ab5230c099e6f1813ea966b19ca66dc1ec6-dirty │ no              │                 │                                                           │
-╘═══════════════════╧════════════════════════════════════════════════╧═════════════════╧═════════════════╧═══════════════════════════════════════════════════════════╛
+╒══════════════════╤═══════════════╤════════════════╤════════════════════╤════════════╤══════════════════════════════════════╕
+│ alias            │ hostname      │ needs reboot   │ revision (rev)     │ rev date   │ rev subject                          │
+╞══════════════════╪═══════════════╪════════════════╪════════════════════╪════════════╪══════════════════════════════════════╡
+│ ghaf-auth        │ 37.27.190.109 │ no             │ 4966d195a6a1       │ 2026-08-06 │ hosts/hetzci: update Jenkins plugins │
+│ hetzci-dbg       │ 95.216.200.85 │ no             │ bccecd160df0-dirty │            │                                      │
+│ uae-azureci-prod │ 74.162.68.205 │ yes            │ 4966d195a6a1       │ 2026-08-06 │ hosts/hetzci: update Jenkins plugins │
+│ testagent-dbg    │ 172.18.16.26  │ (unknown)      │ (unknown)          │            │                                      │
+╘══════════════════╧═══════════════╧════════════════╧════════════════════╧════════════╧══════════════════════════════════════╛
 ```
 
-Revision or reboot-needed value '`(unknown)`' indicates running the remote probe failed.
+Revision or needs-reboot value '`(unknown)`' indicates running the remote probe failed.
 This may happen, for instance, if you don't have access to the given host on the current network.

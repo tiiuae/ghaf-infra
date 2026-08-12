@@ -940,30 +940,33 @@ def test_print_revision_collects_remote_hosts_before_git_lookup(
             return [func(alias) for alias in aliases]
 
     host_states = {
-        "alpha": ("abc123", "no"),
-        "beta": ("abc123", "yes"),
-        "gamma": ("dirtyrev-dirty", "no"),
-        "delta": ("(unknown)", "(unknown)"),
+        "alpha": ("alpha.example", "abc1234567890abc", "no"),
+        "beta": ("beta.example", "abc1234567890abc", "yes"),
+        "gamma": ("gamma.example", "dirtyrev123456789-dirty", "no"),
+        "delta": ("delta.example", "(unknown)", "(unknown)"),
     }
 
     monkeypatch.setattr(
         tasks,
         "TARGETS",
         SimpleNamespace(
-            all=lambda: OrderedDict((alias, object()) for alias in host_states)
+            all=lambda: OrderedDict(
+                (alias, SimpleNamespace(hostname=state[0]))
+                for alias, state in host_states.items()
+            )
         ),
     )
     monkeypatch.setattr(
         tasks,
         "_read_deployed_revision",
-        lambda alias: (alias, *host_states[alias]),
+        lambda alias: (alias, *host_states[alias][1:]),
     )
     monkeypatch.setattr(
         tasks,
         "_git_revision_info",
         lambda selected: (
-            {"abc123": ["abc123", "2026-01-01", "initial commit"]}
-            if list(selected) == ["abc123", "abc123"]
+            {"abc1234567890abc": ["abc1234567890abc", "2026-01-01", "initial commit"]}
+            if list(selected) == ["abc1234567890abc", "abc1234567890abc"]
             else {}
         ),
     )
@@ -973,15 +976,12 @@ def test_print_revision_collects_remote_hosts_before_git_lookup(
     assert not logging.getLogger("deploykit.command").disabled
 
     output = capsys.readouterr().out
-    assert "alpha" in output
-    assert "beta" in output
-    assert "gamma" in output
-    assert "delta" in output
-    assert "reboot needed" in output
-    assert "yes" in output
-    assert "no" in output
-    assert "2026-01-01" in output
-    assert "initial commit" in output
+    assert "│" in output
+    expected = (
+        "alpha|beta.example|hostname|needs reboot|yes|no|abc123456789|"
+        "dirtyrev1234-dirty|2026-01-01|initial commit"
+    )
+    assert all(value in output for value in expected.split("|"))
 
 
 def test_targets_get_exits_on_unknown_alias(
