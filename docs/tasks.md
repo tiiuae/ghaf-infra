@@ -30,7 +30,7 @@ In the following sections, we will explain the intended usage of the most common
 
 ## alias-list
 
-The `alias-list` task lists the alias names for ghaf-infra targets. Alias is simply a name given for the combination of nixosConfig and hostname. All ghaf-infra tasks that need to identify a target, accept an alias name as an argument.
+The `alias-list` task lists the alias names for ghaf-infra targets. Alias is simply a name given for the combination of nixosConfig and host address. All ghaf-infra tasks that need to identify a target, accept an alias name as an argument.
 
 This is a fast local inventory command: it evaluates target metadata and does not contact the remote hosts. Use it when you need the `nixosconfig` name or want to discover aliases before install, build, or deployment work. Use `print-revision` when you need the current remote deployment state.
 
@@ -40,7 +40,7 @@ This is a fast local inventory command: it evaluates target metadata and does no
 Current ghaf-infra targets:
 
 ╒═══════════════════════╤═══════════════════════╤═════════════════╕
-│ alias                 │ nixosconfig           │ hostname        │
+│ alias                 │ nixosconfig           │ host address    │
 ╞═══════════════════════╪═══════════════════════╪═════════════════╡
 │ ghaf-auth             │ ghaf-auth             │ 37.27.190.109   │
 │ ghaf-fleetdm          │ ghaf-fleetdm          │ 95.216.169.87   │
@@ -79,7 +79,7 @@ Current ghaf-infra targets:
 
 ```
 
-In case `hostname` is not directly accessible for your current `$USER`, use `~/.ssh/config` to specify the ssh connection details such as username, port, or key file used to access the specific host.
+In case the host address is not directly accessible for your current `$USER`, use `~/.ssh/config` to specify the ssh connection details such as username, port, or key file used to access the specific host.
 
 As an example, to access host `65.21.20.242` with a specific username and key, you would add the following to `~/.ssh/config`:
 
@@ -206,7 +206,7 @@ The `print-revision` task probes the remote host and prints the currently deploy
 Currently deployed revision(s):
 
 ╒═════════╤══════════════╤════════════════╤══════════════════╤════════════╤══════════════════════════════════════╕
-│ alias   │ hostname     │ needs reboot   │ revision (rev)   │ rev date   │ rev subject                          │
+│ alias   │ host address │ needs reboot   │ revision (rev)   │ rev date   │ rev subject                          │
 ╞═════════╪══════════════╪════════════════╪══════════════════╪════════════╪══════════════════════════════════════╡
 │ hetzarm │ 65.21.20.242 │ no             │ 4966d195a6a1     │ 2026-08-06 │ hosts/hetzci: update Jenkins plugins │
 ╘═════════╧══════════════╧════════════════╧══════════════════╧════════════╧══════════════════════════════════════╛
@@ -214,7 +214,7 @@ Currently deployed revision(s):
 
 The output table includes the following details:
 - `alias`: Target ghaf-infra host `alias` name
-- `hostname`: Target host address, matching the `hostname` column in `inv alias-list`
+- `host address`: Target host address, matching the `host address` column in `inv alias-list`
 - `needs reboot`: Whether booted `initrd`, `kernel`, or `kernel-modules` differ from the current system closure. `yes` means rebooting is required to activate the current boot artifacts, `no` means they match, and `(unknown)` means the remote probe failed
 - `revision (rev)`: Ghaf-infra git commit revision currently deployed on the target host. This detail is read from the remote host with command `nixos-version --configuration-revision`. The table shows a short revision prefix, keeping `-dirty` when the deployed system was built from a dirty tree. On [OSC 8 compatible](https://github.com/Alhadis/OSC8-Adoption/) terminals, clean revisions are hyperlinks to the full ghaf-infra github commit
 - `rev date`: Git log [committer date](https://git-scm.com/docs/git-log#Documentation/git-log.txt-cs) in short format
@@ -229,7 +229,7 @@ If `alias` is not specified, `print-revision` lists the deployed git revisions f
 Currently deployed revision(s):
 
 ╒══════════════════╤═══════════════╤════════════════╤════════════════════╤════════════╤══════════════════════════════════════╕
-│ alias            │ hostname      │ needs reboot   │ revision (rev)     │ rev date   │ rev subject                          │
+│ alias            │ host address  │ needs reboot   │ revision (rev)     │ rev date   │ rev subject                          │
 ╞══════════════════╪═══════════════╪════════════════╪════════════════════╪════════════╪══════════════════════════════════════╡
 │ ghaf-auth        │ 37.27.190.109 │ no             │ 4966d195a6a1       │ 2026-08-06 │ hosts/hetzci: update Jenkins plugins │
 │ hetzci-dbg       │ 95.216.200.85 │ no             │ bccecd160df0-dirty │            │                                      │

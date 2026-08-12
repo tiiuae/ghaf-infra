@@ -917,6 +917,35 @@ def test_git_revision_info_limits_lookup_to_selected_hashes(
     ]
 
 
+def test_alias_list_labels_target_address(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(
+        tasks,
+        "TARGETS",
+        SimpleNamespace(
+            all=lambda: OrderedDict(
+                [
+                    (
+                        "demo",
+                        SimpleNamespace(
+                            nixosconfig="demo-config",
+                            hostname="192.0.2.10",
+                        ),
+                    )
+                ]
+            )
+        ),
+    )
+
+    tasks.alias_list.body(None)
+
+    output = capsys.readouterr().out
+    assert "host address" in output
+    assert "hostname" not in output
+    assert "192.0.2.10" in output
+
+
 def test_print_revision_collects_remote_hosts_before_git_lookup(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -977,7 +1006,7 @@ def test_print_revision_collects_remote_hosts_before_git_lookup(
     output = capsys.readouterr().out
     assert "│" in output
     expected = (
-        "alpha|beta.example|hostname|needs reboot|yes|no|abc123456789|"
+        "alpha|beta.example|host address|needs reboot|yes|no|abc123456789|"
         "dirtyrev1234-dirty|2026-01-01|initial commit"
     )
     assert all(value in output for value in expected.split("|"))
