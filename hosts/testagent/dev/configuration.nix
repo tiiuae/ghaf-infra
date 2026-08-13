@@ -87,7 +87,7 @@
         OrinAGX1 = {
           inherit location;
           device_id = "00-8c-e2-75-77";
-          netvm_hostname = "ghaf-236365144";
+          netvm_hostname = "ghaf-2363651447";
           serial_port = "NONE";
           relay_number = 4;
           device_ip_address = "172.18.16.54";
