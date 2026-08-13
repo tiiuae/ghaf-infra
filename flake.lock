@@ -349,11 +349,11 @@
     },
     "nixpkgs_4": {
       "locked": {
-        "lastModified": 1785858998,
-        "narHash": "sha256-fKCq5jphd6l/Ms6gc3dptkw/TcKLYub9lQE5g6rbbkc=",
+        "lastModified": 1780453794,
+        "narHash": "sha256-bXMRa9VTsHSPXL4Cw8R6JJLQeY3Y/IP4+YJCYVmQ7FY=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "04607e1165ac22c5fde6dcc54c9e0b3c0487c555",
+        "rev": "6b316287bae2ee04c9b93c8c858d930fd07d7338",
         "type": "github"
       },
       "original": {
@@ -387,11 +387,11 @@
         "nixpkgs": "nixpkgs_4"
       },
       "locked": {
-        "lastModified": 1785930232,
-        "narHash": "sha256-HgfaYx0LG3zD6x9xY0nhePUOjF5jbIqArWeFbqIt9Hw=",
+        "lastModified": 1786536478,
+        "narHash": "sha256-6AkjurYfFMyE9O/yAXMLV32IQ8EyLqPEj3s7Laa3H0o=",
         "owner": "tiiuae",
         "repo": "ci-test-automation",
-        "rev": "17c432929d0b9bf23e890b31867a01890513160d",
+        "rev": "68b88892473123e551e91fbc66084b33b0ee154b",
         "type": "github"
       },
       "original": {
