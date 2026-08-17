@@ -41,7 +41,8 @@ This will tell you the groups that the host (10.42.42.11) is part of, if you for
 
 ## Certificate Authority
 
-The CA key and cert are stored encrypted in `modules/nebula/ca.{key,crt}`.
+The CA key and cert are stored encrypted in
+`modules/nebula/ca.{key,crt}.crypt`.
 These can be decrypted with SOPS, given you have the rights:
 
 ```sh
@@ -80,6 +81,35 @@ Other groups we are using:
     - scraper
 
 The script will print the cert and key in a format that can be easily copy-pasted into `secrets.yaml`.
+
+### Renewing host certificates
+
+Before renewing host certificates during a CA rotation, follow the
+[Nebula CA rotation guide](https://nebula.defined.net/docs/guides/rotating-certificate-authority/):
+append the new CA certificate to `modules/nebula/ca.crt.crypt` and deploy that
+trust bundle to every Nebula host. Keep the old CA in the bundle until every
+host uses a certificate signed by the new CA.
+
+Renew all host certificates stored in SOPS with:
+
+```sh
+inv renew-nebula-certificates
+```
+
+To renew only selected hosts, pass their aliases:
+
+```sh
+inv renew-nebula-certificates --aliases ghaf-lighthouse,ghaf-monitoring
+```
+
+The task decrypts each existing `nebula-cert`, preserves its name, networks,
+and groups, and signs a new certificate and private key. It then replaces only
+`nebula-cert` and `nebula-key` in the same SOPS file. CA and host private keys
+exist only in a temporary directory and are removed when the task exits.
+
+Deploy the updated hosts and verify Nebula connectivity before removing the old
+CA from `modules/nebula/ca.crt.crypt`. Deploy the final single-CA trust bundle
+to every host.
 
 ## Nix configuration
 

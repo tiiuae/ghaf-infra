@@ -485,6 +485,84 @@ def _decrypt_host_key(target: TargetHost, tmpdir: str, yes: bool) -> None:
             pub_key.chmod(0o644)
 
 
+def _sign_nebula_host_certificate(
+    secret_file: Path,
+    host_dir: Path,
+    ca_key: Path,
+    ca_certificate: Path,
+) -> tuple[str, Path, Path]:
+    """Sign a new Nebula certificate using an existing certificate's details."""
+    old_certificate = host_dir / "old.crt"
+    new_certificate = host_dir / "host.crt"
+    new_key = host_dir / "host.key"
+    old_certificate.write_text(
+        _run_checked(
+            [
+                "sops",
+                "decrypt",
+                "--extract",
+                '["nebula-cert"]',
+                f"{secret_file}",
+            ],
+            capture_output=True,
+        ).stdout,
+        encoding="utf-8",
+    )
+    details = _run_json(
+        ["nebula-cert", "print", "-json", "-path", f"{old_certificate}"]
+    )[0]["details"]
+    command = [
+        "nebula-cert",
+        "sign",
+        "-ca-key",
+        f"{ca_key}",
+        "-ca-crt",
+        f"{ca_certificate}",
+        "-name",
+        details["name"],
+        "-networks",
+        ",".join(details["networks"]),
+        "-out-crt",
+        f"{new_certificate}",
+        "-out-key",
+        f"{new_key}",
+    ]
+    if details["groups"]:
+        command.extend(["-groups", ",".join(details["groups"])])
+    _run_checked(command)
+    return details["name"], new_certificate, new_key
+
+
+def _replace_nebula_secrets(
+    replacements: list[tuple[Path, Path, Path]], tmpdir: Path
+) -> None:
+    """Replace Nebula certificates and keys in sops files."""
+    prepared_files = []
+    for index, (secret_file, certificate, key) in enumerate(replacements):
+        prepared_file = tmpdir / f"secrets-{index}.yaml"
+        shutil.copy2(secret_file, prepared_file)
+        for secret_name, value_file in (
+            ("nebula-cert", certificate),
+            ("nebula-key", key),
+        ):
+            _run_checked(
+                [
+                    "sops",
+                    "set",
+                    "--value-stdin",
+                    f"{prepared_file}",
+                    f'["{secret_name}"]',
+                ],
+                input=json.dumps(value_file.read_text(encoding="utf-8")),
+            )
+        prepared_files.append(prepared_file)
+
+    for (secret_file, _certificate, _key), prepared_file in zip(
+        replacements, prepared_files, strict=True
+    ):
+        prepared_file.replace(secret_file)
+
+
 ################################################################################
 # Install helpers
 ################################################################################
@@ -883,6 +961,78 @@ def update_sops_files(c: Context) -> None:
     """
     for sops_file in _sops_files_from_config(Path(".sops.yaml")):
         c.run(f"sops updatekeys --yes {shlex.quote(sops_file.as_posix())}")
+
+
+@task
+def renew_nebula_certificates(_c: Context, aliases: str = "") -> None:
+    """
+    Renew Nebula host certificates and keys stored in sops.
+
+    Example usage:
+    inv renew-nebula-certificates
+    inv renew-nebula-certificates --aliases ghaf-lighthouse,ghaf-monitoring
+    """
+    if aliases:
+        secret_files = []
+        for alias in aliases.split(","):
+            store_path = Path(TARGETS.resolve_secrets(alias.strip()).secretspath)
+            secret_files.append(
+                ROOT.joinpath(*store_path.parts[store_path.parts.index("hosts") :])
+            )
+    else:
+        secret_files = sorted(
+            ROOT / path
+            for path in _sops_files_from_config(ROOT / ".sops.yaml")
+            if re.search(
+                r"^nebula-cert:",
+                (ROOT / path).read_text(encoding="utf-8"),
+                re.MULTILINE,
+            )
+        )
+
+    with TemporaryDirectory(prefix=".nebula-", dir=ROOT) as tmpdir_name:
+        tmpdir = Path(tmpdir_name)
+        ca_key = tmpdir / "ca.key"
+        ca_bundle = tmpdir / "ca-bundle.crt"
+        ca_key.write_text(
+            _run_checked(
+                ["sops", "decrypt", f"{ROOT}/modules/nebula/ca.key.crypt"],
+                capture_output=True,
+            ).stdout,
+            encoding="utf-8",
+        )
+        ca_bundle.write_text(
+            _run_checked(
+                ["sops", "decrypt", f"{ROOT}/modules/nebula/ca.crt.crypt"],
+                capture_output=True,
+            ).stdout,
+            encoding="utf-8",
+        )
+        signing_ca = tmpdir / "signing-ca.crt"
+        signing_ca.write_text(
+            re.findall(
+                r"-----BEGIN NEBULA CERTIFICATE(?: V2)?-----.*?"
+                r"-----END NEBULA CERTIFICATE(?: V2)?-----",
+                ca_bundle.read_text(encoding="utf-8"),
+                re.DOTALL,
+            )[-1]
+            + "\n",
+            encoding="utf-8",
+        )
+
+        replacements = []
+        for secret_file in secret_files:
+            host_dir = tmpdir / f"host-{len(replacements)}"
+            host_dir.mkdir()
+            name, new_certificate, new_key = _sign_nebula_host_certificate(
+                secret_file, host_dir, ca_key, signing_ca
+            )
+            replacements.append((secret_file, new_certificate, new_key))
+            _log_info(f"Prepared {name} ({secret_file.relative_to(ROOT)})")
+
+        _replace_nebula_secrets(replacements, tmpdir)
+
+    _log_info(f"Updated {len(secret_files)} Nebula host certificate(s)")
 
 
 @task
