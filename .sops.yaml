@@ -255,14 +255,14 @@ creation_rules:
       - *hrosten
       - *cazfi
       - *fayad
-  - path_regex: modules/nebula/ca.key.crypt$
+  - path_regex: modules/nebula/ca\.key(\.crypt)?$
     key_groups:
     - age:
       - *fayad
       - *jrautiola
       - *hrosten
       - *cazfi
-  - path_regex: modules/nebula/ca.crt.crypt$
+  - path_regex: modules/nebula/ca\.crt(\.crypt)?$
     key_groups:
     - age:
       - *fayad
