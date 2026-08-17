@@ -120,6 +120,34 @@ jq() {
   nix run --inputs-from .# nixpkgs#jq -- "$@"
 }
 
+archive_flake_source() {
+  local -a opts_words archive_opts
+  local i
+
+  # Keep using the same simple word-splitting contract as nix-fast-build.
+  read -r -a opts_words <<<"$OPTS"
+  i=0
+  while ((i < ${#opts_words[@]})); do
+    case "${opts_words[i]}" in
+    --remote)
+      ((i += 2))
+      ;;
+    --remote-ssh-option)
+      ((i += 3))
+      ;;
+    --no-download | --skip-cached)
+      ((i += 1))
+      ;;
+    *)
+      archive_opts+=("${opts_words[i]}")
+      ((i += 1))
+      ;;
+    esac
+  done
+
+  nix flake archive --json . "${archive_opts[@]}" >/dev/null
+}
+
 filter_targets() {
   filter="$1"
   typeset -n ref_TARGETS=$2 # argument $2 is passed as reference
@@ -278,6 +306,12 @@ main() {
   # Remove TMPDIR on exit
   trap on_exit EXIT
   echo "[+] Using tmpdir: '$TMPDIR'"
+  if grep -q -- '--remote' <<<"$OPTS"; then
+    # Realize the flake source path up front so nix-fast-build can copy it to
+    # the remote builder even when newer nix versions stop materializing it as
+    # a side effect of metadata evaluation.
+    archive_flake_source
+  fi
   # Build TARGETS with nix-fast-build
   echo "[+] Running builds ..."
   # Run the function 'fast_build' for each flake target in TARGETS[]
