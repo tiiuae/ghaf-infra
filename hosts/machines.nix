@@ -262,15 +262,6 @@
     };
   };
 
-  uae-lab-node1 = {
-    module = ./uae/lab/node1/configuration.nix;
-    system = "x86_64-linux";
-    machine = {
-      ip = "172.31.107.42";
-      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILyRfgDRs0PjhAju910VM2jArPoNZMGJSUp+GCJYlAD4";
-    };
-  };
-
   uae-nethsm-gateway = {
     module = ./uae/nethsm-gateway/configuration.nix;
     system = "x86_64-linux";
@@ -349,4 +340,14 @@
       publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJiajaY3bfjPdPtp8psMMRv42s6aFUN3Vba+iJlP954U";
     };
   };
+
+  uae-lab-node1 = {
+    module = ./uae/lab/node1/configuration.nix;
+    system = "x86_64-linux";
+    machine = {
+      ip = "172.20.16.38";
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEZ9AxU4Us5LA5j+EKBf218ZLA9+baSQyitpilycOKtt";
+    };
+  };
+
 }
