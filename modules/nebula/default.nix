@@ -19,18 +19,6 @@ in
     enable = lib.mkEnableOption "Enable Nebula network";
     isLighthouse = lib.mkEnableOption "Is this node a lighthouse?";
 
-    cert = lib.mkOption {
-      type = lib.types.path;
-      default = "";
-      description = "Path to the certificate file";
-    };
-
-    key = lib.mkOption {
-      type = lib.types.path;
-      default = "";
-      description = "Path to the key file";
-    };
-
     user = lib.mkOption {
       type = lib.types.str;
       default = serviceUser;
@@ -45,10 +33,20 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    sops.secrets.nebula-ca = {
-      format = "binary";
-      sopsFile = ./ca.crt.crypt;
-      owner = cfg.user;
+    sops.secrets = {
+      nebula-ca = {
+        format = "binary";
+        sopsFile = ./ca.crt.crypt;
+        owner = cfg.user;
+      };
+      nebula-cert = {
+        owner = cfg.user;
+        restartUnits = [ "nebula@${cfg.networkName}.service" ];
+      };
+      nebula-key = {
+        owner = cfg.user;
+        restartUnits = [ "nebula@${cfg.networkName}.service" ];
+      };
     };
 
     environment.systemPackages = with pkgs; [
@@ -59,7 +57,9 @@ in
     services.nebula.networks."${cfg.networkName}" = {
       enable = true;
 
-      inherit (cfg) cert key isLighthouse;
+      inherit (cfg) isLighthouse;
+      cert = config.sops.secrets.nebula-cert.path;
+      key = config.sops.secrets.nebula-key.path;
       ca = config.sops.secrets.nebula-ca.path;
       lighthouses = if cfg.isLighthouse then [ ] else [ lighthouseAddress ];
 

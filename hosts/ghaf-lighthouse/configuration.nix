@@ -3,7 +3,6 @@
 {
   self,
   lib,
-  config,
   inputs,
   ...
 }:
@@ -20,13 +19,7 @@
     team-devenv
   ]);
 
-  sops = {
-    defaultSopsFile = ./secrets.yaml;
-    secrets = {
-      nebula-cert.owner = config.nebula.user;
-      nebula-key.owner = config.nebula.user;
-    };
-  };
+  sops.defaultSopsFile = ./secrets.yaml;
 
   system.stateVersion = lib.mkForce "25.05";
   networking.hostName = "ghaf-lighthouse";
@@ -39,7 +32,5 @@
   nebula = {
     enable = true;
     isLighthouse = true;
-    cert = config.sops.secrets.nebula-cert.path;
-    key = config.sops.secrets.nebula-key.path;
   };
 }

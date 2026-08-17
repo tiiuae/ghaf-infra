@@ -14,13 +14,7 @@
     self.nixosModules.user-bmg
   ];
 
-  sops = {
-    defaultSopsFile = ./secrets.yaml;
-    secrets = {
-      nebula-cert.owner = config.nebula.user;
-      nebula-key.owner = config.nebula.user;
-    };
-  };
+  sops.defaultSopsFile = ./secrets.yaml;
 
   system.stateVersion = "23.11";
   networking.hostName = "uae-nethsm-gateway";
@@ -56,11 +50,7 @@
   nethsm.host = "192.168.70.20";
   pkcs11.proxy.listenAddr = machines.uae-nethsm-gateway.nebula_ip;
 
-  nebula = {
-    enable = true;
-    cert = config.sops.secrets.nebula-cert.path;
-    key = config.sops.secrets.nebula-key.path;
-  };
+  nebula.enable = true;
 
   services.nebula.networks."vedenemo".firewall = {
     outbound = lib.mkForce [

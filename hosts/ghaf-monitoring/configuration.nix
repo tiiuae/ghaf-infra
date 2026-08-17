@@ -66,20 +66,13 @@ in
       grafana_secret_key.owner = "grafana";
 
       slack_webhook_url.owner = "grafana";
-
-      nebula-cert.owner = config.nebula.user;
-      nebula-key.owner = config.nebula.user;
     };
   };
 
   system.stateVersion = lib.mkForce "25.05";
   networking.hostName = "ghaf-monitoring";
 
-  nebula = {
-    enable = true;
-    cert = config.sops.secrets.nebula-cert.path;
-    key = config.sops.secrets.nebula-key.path;
-  };
+  nebula.enable = true;
 
   users.users."sshified".isNormalUser = true;
 
