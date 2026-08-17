@@ -82,6 +82,9 @@ in
         respond = true;
       };
 
+      # force a client to be disconnected if the certificate is expired or invalid
+      settings.pki.disconnect_invalid = true;
+
       settings.stats = {
         type = "prometheus";
         interval = "60s";
