@@ -113,26 +113,11 @@ to every host.
 
 ## Nix configuration
 
-To add a new host into the network, you should have the certificate and key in `secrets.yaml`,
-then import the `nebula` module.
-
-Set secret owner as `config.nebula.user` (this is defined in the module).
+To add a new host into the network, add the certificate and key to `secrets.yaml`
+as `nebula-cert` and `nebula-key`, import the `nebula` module, and enable it:
 
 ```nix
-sops.secrets = {
-  nebula-cert.owner = config.nebula.user;
-  nebula-key.owner = config.nebula.user;
-};
-```
-
-Then you can enable the nebula module:
-
-```nix
-nebula = {
-  enable = true;
-  cert = config.sops.secrets.nebula-cert.path;
-  key = config.sops.secrets.nebula-key.path;
-};
+nebula.enable = true;
 ```
 
 Remember to update `.sops.yaml` and then run `sops updatekeys modules/nebula/ca.crt.crypt`.

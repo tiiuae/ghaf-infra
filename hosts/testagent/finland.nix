@@ -5,7 +5,6 @@
   pkgs,
   inputs,
   self,
-  config,
   ...
 }:
 let
@@ -29,15 +28,9 @@ in
     {
       fleetdm_enroll_secret = credential;
       fleetdm_api_token = credential;
-      nebula-cert.owner = config.nebula.user;
-      nebula-key.owner = config.nebula.user;
     };
 
-  nebula = {
-    enable = true;
-    cert = config.sops.secrets.nebula-cert.path;
-    key = config.sops.secrets.nebula-key.path;
-  };
+  nebula.enable = true;
 
   services.nebula.networks."vedenemo".firewall.inbound = [
     {

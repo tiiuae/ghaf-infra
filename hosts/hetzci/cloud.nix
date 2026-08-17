@@ -12,16 +12,8 @@
     self.nixosModules.hetzner-cloud
   ];
 
-  sops = {
-    secrets = lib.mkMerge [
-      (lib.mkIf config.services.monitoring.logs.enable {
-        loki_password.owner = "alloy";
-      })
-      (lib.mkIf config.nebula.enable {
-        nebula-cert.owner = config.nebula.user;
-        nebula-key.owner = config.nebula.user;
-      })
-    ];
+  sops.secrets = lib.mkIf config.services.monitoring.logs.enable {
+    loki_password.owner = "alloy";
   };
 
   services.monitoring = {
@@ -29,9 +21,5 @@
     logs.enable = lib.mkDefault true;
   };
 
-  nebula = {
-    enable = lib.mkDefault true;
-    cert = config.sops.secrets.nebula-cert.path;
-    key = config.sops.secrets.nebula-key.path;
-  };
+  nebula.enable = lib.mkDefault true;
 }
