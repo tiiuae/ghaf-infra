@@ -23,6 +23,8 @@ Available tasks:
   install-release     Initialize hetzner release environment
   print-keys          Decrypt host private key, print ssh and age public keys for `alias` config.
   reboot              Reboot host identified as `alias`, selected aliases, or hosts needing reboot.
+  renew-nebula-certificates
+                      Renew Nebula host certificates and keys stored in sops.
   update-sops-files   Update all sops yaml and json files according to .sops.yaml rules.
 ```
 
