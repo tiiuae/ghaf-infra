@@ -37,34 +37,46 @@ def TARGETS = [
   ],
 ]
 
-properties([
-  githubProjectProperty(displayName: '', projectUrlStr: REPO_URL),
-  // https://www.jenkins.io/doc/pipeline/steps/params/pipelinetriggers/
-  pipelineTriggers([
-    githubPullRequests(
-      spec: '',
-      triggerMode: 'HEAVY_HOOKS',
-      events: [Open(), commitChanged(), close(), nonMergeable(skip: true)],
-      abortRunning: true,
-      cancelQueued: true,
-      preStatus: false,
-      skipFirstRun: false,
-      userRestriction: [users: '', orgs: 'tiiuae'],
-      repoProviders: [
-        githubPlugin(
-          repoPermission: 'PULL'
-        )
-      ]
-    )
-  ])
-])
-
 pipeline {
   agent none
   options {
     buildDiscarder(logRotator(numToKeepStr: '100'))
   }
   stages {
+    stage('Set properties') {
+      agent { label 'built-in' }
+      steps {
+        script {
+          properties([
+            githubProjectProperty(displayName: '', projectUrlStr: REPO_URL),
+            // https://www.jenkins.io/doc/pipeline/steps/params/pipelinetriggers/
+            pipelineTriggers([
+              githubPullRequests(
+                // Keep webhook triggering, but poll in prod as a fallback for missed
+                // webhooks or GitHub API failures before the plugin updates local state.
+                // The plugin can still miss a build if it skips a bad-state PR and then
+                // persists the new head SHA; that needs an upstream plugin fix.
+                spec: env.CI_ENV == 'prod' ? 'H/15 * * * *' : '',
+                triggerMode: 'HEAVY_HOOKS_CRON',
+                events: [Open(), commitChanged(), close(), nonMergeable(skip: true)],
+                abortRunning: true,
+                cancelQueued: true,
+                preStatus: false,
+                skipFirstRun: false,
+                userRestriction: [users: '', orgs: 'tiiuae'],
+                repoProviders: [
+                  githubPlugin(
+                    // Avoid retaining the provider-local repository after API errors.
+                    cacheConnection: false,
+                    repoPermission: 'PULL'
+                  )
+                ]
+              )
+            ])
+          ])
+        }
+      }
+    }
     stage('Reload only') {
       agent { label 'built-in' }
       when { expression { params && params.RELOAD_ONLY } }
@@ -81,6 +93,10 @@ pipeline {
       steps {
         dir(artifactSupport.controller_workdir()) {
           script {
+            if (!env.GITHUB_PR_NUMBER || !env.GITHUB_PR_TARGET_BRANCH) {
+              currentBuild.result = 'ABORTED'
+              error('ghaf-pre-merge must be triggered by a GitHub PR event. Use ghaf-pre-merge-manual for manual runs.')
+            }
             checkoutUtils.checkout_github_pr_merge(
               REPO_URL,
               env.GITHUB_PR_NUMBER,

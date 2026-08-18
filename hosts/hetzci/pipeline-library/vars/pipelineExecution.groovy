@@ -692,23 +692,43 @@ def set_github_commit_status(
   String commit,
   String project = "tiiuae/ghaf",
   String context = "jenkins-pre-merge") {
+  context = context?.trim() ?: "jenkins-pre-merge"
   if (!commit) {
     println "Skip setting GitHub commit status"
-    return
+    return false
   }
   println "Setting GitHub commit status"
-  withCredentials([string(credentialsId: 'jenkins-github-commit-status-token', variable: 'TOKEN')]) {
-    env.TOKEN = "$TOKEN"
-    String status_url = "https://api.github.com/repos/$project/statuses/$commit"
-    sh """
-      # set -x
-      curl -H \"Authorization: token \$TOKEN\" \
-        -X POST \
-        -d '{\"description\": \"$message\", \
-             \"state\": \"$state\", \
-             \"context\": "$context", \
-             \"target_url\" : \"$BUILD_URL\" }' \
-        ${status_url}
-    """
+  String status_url = "https://api.github.com/repos/$project/statuses/$commit"
+  String payload = JsonOutput.toJson([
+    description: message,
+    state: state,
+    context: context,
+    target_url: env.BUILD_URL,
+  ])
+  try {
+    withCredentials([string(credentialsId: 'jenkins-github-commit-status-token', variable: 'TOKEN')]) {
+      withEnv([
+        "GITHUB_STATUS_PAYLOAD=${payload}",
+        "GITHUB_STATUS_URL=${status_url}",
+      ]) {
+        sh """
+          # set -x
+          curl --fail-with-body --silent --show-error \
+            --retry 3 --retry-delay 2 --retry-all-errors \
+            -H \"Authorization: token \$TOKEN\" \
+            -H \"Accept: application/vnd.github+json\" \
+            -H \"Content-Type: application/json\" \
+            -X POST \
+            --data-binary \"\$GITHUB_STATUS_PAYLOAD\" \
+            \"\$GITHUB_STATUS_URL\"
+        """
+      }
+    }
+    return true
+  } catch (InterruptedException e) {
+    throw e
+  } catch (Exception e) {
+    println "Failed to set GitHub commit status '${context}' on ${commit}: ${e.message}"
+    return false
   }
 }

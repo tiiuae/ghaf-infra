@@ -6,9 +6,12 @@ credentials:
               scope: GLOBAL
               id: "jenkins-github-commit-status-token"
               secret: "${file:/run/secrets/jenkins_github_commit_status_token}"
-              description: "Github token used to set the commit statuses"
+              description: "GitHub token used by Jenkins for API access and commit statuses"
 
 unclassified:
   gitHubPluginConfig:
     configs:
     - credentialsId: "jenkins-github-commit-status-token"
+      name: "GitHub"
+      apiUrl: "https://api.github.com"
+      manageHooks: true
