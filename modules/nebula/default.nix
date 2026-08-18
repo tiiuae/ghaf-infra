@@ -76,23 +76,35 @@ in
         "${lighthouseAddress}" = [ "${machines.ghaf-lighthouse.ip}:${toString listenPort}" ];
       };
 
-      # https://nebula.defined.net/docs/config/punchy
-      settings.punchy = {
-        punch = true;
-        respond = true;
-      };
+      settings = {
+        # https://nebula.defined.net/docs/config/punchy
+        punchy = {
+          punch = true;
+          respond = true;
+        };
 
-      # force a client to be disconnected if the certificate is expired or invalid
-      settings.pki.disconnect_invalid = true;
+        # force a client to be disconnected if the certificate is expired or invalid
+        pki.disconnect_invalid = true;
 
-      settings.stats = {
-        type = "prometheus";
-        interval = "60s";
-        message_metrics = true;
-        lighthouse_metrics = cfg.isLighthouse;
-        listen = "0.0.0.0:9101";
-        path = "/metrics";
-        namespace = "nebula";
+        stats = {
+          type = "prometheus";
+          interval = "60s";
+          message_metrics = true;
+          lighthouse_metrics = cfg.isLighthouse;
+          listen = "0.0.0.0:9101";
+          path = "/metrics";
+          namespace = "nebula";
+        };
+
+        firewall = {
+          outbound_action = "reject";
+          inbound_action = "reject";
+        };
+
+        logging = {
+          level = "info";
+          format = "json";
+        };
       };
 
       firewall = {
