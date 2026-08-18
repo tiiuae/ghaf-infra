@@ -121,6 +121,18 @@ assert normalizedDeviceTagTests[0].target == sampleStoreDiskInstallerTarget
 assert normalizedDeviceTagTests[0].test_path_key ==
   'system76-darp11-b-storeDisk-debug-installer___relayboot_bat___prod__no-secureboot'
 
+def normalizedDarterInstallerTests = pipelineModel.normalize_tests([
+  target: 'packages.x86_64-linux.intel-laptop-debug-installer',
+  tests: [[
+    device_tag: 'darter-pro',
+    variant: 'debug-installer',
+    testset: sampleTestset,
+  ]],
+], 'prod')
+
+assert normalizedDarterInstallerTests[0].device_tag == 'darter-pro'
+assert normalizedDarterInstallerTests[0].target == 'system76-darp11-b-debug-installer'
+
 def normalizedBuildWithExplicitTests = pipelineModel.normalize_build_config(explicitTestsConfig, true, 'prod', 'prod')
 
 assert normalizedBuildWithExplicitTests.test_runs*.stage_name == [

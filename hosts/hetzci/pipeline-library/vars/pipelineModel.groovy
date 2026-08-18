@@ -81,6 +81,7 @@ private def device_catalog() {
       target_substrings: ['system76-darp11-b'],
       variants: [
         'debug': 'system76-darp11-b-debug',
+        'debug-installer': 'system76-darp11-b-debug-installer',
         'storeDisk-debug': 'system76-darp11-b-storeDisk-debug',
         'storeDisk-debug-installer': 'system76-darp11-b-storeDisk-debug-installer',
       ],

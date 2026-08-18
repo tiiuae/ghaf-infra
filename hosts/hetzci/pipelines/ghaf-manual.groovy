@@ -14,25 +14,17 @@ properties([
     string(name: 'GITREF', defaultValue: 'main', description: 'Ghaf git reference (Commit/Branch/Tag)'),
     string(name: 'TESTSET', defaultValue: null, description: 'By default tests are skipped. To run hw-tests, define the target testset here; e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.)'),
     booleanParam(name: 'doc', defaultValue: false, description: 'Build target packages.x86_64-linux.doc'),
-    booleanParam(name: 'lenovo_x1_carbon_gen11_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.lenovo-x1-carbon-gen11-debug'),
-    booleanParam(name: 'lenovo_x1_carbon_gen11_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-installer'),
-    booleanParam(name: 'lenovo_x1_carbon_gen11_debug_sysupdate', defaultValue: false, description: 'Build target packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-sysupdate'),
-    booleanParam(name: 'dell_latitude_7230_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.dell-latitude-7230-debug'),
-    booleanParam(name: 'dell_latitude_7330_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.dell-latitude-7330-debug'),
     booleanParam(name: 'nvidia_jetson_orin_agx_debug_from_x86_64', defaultValue: false, description: 'Build target packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64'),
     booleanParam(name: 'nvidia_jetson_orin_agx_accelerated_guivm_debug_from_x86_64', defaultValue: false, description: 'Build target packages.x86_64-linux.nvidia-jetson-orin-agx-accelerated-guivm-debug-from-x86_64'),
     booleanParam(name: 'nvidia_jetson_orin_nx_debug_from_x86_64', defaultValue: false, description: 'Build target packages.x86_64-linux.nvidia-jetson-orin-nx-debug-from-x86_64'),
     booleanParam(name: 'nvidia_jetson_orin_agx_debug', defaultValue: false, description: 'Build target packages.aarch64-linux.nvidia-jetson-orin-agx-debug'),
     booleanParam(name: 'nvidia_jetson_orin_nx_debug', defaultValue: false, description: 'Build target packages.aarch64-linux.nvidia-jetson-orin-nx-debug'),
-    booleanParam(name: 'system76_darp11_b_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.system76-darp11-b-debug'),
-    booleanParam(name: 'system76_darp11_b_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.system76-darp11-b-debug-installer'),
-    booleanParam(name: 'system76_darp11_b_storeDisk_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.system76-darp11-b-storeDisk-debug'),
-    booleanParam(name: 'system76_darp11_b_storeDisk_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.system76-darp11-b-storeDisk-debug-installer'),
-    booleanParam(name: 'intel_laptop_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug'),
-    booleanParam(name: 'intel_laptop_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug-installer'),
-    booleanParam(name: 'intel_laptop_storeDisk_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-storeDisk-debug'),
-    booleanParam(name: 'intel_laptop_storeDisk_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-storeDisk-debug-installer'),
-    booleanParam(name: 'intel_laptop_low_mem_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-low-mem-debug'),
+    booleanParam(name: 'intel_laptop_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug (generic Intel laptop image replacing Lenovo X1 and Darter Pro debug targets)'),
+    booleanParam(name: 'intel_laptop_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug-installer (generic Intel laptop installer replacing Lenovo X1 and Darter Pro installer targets)'),
+    booleanParam(name: 'intel_laptop_debug_sysupdate', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug-sysupdate (generic Intel laptop A/B update image replacing the Lenovo X1 sysupdate target)'),
+    booleanParam(name: 'intel_laptop_storeDisk_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-storeDisk-debug (generic Intel laptop storeDisk image replacing the Darter Pro storeDisk debug target)'),
+    booleanParam(name: 'intel_laptop_storeDisk_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-storeDisk-debug-installer (generic Intel laptop storeDisk installer replacing the Darter Pro storeDisk installer target)'),
+    booleanParam(name: 'intel_laptop_low_mem_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-low-mem-debug (generic Intel laptop low-memory image replacing the Dell Latitude 7330 debug target)'),
     booleanParam(name: 'intel_laptop_low_mem_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-low-mem-debug-installer'),
   ])
 ])
@@ -101,26 +93,6 @@ pipeline {
               TARGETS.push(
                 [ target: "packages.x86_64-linux.doc", no_image: true, testset: null ])
             }
-            if (params.lenovo_x1_carbon_gen11_debug) {
-              TARGETS.push(
-                [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug", uefisign: params.UEFISIGN, testset: params.TESTSET, test_secboot: params.SECUREBOOT ])
-            }
-            if (params.lenovo_x1_carbon_gen11_debug_installer) {
-              TARGETS.push(
-                [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-installer", uefisigniso: params.UEFISIGN, testset: params.TESTSET ])
-            }
-            if (params.lenovo_x1_carbon_gen11_debug_sysupdate) {
-              TARGETS.push(
-                [ target: "packages.x86_64-linux.lenovo-x1-carbon-gen11-debug-sysupdate", sysupdate: true, uefisign: params.UEFISIGN, testset: params.TESTSET ])
-            }
-            if (params.dell_latitude_7230_debug) {
-              TARGETS.push(
-                [ target: "packages.x86_64-linux.dell-latitude-7230-debug", testset: null ])
-            }
-            if (params.dell_latitude_7330_debug) {
-              TARGETS.push(
-                [ target: "packages.x86_64-linux.dell-latitude-7330-debug", testset: null ])
-            }
             if (params.nvidia_jetson_orin_agx_debug_from_x86_64) {
               TARGETS.push(
                 [ target: "packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64", uefisign: params.UEFISIGN, testset: params.TESTSET ])
@@ -142,22 +114,6 @@ pipeline {
               TARGETS.push(
                 [ target: "packages.aarch64-linux.nvidia-jetson-orin-nx-debug", uefisign: params.UEFISIGN, testset: params.TESTSET ])
             }
-            if (params.system76_darp11_b_debug) {
-              TARGETS.push(
-                [ target: "packages.x86_64-linux.system76-darp11-b-debug", uefisign: params.UEFISIGN, testset: params.TESTSET  ])
-            }
-            if (params.system76_darp11_b_debug_installer) {
-              TARGETS.push(
-                [ target: "packages.x86_64-linux.system76-darp11-b-debug-installer", uefisigniso: params.UEFISIGN, testset: params.TESTSET  ])
-            }
-            if (params.system76_darp11_b_storeDisk_debug) {
-              TARGETS.push(
-                [ target: "packages.x86_64-linux.system76-darp11-b-storeDisk-debug", uefisign: params.UEFISIGN, testset: params.TESTSET  ])
-            }
-            if (params.system76_darp11_b_storeDisk_debug_installer) {
-              TARGETS.push(
-                [ target: "packages.x86_64-linux.system76-darp11-b-storeDisk-debug-installer", uefisigniso: params.UEFISIGN, testset: params.TESTSET  ])
-            }
             if (params.intel_laptop_debug) {
               TARGETS.push(addExplicitTests(
                 [ target: "packages.x86_64-linux.intel-laptop-debug", uefisign: params.UEFISIGN ],
@@ -178,11 +134,21 @@ pipeline {
             if (params.intel_laptop_debug_installer) {
               TARGETS.push(addExplicitTests(
                 [ target: "packages.x86_64-linux.intel-laptop-debug-installer", uefisigniso: params.UEFISIGN ],
-                [[
-                  device_tag: 'lenovo-x1',
-                  variant: 'debug-installer',
-                ]],
+                [
+                  [
+                    device_tag: 'lenovo-x1',
+                    variant: 'debug-installer',
+                  ],
+                  [
+                    device_tag: 'darter-pro',
+                    variant: 'debug-installer',
+                  ],
+                ],
               ))
+            }
+            if (params.intel_laptop_debug_sysupdate) {
+              TARGETS.push(
+                [ target: "packages.x86_64-linux.intel-laptop-debug-sysupdate", sysupdate: true, uefisign: params.UEFISIGN, testset: null ])
             }
             if (params.intel_laptop_storeDisk_debug) {
               TARGETS.push(addExplicitTests(
