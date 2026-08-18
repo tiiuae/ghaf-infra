@@ -133,7 +133,12 @@ pipeline {
       steps {
         dir(artifactSupport.controller_workdir()) {
           script {
-            PIPELINE = pipelineExecution.create_pipeline(TARGETS)
+            PIPELINE = pipelineExecution.create_pipeline(
+              TARGETS,
+              null,
+              null,
+              [send_results_to_zephyr: env.CI_ENV == 'prod']
+            )
           }
         }
       }

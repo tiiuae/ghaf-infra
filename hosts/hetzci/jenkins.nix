@@ -240,6 +240,7 @@ in
       environment = {
         CI_ENV = cfg.envType;
         OCI_REGISTRY = lib.mkDefault "registry.vedenemo.dev";
+        JIRA_TOKEN_AVAILABLE = lib.boolToString cfg.withJiraToken;
       };
 
       extraJavaOptions = [

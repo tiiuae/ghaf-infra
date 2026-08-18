@@ -44,6 +44,7 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
     string(name: 'TESTSET', defaultValue: '_relayboot_', description: 'Target testset, e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.'),
     string(name: 'TESTAGENT_HOST', defaultValue: null, description: 'Target testagent host, e.g.: dev, prod, release'),
     booleanParam(name: 'SECUREBOOT', defaultValue: false, description: 'Test on secure boot enabled hardware'),
+    booleanParam(name: 'SEND_RESULTS_TO_ZEPHYR', defaultValue: false, description: 'Send Robot Framework results to Zephyr'),
   ]
 }
 
@@ -153,17 +154,37 @@ def ghaf_robot_test(String testname='relayboot') {
       }
     }
     try {
-      // Pass variables as environment variables to shell.
-      // Ref: https://www.jenkins.io/doc/book/pipeline/jenkinsfile/#string-interpolation
-      sh '''
-        nix run .#ghaf-robot -- \
-          -v DEVICE:$DEVICE_NAME \
-          -v DEVICE_TYPE:$DEVICE_TAG \
-          -v BUILD_ID:${BUILD_NUMBER} \
-          -v COMMIT_HASH:$COMMIT_HASH \
-          -v FLASHED:${FLASHED} \
-          -i $INCLUDE_TEST_TAGS .
-      '''
+      def useZephyr =
+        env.JIRA_TOKEN_AVAILABLE == 'true' &&
+        params.SEND_RESULTS_TO_ZEPHYR
+
+      def robotCommand = { String extraArgs ->
+        env.EXTRA_ROBOT_ARGS = extraArgs ?: ''
+
+        // Pass variables as environment variables to shell.
+        // Ref: https://www.jenkins.io/doc/book/pipeline/jenkinsfile/#string-interpolation
+        sh '''
+            nix run .#ghaf-robot -- \
+            -v DEVICE:$DEVICE_NAME \
+            -v DEVICE_TYPE:$DEVICE_TAG \
+            -v BUILD_ID:${BUILD_NUMBER} \
+            -v COMMIT_HASH:$COMMIT_HASH \
+            -v FLASHED:${FLASHED} \
+            ${EXTRA_ROBOT_ARGS} \
+            -i $INCLUDE_TEST_TAGS .
+        '''
+      }
+
+      if (useZephyr) {
+        withCredentials([
+          string(credentialsId: 'jenkins_jira_token', variable: 'JIRA_TOKEN')
+        ]) {
+          robotCommand('--listener ../lib/ZephyrListener.py')
+        }
+      } else {
+        robotCommand('')
+      }
+
       if (testname.contains('boot')) {
         // Set an environment variable to indicate boot test passed
         env.BOOT_PASSED = 'true'
