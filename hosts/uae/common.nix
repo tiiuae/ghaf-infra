@@ -4,11 +4,10 @@
   config,
   lib,
   self,
-  machines,
   ...
 }:
 let
-  defaultLoki = "http://${machines.ghaf-monitoring.nebula_ip}:3100";
+  defaultLoki = "https://monitoring.vedenemo.dev";
 in
 {
   imports = [
