@@ -69,6 +69,7 @@ def create_pipeline(
   def signing_possible = ci_env != 'vm'
   def ghaf_checkout = pwd()
   def parallel_tests = options.get('parallel_tests', true)
+  def sendResultsToZephyr = options.get('send_results_to_zephyr', false)
 
   stage("Eval") {
     lock('evaluator') {
@@ -549,7 +550,8 @@ def create_pipeline(
                     oci_result,
                     localTestRun.secureboot,
                     ci_env,
-                    localTestRun.get('device_tag', null)
+                    localTestRun.get('device_tag', null),
+                    sendResultsToZephyr
                   )
                   persist_test_result(localTestRun, [job: job])
                   artifactSupport.with_controller_workspace(ghaf_checkout) {

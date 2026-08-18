@@ -149,7 +149,8 @@ def run_hw_test(
   Map oci_result,
   boolean secureboot,
   String ci_env,
-  String deviceTag = null) {
+  String deviceTag = null,
+  boolean sendResultsToZephyr = false) {
   // Keep the blocking downstream wait outside node('built-in') so ghaf-hw-test
   // can acquire a controller executor for its own initialization stages.
   def build_href = "<a href=\"${pipelineModel.html_escape(env.BUILD_URL)}\">" +
@@ -167,6 +168,7 @@ def run_hw_test(
     booleanParam(name: "USE_FLAKE_PINNED_CI_TEST", value: ci_env == "release"),
     booleanParam(name: "RELOAD_ONLY", value: false),
     booleanParam(name: "SECUREBOOT", value: secureboot),
+    booleanParam(name: "SEND_RESULTS_TO_ZEPHYR", value: sendResultsToZephyr),
   ]
   if (oci_result == null) {
     error("Missing OCI publish result for ${buildShortname}; cannot trigger ghaf-hw-test")
