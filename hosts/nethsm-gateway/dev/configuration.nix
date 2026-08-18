@@ -14,7 +14,7 @@
   networking.hostName = "nethsm-gateway-dev";
 
   # NetHSM connected directly to the ethernet port
-  networking.interfaces.enp89s0 = {
+  networking.interfaces.enp0s20f0u2 = {
     ipv4.addresses = [
       {
         address = "10.255.255.3";
