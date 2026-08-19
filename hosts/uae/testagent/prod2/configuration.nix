@@ -47,6 +47,7 @@
     hardware = [
       "orin-agx"
       "orin-nx"
+      "orin-agx-64"
     ];
   };
 
@@ -59,10 +60,16 @@
     SUBSYSTEM=="tty", KERNEL=="ttyACM[0-9]*", ATTRS{serial}=="TOPO4C3FB81A", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="ttyAGX1", MODE="0666", GROUP="dialout"
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B7283C099A7", SYMLINK+="ssdORINAGX1", MODE="0666", GROUP="dialout"
+
     # Orin nx
     SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTD0W9KS", SYMLINK+="ttyORINNX1", MODE="0666", GROUP="dialout"
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B7283C099B0", SYMLINK+="ssdORINNX1", MODE="0666", GROUP="dialout"
+
+    # Orin AGX64
+    SUBSYSTEM=="tty", KERNEL=="ttyACM[0-9]*", ATTRS{serial}=="TOPO7394FE13", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="ttyAGX64", MODE="0666", GROUP="dialout"
+    # SSD-drive
+    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B7283C099B0", SYMLINK+="ssdORINAGX64", MODE="0666", GROUP="dialout"
   '';
 
   # Details of the hardware devices connected to this host
@@ -93,7 +100,7 @@
           netvm_hostname = "ghaf-3001142088";
           serial_port = "/dev/ttyORINNX1";
           relay_number = 3;
-          device_ip_address = "172.20.16.35";
+          device_ip_address = "172.20.16.75";
           socket_ip_address = "NONE";
           plug_type = "NONE";
           switch_bot = "NONE";
@@ -101,7 +108,20 @@
           ext_drive_by-id = "/dev/ssdORINNX1";
           threads = 12;
         };
+        OrinAGX64 = {
+          inherit location;
+          device_id = "00-24-a3-f0-f4";
+          netvm_hostname = "ghaf-0614723828";
+          serial_port = "/dev/ttyAGX64";
+          relay_number = 4;
+          device_ip_address = "172.20.16.35";
+          socket_ip_address = "NONE";
+          plug_type = "NONE";
+          switch_bot = "NONE";
+          usbhub_serial = "1BB1C7DE";
+          ext_drive_by-id = "/dev/ssdORINAGX64";
+          threads = 12;
+        };
       };
     };
-
 }
