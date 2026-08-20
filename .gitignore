@@ -13,3 +13,4 @@ ca.key
 **/__pycache__/*
 .codex
 /.flakevuln/
+source-vsa.sigstore.json

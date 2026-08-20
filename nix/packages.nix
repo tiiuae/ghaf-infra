@@ -14,6 +14,7 @@
         };
         nethsm-exporter = pkgs.callPackage ../pkgs/nethsm-exporter { };
         oci-publish = pkgs.callPackage ../pkgs/oci-publish { };
+        source-vsa = pkgs.callPackage ../pkgs/source-vsa { };
         pkcs11-proxy = pkgs.callPackage ../pkgs/pkcs11-proxy { };
         systemd-sbsign = pkgs.callPackage ../pkgs/systemd-sbsign { };
         nethsm-pkcs11 = pkgs.callPackage ../pkgs/nethsm-pkcs11 { };
