@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2026 TII (SSRC) and the Ghaf contributors
+# SPDX-License-Identifier: Apache-2.0
+
+name: Issue Source VSA
+description: Issue and publish a SLSA Source Verification Summary Attestation
+
+inputs:
+  policy:
+    description: Repository-relative path to the Source VSA policy
+    required: true
+  verified-level:
+    description: SLSA Source level asserted by the VSA
+    required: false
+    default: SLSA_SOURCE_LEVEL_1
+
+runs:
+  using: composite
+  steps:
+    - name: Issue Source VSA
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        SOURCE_VSA_ACTION_PATH: ${{ github.action_path }}
+        SOURCE_VSA_ACTION_SHA: ${{ github.action_ref || github.sha }}
+        SOURCE_VSA_POLICY: ${{ inputs.policy }}
+        SOURCE_VSA_VERIFIED_LEVEL: ${{ inputs.verified-level }}
+        SOURCE_VSA_WORKSPACE: ${{ github.workspace }}
+      run: |
+        nix run "$SOURCE_VSA_ACTION_PATH/../../..#source-vsa" -- issue \
+          --policy "$SOURCE_VSA_WORKSPACE/$SOURCE_VSA_POLICY" \
+          --action-sha "$SOURCE_VSA_ACTION_SHA" \
+          --verified-level "$SOURCE_VSA_VERIFIED_LEVEL"
