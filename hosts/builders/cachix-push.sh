@@ -52,6 +52,7 @@ FILTER_GLOBS=(
   'etc-pam-environment'
   '*.raw.zst'
   '*.img.zst*'
+  'microvm-store-disk.*'
   'ghaf.iso'
   'nixos.img'
 )
