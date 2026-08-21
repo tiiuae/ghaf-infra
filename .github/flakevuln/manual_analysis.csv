@@ -636,6 +636,152 @@ CVE-2026-23479,True,valkey,9.0.3,,9.1.0,9.1.1,False positive: scanner triage cla
 CVE-2026-23631,True,valkey,9.0.3,,9.1.0,9.1.1,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
 CVE-2026-25243,True,valkey,9.0.3,,9.1.0,9.1.1,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
 CVE-2026-34743,True,xz,5.4.7,,5.6.3,5.6.3,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
+CVE-2018-10902,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2022-42895,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2023-52904,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2025-71289,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-23327,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-23371,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-23442,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-31420,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-31560,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-31589,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-31709,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-43131,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-45897,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-45901,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-45945,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-46054,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-46092,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-46130,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-46203,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-46252,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-53005,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-53027,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-53078,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-53090,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-53232,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2026-53260,True,linux,,6\.18\.(42|44),,,Not affected in scanned kernel versions: upstream Linux affected-version metadata marks Linux 6.18.42 and 6.18.44 outside affected ranges.
+CVE-2025-69649,True,binutils,,2\.46(\.0)?,,,All referenced upstream fix commits are ancestors of the official binutils-2_46 tag; both local 2.46 spellings use that release source.
+CVE-2025-69650,True,binutils,,2\.46(\.0)?,,,All referenced upstream fix commits are ancestors of the official binutils-2_46 tag; both local 2.46 spellings use that release source.
+CVE-2025-69651,True,binutils,,2\.46(\.0)?,,,All referenced upstream fix commits are ancestors of the official binutils-2_46 tag; both local 2.46 spellings use that release source.
+CVE-2025-69652,True,binutils,,2\.46(\.0)?,,,All referenced upstream fix commits are ancestors of the official binutils-2_46 tag; both local 2.46 spellings use that release source.
+CVE-2007-1397,True,fish,4.8.1,,,,"Product-name collision: the CVE affects the FiSH IRC encryption add-on, not the fish shell."
+CVE-2023-4039,True,gcc,15.3.0,,,,Target mismatch: the CVE applies only when GCC targets AArch64; this derivation targets x86_64-linux.
+CVE-2026-5201,True,gdk-pixbuf,2.44.7,,,,Fixed before this build: Debian records 2.44.6 as fixed and 2.44.7 is the scanned upstream version.
+CVE-2025-15281,True,glibc,2.42-67,,,,The Nixpkgs glibc 2.42-67 derivation contains this fix in 2.42-master.patch or an explicit CVE backport.
+CVE-2025-5702,True,glibc,2.42-67,,,,The Nixpkgs glibc 2.42-67 derivation contains this fix in 2.42-master.patch or an explicit CVE backport.
+CVE-2025-5745,True,glibc,2.42-67,,,,The Nixpkgs glibc 2.42-67 derivation contains this fix in 2.42-master.patch or an explicit CVE backport.
+CVE-2025-8058,True,glibc,2.42-67,,,,The Nixpkgs glibc 2.42-67 derivation contains this fix in 2.42-master.patch or an explicit CVE backport.
+CVE-2026-0861,True,glibc,2.42-67,,,,The Nixpkgs glibc 2.42-67 derivation contains this fix in 2.42-master.patch or an explicit CVE backport.
+CVE-2026-0915,True,glibc,2.42-67,,,,The Nixpkgs glibc 2.42-67 derivation contains this fix in 2.42-master.patch or an explicit CVE backport.
+CVE-2026-4046,True,glibc,2.42-67,,,,The Nixpkgs glibc 2.42-67 derivation contains this fix in 2.42-master.patch or an explicit CVE backport.
+CVE-2026-4437,True,glibc,2.42-67,,,,The Nixpkgs glibc 2.42-67 derivation contains this fix in 2.42-master.patch or an explicit CVE backport.
+CVE-2026-4438,True,glibc,2.42-67,,,,The Nixpkgs glibc 2.42-67 derivation contains this fix in 2.42-master.patch or an explicit CVE backport.
+CVE-2026-5435,True,glibc,2.42-67,,,,The Nixpkgs glibc 2.42-67 derivation contains this fix in 2.42-master.patch or an explicit CVE backport.
+CVE-2026-5450,True,glibc,2.42-67,,,,The Nixpkgs glibc 2.42-67 derivation contains this fix in 2.42-master.patch or an explicit CVE backport.
+CVE-2026-5928,True,glibc,2.42-67,,,,The Nixpkgs glibc 2.42-67 derivation contains this fix in 2.42-master.patch or an explicit CVE backport.
+CVE-2026-6238,True,glibc,2.42-67,,,,The Nixpkgs glibc 2.42-67 derivation contains this fix in 2.42-master.patch or an explicit CVE backport.
+CVE-2017-5436,True,graphite2,1.3.15,,,,Fixed in Graphite2 before 1.3.15; the CVE Numbering Authority ranges shown in the current record are for old Mozilla products.
+CVE-2026-12891,True,gstreamer,1.28.5,,,,Component mismatch: the CVE affects gst-plugins-bad; the resolved component is GStreamer core and the closure has no gst-plugins-bad component.
+CVE-2026-12892,True,gstreamer,1.28.5,,,,Component mismatch: the CVE affects gst-plugins-bad; the resolved component is GStreamer core and the closure has no gst-plugins-bad component.
+CVE-2026-73433,True,gstreamer,1.28.5,,,,Component mismatch: the CVE affects gst-plugins-good/avidemux; the resolved component is GStreamer core and the closure has no gst-plugins-good component.
+CVE-2026-73434,True,gstreamer,1.28.5,,,,Component mismatch: the CVE affects gst-plugins-good/avidemux; the resolved component is GStreamer core and the closure has no gst-plugins-good component.
+CVE-2014-9826,True,imagemagick,7.1.2-29,,,,Fixed on old ImageMagick 6.x lines; ImageMagick 7.1.2-29 is newer than the recorded fixed releases.
+CVE-2016-7538,True,imagemagick,7.1.2-29,,,,Fixed on old ImageMagick 6.x lines; ImageMagick 7.1.2-29 is newer than the recorded fixed releases.
+CVE-2017-5506,True,imagemagick,7.1.2-29,,,,Fixed on old ImageMagick 6.x lines; ImageMagick 7.1.2-29 is newer than the recorded fixed releases.
+CVE-2023-5341,True,imagemagick,7.1.2-29,,,,Fixed on old ImageMagick 6.x lines; ImageMagick 7.1.2-29 is newer than the recorded fixed releases.
+CVE-2024-9453,True,jenkins,2.568.2,,,,"Product mismatch: the CVE affects the OpenShift Jenkins Sync plugin, not Jenkins core 2.568.2."
+CVE-2025-59777,True,libmicrohttpd,1.0.6,,,,The shared upstream fix commit ff13abc is an ancestor of release v1.0.6.
+CVE-2025-62689,True,libmicrohttpd,1.0.6,,,,The shared upstream fix commit ff13abc is an ancestor of release v1.0.6.
+CVE-2026-20884,True,libraw,0.22.1,,,,The corresponding upstream TALOS fix commit is present in LibRaw tag 0.22.1; Debian also records 0.22.1 as fixed.
+CVE-2026-20911,True,libraw,0.22.1,,,,The corresponding upstream TALOS fix commit is present in LibRaw tag 0.22.1; Debian also records 0.22.1 as fixed.
+CVE-2026-21413,True,libraw,0.22.1,,,,The corresponding upstream TALOS fix commit is present in LibRaw tag 0.22.1; Debian also records 0.22.1 as fixed.
+CVE-2026-24450,True,libraw,0.22.1,,,,The corresponding upstream TALOS fix commit is present in LibRaw tag 0.22.1; Debian also records 0.22.1 as fixed.
+CVE-2026-15370,True,libssh,0.12.2,,,,Upstream libssh states this issue was fixed in 0.12.1; the scanned version is 0.12.2.
+CVE-2026-59842,True,libssh,0.12.2,,,,Upstream libssh states this issue was fixed in 0.12.1; the scanned version is 0.12.2.
+CVE-2026-59843,True,libssh,0.12.2,,,,Upstream libssh states this issue was fixed in 0.12.1; the scanned version is 0.12.2.
+CVE-2026-59844,True,libssh,0.12.2,,,,Upstream libssh states this issue was fixed in 0.12.1; the scanned version is 0.12.2.
+CVE-2026-59845,True,libssh,0.12.2,,,,Upstream libssh states this issue was fixed in 0.12.1; the scanned version is 0.12.2.
+CVE-2026-59846,True,libssh,0.12.2,,,,Upstream libssh states this issue was fixed in 0.12.1; the scanned version is 0.12.2.
+CVE-2026-59847,True,libssh,0.12.2,,,,Upstream libssh states this issue was fixed in 0.12.1; the scanned version is 0.12.2.
+CVE-2026-59848,True,libssh,0.12.2,,,,Upstream libssh states this issue was fixed in 0.12.1; the scanned version is 0.12.2.
+CVE-2026-59849,True,libssh,0.12.2,,,,Upstream libssh states this issue was fixed in 0.12.1; the scanned version is 0.12.2.
+CVE-2026-59850,True,libssh,0.12.2,,,,Upstream libssh states this issue was fixed in 0.12.1; the scanned version is 0.12.2.
+CVE-2026-59851,True,libssh,0.12.2,,,,Upstream libssh states this issue was fixed in 0.12.1; the scanned version is 0.12.2.
+CVE-2023-52356,True,libtiff,4.7.2,,,,Fixed before libtiff 4.7.2 (Debian fixed-version data is 4.7.0/4.7.1 or earlier).
+CVE-2023-6228,True,libtiff,4.7.2,,,,Fixed before libtiff 4.7.2 (Debian fixed-version data is 4.7.0/4.7.1 or earlier).
+CVE-2023-6277,True,libtiff,4.7.2,,,,Fixed before libtiff 4.7.2 (Debian fixed-version data is 4.7.0/4.7.1 or earlier).
+CVE-2026-4775,True,libtiff,4.7.2,,,,Fixed before libtiff 4.7.2 (Debian fixed-version data is 4.7.0/4.7.1 or earlier).
+CVE-2026-21444,True,libtpms,0.10.2-unstable-2026-05-06,,,,"Official affected range is >=0.10.0,<0.10.2; this snapshot is based on 0.10.2 and is outside it."
+CVE-2016-0774,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 3.16.2-2; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2016-3695,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 4.5.1-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2016-3699,True,linux,6.18.44,,,,Debian Linux tracker marks the kernel source not affected (fixed_version=0).
+CVE-2017-1000255,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 4.13.4-2; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2017-1000377,True,linux,6.18.44,,,,The record is limited to PaX-patched kernels; this is the upstream NixOS kernel.
+CVE-2017-6264,True,linux,6.18.44,,,,"The record concerns the Android/NVIDIA gm20b driver implementation, not this x86_64 kernel build."
+CVE-2018-10840,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 4.17.3-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2018-10876,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 4.17.3-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2018-10882,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 4.17.3-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2018-14625,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 4.19.9-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2018-6559,True,linux,6.18.44,,,,Debian Linux tracker marks the kernel source not affected (fixed_version=0).
+CVE-2019-3016,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 5.4.19-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2019-3819,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 4.19.20-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2019-3887,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 4.19.37-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2020-10742,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 3.16.2-2; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2020-16119,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 5.14.6-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2020-1749,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 5.4.6-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2020-27815,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 5.10.4-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2020-8834,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 4.18.6-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2021-20194,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 5.10.19-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2021-20265,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 4.4.4-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2021-3564,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 5.10.46-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2021-3759,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 5.15.3-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2021-4218,True,linux,6.18.44,,,,Debian Linux tracker marks the kernel source not affected (fixed_version=0).
+CVE-2022-0286,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 5.14.6-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2022-2308,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.0.2-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2022-2327,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 5.14.6-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2022-2663,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.0.2-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2022-3435,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.0.12-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2022-3523,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.1.4-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2022-3534,True,linux,6.18.44,,,,"Official record gives fixes in 5.10.163, 5.15.86, 6.0.16, and 6.1.2; 6.18.44 is later."
+CVE-2022-3566,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.1.4-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2022-3567,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.1.4-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2022-3619,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.0.8-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2022-3621,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.0.2-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2022-3624,True,linux,6.18.44,,,,Debian Linux tracker marks the kernel source not affected (fixed_version=0).
+CVE-2022-3629,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 5.19.6-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2022-3630,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 5.19.6-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2022-3633,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 5.19.6-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2022-3636,True,linux,6.18.44,,,,Debian Linux tracker marks the kernel source not affected (fixed_version=0).
+CVE-2022-36402,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.4.13-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2022-3646,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.0.2-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2022-38096,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.7.12-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2022-4382,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.1.8-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2023-1073,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.1.11-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2023-1074,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.1.11-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2023-1075,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.1.11-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2023-1076,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.1.20-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2023-2898,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.4.4-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2023-3772,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.4.13-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2023-3773,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.4.13-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2023-39176,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.5.3-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2023-39179,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.5.3-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2023-39180,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.5.3-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2023-4155,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.4.11-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2023-6176,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.5.6-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2023-6535,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.6.15-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2023-6610,True,linux,6.18.44,,,,Debian Linux tracker records the issue fixed in 6.6.13-1; upstream 6.18.44 is well past that fixed kernel line.
+CVE-2023-6679,True,linux,6.18.44,,,,Debian Linux tracker marks the kernel source not affected (fixed_version=0).
+CVE-2007-2768,True,openssh,10.5p1,,,,Legacy OPIE/PAM-specific issue; that integration is not present in this upstream Nixpkgs OpenSSH build.
+CVE-2008-3844,True,openssh,10.5p1,,,,"Downstream/product mismatch: the record applies to Red Hat/Ubuntu-specific packages or patches, not upstream Nixpkgs OpenSSH."
+CVE-2014-9278,True,openssh,10.5p1,,,,"Downstream/product mismatch: the record applies to Red Hat/Ubuntu-specific packages or patches, not upstream Nixpkgs OpenSSH."
+CVE-2023-51767,True,openssh,10.5p1,,,,Official description limits affected OpenSSH versions to 10.0 and earlier; local version is 10.5p1 (the supplier also disputes it).
+CVE-2026-3497,True,openssh,10.5p1,,,,"Downstream/product mismatch: the record applies to Red Hat/Ubuntu-specific packages or patches, not upstream Nixpkgs OpenSSH."
+CVE-2026-55653,True,openssh,10.5p1,,,,"Downstream/product mismatch: the record applies to Red Hat/Ubuntu-specific packages or patches, not upstream Nixpkgs OpenSSH."
+CVE-2026-55654,True,openssh,10.5p1,,,,"Downstream/product mismatch: the record applies to Red Hat/Ubuntu-specific packages or patches, not upstream Nixpkgs OpenSSH."
+CVE-2026-55655,True,openssh,10.5p1,,,,"Downstream/product mismatch: the record applies to Red Hat/Ubuntu-specific packages or patches, not upstream Nixpkgs OpenSSH."
+CVE-2026-4360,True,python3,3.14.7,,,,Official CPython range ends before 3.14.7; 3.14.7 is the fixed boundary.
 CVE-.*,True,bash,,2\.05b(-builder)?,,,Build-time bootstrap artifact: bash 2.05b bootstrap derivations are build-closure-only artifacts; runtime bash 5.x rows remain active.
 CVE-.*,True,gcc,,4\.6\.4,,,Build-time bootstrap artifact: gcc 4.6.4 bootstrap compiler derivations are build-closure-only artifacts; current gcc rows remain active.
 CVE-.*,True,go,,.*-linux-amd64-bootstrap,,,Build-time bootstrap artifact: Go linux-amd64 bootstrap toolchain derivations are build-closure-only artifacts; non-bootstrap Go rows remain active.
