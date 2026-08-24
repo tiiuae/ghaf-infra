@@ -24,11 +24,12 @@ in
         "nss-lookup.target"
       ];
       wantedBy = [ "multi-user.target" ];
-      path = with pkgs; [
-        cachix
-        coreutils
-        findutils
-        gnugrep
+      path = [
+        pkgs.cachix
+        pkgs.coreutils
+        pkgs.findutils
+        pkgs.gnugrep
+        config.nix.package
       ];
       serviceConfig = {
         Type = "simple";
