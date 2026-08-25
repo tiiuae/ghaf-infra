@@ -10,6 +10,7 @@
 }:
 {
   imports = [
+    ../../../hetzci/common.nix
     ./hardware-configuration.nix
     ./disk-config.nix
     (modulesPath + "/profiles/qemu-guest.nix")
