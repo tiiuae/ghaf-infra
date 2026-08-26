@@ -51,8 +51,8 @@
     ];
   };
 
-  # this server has been installed with 25.11
-  system.stateVersion = lib.mkForce "25.11";
+  # this server has been installed with 26.05
+  system.stateVersion = lib.mkForce "26.05";
 
   # udev rules for test devices serial connections
   services.udev.extraRules = ''
