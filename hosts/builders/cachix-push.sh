@@ -316,9 +316,7 @@ process_candidates() {
 
   while read -r -u "$closure_filter_fd" storepath; do
     [ -n "$storepath" ] || continue
-    if [ -z "${closure_filter_matches["$storepath"]+x}" ]; then
-      closure_filter_matches["$storepath"]=1
-    fi
+    closure_filter_matches["$storepath"]=1
   done
   exec {closure_filter_fd}<&-
 
