@@ -28,10 +28,15 @@ CURRENT_CACHIX_TOKEN_DIGEST=""
 
 # Lists all nix store paths potentially pushed to cachix
 list_nix_store_paths() {
-  out=$1
+  local out=$1
+  local tmp
+
   tmp="$(mktemp --tmpdir="$(dirname "$out")" ".$(basename "$out").XXXXXX")"
   # https://github.com/cachix/cachix-action/blob/ee79d/dist/list-nix-store.sh
-  find /nix/store -mindepth 1 -maxdepth 1 \
+  # Builders and nix-daemon auto-GC can remove store entries while this snapshot
+  # runs. find stats entries before applying the exclusions below, so even
+  # ignored names such as *.drv.chroot can otherwise fail the whole poll.
+  find /nix/store -ignore_readdir_race -mindepth 1 -maxdepth 1 \
     ! -name '*.drv' \
     ! -name '*.drv.chroot' \
     ! -name '*.check' \
@@ -320,7 +325,7 @@ process_candidates() {
     [ -n "$storepath" ] || continue
 
     if [ ! -e "$storepath" ]; then
-      echo "[!] Skip vanished store path: $storepath"
+      echo "[!] Skip vanished store path: $storepath" >&2
       continue
     fi
 
