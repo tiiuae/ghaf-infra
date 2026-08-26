@@ -42,6 +42,7 @@ list_nix_store_paths() {
     ! -name '*.check' \
     ! -name '*.lock' \
     ! -name '*.links' \
+    ! -name '.tmp-link-*' \
     -print | LC_ALL=C sort >"$tmp"
   mv -f "$tmp" "$out"
 }
