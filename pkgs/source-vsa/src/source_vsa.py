@@ -45,6 +45,18 @@ def ref_allowed(ref: str, allowed_refs: list[str]) -> bool:
     return any(re.fullmatch(pattern, ref) for pattern in allowed_refs)
 
 
+def verifier_matches(verifier: Any, context: dict[str, Any]) -> bool:
+    """Match the verifier identity and an action revision when independently set."""
+    return (
+        isinstance(verifier, dict)
+        and verifier.get("id") == context["verifier_id"]
+        and (
+            "action_sha" not in context
+            or verifier.get("version") == {"action": context["action_sha"]}
+        )
+    )
+
+
 def run_command(
     arguments: list[str],
     *,
@@ -204,18 +216,6 @@ def statement_from_bundle(bundle_path: Path) -> dict[str, Any]:
     return statement
 
 
-def action_sha_from_bundle(bundle_path: Path) -> str:
-    """Read the composite-action version claimed by a VSA bundle."""
-    statement = statement_from_bundle(bundle_path)
-    try:
-        action_sha = statement["predicate"]["verifier"]["version"]["action"]
-    except (KeyError, TypeError) as error:
-        raise SourceVSAError("VSA issuer action version is missing") from error
-    if not isinstance(action_sha, str):
-        raise SourceVSAError("VSA issuer action version is invalid")
-    return action_sha
-
-
 def verify_statement(statement: dict[str, Any], context: dict[str, Any]) -> None:
     """Require the exact statement shape and policy decisions used by this issuer."""
     expected_subject = {
@@ -247,10 +247,6 @@ def verify_statement(statement: dict[str, Any], context: dict[str, Any]) -> None
         raise SourceVSAError("VSA sourceRefs are not allowed by policy")
 
     expected_predicate = {
-        "verifier": {
-            "id": context["verifier_id"],
-            "version": {"action": context["action_sha"]},
-        },
         "resourceUri": f"git+https://github.com/{context['repository']}",
         "verificationResult": "PASSED",
         "verifiedLevels": [context["verified_level"]],
@@ -261,8 +257,10 @@ def verify_statement(statement: dict[str, Any], context: dict[str, Any]) -> None
         raise SourceVSAError("unexpected in-toto statement type")
     if statement.get("predicateType") != PREDICATE_TYPE:
         raise SourceVSAError("unexpected VSA predicate type")
-    if not isinstance(predicate, dict) or any(
-        predicate.get(key) != value for key, value in expected_predicate.items()
+    if (
+        not isinstance(predicate, dict)
+        or not verifier_matches(predicate.get("verifier"), context)
+        or any(predicate.get(key) != value for key, value in expected_predicate.items())
     ):
         raise SourceVSAError("VSA predicate does not match the issuer policy")
     statement_policy = predicate.get("policy")
@@ -552,7 +550,6 @@ def verify(args: argparse.Namespace) -> None:
         load_policy(args.policy),
         args.repository,
         args.commit,
-        action_sha_from_bundle(args.bundle),
         verified_level=args.verified_level,
     )
     verify_bundle(args.bundle, context)
@@ -561,21 +558,14 @@ def verify(args: argparse.Namespace) -> None:
 def fetch(args: argparse.Namespace) -> None:
     """Fetch a public VSA bundle and verify it before returning it."""
     policy_source = load_policy(args.policy)
-    lookup_context = policy_context(
+    context = policy_context(
         policy_source,
         args.repository,
         args.commit,
         verified_level=args.verified_level,
     )
     with tempfile.TemporaryDirectory(prefix="source-vsa-") as temporary:
-        bundle = pull_bundle(lookup_context["reference"], Path(temporary))
-        context = policy_context(
-            policy_source,
-            args.repository,
-            args.commit,
-            action_sha_from_bundle(bundle),
-            verified_level=args.verified_level,
-        )
+        bundle = pull_bundle(context["reference"], Path(temporary))
         verify_bundle(bundle, context)
         shutil.copyfile(bundle, args.bundle)
 
