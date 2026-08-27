@@ -17,6 +17,9 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError
+from urllib.parse import quote, urlencode
+from urllib.request import Request, urlopen
 
 import yaml
 
@@ -202,7 +205,7 @@ def statement_from_bundle(bundle_path: Path) -> dict[str, Any]:
 
 
 def action_sha_from_bundle(bundle_path: Path) -> str:
-    """Read the exact composite-action version claimed by a VSA bundle."""
+    """Read the composite-action version claimed by a VSA bundle."""
     statement = statement_from_bundle(bundle_path)
     try:
         action_sha = statement["predicate"]["verifier"]["version"]["action"]
@@ -323,26 +326,88 @@ def verify_bundle(bundle_path: Path, context: dict[str, Any]) -> None:
     )
 
 
+def manifest_exists(context: dict[str, Any], actor: str, token: str) -> bool:
+    """Check for a commit-tagged manifest using authenticated registry status."""
+    registry_repository = f"{context['repository']}/{REGISTRY_ARTIFACT}"
+    credentials = base64.b64encode(f"{actor}:{token}".encode()).decode()
+    token_query = urlencode(
+        {
+            "service": context["registry_host"],
+            "scope": f"repository:{registry_repository}:pull,push",
+        }
+    )
+    token_request = Request(
+        f"https://{context['registry_host']}/token?{token_query}",
+        headers={
+            "Accept": "application/json",
+            "Authorization": f"Basic {credentials}",
+            "User-Agent": "source-vsa",
+        },
+    )
+    try:
+        with urlopen(token_request, timeout=30) as response:
+            token_response = json.load(response)
+    except HTTPError as error:
+        detail = error.read().decode(errors="replace").strip()
+        raise SourceVSAError(
+            f"GHCR token request failed with HTTP {error.code}: {detail}"
+        ) from error
+    except (OSError, json.JSONDecodeError) as error:
+        raise SourceVSAError(f"GHCR token request failed: {error}") from error
+
+    registry_token = None
+    if isinstance(token_response, dict):
+        registry_token = token_response.get("token") or token_response.get(
+            "access_token"
+        )
+    if not isinstance(registry_token, str) or not registry_token:
+        raise SourceVSAError("GHCR token response did not contain a token")
+
+    manifest_url = (
+        f"https://{context['registry_host']}/v2/"
+        f"{quote(registry_repository, safe='/')}/manifests/"
+        f"{quote(context['commit'], safe='')}"
+    )
+    manifest_request = Request(
+        manifest_url,
+        method="HEAD",
+        headers={
+            "Accept": "application/vnd.oci.image.manifest.v1+json",
+            "Authorization": f"Bearer {registry_token}",
+            "User-Agent": "source-vsa",
+        },
+    )
+    try:
+        with urlopen(manifest_request, timeout=30) as response:
+            if response.status != 200:
+                raise SourceVSAError(
+                    f"GHCR manifest check returned HTTP {response.status}"
+                )
+            return True
+    except HTTPError as error:
+        if error.code == 404:
+            return False
+        detail = error.read().decode(errors="replace").strip()
+        raise SourceVSAError(
+            f"GHCR manifest check failed with HTTP {error.code}: {detail}"
+        ) from error
+    except OSError as error:
+        raise SourceVSAError(f"GHCR manifest check failed: {error}") from error
+
+
 def pull_bundle(
     reference: str,
     destination: Path,
     *,
     registry_config: Path | None = None,
-    allow_missing: bool = False,
-) -> Path | None:
-    """Pull a bundle and distinguish an absent tag from registry failures."""
+) -> Path:
+    """Pull a bundle from the registry."""
     arguments = ["oras", "pull", "--output", str(destination)]
     if registry_config is not None:
         arguments.extend(["--registry-config", str(registry_config)])
     result = run_command([*arguments, reference], check=False)
     if result.returncode:
         detail = result.stderr.strip() or result.stdout.strip()
-        missing = any(
-            marker in detail.lower()
-            for marker in ("not found", "manifest unknown", "404")
-        )
-        if allow_missing and missing:
-            return None
         raise SourceVSAError(f"oras pull failed for {reference}: {detail}")
 
     bundle_path = destination / BUNDLE_FILENAME
@@ -403,11 +468,14 @@ def issue(args: argparse.Namespace) -> None:
 
         authenticated = workdir / "authenticated"
         authenticated.mkdir()
-        bundle = pull_bundle(
-            context["reference"],
-            authenticated,
-            registry_config=registry_config,
-            allow_missing=True,
+        bundle = (
+            pull_bundle(
+                context["reference"],
+                authenticated,
+                registry_config=registry_config,
+            )
+            if manifest_exists(context, actor, token)
+            else None
         )
         if bundle is None:
             statement_path = workdir / "statement.json"
@@ -463,7 +531,6 @@ def issue(args: argparse.Namespace) -> None:
                 "package public in GitHub under Package settings > Danger Zone > "
                 "Change visibility, then rerun this workflow"
             ) from error
-        assert public_bundle is not None
         verify_bundle(public_bundle, context)
         if args.bundle is not None:
             shutil.copyfile(public_bundle, args.bundle)
@@ -502,7 +569,6 @@ def fetch(args: argparse.Namespace) -> None:
     )
     with tempfile.TemporaryDirectory(prefix="source-vsa-") as temporary:
         bundle = pull_bundle(lookup_context["reference"], Path(temporary))
-        assert bundle is not None
         context = policy_context(
             policy_source,
             args.repository,
