@@ -1,6 +1,9 @@
 # SPDX-FileCopyrightText: 2026 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: CC-BY-SA-4.0
 
+# POC: verification does not yet pin an independently approved revision of the
+# composite action. Do not use these VSAs as a production release gate.
+
 verifier:
   id: https://github.com/tiiuae/ghaf-infra/.github/actions/source-vsa
 
@@ -8,4 +11,3 @@ workflowPath: .github/workflows/source-vsa.yml
 
 refs:
   - refs/heads/main
-  - refs/tags/ghaf-.*
