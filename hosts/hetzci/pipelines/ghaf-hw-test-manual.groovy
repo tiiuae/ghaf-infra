@@ -162,6 +162,20 @@ def init() {
 def ghaf_robot_test(String tags) {
   env.ROBOT_EXECUTED = 'true'
   env.INCLUDE_TEST_TAGS = "${tags}"
+  env.COMMIT_HASH = 'NONE'
+  if (params.IMG_URL) {
+    def imgUrlMatch = params.IMG_URL =~ /commit_([a-f0-9]{40})/
+    if (imgUrlMatch) {
+      env.COMMIT_HASH = imgUrlMatch[0][1]
+    }
+  }
+  def flakeRef = env.GHAF_FLAKE_REF ?: params.GHAF_FLAKE_REF ?: env.OCI_SOURCE_REF
+  if (env.COMMIT_HASH == 'NONE' && flakeRef) {
+    def flakeRefMatch = flakeRef =~ /[?&]rev=([a-f0-9]{40})(?:[&#]|$)/
+    if (flakeRefMatch) {
+      env.COMMIT_HASH = flakeRefMatch[0][1]
+    }
+  }
   dir("Robot-Framework/test-suites") {
     sh 'rm -f *.txt *.png *.jpeg *.mp4 *.mkv *.wav output.xml report.html log.html'
     try {
@@ -172,7 +186,7 @@ def ghaf_robot_test(String tags) {
           -v DEVICE:$DEVICE_NAME \
           -v DEVICE_TYPE:$DEVICE_TAG \
           -v BUILD_ID:${BUILD_NUMBER} \
-          -v COMMIT_HASH:NONE \
+          -v COMMIT_HASH:$COMMIT_HASH \
           -v FLASHED:${FLASHED} \
           -i $INCLUDE_TEST_TAGS .
       '''
@@ -355,6 +369,7 @@ pipeline {
                   }
                   error("Missing GHAF_FLAKE_REF and unable to derive Ghaf commit from IMG_URL '${params.IMG_URL}'. Set GHAF_FLAKE_REF or enable USE_LEGACY_DD_FLASH.")
                 }
+                env.GHAF_FLAKE_REF = ghafFlakeRef
                 println "Building flash-script from GHAF_FLAKE_REF: ${ghafFlakeRef}"
                 def flashScriptPath = artifactSupport.run_cmd(
                   "nix build --no-link --print-out-paths '${ghafFlakeRef}#packages.x86_64-linux.flash-script'"
@@ -392,10 +407,10 @@ pipeline {
           }
         }
         stage('HW test') {
-          when { expression { env.BOOT_PASSED == 'true' && params.TEST_TAGS && !params.WIPE_ONLY } }
+          when { expression { env.BOOT_PASSED == 'true' && params.TEST_TAGS?.trim() && !params.WIPE_ONLY } }
           steps {
             script {
-              ghaf_robot_test("${params.TEST_TAGS}")
+              ghaf_robot_test(params.TEST_TAGS.trim())
             }
           }
         }
