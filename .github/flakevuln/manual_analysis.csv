@@ -1,13 +1,57 @@
-vuln_id,whitelist,package,version_local,version_local_regex,version_nixpkgs,version_upstream,comment
-(CVE-2026-3441|CVE-2026-3442|CVE-2026-4647|CVE-2026-6844|CVE-2026-6845),False,binutils,,2\.46(\.0)?,,,Valid: NVD describes GNU Binutils issues and local 2.46 source predates the 2.46.1 fixes.
-CVE-2024-58251,False,busybox,1.37.0,,,,Valid: NVD affected range is BusyBox <=1.37.0 and local patches do not address this CVE.
-CVE-2023-7216,False,cpio,2.15,,,,Valid: NVD describes GNU cpio path traversal and the local 2.15 derivation has no relevant patch.
-(CVE-2025-15276|CVE-2025-15277|CVE-2025-15278),False,fontforge,20251009,,,,Valid: NVD affected commits are ancestors of tag 20251009 and Nixpkgs only patches adjacent CVEs 15269 15275 and 15279.
-(CVE-2026-40467|CVE-2026-40468|CVE-2026-40553),False,gawk,5.3.2,,,,Valid: NVD affected range is GNU gawk <=5.4.0 and local 5.3.2 has no relevant patch.
+vuln_id,whitelist,package,version_local,version_local_regex,version_nixpkgs,version_upstream,comment,review_comment
+(CVE-2026-3441|CVE-2026-3442|CVE-2026-4647|CVE-2026-6844|CVE-2026-6845),False,binutils,,2\.46(\.0)?,,,,Valid: NVD describes GNU Binutils issues and local 2.46 source predates the 2.46.1 fixes.
+CVE-2024-58251,False,busybox,1.37.0,,,,,Valid: NVD affected range is BusyBox <=1.37.0 and local patches do not address this CVE.
+CVE-2023-7216,False,cpio,2.15,,,,,Valid: NVD describes GNU cpio path traversal and the local 2.15 derivation has no relevant patch.
+(CVE-2025-15276|CVE-2025-15277|CVE-2025-15278),False,fontforge,20251009,,,,,Valid: NVD affected commits are ancestors of tag 20251009 and Nixpkgs only patches adjacent CVEs 15269 15275 and 15279.
+(CVE-2026-40467|CVE-2026-40468|CVE-2026-40553),False,gawk,5.3.2,,,,,Valid: NVD affected range is GNU gawk <=5.4.0 and local 5.3.2 has no relevant patch.
 CVE-2022-3219,True,gnupg,2.4.9,,,,Fixed in this derivation: the freepg patch set includes Disallow compressed signatures and certificates which is the mitigation referenced by T5993/D556.
-(CVE-2013-6393|CVE-2014-2525),False,libyaml,0.1.4,,,,Valid: Haskell libyaml 0.1.4 wraps libyaml-clib and the local derivation has no patch for these LibYAML issues.
-CVE-2026-13757,False,p11-kit,0.26.2,,,,Valid: p11-kit fixed this in 0.26.3 or later and local 0.26.2 has no recursion-depth patch.
-(CVE-2025-15366|CVE-2025-15367|CVE-2026-0864|CVE-2026-11940|CVE-2026-11972|CVE-2026-1502|CVE-2026-3276|CVE-2026-4360|CVE-2026-4786|CVE-2026-5713|CVE-2026-6100|CVE-2026-7774|CVE-2026-8328|CVE-2026-9669),False,python,3.14.4,,,,Valid: NVD CPython affected range includes 3.14.4 and this derivation has no security backports.
+(CVE-2013-6393|CVE-2014-2525),False,libyaml,0.1.4,,,,,Valid: Haskell libyaml 0.1.4 wraps libyaml-clib and the local derivation has no patch for these LibYAML issues.
+CVE-2026-13757,False,p11-kit,0.26.2,,,,,Valid: p11-kit fixed this in 0.26.3 or later and local 0.26.2 has no recursion-depth patch.
+(CVE-2025-15366|CVE-2025-15367|CVE-2026-0864|CVE-2026-11940|CVE-2026-11972|CVE-2026-1502|CVE-2026-3276|CVE-2026-4360|CVE-2026-4786|CVE-2026-5713|CVE-2026-6100|CVE-2026-7774|CVE-2026-8328|CVE-2026-9669),False,python,3.14.4,,,,,Valid: NVD CPython affected range includes 3.14.4 and this derivation has no security backports.
+(CVE-2026-6846|OSV-2026-350|OSV-2026-973|OSV-2026-987),False,binutils,,2\.46(\.0)?,,,,Valid: official CVE and OSV records include binutils 2.46 or 2.46.0 in the affected ranges and local derivations do not carry the fixes
+(CVE-2026-56389|CVE-2026-56390),False,bison,3.8.2,,,,,Valid: CVE records name GNU Bison 3.8.2 as affected and no fixed upstream or Nixpkgs version is available
+(OSV-2024-112|OSV-2024-914),False,boost,1.89.0,,,,,Valid: OSV affected-version lists include boost-1.89.0 and the local derivation has no referenced fix commit
+CVE-2025-46394,False,busybox,1.37.0,,,,,Valid: CVE affects BusyBox tar through 1.37.0 and local patches do not address this issue
+CVE-2026-25541,False,bytes,1.11.0,,,,,Valid: CVE affects Rust bytes >=1.2.1 and <1.11.1 so local bytes 1.11.0 is in the affected range
+(CVE-2025-50422|OSV-2023-298),False,cairo,1.18.4,,,,,Valid: official Cairo and OSV affected-version data includes Cairo 1.18.4 and local patches do not address these issues
+(CVE-2026-67215|CVE-2026-67216|CVE-2026-67217),False,cjson,1.7.19,,,,,Valid: cJSON records affect versions through 1.7.19 and the local derivation does not contain fixes
+(CVE-2026-56113|CVE-2026-56114|CVE-2026-56116|CVE-2026-56117),False,dhcpcd,10.3.2,,,,,Valid: CVE records affect dhcpcd 10.3.2 and point to later upstream fix commits
+OSV-2024-678,False,flac,1.5.0,,,,,Valid: OSV affected-version list includes FLAC 1.5.0 and local patches do not address this issue
+(CVE-2025-15281|CVE-2026-0861|CVE-2026-0915|CVE-2026-4046|CVE-2026-4437|CVE-2026-4438|CVE-2026-5435|CVE-2026-5450|CVE-2026-5928|CVE-2026-6238),False,glibc,2.42,,,,,Valid: CVE records affect glibc 2.42; only the separate 2.42-67 derivation has reviewed local backports for these issues
+(CVE-2026-6368|CVE-2026-6791),False,glibc,,2\.42(-67)?,,,,Valid: CVE records affect glibc before 2.43 and neither scanned 2.42 derivation carries a reviewed fix for these issues
+OSV-2026-962,False,harfbuzz,13.2.1,,,,,Valid: OSV affected-version list includes HarfBuzz 13.2.1 and local patches do not address this issue
+CVE-2023-46361,False,jbig2dec,0.20,,,,,Valid: CVE describes jbig2dec 0.20 and local patches do not address this issue
+(OSV-2023-1307|OSV-2023-877),False,libbpf,1.7.0,,,,,Valid: OSV affected-version lists include libbpf 1.7.0 and local patches do not address these issues
+(CVE-2026-53583|CVE-2026-53584|CVE-2026-53585|CVE-2026-53586|CVE-2026-53587),False,libgit2,1.9.4,,,,,Valid: CVE records affect libgit2 >=1.9.0 and <1.9.5 so local 1.9.4 is in the affected range
+(OSV-2020-2308|OSV-2023-1129),False,libheif,1.23.1,,,,,Valid: OSV affected-version lists include libheif 1.23.1 and local patches do not address these issues
+(OSV-2022-608|OSV-2022-725|OSV-2026-564|OSV-2026-711),False,libjxl,0.12.0,,,,,Valid: OSV affected-version lists include libjxl 0.12.0 and local patches do not address these issues
+OSV-2024-395,False,libpcap,1.10.6,,,,,Valid: OSV affected-version list includes libpcap 1.10.6 and local patches do not address this issue
+OSV-2025-202,False,librsvg,2.62.3,,,,,Valid: OSV affected-version list includes librsvg 2.62.3 and local patches do not address this issue
+(OSV-2020-1420|OSV-2020-862|OSV-2021-508|OSV-2022-896),False,libsass,3.6.6,,,,,Valid: OSV affected-version lists include libsass 3.6.6 and local patches do not address these issues
+(CVE-2022-33065|CVE-2024-50612|CVE-2024-50613|CVE-2025-52194|CVE-2025-56226|CVE-2026-37555),False,libsndfile,1.2.2,,,,,Valid: CVE records describe libsndfile issues in or through 1.2.2 and local patches do not address them
+(OSV-2024-1164|OSV-2026-568),False,libultrahdr,1.4.0,,,,,Valid: OSV affected-version lists include libultrahdr 1.4.0 and local patches do not address these issues
+(OSV-2026-55|OSV-2026-97),False,libvpx,1.16.0,,,,,Valid: OSV affected-version lists include libvpx 1.16.0 and local patches do not address these issues
+(OSV-2024-698|OSV-2026-565),False,libxml2,2.15.3,,,,,Valid: OSV affected-version lists include libxml2 2.15.3 and local patches do not address these issues
+(CVE-2019-14899|CVE-2021-3714|CVE-2021-3864|CVE-2022-0400|CVE-2022-1247|CVE-2022-4543|CVE-2023-3397|CVE-2023-3640|CVE-2023-6238|CVE-2023-6240),False,linux,6.18.44,,,,,Reviewed as potentially relevant: these older kernel CVEs are not covered by the Linux security stable-version data and should not be suppressed without target-specific mitigation evidence
+(CVE-2025-71074|CVE-2025-71306|CVE-2025-71308|CVE-2025-71313|CVE-2026-23328|CVE-2026-23374|CVE-2026-23377|CVE-2026-23459|CVE-2026-31501|CVE-2026-31771|CVE-2026-31777|CVE-2026-43009|CVE-2026-43022|CVE-2026-43042|CVE-2026-43045|CVE-2026-43053|CVE-2026-43095|CVE-2026-43115|CVE-2026-43174|CVE-2026-43191|CVE-2026-43204|CVE-2026-43228|CVE-2026-43299|CVE-2026-43308|CVE-2026-43310|CVE-2026-43311|CVE-2026-43326|CVE-2026-43344|CVE-2026-43391|CVE-2026-43414|CVE-2026-43443),False,linux,6.18.44,,,,,Valid: Linux security affected-version data includes the scanned 6.18.44 stable branch and no 6.18.x fixed range is recorded for these issues
+(CVE-2026-45961|CVE-2026-45963|CVE-2026-45991|CVE-2026-46008|CVE-2026-46017|CVE-2026-46032|CVE-2026-46153|CVE-2026-46210|CVE-2026-46245|CVE-2026-46298|CVE-2026-46302|CVE-2026-46311|CVE-2026-46330|CVE-2026-52949|CVE-2026-52956|CVE-2026-52960|CVE-2026-52965|CVE-2026-52988|CVE-2026-53007|CVE-2026-53008|CVE-2026-53009|CVE-2026-53017|CVE-2026-53024|CVE-2026-53025|CVE-2026-53089|CVE-2026-53091|CVE-2026-53102|CVE-2026-53106|CVE-2026-53108|CVE-2026-53113|CVE-2026-53124),False,linux,6.18.44,,,,,Valid: Linux security affected-version data includes the scanned 6.18.44 stable branch and no 6.18.x fixed range is recorded for these issues
+(CVE-2026-53178|CVE-2026-53222|CVE-2026-53257|CVE-2026-53285|CVE-2026-53292|CVE-2026-53308|CVE-2026-53313|CVE-2026-53401|CVE-2026-64117|CVE-2026-64123|CVE-2026-64146|CVE-2026-64154|CVE-2026-64159|CVE-2026-64160|CVE-2026-64210|CVE-2026-64283),False,linux,6.18.44,,,,,Valid: Linux security affected-version data includes the scanned 6.18.44 stable branch and no 6.18.x fixed range is recorded for these issues
+CVE-2021-43519,False,lua,5.2.4,,,,,Valid: CVE affects Lua 5.1 through 5.4.4 and local 5.2.4 is in the affected range
+CVE-2026-58055,False,nghttp2,1.69.0,,,,,Valid: CVE affects nghttp2 through 1.69.0 and local patches do not address this issue
+OSV-2025-219,False,openjpeg,2.5.4,,,,,Valid: OSV affected-version list includes OpenJPEG 2.5.4 and local patches do not address this issue
+(OSV-2022-1188|OSV-2022-1201|OSV-2023-395),False,opensc,0.27.1,,,,,Valid: OSV affected-version lists include OpenSC 0.27.1 and local patches do not address these issues
+(CVE-2026-14456|CVE-2026-54876),False,openssl,,(3\.6\.3|4\.0\.1),,,,Valid: CVE records affect OpenSSL 3.6.3 and 4.0.1 and local derivations do not carry fixes
+OSV-2023-197,False,p11-kit,0.26.2,,,,,Valid: OSV affected-version list includes p11-kit 0.26.2 and local patches do not address this issue
+(CVE-2026-56288|CVE-2026-56289),False,patch,2.8,,,,,Valid: CVE records affect GNU patch 2.8.0 and local patches do not address these issues
+(CVE-2026-13221|CVE-2026-15534|CVE-2026-4176|CVE-2026-57432),False,perl,5.42.0,,,,,Valid: CVE records affect Perl 5.42.0 or broader pre-5.44 ranges and local patches do not address these issues
+(CVE-2026-13221|CVE-2026-4176|CVE-2026-57432),False,perl,5.42.0-env,,,,,Valid: environment derivation contains Perl 5.42.0 affected by these CVEs; only binlore artifacts are whitelisted as buildtime-only
+CVE-2026-13346,False,pip,20.3.4-source,,,,,Valid: CVE affects pip before 26.2 and local source derivation is 20.3.4 with no reviewed mitigation
+(CVE-2026-15308|CVE-2026-15806|CVE-2026-17084|CVE-2026-18503|CVE-2026-19672|CVE-2026-6019|CVE-2026-6879|CVE-2026-7210),False,python,3.14.4,,,,,Valid: CVE Program CPython affected ranges include 3.14.4 and this derivation has no security backports
+(CVE-2025-15367|CVE-2026-15806|CVE-2026-17084|CVE-2026-19672),False,python3,3.14.7,,,,,Valid: CVE Program CPython affected ranges still include 3.14.7 for these issues; only CVEs with a 3.14.7 fixed boundary are whitelisted separately
+CVE-2022-43357,False,sassc,3.6.2,,,,,Valid: CVE affects sassc and libsass code paths used by sassc 3.6.2 and local patches do not address this issue
+CVE-2018-1000035,False,unzip,6.0,,,,,Valid: CVE affects Info-ZIP UnZip <=6.00 and local 6.0 is in the affected range
+(CVE-2026-73070|CVE-2026-73071|CVE-2026-73072|CVE-2026-73073|CVE-2026-73074|CVE-2026-73075|CVE-2026-73076|CVE-2026-73077|CVE-2026-73078),False,vim,9.2.0782,,,,,Valid: CVE records affect Vim versions newer than 9.2.0782 fixed only by later 9.2 patches and local patches do not address these issues
+CVE-2020-27748,False,xdg-utils,1.2.1,,,,,Valid: CVE affects xdg-email in xdg-utils 1.1.0-rc1 and newer and local patches do not address this issue
 CVE-2024-13278,True,Diff,1.0.2,,,,Incorrect package: NVD record affects the Drupal Diff module; scanned component is the Haskell Diff package.
 CVE-2021-28794,True,ShellCheck,0.11.0,,,,Incorrect package: NVD record affects an unofficial Visual Studio Code ShellCheck extension; scanned component is the ShellCheck CLI.
 CVE-2024-9410,True,ada,3.4.4,,,,Incorrect package: NVD record affects the Ada.cx Sentry service component; scanned component is the ada library.
@@ -42,6 +86,15 @@ CVE-2015-7777,True,void,0.7.4,,,,Incorrect package: NVD record affects the Void 
 (CVE-2021-4235|CVE-2022-3064),True,yaml,,0\.11\.11\.2(-r2\.cabal)?,,,Incorrect package: NVD records affect the Go yaml.v2 package and not the Haskell yaml package.
 (CVE-2002-0059|CVE-2022-37434|CVE-2023-45853|CVE-2023-6992),True,zlib,0.7.1.1,,,,Incorrect package: scanned component is the Haskell zlib package and NVD records affect C zlib or the Cloudflare zlib fork.
 CVE-2023-6992,True,zlib,1.3.2,,,,Incorrect package: NVD record affects the Cloudflare zlib fork and not upstream zlib 1.3.2.
+CVE-2026-16554,True,cjson,1.7.19,,,,Not applicable to this scan: CVE is limited to 32-bit cJSON builds and CI targets are x86_64-linux or aarch64-linux
+(CVE-2010-1236|CVE-2010-3262),True,flock,0.4.0,,,,Incorrect package: CVE records affect the discontinued Flock Browser and WebKit code instead of the Haskell flock package
+(CVE-2023-50967|CVE-2024-28176),True,jose,0.11,,,,Incorrect package: scanned component is the Haskell jose package and the CVE records do not identify Haskell jose as the affected implementation
+CVE-2022-43410,True,mercurial,,7\.2\.2(-vendor(-staging)?)?,,,Incorrect package: CVE affects the Jenkins Mercurial Plugin and scanned components are Mercurial SCM or vendored source derivations
+CVE-2026-50151,True,oras,,1\.3\.3(-go-modules)?,,,Not affected: ORAS CLI 1.3.3 vendors oras-go v2.6.2 which is outside the CVE affected range below 2.6.1
+(CVE-2012-0871|CVE-2013-4327|CVE-2013-4391|CVE-2013-4392|CVE-2013-4393|CVE-2013-4394|CVE-2016-7795|CVE-2017-18078|CVE-2017-9217|CVE-2018-1049|CVE-2018-15686|CVE-2018-15688|CVE-2018-16864|CVE-2018-16865|CVE-2018-16888|CVE-2018-6954|CVE-2019-20386|CVE-2019-3842|CVE-2019-3843|CVE-2019-3844|CVE-2020-13776|CVE-2020-1712|CVE-2021-33910|CVE-2022-3821|CVE-2023-26604|CVE-2025-4598|CVE-2026-40225),True,systemd,2.4.0,,,,Incorrect package: scanned component is the Haskell systemd bindings package and the CVE records affect the systemd service manager implementation
+(CVE-2026-41907|CVE-2026-41988),True,uuid,1.3.16.1,,,,Incorrect package: CVE records affect the uuidjs npm package and scanned component is the Haskell uuid package
+CVE-2021-33880,True,websockets,,0\.13\.0\.0(-r6\.cabal)?,,,Incorrect package: CVE affects Python aaugustin websockets before 9.1 and scanned component is the Haskell websockets package
+CVE-2023-26115,True,word-wrap,0.5,,,,Incorrect package: CVE affects the npm and WebJars word-wrap package and scanned component is the Haskell word-wrap package
 CVE-2024-9410,True,ada,3.4.4,,3.4.4,3.4.4,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
 CVE-2018-13162,True,alex,3.5.4.2,,3.5.4.2,3.5.4.2,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
 CVE-2021-43138,True,async,2.2.6,,2.2.6,2.2.6,False positive: scanner triage classified the Nixpkgs package/version as not affected based on Repology/upstream package data.
@@ -858,7 +911,7 @@ CVE-2026-55655,True,openssh,10.5p1,,,,"Downstream/product mismatch: the record a
 CVE-2026-4360,True,python3,3.14.7,,,,Official CPython range ends before 3.14.7; 3.14.7 is the fixed boundary.
 CVE-.*,True,bash,,2\.05b(-builder)?,,,Build-time bootstrap artifact: bash 2.05b bootstrap derivations are build-closure-only artifacts; runtime bash 5.x rows remain active.
 CVE-.*,True,gcc,,4\.6\.4,,,Build-time bootstrap artifact: gcc 4.6.4 bootstrap compiler derivations are build-closure-only artifacts; current gcc rows remain active.
-CVE-.*,True,go,,.*-linux-amd64-bootstrap,,,Build-time bootstrap artifact: Go linux-amd64 bootstrap toolchain derivations are build-closure-only artifacts; non-bootstrap Go rows remain active.
+CVE-.*,True,go,,.*-linux-(amd64|arm64)-bootstrap,,,Build-time bootstrap artifact: Go linux-amd64 and linux-arm64 bootstrap toolchain derivations are build-closure-only artifacts; non-bootstrap Go rows remain active.
 CVE-.*,True,gzip,,1\.2\.4,,,Build-time bootstrap artifact: gzip 1.2.4 bootstrap derivations are build-closure-only artifacts; current gzip rows remain active.
 CVE-.*,True,python,,2\.7\..*,,,Build-time bootstrap artifact: Python 2.7 derivations are build-closure-only artifacts; Python 3 rows remain active.
 CVE-.*,True,glib,,.*-binlore,,,Generated buildtime-only artifact: binlore output is present with vulnxscan --buildtime but absent from the runtime closure scan.
