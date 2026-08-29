@@ -246,8 +246,9 @@ The ghaf-infra repository has its own GitHub Actions workflows
   to audit workflow files for security issues.
 - `dependency-review.yml` — blocks PRs that introduce known-vulnerable
   dependencies.
-- `flakevuln.yml` — scheduled and manual vulnerability scanning for
-  `nixosConfigurations.hetzci-prod.config.system.build.toplevel`.
+- `flakevuln.yml` — scheduled and manual vulnerability scanning for the
+  ci-prod environment: the `hetzci-prod` controller, its `hetz86-1` (x86) and
+  `hetzarm` (aarch64) remote builders, and `ghaf-auth`.
 - `scorecards.yml` — [OSSF Scorecard](https://securityscorecards.dev/)
   supply chain security analysis.
 
