@@ -19,7 +19,7 @@ permissions:
 
 jobs:
     scan:
-        name: Scan hetzci-prod vulnerabilities
+        name: Scan ci-prod vulnerabilities
         if: ${{ github.repository == 'tiiuae/ghaf-infra' }}
         runs-on: ubuntu-latest
         timeout-minutes: 180
@@ -34,22 +34,21 @@ jobs:
               with:
                   persist-credentials: false
 
-            - name: Run flakevuln
-              uses: tiiuae/flakevuln@bcee94a5eaa101f6bd65c349696ad4e40894b2fa
+            # One invocation covers every host, so they share the nixpkgs PR
+            # rate limit and the HTTP response cache in-process, and pay the
+            # Nix install, action build, and cache cycle once.
+            #
+            # The complete reports and findings.json are in the run's artifact.
+            - name: Scan ci-prod hosts
+              uses: tiiuae/flakevuln@71bf950f0c438901558a23bac642dbbeb541a143
               with:
                   targets: |
                       nixosConfigurations.hetzci-prod.config.system.build.toplevel
+                      nixosConfigurations.hetz86-1.config.system.build.toplevel
+                      nixosConfigurations.hetzarm.config.system.build.toplevel
+                      nixosConfigurations.ghaf-auth.config.system.build.toplevel
                   unstable-ref: github:NixOS/nixpkgs/nixos-unstable
                   whitelist: .github/flakevuln/manual_analysis.csv
                   nixprs: true
                   nixprs-exclude-packages: linux
                   nixtracker: true
-
-            - name: Upload flakevuln findings
-              if: ${{ always() }}
-              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-              with:
-                  name: flakevuln-findings-${{ github.run_id }}
-                  path: ${{ runner.temp }}/flakevuln/findings.json
-                  if-no-files-found: warn
-                  retention-days: 30
