@@ -277,9 +277,9 @@
   },
   {
     "name": "jackson2-api",
-    "version": "2.22.1-443.vc91f592333c4",
-    "url": "https://updates.jenkins.io/download/plugins/jackson2-api/2.22.1-443.vc91f592333c4/jackson2-api.hpi",
-    "sha256": "06d4yx3dya6i57rzn35vzzq7z6sgf540nnk524fmhbyfi614h8l7"
+    "version": "2.22.2-445.vdc613f1d8012",
+    "url": "https://updates.jenkins.io/download/plugins/jackson2-api/2.22.2-445.vdc613f1d8012/jackson2-api.hpi",
+    "sha256": "05dyyghyr7vmlfcl935520sir6gd29dwy09jd47wv4ykcilmbn2a"
   },
   {
     "name": "jackson3-api",
@@ -385,9 +385,9 @@
   },
   {
     "name": "junit",
-    "version": "1422.v580465cc5d44",
-    "url": "https://updates.jenkins.io/download/plugins/junit/1422.v580465cc5d44/junit.hpi",
-    "sha256": "1kl9irmxpi2qq2si0dw5ipns34kyzycbp7smcbsji2y1scr2s7gj"
+    "version": "1424.vc64a_edde7777",
+    "url": "https://updates.jenkins.io/download/plugins/junit/1424.vc64a_edde7777/junit.hpi",
+    "sha256": "0j24igw7h00as6kd1a49n0nnvx6ainjivs697a2ycjiyarp15mri"
   },
   {
     "name": "lockable-resources",
@@ -415,9 +415,9 @@
   },
   {
     "name": "matrix-project",
-    "version": "905.vcc6831e8760a_",
-    "url": "https://updates.jenkins.io/download/plugins/matrix-project/905.vcc6831e8760a_/matrix-project.hpi",
-    "sha256": "0p3a238bawpdsm8pj0zk0070pix9lzpm9gnz2jcsk32gj7b670jq"
+    "version": "917.v22eda_817646e",
+    "url": "https://updates.jenkins.io/download/plugins/matrix-project/917.v22eda_817646e/matrix-project.hpi",
+    "sha256": "1laa3xc8kxnnzbkcbbby7hnvbirwpfr9n40l8rpl2v8qfvmjjr9c"
   },
   {
     "name": "maven-plugin",
