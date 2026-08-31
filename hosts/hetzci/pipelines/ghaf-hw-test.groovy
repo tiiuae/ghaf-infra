@@ -423,7 +423,7 @@ pipeline {
           when { expression { env.INSTALLER_FLOW == 'true'} }
           steps {
             script {
-              if (env.INSTALLER_FLOW == 'true' && env.DEVICE_TAG == "darter-pro") {
+              if (env.INSTALLER_FLOW == 'true') {
                 ghaf_robot_test('break')
               }
               ghaf_robot_test('relay-turnoff')
