@@ -1,54 +1,47 @@
 # SPDX-FileCopyrightText: 2022-2026 TII (SSRC) and the Ghaf contributors
 #
 # SPDX-License-Identifier: Apache-2.0
-
 name: flakevuln
-
 on:
-    workflow_dispatch:
-    schedule:
-        # 02:33 EET every day, expressed as UTC
-        - cron: "33 0 * * *"
-
+  workflow_dispatch:
+  schedule:
+    # 02:33 EET every day, expressed as UTC
+    - cron: "33 0 * * *"
 concurrency:
-    group: ${{ github.workflow }}.${{ github.event.pull_request.number || github.ref }}
-    cancel-in-progress: true
-
+  group: ${{ github.workflow }}.${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 permissions:
-    contents: read
-
+  contents: read
 jobs:
-    scan:
-        name: Scan ci-prod vulnerabilities
-        if: ${{ github.repository == 'tiiuae/ghaf-infra' }}
-        runs-on: ubuntu-latest
-        timeout-minutes: 180
-        steps:
-            - name: Harden the runner (Audit all outbound calls)
-              uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
-              with:
-                  egress-policy: audit
-
-            - name: Checkout
-              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-              with:
-                  persist-credentials: false
-
-            # One invocation covers every host, so they share the nixpkgs PR
-            # rate limit and the HTTP response cache in-process, and pay the
-            # Nix install, action build, and cache cycle once.
-            #
-            # The complete reports and findings.json are in the run's artifact.
-            - name: Scan ci-prod hosts
-              uses: tiiuae/flakevuln@71bf950f0c438901558a23bac642dbbeb541a143
-              with:
-                  targets: |
-                      nixosConfigurations.hetzci-prod.config.system.build.toplevel
-                      nixosConfigurations.hetz86-1.config.system.build.toplevel
-                      nixosConfigurations.hetzarm.config.system.build.toplevel
-                      nixosConfigurations.ghaf-auth.config.system.build.toplevel
-                  unstable-ref: github:NixOS/nixpkgs/nixos-unstable
-                  whitelist: .github/flakevuln/manual_analysis.csv
-                  nixprs: true
-                  nixprs-exclude-packages: linux
-                  nixtracker: true
+  scan:
+    name: Scan ci-prod vulnerabilities
+    if: ${{ github.repository == 'tiiuae/ghaf-infra' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # One invocation covers every host, so they share the nixpkgs PR
+      # rate limit and the HTTP response cache in-process, and pay the
+      # Nix install, action build, and cache cycle once.
+      #
+      # The complete reports and findings.json are in the run's artifact.
+      - name: Scan ci-prod hosts
+        uses: tiiuae/flakevuln@05c7746d37e90a4ae5ba76f2bbb9a711ad2a43c0
+        with:
+          targets: |
+            nixosConfigurations.hetzci-prod.config.system.build.toplevel
+            nixosConfigurations.hetz86-1.config.system.build.toplevel
+            nixosConfigurations.hetzarm.config.system.build.toplevel
+            nixosConfigurations.ghaf-auth.config.system.build.toplevel
+          unstable-ref: github:NixOS/nixpkgs/nixos-unstable
+          whitelist: .github/flakevuln/manual_analysis.csv
+          nixprs: true
+          nixprs-exclude-packages: linux
+          nixtracker: true
