@@ -81,6 +81,7 @@
         flake-parts.follows = "flake-parts";
         flake-compat.follows = "flake-compat";
         flake-root.follows = "flake-root";
+        nixpkgs.follows = "nixpkgs";
       };
     };
 
