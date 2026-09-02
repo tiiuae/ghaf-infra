@@ -31,11 +31,11 @@
         "sbsigntools": "sbsigntools"
       },
       "locked": {
-        "lastModified": 1788330500,
-        "narHash": "sha256-bUtmzAiH1uuIdDKt0rbJJNIJz8wLtuG9nMFWdUg8YTI=",
+        "lastModified": 1788337590,
+        "narHash": "sha256-4wwxu7N3RSkmklK5X264ti3I3bWlpDkbCteV+NXNb3Y=",
         "owner": "tiiuae",
         "repo": "ci-yubi",
-        "rev": "90a9d7e28ca835f9d58ef02b4a7d501bfdb600e7",
+        "rev": "1af521b64bfb72ecdf22ee82ef2d73857aa37600",
         "type": "github"
       },
       "original": {
