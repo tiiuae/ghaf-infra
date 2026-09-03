@@ -11,7 +11,7 @@ in
     enable = true;
     dataDir = loki_data_dir;
     configuration = {
-      auth_enabled = false;
+      auth_enabled = true; # enables multi-tenancy
       server = {
         http_listen_port = 3100;
         http_listen_address = "127.0.0.1";

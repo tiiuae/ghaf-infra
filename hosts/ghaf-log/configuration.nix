@@ -19,6 +19,7 @@
     openssh
     nginx
     team-devenv
+    team-testers
     user-bmg
   ]);
 
