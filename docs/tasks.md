@@ -69,14 +69,14 @@ Current ghaf-infra targets:
 │ testagent-release     │ testagent-release     │ 172.18.16.32    │
 │ testagent2-prod       │ testagent2-prod       │ 172.18.16.25    │
 │ uae-azureci-az86-1    │ uae-azureci-az86-1    │ 20.46.48.30     │
-│ uae-azureci-dev       │ uae-azureci-dev       │ 20.174.185.164  │
 │ uae-azureci-hetzarm-1 │ uae-azureci-hetzarm-1 │ 91.98.90.243    │
 │ uae-azureci-prod      │ uae-azureci-prod      │ 74.162.68.205   │
+│ uae-azureci-dev       │ uae-azureci-dev       │ 20.174.185.164  │
 │ uae-azureci-registry  │ uae-azureci-registry  │ 40.120.125.69   │
 │ uae-lab-node1         │ uae-lab-node1         │ 172.31.107.42   │
 │ uae-nethsm-gateway    │ uae-nethsm-gateway    │ 172.31.141.51   │
 │ uae-testagent-prod    │ uae-testagent-prod    │ 172.20.16.24    │
-│ uae-testagent2-prod   │ uae-testagent2-prod   │ 172.20.16.25    │
+│ uae-testagent2-prod   │ uae-testagent2-prod   │ 172.20.16.26    │
 ╘═══════════════════════╧═══════════════════════╧═════════════════╛
 
 ```
