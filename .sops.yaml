@@ -277,6 +277,7 @@ creation_rules:
       - *testagent2-prod
       - *testagent-release
       - *nethsm-gateway
+      - *nethsm-gateway-dev
       - *hetzci-dev
       - *hetzci-dbg
       - *hetzci-prod
