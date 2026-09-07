@@ -85,6 +85,10 @@ KEXEC_IMAGES = {
         f"{NIXOS_IMAGES_URL}/nixos-26.05/"
         "nixos-kexec-installer-noninteractive-aarch64-linux.tar.gz"
     ),
+    "hetzarm-dbg-1": (
+        f"{NIXOS_IMAGES_URL}/nixos-26.05/"
+        "nixos-kexec-installer-noninteractive-aarch64-linux.tar.gz"
+    ),
 }
 
 RELEASE_BUILDER_USERS = (

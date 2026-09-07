@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 {
-  pkgs,
   self,
   inputs,
   lib,
@@ -40,9 +39,6 @@
     ramGiB = 30;
     diskGiB = 300;
   };
-
-  # Nixos-anywhere kexec switch fails on hetzner cloud arm VMs without this
-  boot.kernelPackages = pkgs.linuxPackages_latest;
 
   cachix-push = {
     cacheName = "ghaf-dbg";

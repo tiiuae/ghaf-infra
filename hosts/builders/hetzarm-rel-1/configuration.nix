@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 {
-  pkgs,
   self,
   inputs,
   ...
@@ -58,6 +57,4 @@
   nix.settings.trusted-users = [
     "hetzarm-rel-1-builder"
   ];
-  # Nixos-anywhere kexec switch fails on hetzner cloud arm VMs without this
-  boot.kernelPackages = pkgs.linuxPackages_latest;
 }
