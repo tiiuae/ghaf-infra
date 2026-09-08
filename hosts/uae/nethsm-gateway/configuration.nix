@@ -54,7 +54,7 @@
 
   services.nebula.networks."vedenemo".firewall = {
     outbound = lib.mkForce [
-      # allow udp outbound only to hetzner, uae-lab and azureci
+      # allow udp outbound only to hetzner
       {
         port = 4242;
         proto = "udp";

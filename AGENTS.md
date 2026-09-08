@@ -9,10 +9,11 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 This repository is a Nix flake for Ghaf CI/CD infrastructure.
 
 - `hosts/`: host-specific NixOS configs (usually `configuration.nix`, `disk-config.nix`, `secrets.yaml`).
-- `services/`: reusable NixOS service modules (`*/default.nix`).
+- `modules/`: reusable NixOS modules, exported from `modules/default.nix`.
 - `users/`: user and team access definitions (`users/*.nix`, `users/teams/*.nix`).
 - `nix/`: flake modules for devshell, hooks, deployments, apps, and packages.
 - `scripts/`: operational helpers (for build, signing, plugin resolution, user onboarding).
+- `tests/`: Python tests for Invoke tasks and Groovy tests for Jenkins pipelines.
 - `docs/`: operational runbooks (`tasks.md`, `deploy-rs.md`, onboarding docs).
 - `pkgs/`, `keys/`, `slsa/`: custom packages, key material, and provenance definitions.
 
@@ -26,7 +27,7 @@ This repository is a Nix flake for Ghaf CI/CD infrastructure.
 - Nix: format with `nixfmt`; keep module entry files as `default.nix` where practical.
 - Python: format with `ruff format`; lint with `pylint`.
 - Shell: format with `shfmt --indent 2`; validate with `shellcheck`.
-- Keep host/service paths lowercase and hyphenated (for example `hosts/ghaf-monitoring`, `services/remote-build`).
+- Keep host/module paths lowercase and hyphenated (for example `hosts/ghaf-monitoring`, `modules/environment/hetzner-cloud.nix`).
 
 ## Code Style: Prefer Compact, Human-Maintainable Code
 This repository values straightforward, readable code over excessive abstraction.
@@ -80,7 +81,9 @@ Look specifically for:
 Prefer the smallest change that solves the problem cleanly.
 
 ## Testing Guidelines
-There is no standalone unit-test suite; validation is check-driven.
+Python tests live in `tests/test_tasks.py`; Jenkins pipeline tests live in
+`tests/jenkins/`. Both run through the hooks configured in `nix/git-hooks.nix`.
+
 - Run `nix fmt` to catch formatting/lint issues early.
 - Run `nix flake check --option allow-import-from-derivation false --no-build` for checks.
 - For host changes, build the target configuration explicitly with `nix build` and verify affected aliases.

@@ -4,8 +4,10 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 # Using deploy-rs
 
-As an alternative to using `tasks.py` and `invoke deploy` commands,
-the remote hosts are also defined in `nix/deployments.nix` as [deploy-rs](https://github.com/serokell/deploy-rs) nodes.
+Use [deploy-rs](https://github.com/serokell/deploy-rs) to deploy configuration
+changes to existing hosts. Nodes are generated from `hosts/machines.nix` by
+`nix/deployments.nix`. For initial installs and other operational tasks, see
+[tasks.md](./tasks.md).
 
 This makes deploying multiple hosts easier as it can be done with one command.
 `deploy-rs` also has automatic rollback functionality, so the system is rolled back if the configuration fails to activate.
