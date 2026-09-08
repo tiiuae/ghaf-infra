@@ -6,6 +6,10 @@ updates:
       interval: weekly
     cooldown:
       default-days: 4
+    groups:
+      github-actions:
+        patterns:
+          - "*"
 
   - package-ecosystem: gomod
     directory: /pkgs/policy-checker
