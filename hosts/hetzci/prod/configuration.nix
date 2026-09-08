@@ -11,7 +11,6 @@ in
   imports = [
     ./disk-config.nix
     ../common.nix
-    ../jenkins.nix
     ../remote-builders.nix
     ../cloud.nix
     ../auth.nix
@@ -22,24 +21,25 @@ in
   networking.hostName = "hetzci-prod";
   sops.defaultSopsFile = ./secrets.yaml;
 
+  services.ghaf-jenkins = {
+    envType = "prod";
+    url = "https://ci-prod.vedenemo.dev";
+    pipelines = [
+      "ghaf-hw-test-manual"
+      "ghaf-hw-test"
+      "ghaf-main"
+      "ghaf-manual"
+      "ghaf-nightly-perftest"
+      "ghaf-nightly"
+      "ghaf-pre-merge-manual"
+      "ghaf-pre-merge"
+    ];
+    withCachix = false;
+    withRegistryPublish = true;
+    withJiraToken = true;
+  };
+
   hetzci = {
-    jenkins = {
-      envType = "prod";
-      url = "https://ci-prod.vedenemo.dev";
-      pipelines = [
-        "ghaf-hw-test-manual"
-        "ghaf-hw-test"
-        "ghaf-main"
-        "ghaf-manual"
-        "ghaf-nightly-perftest"
-        "ghaf-nightly"
-        "ghaf-pre-merge-manual"
-        "ghaf-pre-merge"
-      ];
-      withCachix = false;
-      withRegistryPublish = true;
-      withJiraToken = true;
-    };
     auth = {
       clientID = "hetzci-prod";
       domain = "ci-prod.vedenemo.dev";

@@ -10,6 +10,7 @@
     zramSwap = ./zramswap.nix;
     nginx = ./nginx.nix;
     monitoring = ./monitoring.nix;
+    jenkins = ./jenkins;
     openssh = ./openssh.nix;
     nebula = ./nebula;
   };

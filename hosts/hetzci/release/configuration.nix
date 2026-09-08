@@ -31,7 +31,6 @@ in
   imports = [
     ./disk-config.nix
     ../common.nix
-    ../jenkins.nix
     ../cloud.nix
     ../auth.nix
     ../signing.nix
@@ -51,21 +50,22 @@ in
     };
   };
 
+  services.ghaf-jenkins = {
+    envType = "release";
+    url = "https://ci-release.vedenemo.dev";
+    nodes.testagentHosts = [ "release" ];
+    pipelines = [
+      "ghaf-hw-test"
+      "ghaf-release-candidate"
+      "ghaf-release-publish"
+    ];
+    withGithubStatus = false;
+    withGithubWebhook = false;
+    withArchiveArtifacts = true;
+    withRegistryPublish = true;
+  };
+
   hetzci = {
-    jenkins = {
-      envType = "release";
-      url = "https://ci-release.vedenemo.dev";
-      nodes.testagentHosts = [ "release" ];
-      pipelines = [
-        "ghaf-hw-test"
-        "ghaf-release-candidate"
-        "ghaf-release-publish"
-      ];
-      withGithubStatus = false;
-      withGithubWebhook = false;
-      withArchiveArtifacts = true;
-      withRegistryPublish = true;
-    };
     auth = {
       clientID = "hetzci-release";
       domain = "ci-release.vedenemo.dev";

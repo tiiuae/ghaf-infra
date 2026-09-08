@@ -5,12 +5,11 @@
   lib,
   config,
   self,
-  machines,
   inputs,
   ...
 }:
 let
-  cfg = config.hetzci.jenkins;
+  cfg = config.services.ghaf-jenkins;
 
   remoteStoresFromBuildMachines = builtins.listToAttrs (
     map (
@@ -84,16 +83,11 @@ let
   );
 in
 {
-  options.hetzci.jenkins = {
+  options.services.ghaf-jenkins = {
+    enable = lib.mkEnableOption "the Ghaf Jenkins controller";
     envType = lib.mkOption {
-      type = lib.types.enum [
-        "dbg"
-        "dev"
-        "prod"
-        "release"
-        "vm"
-      ];
-      description = "The type of environment this is";
+      type = lib.types.str;
+      description = "Environment identifier exposed to Jenkins jobs";
     };
     url = lib.mkOption {
       type = lib.types.str;
@@ -174,7 +168,7 @@ in
       default = false;
     };
   };
-  config = {
+  config = lib.mkIf cfg.enable {
     sops = {
       secrets = lib.mkMerge [
         (lib.mkIf cfg.withCachix {
@@ -385,36 +379,5 @@ in
       };
     };
 
-    # users used by testagents to ssh in and collect their secret
-    users.users = {
-      testagent-dev = {
-        isNormalUser = true;
-        openssh.authorizedKeys.keys = [ machines.testagent-dev.publicKey ];
-      };
-      testagent-dbg = {
-        isNormalUser = true;
-        openssh.authorizedKeys.keys = [ machines.testagent-dbg.publicKey ];
-      };
-      testagent2-prod = {
-        isNormalUser = true;
-        openssh.authorizedKeys.keys = [ machines.testagent2-prod.publicKey ];
-      };
-      testagent-prod = {
-        isNormalUser = true;
-        openssh.authorizedKeys.keys = [ machines.testagent-prod.publicKey ];
-      };
-      testagent-release = {
-        isNormalUser = true;
-        openssh.authorizedKeys.keys = [ machines.testagent-release.publicKey ];
-      };
-      uae-testagent-prod = {
-        isNormalUser = true;
-        openssh.authorizedKeys.keys = [ machines.uae-testagent-prod.publicKey ];
-      };
-      uae-testagent2-prod = {
-        isNormalUser = true;
-        openssh.authorizedKeys.keys = [ machines.uae-testagent2-prod.publicKey ];
-      };
-    };
   };
 }

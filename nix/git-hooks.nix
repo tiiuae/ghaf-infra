@@ -167,13 +167,13 @@
             enable = true;
             name = "groovyc";
             entry = "${pkgs.lib.getExe groovyc-check}";
-            files = "^hosts/hetzci/(pipelines|pipeline-library)/.*\\.groovy$";
+            files = "^modules/jenkins/(pipelines|pipeline-library)/.*\\.groovy$";
           };
           groovy-jenkins-tests = {
             enable = true;
             name = "groovy-jenkins-tests";
             entry = "${pkgs.lib.getExe groovy-jenkins-tests}";
-            files = "^(hosts/hetzci/(pipelines|pipeline-library)/.*\\.groovy|tests/jenkins/.*\\.groovy)$";
+            files = "^(modules/jenkins/(pipelines|pipeline-library)/.*\\.groovy|tests/jenkins/.*\\.groovy)$";
             pass_filenames = false;
           };
         };

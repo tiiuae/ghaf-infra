@@ -5,7 +5,6 @@
   imports = [
     ./disk-config.nix
     ../common.nix
-    ../jenkins.nix
     ../remote-builders.nix
     ../signing.nix
   ];
@@ -14,7 +13,7 @@
   networking.hostName = "hetzci-vm";
   sops.defaultSopsFile = ./secrets.yaml;
 
-  hetzci.jenkins = {
+  services.ghaf-jenkins = {
     envType = "vm";
     url = "http://localhost:8080";
     nodes.testagentHosts = [ ];

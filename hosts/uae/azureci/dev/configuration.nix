@@ -14,7 +14,6 @@
     ../remote-builders.nix
     ../../../hetzci/auth.nix
     ../../../hetzci/common.nix
-    ../../../hetzci/jenkins.nix
     ../../../hetzci/signing.nix
     (modulesPath + "/profiles/qemu-guest.nix")
     inputs.disko.nixosModules.disko
@@ -26,20 +25,20 @@
 
   networking.hostName = "uae-azureci-dev";
 
+  services.ghaf-jenkins = {
+    envType = "dev";
+    url = "https://ci-dev.uaenorth.cloudapp.azure.com";
+    pipelines = [
+      "ghaf-hw-test-manual"
+      "ghaf-hw-test"
+      "ghaf-manual"
+      "g4h-manual"
+    ];
+    withCachix = false;
+    withRegistryPublish = true;
+  };
+
   hetzci = {
-    jenkins = {
-      envType = "dev";
-      pluginsFile = ../../../hetzci/plugins.json;
-      url = "https://ci-dev.uaenorth.cloudapp.azure.com";
-      pipelines = [
-        "ghaf-hw-test-manual"
-        "ghaf-hw-test"
-        "ghaf-manual"
-        "g4h-manual"
-      ];
-      withCachix = false;
-      withRegistryPublish = true;
-    };
     auth = {
       clientID = "azureci-dev";
       domain = "ci-dev.uaenorth.cloudapp.azure.com";

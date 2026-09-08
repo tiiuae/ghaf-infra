@@ -3,7 +3,7 @@
 
 def repoRoot = new File(getClass().protectionDomain.codeSource.location.toURI()).parentFile.parentFile.parentFile
 def pipelineModel = new GroovyShell().parse(
-  new File(repoRoot, 'hosts/hetzci/pipeline-library/vars/pipelineModel.groovy')
+  new File(repoRoot, 'modules/jenkins/pipeline-library/vars/pipelineModel.groovy')
 )
 
 def expectFailure(String messagePart, Closure body) {
