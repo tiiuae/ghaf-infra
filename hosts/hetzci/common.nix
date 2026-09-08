@@ -5,12 +5,14 @@
   pkgs,
   inputs,
   lib,
+  machines,
   options,
   ...
 }:
 {
   imports = [
     self.nixosModules.zramSwap
+    self.nixosModules.jenkins
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
@@ -59,6 +61,8 @@
     ];
   };
 
+  services.ghaf-jenkins.enable = true;
+
   # Tell the Nix evaluator to garbage collect more aggressively
   environment.variables.GC_INITIAL_HEAP_SIZE = "1M";
 
@@ -84,4 +88,36 @@
   networking.firewall.allowedTCPPorts = [
     80
   ];
+
+  # Users used by testagents to connect to Jenkins and collect their secrets.
+  users.users = {
+    testagent-dev = {
+      isNormalUser = true;
+      openssh.authorizedKeys.keys = [ machines.testagent-dev.publicKey ];
+    };
+    testagent-dbg = {
+      isNormalUser = true;
+      openssh.authorizedKeys.keys = [ machines.testagent-dbg.publicKey ];
+    };
+    testagent2-prod = {
+      isNormalUser = true;
+      openssh.authorizedKeys.keys = [ machines.testagent2-prod.publicKey ];
+    };
+    testagent-prod = {
+      isNormalUser = true;
+      openssh.authorizedKeys.keys = [ machines.testagent-prod.publicKey ];
+    };
+    testagent-release = {
+      isNormalUser = true;
+      openssh.authorizedKeys.keys = [ machines.testagent-release.publicKey ];
+    };
+    uae-testagent-prod = {
+      isNormalUser = true;
+      openssh.authorizedKeys.keys = [ machines.uae-testagent-prod.publicKey ];
+    };
+    uae-testagent2-prod = {
+      isNormalUser = true;
+      openssh.authorizedKeys.keys = [ machines.uae-testagent2-prod.publicKey ];
+    };
+  };
 }

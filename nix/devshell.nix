@@ -32,7 +32,7 @@
           echo 1>&2 "Welcome to the development shell!"
           echo ""
           echo "This shell provides following helper commands:"
-          echo " - update-jenkins-plugins hosts/hetzci"
+          echo " - update-jenkins-plugins modules/jenkins"
           echo ""
         '';
 

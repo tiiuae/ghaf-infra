@@ -28,23 +28,12 @@ hosts/hetzci/
 │   ├── disk-config.nix    # disko nix configuration
 │   └── secrets.yaml       # encrypted sops secrets specific to given host
 ...
-├── casc                   # Jenkins CasC (configuration-as-code) modules
-│   ├── auth.yaml          # Composed of smaller modules, optionally
-│   ├── cachix.yaml        # included in the host casc folder by nix options
-│   ├── common.yaml        # based on the features needed in each jenkins host
-│   ...
-├── pipelines              # Jenkins pipelines
-│   ├── ghaf-main.groovy
-│   ├── ghaf-manual.groovy
-│   ...
-├── pipeline-library       # Jenkins shared library
-│   └── vars               # Entry points and shared helper scripts
-│       ├── artifactSupport.groovy
-│       ├── checkoutUtils.groovy
-│       ├── hwTestUtils.groovy
-│       ├── pipelineExecution.groovy
-│       └── pipelineModel.groovy
+├── casc
+│   └── auth.yaml          # Environment-specific authentication policy
 ```
+
+The environment-independent Jenkins service implementation, CasC fragments,
+plugins, pipelines, and shared library live in [`modules/jenkins/`](../../modules/jenkins/).
 
 Pipeline tests live in [`tests/jenkins/`](../../tests/jenkins/) at the
 repository root and run through the `nix fmt` hooks.

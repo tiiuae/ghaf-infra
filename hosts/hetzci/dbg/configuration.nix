@@ -21,7 +21,6 @@ in
   imports = [
     ./disk-config.nix
     ../common.nix
-    ../jenkins.nix
     ../cloud.nix
     ../auth.nix
     ../signing.nix
@@ -34,27 +33,28 @@ in
     "ghaf-dbg"
   ];
 
+  services.ghaf-jenkins = {
+    envType = "dbg";
+    url = "https://ci-dbg.vedenemo.dev";
+    nodes.testagentHosts = [
+      "dev"
+      "prod"
+      "release"
+      "dbg"
+    ];
+    pipelines = [
+      "ghaf-hw-test-manual"
+      "ghaf-hw-test"
+      "ghaf-manual"
+      "ghaf-release-candidate"
+    ];
+    withRegistryPublish = true;
+    withCachix = false;
+    withGithubStatus = false;
+    withGithubWebhook = false;
+  };
+
   hetzci = {
-    jenkins = {
-      envType = "dbg";
-      url = "https://ci-dbg.vedenemo.dev";
-      nodes.testagentHosts = [
-        "dev"
-        "prod"
-        "release"
-        "dbg"
-      ];
-      pipelines = [
-        "ghaf-hw-test-manual"
-        "ghaf-hw-test"
-        "ghaf-manual"
-        "ghaf-release-candidate"
-      ];
-      withRegistryPublish = true;
-      withCachix = false;
-      withGithubStatus = false;
-      withGithubWebhook = false;
-    };
     auth = {
       clientID = "hetzci-dbg";
       domain = "ci-dbg.vedenemo.dev";
