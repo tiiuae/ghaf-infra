@@ -5,7 +5,7 @@ updates:
     schedule:
       interval: weekly
     cooldown:
-      default-days: 4
+      default-days: 7
     groups:
       github-actions:
         patterns:
@@ -16,4 +16,4 @@ updates:
     schedule:
       interval: weekly
     cooldown:
-      default-days: 4
+      default-days: 7
