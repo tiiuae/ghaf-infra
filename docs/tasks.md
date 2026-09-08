@@ -22,13 +22,15 @@ Available tasks:
   install             Install `alias` configuration using nixos-anywhere, deploying host private key.
   install-release     Initialize hetzner release environment
   print-keys          Decrypt host private key, print ssh and age public keys for `alias` config.
+  print-revision      Print the currently deployed git revision on the 'alias' host.
   reboot              Reboot host identified as `alias`, selected aliases, or hosts needing reboot.
   renew-nebula-certificates
                       Renew Nebula host certificates and keys stored in sops.
-  update-sops-files   Update all sops yaml and json files according to .sops.yaml rules.
+  update-sops-files   Update all sops files according to .sops.yaml rules.
 ```
 
-In the following sections, we will explain the intended usage of the most common of the above deployment tasks.
+Most tasks are described below. For `renew-nebula-certificates`, see
+[Renewing host certificates](./nebula.md#renewing-host-certificates).
 
 ## alias-list
 
@@ -63,16 +65,17 @@ Current ghaf-infra targets:
 │ hetzci-prod           │ hetzci-prod           │ 157.180.43.236  │
 │ hetzci-release        │ hetzci-release        │ 95.217.210.252  │
 │ nethsm-gateway        │ nethsm-gateway        │ 192.168.70.11   │
+│ nethsm-gateway-dev    │ nethsm-gateway-dev    │ 192.168.70.2    │
 │ testagent-dbg         │ testagent-dbg         │ 172.18.16.26    │
 │ testagent-dev         │ testagent-dev         │ 172.18.16.33    │
 │ testagent-prod        │ testagent-prod        │ 172.18.16.60    │
 │ testagent-release     │ testagent-release     │ 172.18.16.32    │
 │ testagent2-prod       │ testagent2-prod       │ 172.18.16.25    │
 │ uae-azureci-az86-1    │ uae-azureci-az86-1    │ 20.46.48.30     │
+│ uae-azureci-dev       │ uae-azureci-dev       │ 20.174.185.164  │
 │ uae-azureci-hetzarm-1 │ uae-azureci-hetzarm-1 │ 91.98.90.243    │
 │ uae-azureci-prod      │ uae-azureci-prod      │ 74.162.68.205   │
-│ uae-azureci-dev       │ uae-azureci-dev       │ 20.174.185.164  │
-│ uae-azureci-registry  │ uae-azureci-registry  │ 40.120.125.69   │
+│ uae-azureci-registry  │ uae-azureci-registry  │ 74.162.68.150   │
 │ uae-lab-node1         │ uae-lab-node1         │ 172.31.107.42   │
 │ uae-nethsm-gateway    │ uae-nethsm-gateway    │ 172.31.141.51   │
 │ uae-testagent-prod    │ uae-testagent-prod    │ 172.20.16.24    │
@@ -93,7 +96,7 @@ Host 65.21.20.242
     IdentityFile /path/to/my/private_key
 ```
 
-Since `task.py` internally uses ssh when accessing hosts, the above example configuration would be applied when accessing the `hetzarm` alias.
+Since `tasks.py` internally uses ssh when accessing hosts, the above example configuration would be applied when accessing the `hetzarm` alias.
 
 ## install
 
@@ -119,7 +122,10 @@ Install configuration 'hetz86-rel-2'? [y/N] y
 
 ## update-sops-files
 
-The `update-sops-files` task updates all sops yaml and json files according to the rules in [`.sops.yaml`](../.sops.yaml). The intended use is to update the secrets after adding new hosts, admins, or secrets:
+The `update-sops-files` task runs `sops updatekeys` on every file matched by
+a `path_regex` rule in [`.sops.yaml`](../.sops.yaml), including YAML, JSON,
+and encrypted `.crypt` files. Run it after changing host or admin keys, or
+the rules that determine who can decrypt each file:
 
 ```bash
 inv update-sops-files

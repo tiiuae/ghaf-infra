@@ -7,10 +7,13 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 ![diagram](./nethsm-setup.png)
 
-`nethsm-gateway` runs a daemon provided by
-[pkcs11-proxy](https://github.com/tiiuae/pkcs11-proxy).
+Three gateways run a daemon provided by
+[pkcs11-proxy](https://github.com/tiiuae/pkcs11-proxy): `nethsm-gateway` and
+`nethsm-gateway-dev` in Tampere, and `uae-nethsm-gateway` in the UAE. Each
+connects to its own HSM on an isolated link. See the
+[gateway table](./architecture.md#nethsm-gateways) for addresses.
 
-This daemon is listening on tls port 2345, accessible through the nebula tunnel
+Each daemon listens on TLS port 2345, accessible through the Nebula tunnel
 from the hetzner CI. A library provided by the same project can be used as the
 pkcs11 module, which will proxy the requests to the correct place (configured
 through environment variables).
@@ -20,10 +23,9 @@ The requests are encrypted with a PKS key which comes from the host secrets.
 Signing operations can be done from Hetzner CI, with configured pkcs11-proxy.
 The keys used will be the ones stored on the NetHSM.
 
-The HSM infrastructure serves two independent signing purposes — **SLSA
-signing** (supply chain integrity for disk images and provenance) and **UEFI
-Secure Boot signing** (EFI binary authentication on target hardware). Both use
-the same PKCS#11 proxy but different keys and tools.
+The HSM handles **SLSA signing** (supply chain integrity for disk images and
+provenance) and **UEFI Secure Boot signing** (EFI binary authentication on
+target hardware). Both use the same PKCS#11 proxy but different keys and tools.
 
 ## SLSA Signing
 
@@ -90,14 +92,16 @@ openssl dgst -verify \
 
 UEFI Secure Boot signing ensures that EFI binaries and boot images are
 authenticated by the target hardware's firmware before execution. This is
-separate from SLSA signing — SLSA provides supply chain provenance, while
-Secure Boot provides runtime boot integrity enforced by the UEFI firmware.
+separate from SLSA signing, which records supply chain provenance.
+The UEFI firmware checks Secure Boot signatures during boot.
 
 ### Keys
 
 The Secure Boot key hierarchy (PK, KEK, DB) is stored on the HSM. The
-`get-secureboot-keys` command on `nethsm-gateway` fetches the certificates
-and generates the signed auth files needed for enrollment:
+`get-secureboot-keys` command is installed on all three gateways and fetches
+the certificates from the HSM that gateway is connected to, generating the
+signed auth files needed for enrollment. Run it on the gateway whose HSM
+holds the keys you need, `nethsm-gateway` for production:
 
 ```sh
 get-secureboot-keys /path/to/output
@@ -112,10 +116,10 @@ The public certificates used for build-time signing are distributed via the
 Jenkins controllers have the following UEFI signing tools available
 (from the `ci-yubi` flake input and `hosts/hetzci/signing.nix`):
 
-- `uefisign` — sign individual EFI binaries
-- `uefisigniso` — sign EFI binaries within ISO images
-- `uefisign-simple` — simplified wrapper for common signing operations
-- `systemd-sbsign` — systemd's built-in sbsign tool for PE binary signing
+- `uefisign`: sign individual EFI binaries
+- `uefisigniso`: sign EFI binaries within ISO images
+- `uefisign-simple`: simplified wrapper for common signing operations
+- `systemd-sbsign`: systemd's built-in sbsign tool for PE binary signing
 
 These tools use the same PKCS#11 proxy connection as SLSA signing to access
 the HSM keys.

@@ -10,7 +10,8 @@ This repository declaratively defines the NixOS configuration for the [Ghaf](htt
 ## Overview
 
 The infrastructure includes:
-- **Jenkins CI environments** (prod, dev, release) hosted at Hetzner
+
+- **Jenkins CI environments** (prod, dev, dbg, release) hosted at Hetzner
 - **Multi-architecture remote builders** for x86_64 and aarch64
 - **On-prem test agents** with connected hardware devices
 - **Supporting services**: monitoring, logging, authentication, [Nebula](./docs/nebula.md) overlay network, [NetHSM](./docs/nethsm.md) hardware signing, and an OCI container registry
@@ -27,7 +28,7 @@ Clone this repository:
 ❯ cd ghaf-infra
 ```
 
-Bootstrap nix shell with the required dependencies:
+Enter the development shell:
 
 ```bash
 ❯ nix develop
@@ -39,18 +40,20 @@ All commands referenced in the documentation are executed inside the nix-shell.
 
 The dev shell includes pre-commit hooks that run automatically on
 `git commit`. See [`nix/git-hooks.nix`](./nix/git-hooks.nix) for the
-full list. To run them manually against all files:
+full list. To run the hooks manually:
 
 ```bash
 nix fmt
 ```
 
-To evaluate all Nix expressions and validate NixOS configurations without
-building derivations (catches syntax errors, type mismatches, and missing
-attributes):
+This includes the Python tests in `tests/test_tasks.py` and the Jenkins
+pipeline tests in `tests/jenkins/`. Most hooks check all files; pylint checks
+only changed Python files.
+
+To evaluate the flake without building derivations, using the same command as CI:
 
 ```bash
-nix flake check --no-build
+nix flake check --option allow-import-from-derivation false --no-build
 ```
 
 To run the full check suite including builds:
@@ -67,43 +70,49 @@ ghaf-infra
 ├── hosts/              # NixOS host configurations
 │   ├── builders/       # Remote builder machines
 │   ├── hetzci/         # Jenkins CI environments (see hetzci/README.md)
+│   ├── nethsm-gateway/ # Tampere signing gateways and shared configuration
 │   ├── testagent/      # On-prem test agents
+│   ├── uae/            # UAE CI, test agents, and signing gateway
 │   ├── ghaf-*/         # Supporting services (monitoring, auth, registry, etc.)
 │   └── machines.nix    # Canonical host inventory (modules, systems, deploy metadata, IPs, keys)
+├── keys/               # Signing public keys and certificates
+├── modules/            # Shared NixOS modules
 ├── nix/                # Flake plumbing (deployments, apps, git-hooks)
+├── pkgs/               # Custom packages
 ├── scripts/            # Operational scripts
-├── services/           # Shared NixOS service modules
+├── slsa/               # Provenance definitions and attestation policies
+├── tests/              # Python and Jenkins pipeline tests
 ├── users/              # Admin user configurations
 └── tasks.py            # Invoke tasks (see docs/tasks.md)
 ```
 
 ## Documentation
 
-- [Architecture overview](./docs/architecture.md) — how all the pieces fit together
-- [Adding a new host](./docs/adding-a-host.md) — step-by-step runbook for onboarding a host
-- [Deployment tasks](./docs/tasks.md) — install, reboot, and other operational tasks
-- [Deploying with deploy-rs](./docs/deploy-rs.md) — how to deploy configuration changes
-- [Monitoring](./docs/monitoring.md) — Grafana and Prometheus setup
-- [Nebula overlay network](./docs/nebula.md) — network connectivity between hosts
-- [NetHSM hardware signing](./docs/nethsm.md) — hardware-backed signing
-- [Jenkins authentication](./docs/jenkins-authentication.md) — Jenkins auth setup
-- [Jenkins test agents](./docs/jenkins-testagents.md) — on-prem test agents
-- [Jenkins CI development](./hosts/hetzci/README.md) — developing the CI environment
+- [Architecture overview](./docs/architecture.md): how all the pieces fit together
+- [Adding a new host](./docs/adding-a-host.md): host configuration and first install
+- [Deployment tasks](./docs/tasks.md): install, reboot, and other operational tasks
+- [Deploying with deploy-rs](./docs/deploy-rs.md): how to deploy configuration changes
+- [Monitoring](./docs/monitoring.md): Grafana and Prometheus setup
+- [Nebula overlay network](./docs/nebula.md): network connectivity between hosts
+- [NetHSM hardware signing](./docs/nethsm.md): hardware-backed signing
+- [Jenkins authentication](./docs/jenkins-authentication.md): Jenkins auth setup
+- [Jenkins test agents](./docs/jenkins-testagents.md): on-prem test agents
+- [Jenkins CI development](./hosts/hetzci/README.md): developing the CI environment
 
 ## Common Tasks
 
-- **Deploy configuration changes** — [deploy-rs](./docs/deploy-rs.md)
-- **Add a new host** — [adding a host](./docs/adding-a-host.md)
-- **Add a remote builder user** — add their SSH key to
+- **Deploy configuration changes**: [deploy-rs](./docs/deploy-rs.md)
+- **Add a new host**: [adding a host](./docs/adding-a-host.md)
+- **Add a remote builder user**: add their SSH key to
   [developers.nix](./hosts/builders/developers.nix), then deploy
-- **Onboard a new admin** — add their user to [users/](./users/),
+- **Onboard a new admin**: add their user to [users/](./users/),
   optionally add their age key to [.sops.yaml](.sops.yaml) and run
   [`inv update-sops-files`](./docs/tasks.md#update-sops-files), then deploy
-- **Manage secrets** — [secrets management](./docs/architecture.md#secrets-management)
-- **Install, reboot, and other operational tasks** — [tasks](./docs/tasks.md)
+- **Manage secrets**: [secrets management](./docs/architecture.md#secrets-management)
+- **Install, reboot, and other operational tasks**: [tasks](./docs/tasks.md)
 
 **Note**: Hosts may be reinstalled at any time. Do not store important
-data outside the configurations in this repository — including in `/home`
+data outside the configurations in this repository, including in `/home`
 directories on the hosts.
 
 ## License

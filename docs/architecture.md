@@ -19,31 +19,31 @@ sections below group hosts by role and describe how they relate to one another.
 
 ### Jenkins Controllers
 
-Four Jenkins controller instances serve different stages of the development
+Four Hetzner Jenkins controllers serve different stages of the development
 lifecycle. Each runs behind an OAuth2 Proxy that authenticates users via
 ghaf-auth and exposes a public web UI over Caddy with ACME TLS.
 
 | Host | URL | Purpose |
 |---|---|---|
-| `hetzci-prod` | ci-prod.vedenemo.dev | Production CI — runs on every push and PR to Ghaf |
-| `hetzci-dev` | ci-dev.vedenemo.dev | Development CI — for CI and hardware-test development |
-| `hetzci-release` | ci-release.vedenemo.dev | Release CI — ephemeral, re-installed per release cycle |
-| `hetzci-dbg` | ci-dbg.vedenemo.dev | Debug CI — isolated controller/builder environment for troubleshooting |
+| `hetzci-prod` | ci-prod.vedenemo.dev | Production CI: runs on every push and PR to Ghaf |
+| `hetzci-dev` | ci-dev.vedenemo.dev | Development CI: for CI and hardware-test development |
+| `hetzci-release` | ci-release.vedenemo.dev | Release CI: ephemeral, re-installed per release cycle |
+| `hetzci-dbg` | ci-dbg.vedenemo.dev | Debug CI: isolated controller/builder environment for troubleshooting |
 
-A fifth configuration, `hetzci-vm`, is not deployed — it runs locally
-(`localhost:8080`) via `nix run .#run-hetzci-vm` as a QEMU VM for developing
-and testing CI changes before deploying to a real environment.
+The `hetzci-vm` configuration runs locally (`localhost:8080`) via
+`nix run .#run-hetzci-vm` as a QEMU VM for developing and testing CI changes
+before deploying to a real environment. It is not a deploy target.
 
 GitHub webhooks deliver push and PR events to `hetzci-prod`. The release
 controller has no webhooks; its pipelines are triggered manually. Each
-controller dispatches Nix builds to its own set of remote builders and
+controller dispatches Nix builds to its configured remote builders and
 connects to test agents over the Nebula overlay.
 
 ### Remote Builders
 
 Builders are high-resource Hetzner machines that compile Nix derivations on
-behalf of Jenkins controllers, GitHub Actions, and individual developers. Each
-Jenkins controller has a dedicated builder set to isolate workloads.
+behalf of Jenkins controllers, GitHub Actions, and individual developers.
+Prod and dev share builders; release and debug use separate builder sets.
 
 | Host | Arch | Used by |
 |---|---|---|
@@ -57,13 +57,16 @@ Jenkins controller has a dedicated builder set to isolate workloads.
 
 Build results are pushed to three Cachix binary caches:
 
-- **[`ghaf-dev`](https://app.cachix.org/organization/tiiuae/cache/ghaf-dev)** — populated by prod/dev CI on every PR authored by a `tiiuae`
-  organization member. This is the main cache used during day-to-day
-  development.
-- **[`ghaf-dbg`](https://app.cachix.org/organization/tiiuae/cache/ghaf-dbg)** — populated by the debug controller/builders and consumed by those
+- **[`ghaf-dev`](https://app.cachix.org/organization/tiiuae/cache/ghaf-dev)**:
+  the main development cache. The `cachix-push` service on `hetz86-1` and
+  `hetzarm` uploads new store paths, subject to the image and referrer filters
+  in `hosts/builders/cachix-push.sh`. Since `hetzarm` also serves GitHub
+  Actions and developer builds, the cache can contain their outputs too.
+  The push service does not check PR authorship.
+- **[`ghaf-dbg`](https://app.cachix.org/organization/tiiuae/cache/ghaf-dbg)**: populated by the debug controller/builders and consumed by those
   hosts, keeping dbg-published results isolated from the main development
   cache.
-- **[`ghaf-release`](https://app.cachix.org/organization/tiiuae/cache/ghaf-release)** — populated exclusively by the release environment. The
+- **[`ghaf-release`](https://app.cachix.org/organization/tiiuae/cache/ghaf-release)**: populated exclusively by the release environment. The
   ephemeral release controller and builders pull earlier build results from this
   cache so that only changed derivations need to be rebuilt.
 
@@ -84,10 +87,10 @@ device, effectively acting as a lock for each piece of hardware.
 
 Each agent also runs:
 
-- [BrainStem](https://acroname.com/software/brainstem-development-kit) — CLI
+- [BrainStem](https://acroname.com/software/brainstem-development-kit): CLI
   tools and udev rules for controlling Acroname programmable USB hubs (used for
   power-cycling and USB switching of test devices)
-- `policy-checker` — a Go wrapper around `verify-signature` that validates SLSA
+- `policy-checker`: a Go wrapper around `verify-signature` that validates SLSA
   provenance and image signatures before flashing
 
 Agents expose relay-board metrics (port 8000) and push logs to Loki via Alloy.
@@ -103,17 +106,17 @@ They are monitored by `ghaf-monitoring` through the Nebula overlay.
 | `ghaf-lighthouse` | Nebula lighthouse | Overlay network discovery and DNS for `sumu.vedenemo.dev` |
 | `ghaf-registry` | [Zot](https://zotregistry.dev/) OCI registry | Container image registry (registry.vedenemo.dev), OIDC-authenticated via ghaf-auth |
 | `ghaf-webserver` | Nginx | Static web content (vedenemo.dev) |
-| `ghaf-fleetdm` | [Fleet](https://fleetdm.com/) (fleetdm.vedenemo.dev) | Device management server for Ghaf end-devices — test agents carry enrollment credentials (via sops) so that Ghaf images flashed during CI testing can register with Fleet |
+| `ghaf-fleetdm` | [Fleet](https://fleetdm.com/) (fleetdm.vedenemo.dev) | Device management server for Ghaf end-devices. Test agents carry enrollment credentials (via sops) so that Ghaf images flashed during CI testing can register with Fleet |
 
 ### NetHSM Gateways
 
 CI builds use hardware security modules (HSMs) for two independent signing
 purposes:
 
-- **SLSA signing** — disk images and provenance files are signed for supply
+- **SLSA signing**: disk images and provenance files are signed for supply
   chain integrity. This uses `openssl` with ECDSA/EDDSA keys stored on the
   NetHSM.
-- **UEFI Secure Boot signing** — EFI binaries and boot images are signed so
+- **UEFI Secure Boot signing**: EFI binaries and boot images are signed so
   they pass Secure Boot verification on target hardware. This uses
   `uefisign`/`systemd-sbsign` with RSA keys stored on the HSM.
 
@@ -130,8 +133,9 @@ signing operations without direct access to the HSM.
 
 | Host | Location | NetHSM address |
 |---|---|---|
-| `nethsm-gateway` | Tampere office | 192.168.70.10 (isolated ethernet) |
-| `uae-nethsm-gateway` | UAE site | 172.31.141.51 (isolated sectech vlan in masdar) |
+| `nethsm-gateway` | Tampere office | 10.255.255.1 (isolated link per gateway) |
+| `nethsm-gateway-dev` | Tampere office | 10.255.255.1 (isolated link per gateway) |
+| `uae-nethsm-gateway` | UAE site | 192.168.70.20 (isolated ethernet) |
 
 Each gateway runs a `pkcs11-proxy` daemon on a TLS port reachable from the
 Nebula network. Requests are encrypted with a host-specific key from sops
@@ -160,16 +164,16 @@ Changes to the Ghaf repository trigger two parallel build paths:
 
 ### Jenkins Pipeline
 
-1. **Trigger** — a push or PR to the [Ghaf](https://github.com/tiiuae/ghaf)
+1. **Trigger**: a push or PR to the [Ghaf](https://github.com/tiiuae/ghaf)
    repo sends a GitHub webhook to the **prod** Jenkins controller.
-2. **Build** — Jenkins dispatches Nix builds to its dedicated remote builders
+2. **Build**: Jenkins dispatches Nix builds to the shared prod/dev builders
    (`hetz86-1`, `hetzarm`). [sbomnix](https://github.com/tiiuae/sbomnix)
    generates SBOMs and SLSA provenance on the controller, and build
    artifacts are signed via the [NetHSM](#nethsm-gateways).
-3. **Test** — built images are deployed to on-prem test agents over the Nebula
+3. **Test**: built images are deployed to on-prem test agents over the Nebula
    overlay. Each agent houses physical hardware devices and runs one Jenkins
    agent service per test device.
-4. **Results** — test results flow back to Jenkins and build status is
+4. **Results**: test results flow back to Jenkins and build status is
    reported on the GitHub PR.
 
 The **release** environment is ephemeral: it is fully re-provisioned with
@@ -193,11 +197,10 @@ Pushes and PRs to Ghaf `main` also trigger a
 [GitHub Actions workflow](https://github.com/tiiuae/ghaf/blob/main/.github/workflows/build.yml)
 that compiles a matrix of build targets across x86_64 and aarch64. The workflow
 uses `nix-fast-build --remote` over SSH to offload compilation to
-`hetz86-builder` and `hetzarm` — the same shared builders available for
-developer remote builds. This path verifies that targets build successfully but
-does not run hardware tests. This path exists primarily because it integrates
-naturally with the developer workflow — build status appears directly on PRs
-and commits in GitHub without requiring access to Jenkins.
+`hetz86-builder` and `hetzarm`, the shared builders available for developer
+remote builds. This workflow checks builds without running hardware tests.
+Build status appears directly on PRs and commits in GitHub without requiring
+access to Jenkins.
 
 ### Release artifact storage
 
@@ -229,34 +232,37 @@ The ghaf-infra repository has its own GitHub Actions workflows
 
 **PR and push checks:**
 
-- `check.yml` — runs `nix flake check` on PRs and pushes to main
-  (fast syntax and lint gate).
-- `test-ghaf-infra.yml` — builds all NixOS configurations for x86_64 and
-  aarch64 using remote builders.
-- `authorize.yml` — reusable authorization workflow. PRs from `tiiuae` org
+- `check.yml`: runs `nix flake check` on PRs and pushes to main
+  with `--option allow-import-from-derivation false --no-build` (evaluation only).
+- `test-ghaf-infra.yml`: builds all NixOS configurations for x86_64 and
+  aarch64 using remote builders, and runs the pre-commit checks on x86_64.
+- `authorize.yml`: reusable authorization workflow. PRs from `tiiuae` org
   members are auto-approved; external PRs require manual approval before
   CI runs.
-- `warn-on-workflow-changes.yml` — intentionally fails if `authorize.yml`
+- `warn-on-workflow-changes.yml`: intentionally fails if `authorize.yml`
   or `test-ghaf-infra.yml` are modified in a PR, since those changes only
   take effect after merge.
 
-**Security scanning:**
+**Security scanning and attestations:**
 
-- `actions-security-analysis.yml` — runs [zizmor](https://woodruffw.github.io/zizmor/)
+- `source-vsa.yml`: issues Source Verification Summary Attestations (VSAs)
+  on pushes to main using `slsa/source-vsa-policy.yaml`. It uses GitHub OIDC
+  (`id-token: write`) for signing and publishes the attestations to GHCR.
+- `actions-security-analysis.yml`: runs [zizmor](https://woodruffw.github.io/zizmor/)
   to audit workflow files for security issues.
-- `dependency-review.yml` — blocks PRs that introduce known-vulnerable
+- `dependency-review.yml`: blocks PRs that introduce known-vulnerable
   dependencies.
-- `flakevuln.yml` — scheduled and manual vulnerability scanning for the
+- `flakevuln.yml`: scheduled and manual vulnerability scanning for the
   ci-prod environment: the `hetzci-prod` controller, its `hetz86-1` (x86) and
   `hetzarm` (aarch64) remote builders, and `ghaf-auth`.
-- `scorecards.yml` — [OSSF Scorecard](https://securityscorecards.dev/)
+- `scorecards.yml`: [OSSF Scorecard](https://securityscorecards.dev/)
   supply chain security analysis.
 
 **Automation:**
 
-- `update-robot-framework.yml` — daily automated PR to bump the
+- `update-robot-framework.yml`: daily automated PR to bump the
   robot-framework flake input.
-- `update-flake-inputs.yml` — weekly automated PR to update all flake inputs
+- `update-flake-inputs.yml`: weekly automated PR to update all flake inputs
   and Jenkins plugin manifests.
 - Dependabot (`.github/dependabot.yml`) keeps GitHub Actions and Go module
   dependencies up to date.
@@ -271,32 +277,38 @@ The infrastructure spans three network tiers:
 | Hetzner internal | `10.0.0.0/24` | Cloud-to-cloud communication between Hetzner hosts |
 | Nebula overlay | `10.42.42.0/24` | Encrypted tunnel connecting Hetzner, Tampere office, and UAE site |
 
-**Nebula** is a peer-to-peer overlay — traffic flows directly between hosts,
-not through the lighthouse. The lighthouse (`ghaf-lighthouse`) is only a
-discovery node. It also serves as a DNS server for the `sumu.vedenemo.dev`
-subdomain, resolving Nebula addresses within the overlay.
+**Nebula** traffic flows directly between hosts, not through the lighthouse.
+The lighthouse (`ghaf-lighthouse`) is only a discovery node. It also serves
+as a DNS server for the `sumu.vedenemo.dev` subdomain, resolving Nebula
+addresses within the overlay.
 
-Not every host joins the Nebula network. Only hosts that need to communicate
-with on-prem or cross-site resources have Nebula IPs: the Jenkins controllers
-(`hetzci-prod`, `hetzci-dev`, `hetzci-release`), `ghaf-monitoring`,
-`ghaf-lighthouse`, all test agents, and the NetHSM gateways. Hosts that only
-operate within Hetzner — such as the remote builders (`hetz86-1`,
-`hetz86-builder`, `hetzarm`, etc.) — rely on public IPs or the Hetzner
-internal network and have no Nebula connectivity. This is why builders cannot
-directly reach on-prem hardware; only the Jenkins controllers bridge that gap.
+Hosts with Nebula addresses are listed under `nebula_ip` in
+`hosts/machines.nix`: the Hetzner Jenkins controllers (`hetzci-prod`,
+`hetzci-dev`, `hetzci-dbg`, `hetzci-release`), the UAE Azure controllers
+(`uae-azureci-prod`, `uae-azureci-dev`), the test agents (`testagent-dbg`,
+`testagent-dev`, `testagent-prod`, `testagent2-prod`, `testagent-release`),
+all three NetHSM gateways, `ghaf-monitoring`, and `ghaf-lighthouse`. The UAE
+test agents are not enrolled in Nebula.
+
+Remote builders (`hetz86-1`, `hetz86-builder`, `hetzarm`, etc.) rely on public
+IPs or the Hetzner internal network and have no Nebula connectivity. They
+cannot reach on-prem hardware through the overlay; Jenkins controllers
+provide that connection.
 
 See [Nebula overlay network](./nebula.md) for certificate management and
 configuration details.
 
 ## Authentication
 
-All user-facing services authenticate through a central OIDC provider:
+Jenkins and the OCI registries use a central OIDC provider; Grafana uses
+GitHub OAuth directly:
 
 - **ghaf-auth** runs [Dex](https://dexidp.io/) with a GitHub connector backed
-  by `tiiuae` organization membership.
+  by the `devenv-fi`, `phone`, and `ci-dev-admins` teams in `tiiuae`.
 - Jenkins controllers sit behind [OAuth2 Proxy](https://oauth2-proxy.github.io/oauth2-proxy/),
   which validates tokens with ghaf-auth before forwarding requests to Jenkins.
-- Grafana and the OCI registry also authenticate via GitHub / OIDC.
+- The OCI registries authenticate through ghaf-auth. Grafana connects to
+  GitHub directly, with its own organization and team restrictions.
 
 See [Jenkins authentication](./jenkins-authentication.md) for the full
 auth flow and secret generation.
@@ -329,14 +341,23 @@ volume.
 
 **Metrics collection** (Prometheus scrape jobs):
 
+The target lists are defined in
+[`hosts/ghaf-monitoring/configuration.nix`](../hosts/ghaf-monitoring/configuration.nix).
+
 | Job | Transport | Hosts |
 |---|---|---|
-| `hetzner-cloud` | Hetzner internal network (direct) | Cloud VMs with `internal_ip` |
-| `hetzner-robot` | SSH proxy (`sshified`) | Dedicated servers without internal network access |
-| `office` / `relay-board` / `nethsm` | Nebula overlay | On-prem test agents, NetHSM gateway |
+| `hetzner-cloud` | Hetzner internal network (direct) | Configured Hetzner Cloud VMs, node-exporter on port 9100 |
+| `hetzner-robot` | SSH proxy (`sshified`) | Configured dedicated servers, node-exporter on port 9100 |
+| `office` | Nebula overlay | Tampere test agents and `nethsm-gateway`, node-exporter on port 9100 |
+| `relay-board` | Nebula overlay | `testagent-dev`, `testagent2-prod`, `testagent-release`, port 8000 |
+| `nethsm` | Nebula overlay | `nethsm-gateway`, `uae-nethsm-gateway`, port 8000 |
+| `zot` | HTTPS with basic auth over the Hetzner internal network | `ghaf-registry`, port 443 |
+| `nebula` | Hetzner internal network or Nebula overlay | All hosts with `nebula_ip`, Nebula metrics on port 9101 |
+| `uae` | Nebula overlay | `uae-azureci-prod`, `uae-nethsm-gateway`, node-exporter on port 9100 |
 
-**Logging** — hosts run Grafana Alloy agents that push systemd journal logs to
-Loki on `ghaf-monitoring`. Alerting is configured to notify a Slack channel.
+**Logging**: hosts with `services.monitoring.logs.enable` run Grafana Alloy
+agents that push systemd journal logs to Loki on `ghaf-monitoring`. Alerting
+is configured to notify a Slack channel.
 
 **`ghaf-log`** (ghaflogs.vedenemo.dev) is a separate Grafana + Loki instance
 for Ghaf device logs, independent from the infrastructure monitoring on
@@ -353,17 +374,17 @@ See [Monitoring](./monitoring.md) for development and debugging details.
 | Method | Use case |
 |---|---|
 | [`deploy-rs`](./deploy-rs.md) | Push configuration changes to running hosts (with automatic rollback) |
-| [`nixos-anywhere`](https://github.com/nix-community/nixos-anywhere) + [`disko`](https://github.com/nix-community/disko) | Initial provisioning — partitions disks and installs NixOS |
+| [`nixos-anywhere`](https://github.com/nix-community/nixos-anywhere) + [`disko`](https://github.com/nix-community/disko) | Initial provisioning: partitions disks and installs NixOS |
 | [`invoke` tasks](./tasks.md) | Operational workflows (`inv install`, `inv reboot`, `inv update-sops-files`, `inv install-release`, etc.) |
 
 ## Cross-References
 
-- [Deployment tasks](./tasks.md) — install, reboot, and other invoke tasks
-- [Deploying with deploy-rs](./deploy-rs.md) — deploying configuration changes
-- [Monitoring](./monitoring.md) — Grafana, Prometheus, and Loki setup
-- [Nebula overlay network](./nebula.md) — overlay network and certificate management
-- [NetHSM hardware signing](./nethsm.md) — PKCS#11 proxy and signing operations
-- [Jenkins authentication](./jenkins-authentication.md) — OIDC auth flow
-- [Jenkins test agents](./jenkins-testagents.md) — on-prem test agent setup
-- [Jenkins CI development](../hosts/hetzci/README.md) — CI environments and pipeline overview
-- [`hosts/machines.nix`](../hosts/machines.nix) — canonical host inventory (modules, systems, deploy metadata, IPs, keys, Nebula addresses)
+- [Deployment tasks](./tasks.md): install, reboot, and other invoke tasks
+- [Deploying with deploy-rs](./deploy-rs.md): deploying configuration changes
+- [Monitoring](./monitoring.md): Grafana, Prometheus, and Loki setup
+- [Nebula overlay network](./nebula.md): overlay network and certificate management
+- [NetHSM hardware signing](./nethsm.md): PKCS#11 proxy and signing operations
+- [Jenkins authentication](./jenkins-authentication.md): OIDC auth flow
+- [Jenkins test agents](./jenkins-testagents.md): on-prem test agent setup
+- [Jenkins CI development](../hosts/hetzci/README.md): CI environments and pipeline overview
+- [`hosts/machines.nix`](../hosts/machines.nix): canonical host inventory (modules, systems, deploy metadata, IPs, keys, Nebula addresses)

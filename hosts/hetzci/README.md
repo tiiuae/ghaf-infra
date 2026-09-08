@@ -46,13 +46,16 @@ hosts/hetzci/
 │       └── pipelineModel.groovy
 ```
 
+Pipeline tests live in [`tests/jenkins/`](../../tests/jenkins/) at the
+repository root and run through the `nix fmt` hooks.
+
 ### Environments
 
-- **`prod`** — production CI for ghaf development. Web UI: https://ci-prod.vedenemo.dev/
-- **`release`** — release CI for ghaf release builds. Web UI: https://ci-release.vedenemo.dev/
-- **`dev`** — development CI for ghaf-infra and hw-test development. Web UI: https://ci-dev.vedenemo.dev/
-- **`dbg`** — debug CI environment.
-- **`vm`** — local QEMU VM for testing changes before deploying. Modified for local use: simplified Caddy config, no Jenkins authentication, auto-login as root.
+- **`prod`**: production CI for ghaf development. Web UI: https://ci-prod.vedenemo.dev/
+- **`release`**: release CI for ghaf release builds. Web UI: https://ci-release.vedenemo.dev/
+- **`dev`**: development CI for ghaf-infra and hw-test development. Web UI: https://ci-dev.vedenemo.dev/
+- **`dbg`**: debug CI environment.
+- **`vm`**: local QEMU VM for testing changes before deploying. Modified for local use: simplified Caddy config, no Jenkins authentication, auto-login as root.
 
 ## Usage
 
@@ -92,7 +95,7 @@ Common options:
 - Guest writes to `/nix/store` do not go to host `/nix/store`; host impact is mainly extra store read activity.
 
 **`--no-host-nix-store`** switches to a fully guest-managed store:
-- Better isolation — host store paths are not mounted into the guest.
+- Better isolation: host store paths are not mounted into the guest.
 - Trade-offs: slower startup (cannot reuse host store paths), guest must fetch more paths itself, higher disk usage.
 
 #### Secrets access

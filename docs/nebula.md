@@ -5,10 +5,8 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 # Nebula overlay network
 
-> [Nebula](https://github.com/slackhq/nebula) is a scalable overlay networking tool with a focus on performance,
-simplicity and security. It lets you seamlessly connect computers anywhere in the world.
-
-Nebula is used in ghaf-infra to create a network between servers in the Tampere office and hetzner.
+[Nebula](https://github.com/slackhq/nebula) connects the servers in Hetzner,
+the Tampere office, and the UAE over an encrypted overlay network.
 
 ![diagram](./nebula-monitoring.png)
 
@@ -29,7 +27,7 @@ sumu.vedenemo.dev. 0  A   65.109.141.136
 ```
 
 Query like `dig monitoring.sumu.vedenemo.dev` will return the nebula address of our monitoring server.
-The address if of course only reachable from within the network.
+The address is only reachable from within the network.
 
 From within the nebula network, and using the nebula address of the lighthouse, you can also query the cert of any host:
 
@@ -46,7 +44,7 @@ The CA key and cert are stored encrypted in
 These can be decrypted with SOPS, given you have the rights:
 
 ```sh
-sops decrypt ca.key
+sops decrypt modules/nebula/ca.key.crypt
 ```
 
 The current keys have been generated with this command:
@@ -76,9 +74,7 @@ The groups can be anything and are used to define firewall rules between hosts.
 ./scripts/nebula-sign.sh -name "testagent-dev.sumu.vedenemo.dev" -ip "10.42.42.11/24" -groups "testagent,office"
 ```
 
-Other groups we are using:
-    - hetzner
-    - scraper
+Other groups include `hetzner` and `scraper`. See [Firewall groups](#firewall-groups).
 
 The script will print the cert and key in a format that can be easily copy-pasted into `secrets.yaml`.
 
@@ -125,35 +121,34 @@ The new host should be able to decrypt `ca.crt.crypt` for nebula to run.
 
 ## Onboarding checklist
 
-End-to-end steps for adding a host to the Nebula network. This assumes the
-host already exists in the infrastructure (see
-[adding a host](./adding-a-host.md) for the full setup).
+These steps assume the host is already installed. For a new machine, start
+with [adding a host](./adding-a-host.md).
 
-1. **Pick an IP** — choose the next free `10.42.42.x` address by checking
+1. Choose the next free `10.42.42.x` address by checking
    existing `nebula_ip` values in `hosts/machines.nix`.
-2. **Choose groups** — select the appropriate groups for the host (see
+2. Select the appropriate groups for the host (see
    [firewall groups](#firewall-groups) below).
-3. **Sign a certificate** — run `./scripts/nebula-sign.sh` with the chosen
+3. Run `./scripts/nebula-sign.sh` with the chosen
    name, IP, and groups:
    ```sh
    ./scripts/nebula-sign.sh -name "<name>.sumu.vedenemo.dev" -ip "10.42.42.x/24" -groups "group1,group2"
    ```
-4. **Add cert and key to secrets** — copy the script output into the host's
+4. Copy the script output into the host's
    `secrets.yaml` (the `nebula-cert` and `nebula-key` fields).
-5. **Update `.sops.yaml`** — add the host's age key anchor to the
+5. In `.sops.yaml`, add the host's age key anchor to the
    `modules/nebula/ca.crt.crypt` creation rule so the host can decrypt it.
-6. **Re-encrypt** — run `sops updatekeys modules/nebula/ca.crt.crypt`.
-7. **Configure NixOS** — import the `nebula` module in the host's
+6. Run `sops updatekeys modules/nebula/ca.crt.crypt`.
+7. Import the `nebula` module in the host's
    `configuration.nix` and enable it (see [Nix configuration](#nix-configuration)
    above).
-8. **Add `nebula_ip`** — set the `nebula_ip` field in `hosts/machines.nix`
+8. Set the `nebula_ip` field in `hosts/machines.nix`
    under the host's `machine` attrset.
-9. **Deploy** — deploy the host with `deploy .#<name>`.
+9. Deploy the host with `deploy .#<name>`.
 
 ## Firewall groups
 
 Groups are assigned when signing a host certificate and are used in the
-Nebula firewall rules defined in `modules/nebula/default.nix`.
+shared firewall rules in `modules/nebula/default.nix` and host-specific rules.
 
 | Group | Purpose |
 |---|---|
@@ -165,7 +160,13 @@ Nebula firewall rules defined in `modules/nebula/default.nix`.
 | `uae-lab` | UAE lab nodes |
 | `masdar` | UAE masdar nodes |
 
-The `scraper` group is used in an inbound firewall rule that allows
-ghaf-monitoring to scrape Prometheus node-exporter metrics (port 9100/tcp)
-from any host in that group. Other groups are currently informational and
-can be used to add targeted firewall rules as needed.
+Only `scraper` and `hetzner` currently appear in firewall rules. The other
+groups are descriptive labels and do not grant additional access.
+
+The shared inbound rules allow connections from peers in the `scraper`
+group, including ghaf-monitoring, to node-exporter (9100/tcp) and Nebula
+metrics (9101/tcp). The hosts being scraped do not need the `scraper` group.
+
+Host-specific rules also use groups. For example, the NetHSM gateways allow
+outbound UDP on port 4242 only to peers in `hetzner`. Check the host
+configuration as well as the shared module when choosing groups.
