@@ -154,10 +154,6 @@ def ghaf_robot_test(String testname='relayboot') {
       }
     }
     try {
-      def useZephyr =
-        env.JIRA_TOKEN_AVAILABLE == 'true' &&
-        params.SEND_RESULTS_TO_ZEPHYR
-
       def robotCommand = { String extraArgs ->
         env.EXTRA_ROBOT_ARGS = extraArgs ?: ''
 
@@ -175,7 +171,7 @@ def ghaf_robot_test(String testname='relayboot') {
         '''
       }
 
-      if (useZephyr) {
+      if (env.USE_ZEPHYR == 'true') {
         withCredentials([
           string(credentialsId: 'jenkins_jira_token', variable: 'JIRA_TOKEN')
         ]) {
@@ -235,6 +231,11 @@ pipeline {
       agent { label 'built-in' }
       steps {
         script {
+          env.USE_ZEPHYR = (
+            env.JIRA_TOKEN_AVAILABLE == 'true' &&
+            params.SEND_RESULTS_TO_ZEPHYR
+            ).toString()
+
           env.TEST_AGENT_LABEL = init()
         }
       }
