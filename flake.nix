@@ -86,7 +86,7 @@
     };
 
     ci-yubi = {
-      url = "github:tiiuae/ci-yubi";
+      url = "github:tiiuae/ci-yubi/e10912acf7fd1cbe325c0cdf2e96952bf82a6692";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-utils.follows = "flake-utils";

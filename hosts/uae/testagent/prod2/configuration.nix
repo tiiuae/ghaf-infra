@@ -62,9 +62,9 @@
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B7283C099A7", SYMLINK+="ssdORINAGX1", MODE="0666", GROUP="dialout"
 
     # Orin nx
-    SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTD0W9KS", SYMLINK+="ttyORINNX1", MODE="0666", GROUP="dialout"
+    SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="AU008K01", SYMLINK+="ttyORINNX1", MODE="0666", GROUP="dialout"
     # SSD-drive
-    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B7283C099B0", SYMLINK+="ssdORINNX1", MODE="0666", GROUP="dialout"
+    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S3R4NF0K618289", SYMLINK+="ssdORINNX1", MODE="0666", GROUP="dialout"
 
     # Orin AGX64
     SUBSYSTEM=="tty", KERNEL=="ttyACM[0-9]*", ATTRS{serial}=="TOPO7394FE13", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="ttyAGX64", MODE="0666", GROUP="dialout"
@@ -96,8 +96,8 @@
         };
         OrinNX1 = {
           inherit location;
-          device_id = "00-b2-e1-cb-48";
-          netvm_hostname = "ghaf-3001142088";
+          device_id = "00-ca-96-a7-e4";
+          netvm_hostname = "ghaf-3398871012";
           serial_port = "/dev/ttyORINNX1";
           relay_number = 3;
           device_ip_address = "172.20.16.75";

@@ -35,7 +35,10 @@ in
         "@wheel"
       ];
       # Enable flakes and new 'nix' command
-      experimental-features = "nix-command flakes";
+      experimental-features = [
+        "nix-command"
+        "flakes"
+      ];
       # Avoid copying unnecessary stuff over SSH
       builders-use-substitutes = true;
       # Auto-free the /nix/store:

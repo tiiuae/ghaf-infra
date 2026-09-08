@@ -21,7 +21,8 @@ let
       rootDirectory = zotDataDir;
       dedupe = true;
       gc = true;
-      gcInterval = "24h";
+      gcInterval = "1h";
+      gcDelay = "24h";
       retention = {
         policies = [
           {
@@ -130,7 +131,6 @@ let
       ui.enable = true;
       search.enable = true;
       metrics.enable = cfg.metrics.enable;
-      scrub.enable = true;
     };
   } cfg.extraConfig;
   zotConfigFile = pkgs.writeText "zot_config.json" (builtins.toJSON zotConfig);
