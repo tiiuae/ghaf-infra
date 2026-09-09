@@ -22,7 +22,6 @@ in
     ./disk-config.nix
     ../common.nix
     ../cloud.nix
-    ../auth.nix
     ../signing.nix
   ];
 
@@ -36,6 +35,11 @@ in
   services.ghaf-jenkins = {
     envType = "dbg";
     url = "https://ci-dbg.vedenemo.dev";
+    auth = {
+      enable = true;
+      clientID = "hetzci-dbg";
+      domain = "ci-dbg.vedenemo.dev";
+    };
     nodes.testagentHosts = [
       "dev"
       "prod"
@@ -54,13 +58,7 @@ in
     withGithubWebhook = false;
   };
 
-  hetzci = {
-    auth = {
-      clientID = "hetzci-dbg";
-      domain = "ci-dbg.vedenemo.dev";
-    };
-    signing.proxy.enable = true;
-  };
+  hetzci.signing.proxy.enable = true;
 
   sops = {
     defaultSopsFile = ./secrets.yaml;

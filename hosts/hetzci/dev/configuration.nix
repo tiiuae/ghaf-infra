@@ -13,7 +13,6 @@ in
     ../common.nix
     ../remote-builders.nix
     ../cloud.nix
-    ../auth.nix
     ../signing.nix
   ];
 
@@ -24,6 +23,11 @@ in
   services.ghaf-jenkins = {
     envType = "dev";
     url = "https://ci-dev.vedenemo.dev";
+    auth = {
+      enable = true;
+      clientID = "hetzci-dev";
+      domain = "ci-dev.vedenemo.dev";
+    };
     pipelines = [
       "ghaf-hw-test-manual"
       "ghaf-hw-test"
@@ -38,13 +42,7 @@ in
     withRegistryPublish = true;
   };
 
-  hetzci = {
-    auth = {
-      clientID = "hetzci-dev";
-      domain = "ci-dev.vedenemo.dev";
-    };
-    signing.proxy.enable = true;
-  };
+  hetzci.signing.proxy.enable = true;
 
   nix.settings.max-jobs = lib.mkForce 0;
   nix.settings.min-free = lib.mkOverride 40 controllerDisk.minFreeBytes;

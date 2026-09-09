@@ -93,6 +93,27 @@ in
       type = lib.types.str;
       description = "Public URL of the jenkins instance";
     };
+    auth = {
+      enable = lib.mkEnableOption "OIDC authentication and the HTTPS reverse proxy";
+      domain = lib.mkOption {
+        type = lib.types.str;
+        description = "Public hostname of this Jenkins instance";
+      };
+      clientID = lib.mkOption {
+        type = lib.types.str;
+        description = "OIDC client ID";
+      };
+      oidcIssuerUrl = lib.mkOption {
+        type = lib.types.str;
+        default = "https://auth.vedenemo.dev";
+        description = "OIDC issuer URL";
+      };
+      groups = lib.mkOption {
+        type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+        default = { };
+        description = "Jenkins permissions keyed by OIDC group name";
+      };
+    };
     numExecutors = lib.mkOption {
       type = lib.types.ints.positive;
       description = "Number of built-in Jenkins executors.";
@@ -195,6 +216,10 @@ in
         (lib.mkIf cfg.withJiraToken {
           jenkins_jira_token.owner = "jenkins";
         })
+        (lib.mkIf cfg.auth.enable {
+          oauth2_proxy_client_secret.owner = "oauth2-proxy";
+          oauth2_proxy_cookie_secret.owner = "oauth2-proxy";
+        })
       ];
     };
 
@@ -284,6 +309,97 @@ in
         builtins.listToAttrs (map mkJenkinsPlugin manifest);
     };
 
+    services.oauth2-proxy = lib.mkIf cfg.auth.enable {
+      enable = true;
+      inherit (cfg.auth) clientID oidcIssuerUrl;
+      clientSecretFile = config.sops.secrets.oauth2_proxy_client_secret.path;
+      cookie.secretFile = config.sops.secrets.oauth2_proxy_cookie_secret.path;
+      provider = "oidc";
+      setXauthrequest = true;
+      cookie.secure = true;
+      extraConfig = {
+        email-domain = "*";
+        auth-logging = true;
+        request-logging = true;
+        standard-logging = true;
+        reverse-proxy = true;
+        scope = "openid profile email groups offline_access";
+        cookie-expire = "168h";
+        cookie-refresh = "24h";
+        cookie-samesite = "lax";
+        cookie-csrf-samesite = "lax";
+        skip-provider-button = true;
+        whitelist-domain = cfg.auth.domain;
+      };
+    };
+
+    services.caddy = lib.mkIf cfg.auth.enable {
+      enable = true;
+      enableReload = false;
+      configFile = pkgs.writeText "Caddyfile" ''
+        {
+          admin off
+        }
+
+        https://${cfg.auth.domain} {
+          handle /login {
+            redir * /
+          }
+
+          handle_path /artifacts* {
+            root * /var/lib/jenkins/artifacts
+            file_server {
+              browse
+            }
+          }
+
+          @unauthenticated {
+            path /github-webhook /github-webhook/*
+            path /jnlpJars /jnlpJars/*
+            path /wsagents /wsagents/*
+          }
+
+          handle @unauthenticated {
+            reverse_proxy localhost:8081
+          }
+
+          handle /oauth2/* {
+            reverse_proxy localhost:4180 {
+              header_up X-Real-IP {remote_host}
+              header_up X-Forwarded-Uri {uri}
+            }
+          }
+
+          handle {
+            forward_auth localhost:4180 {
+              uri /oauth2/auth
+              header_up X-Real-IP {remote_host}
+
+              copy_headers {
+                X-Auth-Request-User>X-Forwarded-User
+                X-Auth-Request-Groups>X-Forwarded-Groups
+                X-Auth-Request-Email>X-Forwarded-Mail
+                X-Auth-Request-Preferred-Username>X-Forwarded-DisplayName
+              }
+
+              @error status 401
+              handle_response @error {
+                redir * /oauth2/sign_in?rd={scheme}://{host}{uri}
+              }
+            }
+            reverse_proxy localhost:8081
+          }
+        }
+      '';
+    };
+
+    systemd.services.oauth2-proxy = lib.mkIf cfg.auth.enable {
+      serviceConfig.RestartSec = 10;
+      unitConfig.StartLimitBurst = 0;
+    };
+
+    networking.firewall.allowedTCPPorts = lib.mkIf cfg.auth.enable [ 443 ];
+
     # Jenkins needs to be trusted user to use nix build --store
     nix.settings.trusted-users = [ "jenkins" ];
 
@@ -330,6 +446,35 @@ in
       })
       (lib.mkIf cfg.withJiraToken {
         "jenkins/casc/jiraToken.yaml".source = ./casc/jiraToken.yaml;
+      })
+      (lib.mkIf cfg.auth.enable {
+        "jenkins/casc/auth.yaml".source = pkgs.writeText "auth.yaml" (
+          builtins.toJSON {
+            jenkins = {
+              authorizationStrategy.globalMatrix.entries = [
+                {
+                  group = {
+                    name = "testagents";
+                    permissions = [ "Agent/Connect" ];
+                  };
+                }
+              ]
+              ++ lib.mapAttrsToList (name: permissions: {
+                group = { inherit name permissions; };
+              }) cfg.auth.groups;
+              securityRealm.reverseProxy = {
+                customLogOutUrl = "/oauth2/sign_out";
+                disableLdapEmailResolver = true;
+                forwardedDisplayName = "X-Forwarded-DisplayName";
+                forwardedEmail = "X-Forwarded-Mail";
+                forwardedUser = "X-Forwarded-User";
+                headerGroups = "X-Forwarded-Groups";
+                headerGroupsDelimiter = ",";
+                inhibitInferRootDN = false;
+              };
+            };
+          }
+        );
       })
     ];
 

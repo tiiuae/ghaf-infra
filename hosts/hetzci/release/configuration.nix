@@ -32,7 +32,6 @@ in
     ./disk-config.nix
     ../common.nix
     ../cloud.nix
-    ../auth.nix
     ../signing.nix
   ];
 
@@ -53,6 +52,11 @@ in
   services.ghaf-jenkins = {
     envType = "release";
     url = "https://ci-release.vedenemo.dev";
+    auth = {
+      enable = true;
+      clientID = "hetzci-release";
+      domain = "ci-release.vedenemo.dev";
+    };
     nodes.testagentHosts = [ "release" ];
     pipelines = [
       "ghaf-hw-test"
@@ -65,13 +69,7 @@ in
     withRegistryPublish = true;
   };
 
-  hetzci = {
-    auth = {
-      clientID = "hetzci-release";
-      domain = "ci-release.vedenemo.dev";
-    };
-    signing.proxy.enable = true;
-  };
+  hetzci.signing.proxy.enable = true;
 
   # Configure /var/lib/caddy in /etc/fstab for persistent caddy state.
   fileSystems."/var/lib/caddy" = {
