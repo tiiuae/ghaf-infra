@@ -12,8 +12,13 @@ let
 in
 {
   imports = [
+    ./host-common.nix
     self.nixosModules.nebula
+    self.nixosModules.common
+    self.nixosModules.openssh
+    self.nixosModules.team-devenv
     self.nixosModules.team-testers
+    inputs.disko.nixosModules.disko
   ];
 
   services.testagent.credentialsFile = ./credentials.yaml;

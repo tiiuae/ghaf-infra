@@ -2,12 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 {
+  self,
   config,
   ...
 }:
 {
   imports = [
-    ../agents-common.nix
+    self.nixosModules.testagent
     ../finland.nix
     ./disk-config.nix
   ];
@@ -30,6 +31,8 @@
   system.stateVersion = "23.11";
   networking.hostName = "testagent2-prod";
   services.testagent = {
+    enable = true;
+    relayBoard.enable = true;
     variant = "prod";
     hardware = [
       "orin-agx"

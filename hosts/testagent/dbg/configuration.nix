@@ -2,12 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 {
+  self,
   config,
   ...
 }:
 {
   imports = [
-    ../agents-common.nix
+    self.nixosModules.testagent
     ../finland.nix
     ./disk-config.nix
   ];
@@ -17,6 +18,7 @@
   system.stateVersion = "25.11";
   networking.hostName = "testagent-dbg";
   services.testagent = {
+    enable = true;
     variant = "dbg";
     hardware = [ "orin-nx" ];
   };
@@ -43,9 +45,6 @@
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S6WXNS0W300153T", SYMLINK+="ssdORINNX1", MODE="0666", GROUP="dialout"
   '';
-
-  # No relay board is connected on this host.
-  systemd.services.relay-board-metric-exporter.enable = false;
 
   environment.etc."jenkins/test_config.json".text =
     let

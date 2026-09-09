@@ -1,12 +1,13 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 {
+  self,
   config,
   ...
 }:
 {
   imports = [
-    ../agents-common.nix
+    self.nixosModules.testagent
     ../finland.nix
     ./disk-config.nix
   ];
@@ -16,6 +17,8 @@
   system.stateVersion = "23.11";
   networking.hostName = "testagent-release";
   services.testagent = {
+    enable = true;
+    relayBoard.enable = true;
     variant = "release";
     hardware = [
       "orin-agx"

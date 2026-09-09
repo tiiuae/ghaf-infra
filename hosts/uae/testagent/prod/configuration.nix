@@ -2,19 +2,23 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   self,
+  inputs,
   config,
   ...
 }:
 {
   imports = [
     ./disk-config.nix
-    ../../../testagent/agents-common.nix
+    self.nixosModules.testagent
     ../uae.nix
   ]
   ++ (with self.nixosModules; [
+    common
+    openssh
     team-devenv
     team-testers
-  ]);
+  ])
+  ++ [ inputs.disko.nixosModules.disko ];
 
   sops = {
     defaultSopsFile = ./secrets.yaml;
@@ -26,6 +30,7 @@
   system.stateVersion = "23.11";
   networking.hostName = "uae-testagent-prod";
   services.testagent = {
+    enable = true;
     variant = "prod";
     hardware = [
       "lenovo-x1"
@@ -54,16 +59,6 @@
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B7283C09CCC", SYMLINK+="ssdDARTER", MODE="0666", GROUP="dialout"
   '';
-
-  # Trigger UDEV rules
-  system.activationScripts.udevTrigger = ''
-    echo "==> Triggering udev rules..."
-    /run/current-system/sw/bin/udevadm trigger --subsystem-match=tty
-    /run/current-system/sw/bin/udevadm trigger --subsystem-match=block
-  '';
-
-  # disabled because there is not relay board configured
-  systemd.services.relay-board-metric-exporter.enable = false;
 
   # Details of the hardware devices connected to this host
   # placeholder configs from finland. configs in progress based on new uae targets

@@ -1,15 +1,15 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 
+{ self, inputs }:
 {
   pkgs,
-  inputs,
   lib,
-  self,
   config,
   ...
 }:
 let
+  cfg = config.services.testagent;
   connect-script = pkgs.writeShellApplication {
     name = "connect";
     text = # sh
@@ -71,16 +71,10 @@ in
   };
 
   imports = [
-    ./agent.nix
-    inputs.disko.nixosModules.disko
-  ]
-  ++ (with self.nixosModules; [
-    common
-    openssh
-    team-devenv
-  ]);
+    (import ./agent.nix { inherit self inputs; })
+  ];
 
-  config = {
+  config = lib.mkIf cfg.enable {
     sops.secrets =
       let
         credential = {
@@ -100,19 +94,7 @@ in
         pi-pass = credential;
         # used for ssh connections
         ssh_host_ed25519_key.owner = "jenkins";
-
-        # Per-host secrets sourced via defaultSopsFile
-        metrics_password.owner = "alloy";
       };
-
-    networking.useDHCP = true;
-
-    boot.loader.efi.canTouchEfiVariables = true;
-
-    hardware = {
-      enableRedistributableFirmware = true;
-      cpu.intel.updateMicrocode = true;
-    };
 
     services.udev.packages = [
       self.packages.${pkgs.stdenv.hostPlatform.system}.brainstem
@@ -123,8 +105,8 @@ in
     environment.systemPackages = [
       connect-script
       disconnect-script
-      relay-board-exporter
     ]
+    ++ lib.optional cfg.relayBoard.enable relay-board-exporter
     ++ (with self.packages.${pkgs.stdenv.hostPlatform.system}; [
       brainstem
       policy-checker
@@ -144,27 +126,7 @@ in
       (python3.withPackages (ps: with ps; [ pyserial ]))
     ]);
 
-    # This server is only exposed to the internal network
-    # fail2ban only causes issues here
-    services.fail2ban.enable = lib.mkForce false;
-
-    # Trigger UDEV rules
-    system.activationScripts.udevTrigger = ''
-      echo "==> Triggering udev rules..."
-      /run/current-system/sw/bin/udevadm trigger --subsystem-match=tty
-      /run/current-system/sw/bin/udevadm trigger --subsystem-match=block
-    '';
-
-    services.monitoring = {
-      metrics.enable = true;
-      logs = {
-        enable = true;
-        lokiAddress = "https://monitoring.vedenemo.dev";
-        auth.password_file = config.sops.secrets.metrics_password.path;
-      };
-    };
-
-    systemd.services.relay-board-metric-exporter = {
+    systemd.services.relay-board-metric-exporter = lib.mkIf cfg.relayBoard.enable {
       description = "KMTronic Relay Board Prometheus Exporter";
       wantedBy = [ "multi-user.target" ];
       after = [ "network-online.target" ];
@@ -191,13 +153,5 @@ in
       "${self.outPath}/slsa/provenance-trust-policy.yaml";
 
     environment.etc."jenkins/ci-test-automation-pinned-source".text = inputs.robot-framework.outPath;
-
-    nix.gc = {
-      automatic = true;
-      dates = "daily";
-      randomizedDelaySec = "45min";
-      persistent = false;
-      options = "--delete-older-than 14d";
-    };
   };
 }

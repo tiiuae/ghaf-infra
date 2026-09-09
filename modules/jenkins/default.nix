@@ -131,6 +131,11 @@ in
           "release"
         ];
       };
+      authorizedKeys = lib.mkOption {
+        type = lib.types.attrsOf lib.types.str;
+        description = "SSH public keys keyed by test-agent hostname";
+        default = { };
+      };
     };
     pluginsFile = lib.mkOption {
       type = lib.types.path;
@@ -284,7 +289,14 @@ in
 
     # Caddy needs to be able to access files under /var/lib/jenkins/artifacts.
     # Use traverse-only access on JENKINS_HOME and scope group access to caddy.service.
-    users.users.jenkins.homeMode = "710";
+    users.users =
+      lib.mapAttrs (_: publicKey: {
+        isNormalUser = true;
+        openssh.authorizedKeys.keys = [ publicKey ];
+      }) cfg.nodes.authorizedKeys
+      // {
+        jenkins.homeMode = "710";
+      };
     systemd.services.caddy.serviceConfig.SupplementaryGroups = [ "jenkins" ];
 
     environment.etc = lib.mkMerge [

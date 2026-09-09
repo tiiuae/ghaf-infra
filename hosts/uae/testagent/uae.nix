@@ -3,6 +3,8 @@
 
 { self, ... }:
 {
+  imports = [ ../../testagent/host-common.nix ];
+
   services.testagent.credentialsFile = ./credentials.yaml;
 
   environment.etc."jenkins/GhafInfraSignECP256.pem".source =
