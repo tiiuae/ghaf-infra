@@ -10,7 +10,7 @@
 }:
 {
   imports = [
-    ../../../testagent/agents-common.nix
+    self.nixosModules.testagent
     ../uae.nix
     ./disk-config.nix
     (modulesPath + "/profiles/qemu-guest.nix")
@@ -43,6 +43,8 @@
 
   networking.hostName = "uae-testagent2-prod";
   services.testagent = {
+    enable = true;
+    relayBoard.enable = true;
     variant = "prod";
     hardware = [
       "orin-agx"

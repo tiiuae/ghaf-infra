@@ -2,12 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 {
+  self,
   config,
   ...
 }:
 {
   imports = [
-    ../agents-common.nix
+    self.nixosModules.testagent
     ../finland.nix
     ./hardware-configuration.nix
   ];
@@ -17,6 +18,7 @@
   system.stateVersion = "23.11";
   networking.hostName = "testagent-prod";
   services.testagent = {
+    enable = true;
     variant = "prod";
     hardware = [
       "lenovo-x1"
@@ -52,9 +54,6 @@
     SUBSYSTEM=="tty", ATTRS{idVendor}=="1366", ATTRS{idProduct}=="1061", ATTRS{serial}=="001050288781", ENV{ID_USB_INTERFACE_NUM}=="00", SYMLINK+="ttyBTboard", MODE="0666", GROUP="dialout"
 
   '';
-
-  # disabled because there is not relay board configured
-  systemd.services.relay-board-metric-exporter.enable = false;
 
   # Details of the hardware devices connected to this host
   environment.etc."jenkins/test_config.json".text =

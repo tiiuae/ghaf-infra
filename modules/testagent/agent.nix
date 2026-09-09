@@ -1,21 +1,21 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 
+{ self, inputs }:
 {
-  self,
   pkgs,
-  inputs,
   lib,
   config,
   ...
 }:
 let
+  cfg = config.services.testagent;
   inherit (self.packages.${pkgs.stdenv.hostPlatform.system}) brainstem;
 
   mkAgent =
     device:
     let
-      name = "${config.services.testagent.variant}-${device}";
+      name = "${cfg.variant}-${device}";
     in
     {
       # bindsTo instead of requires makes the agents stop when the parent service stops
@@ -92,16 +92,20 @@ in
 {
   options = with lib.types; {
     services.testagent = {
+      enable = lib.mkEnableOption "the Ghaf Jenkins test agent";
+
       # variant such as dbg, dev, prod or release
       # used in the naming of jenkins slaves
       variant = lib.mkOption { type = str; };
 
       # what hardware devices to create nodes for
       hardware = lib.mkOption { type = listOf str; };
+
+      relayBoard.enable = lib.mkEnableOption "the relay-board exporter";
     };
   };
 
-  config = {
+  config = lib.mkIf cfg.enable {
     # The Jenkins slave service is very barebones
     # it only installs java and sets up jenkins user
     services.jenkinsSlave.enable = true;
@@ -115,10 +119,7 @@ in
 
     systemd.services =
       # map hardware to services
-      builtins.listToAttrs (
-        map (hw: lib.nameValuePair "agent-${hw}" (mkAgent hw)) config.services.testagent.hardware
-      )
-      // {
+      builtins.listToAttrs (map (hw: lib.nameValuePair "agent-${hw}" (mkAgent hw)) cfg.hardware) // {
         start-agents = {
           path = with pkgs; [ wget ];
           serviceConfig = {
