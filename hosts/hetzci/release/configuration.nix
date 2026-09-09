@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 {
+  config,
   lib,
   machines,
   ...
@@ -46,6 +47,12 @@ in
     defaultSopsFile = ./secrets.yaml;
     secrets = {
       ssh_private_key.owner = "root";
+      cachix-auth-token.owner = "jenkins";
+      jenkins_archive_access_key.owner = "jenkins";
+      jenkins_archive_secret_key.owner = "jenkins";
+      oauth2_proxy_client_secret.owner = "oauth2-proxy";
+      oauth2_proxy_cookie_secret.owner = "oauth2-proxy";
+      oci_registry_password.owner = "jenkins";
     };
   };
 
@@ -55,18 +62,28 @@ in
     auth = {
       enable = true;
       clientID = "hetzci-release";
+      clientSecretFile = config.sops.secrets.oauth2_proxy_client_secret.path;
+      cookieSecretFile = config.sops.secrets.oauth2_proxy_cookie_secret.path;
       domain = "ci-release.vedenemo.dev";
     };
+    integrations.cachix = {
+      enable = true;
+      tokenFile = config.sops.secrets.cachix-auth-token.path;
+    };
+    archive = {
+      enable = true;
+      s3Credentials = {
+        accessKeyFile = config.sops.secrets.jenkins_archive_access_key.path;
+        secretKeyFile = config.sops.secrets.jenkins_archive_secret_key.path;
+      };
+    };
+    registry.passwordFile = config.sops.secrets.oci_registry_password.path;
     nodes.testagentHosts = [ "release" ];
     pipelines = [
       "ghaf-hw-test"
       "ghaf-release-candidate"
       "ghaf-release-publish"
     ];
-    withGithubStatus = false;
-    withGithubWebhook = false;
-    withArchiveArtifacts = true;
-    withRegistryPublish = true;
   };
 
   hetzci.signing.proxy.enable = true;

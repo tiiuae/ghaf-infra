@@ -63,31 +63,51 @@
 
   services.ghaf-jenkins = {
     enable = true;
-    auth.groups = {
-      authenticated = [
-        "Overall/Read"
-        "Job/Read"
-      ];
-      "tiiuae:devenv-fi" = [ "Overall/Administer" ];
-      "tiiuae:ci-dev-admins" = [
-        "Overall/Read"
-        "Overall/SystemRead"
-        "Job/Build"
-        "Job/Cancel"
-        "Job/Read"
-        "Job/Configure"
-        "Run/Replay"
-        "Run/Update"
-      ];
+    registry.url = lib.mkDefault "registry.vedenemo.dev";
+    auth = {
+      oidcIssuerUrl = lib.mkDefault "https://auth.vedenemo.dev";
+      groups = {
+        authenticated = [
+          "Overall/Read"
+          "Job/Read"
+        ];
+        "tiiuae:devenv-fi" = [ "Overall/Administer" ];
+        "tiiuae:ci-dev-admins" = [
+          "Overall/Read"
+          "Overall/SystemRead"
+          "Job/Build"
+          "Job/Cancel"
+          "Job/Read"
+          "Job/Configure"
+          "Run/Replay"
+          "Run/Update"
+        ];
+      };
     };
-    nodes.authorizedKeys = {
-      testagent-dev = machines.testagent-dev.publicKey;
-      testagent-dbg = machines.testagent-dbg.publicKey;
-      testagent2-prod = machines.testagent2-prod.publicKey;
-      testagent-prod = machines.testagent-prod.publicKey;
-      testagent-release = machines.testagent-release.publicKey;
-      uae-testagent-prod = machines.uae-testagent-prod.publicKey;
-      uae-testagent2-prod = machines.uae-testagent2-prod.publicKey;
+    nodes = {
+      devices = [
+        "darter-pro"
+        "lenovo-x1"
+        "orin-agx"
+        "orin-agx-64"
+        "orin-nx"
+        "x1-sec-boot"
+        "darter-sec-boot"
+      ];
+      testagentHosts = lib.mkDefault [
+        "dev"
+        "prod"
+        "release"
+      ];
+      authorizedKeys = {
+        testagent-dev = machines.testagent-dev.publicKey;
+        testagent-dbg = machines.testagent-dbg.publicKey;
+        testagent2-prod = machines.testagent2-prod.publicKey;
+        testagent-prod = machines.testagent-prod.publicKey;
+        testagent-release = machines.testagent-release.publicKey;
+        uae-testagent-prod = machines.uae-testagent-prod.publicKey;
+        uae-testagent2-prod = machines.uae-testagent2-prod.publicKey;
+      };
     };
   };
 

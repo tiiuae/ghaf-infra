@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
-{ lib, ... }:
+{ config, lib, ... }:
 let
   tuning = import ../../lib/nix-tuning.nix { inherit lib; };
 
@@ -18,7 +18,17 @@ in
 
   system.stateVersion = lib.mkForce "24.11";
   networking.hostName = "hetzci-prod";
-  sops.defaultSopsFile = ./secrets.yaml;
+  sops = {
+    defaultSopsFile = ./secrets.yaml;
+    secrets = {
+      jenkins_github_commit_status_token.owner = "jenkins";
+      jenkins_github_webhook_secret.owner = "jenkins";
+      jenkins_jira_token.owner = "jenkins";
+      oauth2_proxy_client_secret.owner = "oauth2-proxy";
+      oauth2_proxy_cookie_secret.owner = "oauth2-proxy";
+      oci_registry_password.owner = "jenkins";
+    };
+  };
 
   services.ghaf-jenkins = {
     envType = "prod";
@@ -26,8 +36,22 @@ in
     auth = {
       enable = true;
       clientID = "hetzci-prod";
+      clientSecretFile = config.sops.secrets.oauth2_proxy_client_secret.path;
+      cookieSecretFile = config.sops.secrets.oauth2_proxy_cookie_secret.path;
       domain = "ci-prod.vedenemo.dev";
     };
+    integrations = {
+      github = {
+        enable = true;
+        tokenFile = config.sops.secrets.jenkins_github_commit_status_token.path;
+        webhookSecretFile = config.sops.secrets.jenkins_github_webhook_secret.path;
+      };
+      jira = {
+        enable = true;
+        tokenFile = config.sops.secrets.jenkins_jira_token.path;
+      };
+    };
+    registry.passwordFile = config.sops.secrets.oci_registry_password.path;
     pipelines = [
       "ghaf-hw-test-manual"
       "ghaf-hw-test"
@@ -38,9 +62,6 @@ in
       "ghaf-pre-merge-manual"
       "ghaf-pre-merge"
     ];
-    withCachix = false;
-    withRegistryPublish = true;
-    withJiraToken = true;
   };
 
   hetzci.signing.proxy.enable = true;

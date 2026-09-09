@@ -1,11 +1,10 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
+{ self, inputs }:
 {
   pkgs,
   lib,
   config,
-  self,
-  inputs,
   ...
 }:
 let
@@ -24,7 +23,12 @@ let
           "${builder.protocol}://"
           + (if sshUser == null then "" else "${sshUser}@")
           + builder.hostName
-          + (if sshKey == null then "" else "&ssh-key=${sshKey}");
+          + (
+            if sshKey == null then
+              ""
+            else
+              "${if lib.hasInfix "?" builder.hostName then "&" else "?"}ssh-key=${sshKey}"
+          );
       }
     ) config.nix.buildMachines
   );
@@ -93,6 +97,16 @@ in
       type = lib.types.str;
       description = "Public URL of the jenkins instance";
     };
+    registry = {
+      url = lib.mkOption {
+        type = lib.types.str;
+        description = "OCI registry exposed to Jenkins jobs";
+      };
+      passwordFile = lib.mkOption {
+        type = lib.types.str;
+        description = "Path to the OCI registry password file";
+      };
+    };
     auth = {
       enable = lib.mkEnableOption "OIDC authentication and the HTTPS reverse proxy";
       domain = lib.mkOption {
@@ -105,8 +119,15 @@ in
       };
       oidcIssuerUrl = lib.mkOption {
         type = lib.types.str;
-        default = "https://auth.vedenemo.dev";
         description = "OIDC issuer URL";
+      };
+      clientSecretFile = lib.mkOption {
+        type = lib.types.str;
+        description = "Path to the OIDC client secret file";
+      };
+      cookieSecretFile = lib.mkOption {
+        type = lib.types.str;
+        description = "Path to the OAuth2 Proxy cookie secret file";
       };
       groups = lib.mkOption {
         type = lib.types.attrsOf (lib.types.listOf lib.types.str);
@@ -133,24 +154,12 @@ in
       devices = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         description = "Devices to create agent nodes for";
-        default = [
-          "darter-pro"
-          "lenovo-x1"
-          "orin-agx"
-          "orin-agx-64"
-          "orin-nx"
-          "x1-sec-boot"
-          "darter-sec-boot"
-        ];
+        default = [ ];
       };
       testagentHosts = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         description = "Variations of device nodes to create";
-        default = [
-          "dev"
-          "prod"
-          "release"
-        ];
+        default = [ ];
       };
       authorizedKeys = lib.mkOption {
         type = lib.types.attrsOf lib.types.str;
@@ -163,66 +172,48 @@ in
       description = "Path to the plugins.json";
       default = ./plugins.json;
     };
-    withCachix = lib.mkOption {
-      type = lib.types.bool;
-      description = "Add cachix pinning capability";
-      default = true;
+    integrations = {
+      github = {
+        enable = lib.mkEnableOption "the GitHub integration";
+        tokenFile = lib.mkOption {
+          type = lib.types.str;
+          description = "Path to the GitHub status token file";
+        };
+        webhookSecretFile = lib.mkOption {
+          type = lib.types.str;
+          description = "Path to the GitHub webhook secret file";
+        };
+      };
+      cachix = {
+        enable = lib.mkEnableOption "the Cachix integration";
+        tokenFile = lib.mkOption {
+          type = lib.types.str;
+          description = "Path to the Cachix authentication token file";
+        };
+      };
+      jira = {
+        enable = lib.mkEnableOption "the Jira integration";
+        tokenFile = lib.mkOption {
+          type = lib.types.str;
+          description = "Path to the Jira API token file";
+        };
+      };
     };
-    withGithubStatus = lib.mkOption {
-      type = lib.types.bool;
-      description = "Configure a token to set Ghaf GitHub commit satuses";
-      default = true;
-    };
-    withGithubWebhook = lib.mkOption {
-      type = lib.types.bool;
-      description = "Expected Ghaf GitHub webhook secret";
-      default = true;
-    };
-    withArchiveArtifacts = lib.mkOption {
-      type = lib.types.bool;
-      description = "Add capability to archive artifacts to permanent storage";
-      default = false;
-    };
-    withRegistryPublish = lib.mkOption {
-      type = lib.types.bool;
-      description = "Add capability to publish build artifacts to the OCI registry";
-      default = false;
-    };
-    withJiraToken = lib.mkOption {
-      type = lib.types.bool;
-      description = "Expose Jira API token as Jenkins credential";
-      default = false;
+    archive = {
+      enable = lib.mkEnableOption "artifact archiving";
+      s3Credentials = {
+        accessKeyFile = lib.mkOption {
+          type = lib.types.str;
+          description = "Path to the S3 access key file";
+        };
+        secretKeyFile = lib.mkOption {
+          type = lib.types.str;
+          description = "Path to the S3 secret key file";
+        };
+      };
     };
   };
   config = lib.mkIf cfg.enable {
-    sops = {
-      secrets = lib.mkMerge [
-        (lib.mkIf cfg.withCachix {
-          cachix-auth-token.owner = "jenkins";
-        })
-        (lib.mkIf cfg.withGithubStatus {
-          jenkins_github_commit_status_token.owner = "jenkins";
-        })
-        (lib.mkIf cfg.withGithubWebhook {
-          jenkins_github_webhook_secret.owner = "jenkins";
-        })
-        (lib.mkIf cfg.withArchiveArtifacts {
-          jenkins_archive_access_key.owner = "jenkins";
-          jenkins_archive_secret_key.owner = "jenkins";
-        })
-        (lib.mkIf cfg.withRegistryPublish {
-          oci_registry_password.owner = "jenkins";
-        })
-        (lib.mkIf cfg.withJiraToken {
-          jenkins_jira_token.owner = "jenkins";
-        })
-        (lib.mkIf cfg.auth.enable {
-          oauth2_proxy_client_secret.owner = "oauth2-proxy";
-          oauth2_proxy_cookie_secret.owner = "oauth2-proxy";
-        })
-      ];
-    };
-
     services.jenkins = {
       enable = true;
       listenAddress = "localhost";
@@ -246,25 +237,23 @@ in
         ])
         ++ [
           inputs.sbomnix.packages.${pkgs.stdenv.hostPlatform.system}.sbomnix # provenance
-        ]
-        ++ lib.optionals cfg.withCachix [
-          pkgs.cachix
-          pkgs.nixos-rebuild
-        ]
-        ++ lib.optionals cfg.withArchiveArtifacts [
-          pkgs.tree
-          self.packages.${pkgs.stdenv.hostPlatform.system}.archive-ghaf-release
-        ]
-        ++ lib.optionals cfg.withRegistryPublish [
           pkgs.oras
           self.packages.${pkgs.stdenv.hostPlatform.system}.oci-publish
           self.packages.${pkgs.stdenv.hostPlatform.system}.policy-checker
+        ]
+        ++ lib.optionals cfg.integrations.cachix.enable [
+          pkgs.cachix
+          pkgs.nixos-rebuild
+        ]
+        ++ lib.optionals cfg.archive.enable [
+          pkgs.tree
+          self.packages.${pkgs.stdenv.hostPlatform.system}.archive-ghaf-release
         ];
 
       environment = {
         CI_ENV = cfg.envType;
-        OCI_REGISTRY = lib.mkDefault "registry.vedenemo.dev";
-        JIRA_TOKEN_AVAILABLE = lib.boolToString cfg.withJiraToken;
+        OCI_REGISTRY = cfg.registry.url;
+        JIRA_TOKEN_AVAILABLE = lib.boolToString cfg.integrations.jira.enable;
       };
 
       extraJavaOptions = [
@@ -312,8 +301,8 @@ in
     services.oauth2-proxy = lib.mkIf cfg.auth.enable {
       enable = true;
       inherit (cfg.auth) clientID oidcIssuerUrl;
-      clientSecretFile = config.sops.secrets.oauth2_proxy_client_secret.path;
-      cookie.secretFile = config.sops.secrets.oauth2_proxy_cookie_secret.path;
+      clientSecretFile = cfg.auth.clientSecretFile;
+      cookie.secretFile = cfg.auth.cookieSecretFile;
       provider = "oidc";
       setXauthrequest = true;
       cookie.secure = true;
@@ -410,10 +399,12 @@ in
         isNormalUser = true;
         openssh.authorizedKeys.keys = [ publicKey ];
       }) cfg.nodes.authorizedKeys
-      // {
+      // lib.optionalAttrs config.services.caddy.enable {
         jenkins.homeMode = "710";
       };
-    systemd.services.caddy.serviceConfig.SupplementaryGroups = [ "jenkins" ];
+    systemd.services.caddy = lib.mkIf config.services.caddy.enable {
+      serviceConfig.SupplementaryGroups = [ "jenkins" ];
+    };
 
     environment.etc = lib.mkMerge [
       {
@@ -429,23 +420,33 @@ in
           builtins.toJSON cfg.extraCasc
         );
       }
-      (lib.mkIf cfg.withCachix {
-        "jenkins/casc/cachix.yaml".source = ./casc/cachix.yaml;
+      (lib.mkIf cfg.integrations.cachix.enable {
+        "jenkins/casc/cachix.yaml".source = pkgs.replaceVars ./casc/cachix.yaml {
+          secretFile = cfg.integrations.cachix.tokenFile;
+        };
       })
-      (lib.mkIf cfg.withGithubStatus {
-        "jenkins/casc/githubToken.yaml".source = ./casc/githubToken.yaml;
+      (lib.mkIf cfg.integrations.github.enable {
+        "jenkins/casc/githubToken.yaml".source = pkgs.replaceVars ./casc/githubToken.yaml {
+          secretFile = cfg.integrations.github.tokenFile;
+        };
+        "jenkins/casc/githubWebhook.yaml".source = pkgs.replaceVars ./casc/githubWebhook.yaml {
+          secretFile = cfg.integrations.github.webhookSecretFile;
+        };
       })
-      (lib.mkIf cfg.withGithubWebhook {
-        "jenkins/casc/githubWebhook.yaml".source = ./casc/githubWebhook.yaml;
+      (lib.mkIf cfg.archive.enable {
+        "jenkins/casc/archiveArtifacts.yaml".source = pkgs.replaceVars ./casc/archiveArtifacts.yaml {
+          inherit (cfg.archive.s3Credentials) accessKeyFile secretKeyFile;
+        };
       })
-      (lib.mkIf cfg.withArchiveArtifacts {
-        "jenkins/casc/archiveArtifacts.yaml".source = ./casc/archiveArtifacts.yaml;
-      })
-      (lib.mkIf cfg.withRegistryPublish {
-        "jenkins/casc/registryPublish.yaml".source = ./casc/registryPublish.yaml;
-      })
-      (lib.mkIf cfg.withJiraToken {
-        "jenkins/casc/jiraToken.yaml".source = ./casc/jiraToken.yaml;
+      {
+        "jenkins/casc/registryPublish.yaml".source = pkgs.replaceVars ./casc/registryPublish.yaml {
+          secretFile = cfg.registry.passwordFile;
+        };
+      }
+      (lib.mkIf cfg.integrations.jira.enable {
+        "jenkins/casc/jiraToken.yaml".source = pkgs.replaceVars ./casc/jiraToken.yaml {
+          secretFile = cfg.integrations.jira.tokenFile;
+        };
       })
       (lib.mkIf cfg.auth.enable {
         "jenkins/casc/auth.yaml".source = pkgs.writeText "auth.yaml" (

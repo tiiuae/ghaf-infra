@@ -5,5 +5,5 @@ credentials:
           - string:
               scope: GLOBAL
               id: "cachix-auth-token"
-              secret: "${file:/run/secrets/cachix-auth-token}"
+              secret: "${file:@secretFile@}"
               description: "Cachix token used to cachix pin store paths"
