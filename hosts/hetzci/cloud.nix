@@ -7,9 +7,9 @@
   ...
 }:
 {
-  imports = [
-    self.nixosModules.nebula
-    self.nixosModules.hetzner-cloud
+  imports = with self.nixosModules; [
+    nebula
+    hetzner-cloud
   ];
 
   sops.secrets = lib.mkIf config.services.monitoring.logs.enable {

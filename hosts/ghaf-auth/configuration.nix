@@ -13,10 +13,10 @@ in
 {
   imports = [
     ./disk-config.nix
-    self.nixosModules.hetzner-cloud
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
+    hetzner-cloud
     common
     openssh
     nginx

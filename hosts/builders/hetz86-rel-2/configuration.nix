@@ -12,11 +12,11 @@
     ../cross-compilation.nix
     ../cachix-push.nix
     ../release-common.nix
-    self.nixosModules.zramSwap
-    self.nixosModules.hetzner-robot
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
+    zramSwap
+    hetzner-robot
     common
     openssh
     team-devenv

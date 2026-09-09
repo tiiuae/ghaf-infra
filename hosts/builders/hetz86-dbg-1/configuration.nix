@@ -12,11 +12,11 @@
     ../builders-common.nix
     ../cross-compilation.nix
     ../cachix-push.nix
-    self.nixosModules.hetzner-cloud
-    self.nixosModules.zramSwap
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
+    hetzner-cloud
+    zramSwap
     common
     openssh
     team-devenv

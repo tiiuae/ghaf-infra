@@ -10,13 +10,13 @@
 }:
 {
   imports = [
-    self.nixosModules.testagent
     ../uae.nix
     ./disk-config.nix
     (modulesPath + "/profiles/qemu-guest.nix")
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
+    testagent
     common
     openssh
     user-bmg

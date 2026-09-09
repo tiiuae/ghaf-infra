@@ -13,13 +13,15 @@ in
 {
   imports = [
     ./host-common.nix
-    self.nixosModules.nebula
-    self.nixosModules.common
-    self.nixosModules.openssh
-    self.nixosModules.team-devenv
-    self.nixosModules.team-testers
     inputs.disko.nixosModules.disko
-  ];
+  ]
+  ++ (with self.nixosModules; [
+    nebula
+    common
+    openssh
+    team-devenv
+    team-testers
+  ]);
 
   services.testagent.credentialsFile = ./credentials.yaml;
 
