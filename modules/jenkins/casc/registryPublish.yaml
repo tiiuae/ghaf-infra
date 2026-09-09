@@ -5,5 +5,5 @@ credentials:
           - string:
               scope: GLOBAL
               id: "oci_registry_password"
-              secret: "${file:/run/secrets/oci_registry_password}"
+              secret: "${file:@secretFile@}"
               description: "OCI registry writer password"

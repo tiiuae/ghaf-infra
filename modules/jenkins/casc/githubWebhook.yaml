@@ -5,7 +5,7 @@ credentials:
           - string:
               scope: GLOBAL
               id: "jenkins-github-webhook-secret"
-              secret: "${file:/run/secrets/jenkins_github_webhook_secret}"
+              secret: "${file:@secretFile@}"
               description: "Github webhook secret"
 
 unclassified:

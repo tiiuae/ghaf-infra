@@ -38,8 +38,11 @@ in
     auth = {
       enable = true;
       clientID = "hetzci-dbg";
+      clientSecretFile = config.sops.secrets.oauth2_proxy_client_secret.path;
+      cookieSecretFile = config.sops.secrets.oauth2_proxy_cookie_secret.path;
       domain = "ci-dbg.vedenemo.dev";
     };
+    registry.passwordFile = config.sops.secrets.oci_registry_password.path;
     nodes.testagentHosts = [
       "dev"
       "prod"
@@ -52,10 +55,6 @@ in
       "ghaf-manual"
       "ghaf-release-candidate"
     ];
-    withRegistryPublish = true;
-    withCachix = false;
-    withGithubStatus = false;
-    withGithubWebhook = false;
   };
 
   hetzci.signing.proxy.enable = true;
@@ -67,6 +66,9 @@ in
         owner = "jenkins";
         mode = "0400";
       };
+      oauth2_proxy_client_secret.owner = "oauth2-proxy";
+      oauth2_proxy_cookie_secret.owner = "oauth2-proxy";
+      oci_registry_password.owner = "jenkins";
     };
   };
 

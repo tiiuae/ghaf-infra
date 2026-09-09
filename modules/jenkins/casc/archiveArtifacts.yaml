@@ -5,10 +5,10 @@ credentials:
           - string:
               scope: GLOBAL
               id: "jenkins_archive_access_key"
-              secret: "${file:/run/secrets/jenkins_archive_access_key}"
+              secret: "${file:@accessKeyFile@}"
               description: "Archive storage access key"
           - string:
               scope: GLOBAL
               id: "jenkins_archive_secret_key"
-              secret: "${file:/run/secrets/jenkins_archive_secret_key}"
+              secret: "${file:@secretKeyFile@}"
               description: "Archive storage secret key"

@@ -5,7 +5,7 @@ credentials:
           - string:
               scope: GLOBAL
               id: "jenkins-github-commit-status-token"
-              secret: "${file:/run/secrets/jenkins_github_commit_status_token}"
+              secret: "${file:@secretFile@}"
               description: "GitHub token used by Jenkins for API access and commit statuses"
 
 unclassified:

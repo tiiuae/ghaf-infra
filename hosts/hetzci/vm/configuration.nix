@@ -1,6 +1,11 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
-{ lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   imports = [
     ./disk-config.nix
@@ -11,11 +16,40 @@
 
   system.stateVersion = lib.mkForce "25.05";
   networking.hostName = "hetzci-vm";
-  sops.defaultSopsFile = ./secrets.yaml;
+  sops = {
+    defaultSopsFile = ./secrets.yaml;
+    secrets = {
+      cachix-auth-token.owner = "jenkins";
+      jenkins_archive_access_key.owner = "jenkins";
+      jenkins_archive_secret_key.owner = "jenkins";
+      jenkins_github_commit_status_token.owner = "jenkins";
+      jenkins_github_webhook_secret.owner = "jenkins";
+      oci_registry_password.owner = "jenkins";
+    };
+  };
 
   services.ghaf-jenkins = {
     envType = "vm";
     url = "http://localhost:8080";
+    integrations = {
+      github = {
+        enable = true;
+        tokenFile = config.sops.secrets.jenkins_github_commit_status_token.path;
+        webhookSecretFile = config.sops.secrets.jenkins_github_webhook_secret.path;
+      };
+      cachix = {
+        enable = true;
+        tokenFile = config.sops.secrets.cachix-auth-token.path;
+      };
+    };
+    archive = {
+      enable = true;
+      s3Credentials = {
+        accessKeyFile = config.sops.secrets.jenkins_archive_access_key.path;
+        secretKeyFile = config.sops.secrets.jenkins_archive_secret_key.path;
+      };
+    };
+    registry.passwordFile = config.sops.secrets.oci_registry_password.path;
     nodes.testagentHosts = [ ];
     pipelines = [
       "ghaf-hw-test-manual"
@@ -30,8 +64,6 @@
       "ghaf-release-candidate"
       "ghaf-release-publish"
     ];
-    withArchiveArtifacts = true;
-    withRegistryPublish = true;
     extraCasc = {
       jenkins.authorizationStrategy = "unsecured";
     };
