@@ -63,6 +63,23 @@
 
   services.ghaf-jenkins = {
     enable = true;
+    auth.groups = {
+      authenticated = [
+        "Overall/Read"
+        "Job/Read"
+      ];
+      "tiiuae:devenv-fi" = [ "Overall/Administer" ];
+      "tiiuae:ci-dev-admins" = [
+        "Overall/Read"
+        "Overall/SystemRead"
+        "Job/Build"
+        "Job/Cancel"
+        "Job/Read"
+        "Job/Configure"
+        "Run/Replay"
+        "Run/Update"
+      ];
+    };
     nodes.authorizedKeys = {
       testagent-dev = machines.testagent-dev.publicKey;
       testagent-dbg = machines.testagent-dbg.publicKey;

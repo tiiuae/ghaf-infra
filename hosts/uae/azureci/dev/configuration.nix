@@ -12,7 +12,6 @@
     ./disk-config.nix
     ../azure-common.nix
     ../remote-builders.nix
-    ../../../hetzci/auth.nix
     ../../../hetzci/common.nix
     ../../../hetzci/signing.nix
     (modulesPath + "/profiles/qemu-guest.nix")
@@ -28,6 +27,11 @@
   services.ghaf-jenkins = {
     envType = "dev";
     url = "https://ci-dev.uaenorth.cloudapp.azure.com";
+    auth = {
+      enable = true;
+      clientID = "azureci-dev";
+      domain = "ci-dev.uaenorth.cloudapp.azure.com";
+    };
     pipelines = [
       "ghaf-hw-test-manual"
       "ghaf-hw-test"
@@ -38,13 +42,7 @@
     withRegistryPublish = true;
   };
 
-  hetzci = {
-    auth = {
-      clientID = "azureci-dev";
-      domain = "ci-dev.uaenorth.cloudapp.azure.com";
-    };
-    signing.proxy.enable = true;
-  };
+  hetzci.signing.proxy.enable = true;
 
   services.jenkins.environment = {
     OCI_REGISTRY = "registry.uaenorth.cloudapp.azure.com";
