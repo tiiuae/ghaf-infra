@@ -11,12 +11,12 @@
 {
   imports = [
     ./disk-config.nix
-    self.nixosModules.hetzner-robot
     ../../../../builders/builders-common.nix
     (modulesPath + "/profiles/qemu-guest.nix")
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
+    hetzner-robot
     common
     openssh
     team-devenv

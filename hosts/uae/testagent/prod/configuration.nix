@@ -9,10 +9,10 @@
 {
   imports = [
     ./disk-config.nix
-    self.nixosModules.testagent
     ../uae.nix
   ]
   ++ (with self.nixosModules; [
+    testagent
     common
     openssh
     team-devenv

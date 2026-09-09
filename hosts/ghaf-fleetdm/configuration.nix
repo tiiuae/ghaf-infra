@@ -10,10 +10,10 @@
   imports = [
     inputs.disko.nixosModules.disko
     ./disk-config.nix
-    self.nixosModules.hetzner-cloud
     ./fleet.nix
   ]
   ++ (with self.nixosModules; [
+    hetzner-cloud
     common
     openssh
     nginx

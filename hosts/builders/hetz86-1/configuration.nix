@@ -12,10 +12,10 @@
     ../builders-common.nix
     ../cross-compilation.nix
     ../cachix-push.nix
-    self.nixosModules.hetzner-robot
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
+    hetzner-robot
     common
     openssh
     team-devenv

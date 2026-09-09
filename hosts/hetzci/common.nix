@@ -11,11 +11,11 @@
 }:
 {
   imports = [
-    self.nixosModules.zramSwap
-    self.nixosModules.jenkins
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
+    zramSwap
+    jenkins
     common
     openssh
     team-devenv
