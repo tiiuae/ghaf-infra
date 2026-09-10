@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
+SPDX-FileCopyrightText: 2022-2026 TII (SSRC) and the Ghaf contributors
 SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 
@@ -15,6 +15,10 @@ All commands in this document assume you have completed the [Getting Started](..
 
 ```shell
 hosts/hetzci/
+├── common.nix              # HetzCI-wide Jenkins and host configuration
+├── cloud.nix               # Hetzner Cloud configuration
+├── remote-builders.nix     # Remote Nix builders used by Jenkins
+├── signing.nix             # HetzCI signing configuration
 ├── dbg
 │   └── ...
 ├── dev
@@ -27,13 +31,20 @@ hosts/hetzci/
 │   ├── configuration.nix  # nixosConfiguration for the jenkins host
 │   ├── disk-config.nix    # disko nix configuration
 │   └── secrets.yaml       # encrypted sops secrets specific to given host
-...
-├── casc
-│   └── auth.yaml          # Environment-specific authentication policy
 ```
 
 The environment-independent Jenkins service implementation, CasC fragments,
 plugins, pipelines, and shared library live in [`modules/jenkins/`](../../modules/jenkins/).
+It is exported as `nixosModules.jenkins`. Test-agent services and tooling live in
+[`modules/testagent/`](../../modules/testagent/) and are exported as
+`nixosModules.testagent`.
+
+HetzCI-specific defaults, authentication groups, test-agent nodes, and authorized
+keys remain in [`common.nix`](./common.nix). Each environment declares its own
+pipelines, integration enablement, and SOPS secrets in its `configuration.nix`.
+The Jenkins module accepts secret file paths and does not manage the secret
+provider. The test-agent module currently takes a SOPS credentials file through
+`services.testagent.credentialsFile`.
 
 Pipeline tests live in [`tests/jenkins/`](../../tests/jenkins/) at the
 repository root and run through the `nix fmt` hooks.
@@ -45,6 +56,49 @@ repository root and run through the `nix fmt` hooks.
 - **`dev`**: development CI for ghaf-infra and hw-test development. Web UI: https://ci-dev.vedenemo.dev/
 - **`dbg`**: debug CI environment.
 - **`vm`**: local QEMU VM for testing changes before deploying. Modified for local use: simplified Caddy config, no Jenkins authentication, auto-login as root.
+
+### Jenkins configuration
+
+All Jenkins controllers configure `services.ghaf-jenkins`. The OCI registry is
+part of the build-to-hardware-test artifact flow, so its URL and password file
+are required. Authentication and the GitHub, Cachix, Jira, and archive features
+are disabled by default and enabled explicitly.
+
+```nix
+imports = [ inputs.ghaf-infra.nixosModules.jenkins ];
+
+services.ghaf-jenkins = {
+  enable = true;
+  envType = "dev";
+  url = "https://ci.example.com";
+
+  registry = {
+    url = "registry.example.com";
+    passwordFile = config.sops.secrets.oci_registry_password.path;
+  };
+
+  auth = {
+    enable = true;
+    domain = "ci.example.com";
+    clientID = "jenkins-dev";
+    oidcIssuerUrl = "https://auth.example.com";
+    clientSecretFile = config.sops.secrets.oauth2_proxy_client_secret.path;
+    cookieSecretFile = config.sops.secrets.oauth2_proxy_cookie_secret.path;
+    groups."ci-admins" = [ "Overall/Administer" ];
+  };
+
+  integrations.github = {
+    enable = true;
+    tokenFile = config.sops.secrets.jenkins_github_commit_status_token.path;
+    webhookSecretFile = config.sops.secrets.jenkins_github_webhook_secret.path;
+  };
+};
+```
+
+Single-secret integrations use the same explicit structure under
+`integrations.cachix` and `integrations.jira`. Artifact archiving is configured
+under `archive`, with credentials in `archive.s3Credentials`. Consumers provide
+the paths from their chosen secret manager; the HetzCI hosts use SOPS.
 
 ## Usage
 
@@ -110,7 +164,8 @@ To stop the VM, use `Ctrl-a` `x` or run `shutdown now` in the VM terminal.
 
 **Important**: sync with the team before deploying to `dev` to avoid interfering with someone else's testing.
 
-After testing locally in a VM, copy the changes to the `dev` directory and [deploy](../../docs/deploy-rs.md):
+After testing locally in a VM, configure any environment-specific values in the
+`dev` directory and [deploy](../../docs/deploy-rs.md):
 
 ```bash
 ❯ deploy -s .#hetzci-dev
@@ -122,7 +177,8 @@ This deploys to https://ci-dev.vedenemo.dev.
 
 **Important**: only deploy `prod` from ghaf-infra main. Sync with the team beforehand to avoid interfering with ongoing production testing.
 
-After testing locally in a VM and optionally in `dev`, copy the changes to `prod` and deploy:
+After testing locally in a VM and optionally in `dev`, deploy the reviewed
+configuration from the main branch:
 
 ```bash
 ❯ deploy -s .#hetzci-prod
@@ -153,7 +209,10 @@ The release environment is completely re-installed for each Ghaf release to supp
 
 ## Jenkins Pipeline Overview
 
-All pipelines can be tested locally in the `vm` environment, but no testagents can connect to localhost so HW tests will not run. Only the ci-release environment is authorized to push to the [release cache](https://app.cachix.org/organization/tiiuae/cache/ghaf-release), so cachix push will fail in other environments.
+All pipelines can be tested locally in the `vm` environment, but no testagents
+can connect to localhost so HW tests will not run. The release environment uses
+the `ghaf-release` Cachix cache; other environments with the Cachix integration
+enabled use `ghaf-dev`.
 
 #### ghaf-hw-test
 Runs Ghaf hw-tests given a ghaf image and a testset. Can be triggered manually to run a hw-test ad-hoc.
