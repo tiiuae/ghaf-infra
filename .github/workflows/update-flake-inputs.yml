@@ -52,7 +52,7 @@ jobs:
           nix develop -c bash -lc '
             # Load shellHook-defined helpers (like update-jenkins-plugins) in this CI shell.
             source <(nix print-dev-env)
-            update-jenkins-plugins hosts/hetzci
+            update-jenkins-plugins modules/jenkins
           '
 
       - name: Configure git identity for commit hooks
@@ -71,7 +71,7 @@ jobs:
           branch: automation/update-flake-inputs
           add-paths: |
             flake.lock
-            hosts/hetzci/plugins.json
+            modules/jenkins/plugins.json
           committer: github-actions[bot] <github-actions@users.noreply.github.com>
           author: github-actions[bot] <github-actions@users.noreply.github.com>
           commit-message: |

@@ -90,7 +90,13 @@ in
   options.services.ghaf-jenkins = {
     enable = lib.mkEnableOption "the Ghaf Jenkins controller";
     envType = lib.mkOption {
-      type = lib.types.str;
+      type = lib.types.enum [
+        "dbg"
+        "dev"
+        "prod"
+        "release"
+        "vm"
+      ];
       description = "Environment identifier exposed to Jenkins jobs";
     };
     url = lib.mkOption {
@@ -394,14 +400,15 @@ in
 
     # Caddy needs to be able to access files under /var/lib/jenkins/artifacts.
     # Use traverse-only access on JENKINS_HOME and scope group access to caddy.service.
-    users.users =
-      lib.mapAttrs (_: publicKey: {
+    users.users = lib.mkMerge [
+      (lib.mapAttrs (_: publicKey: {
         isNormalUser = true;
         openssh.authorizedKeys.keys = [ publicKey ];
-      }) cfg.nodes.authorizedKeys
-      // lib.optionalAttrs config.services.caddy.enable {
+      }) cfg.nodes.authorizedKeys)
+      (lib.mkIf config.services.caddy.enable {
         jenkins.homeMode = "710";
-      };
+      })
+    ];
     systemd.services.caddy = lib.mkIf config.services.caddy.enable {
       serviceConfig.SupplementaryGroups = [ "jenkins" ];
     };
