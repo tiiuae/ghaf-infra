@@ -41,6 +41,7 @@ def TARGETS = [
       device_tag: 'darter-pro',
       variant: 'storeDisk-debug-installer',
       testset: '_relayboot_regression_',
+      test_secboot: true,
     ]],
   ],
   [ target: "packages.x86_64-linux.intel-laptop-release",
