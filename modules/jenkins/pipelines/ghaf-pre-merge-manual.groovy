@@ -90,12 +90,12 @@ pipeline {
             if (params.SET_PR_STATUS) {
               pipelineExecution.set_github_commit_status("Manual trigger: pending", "pending", env.TARGET_COMMIT)
             }
-            def pr_href = "<a href=\"${REPO_URL}/pull/${params.GITHUB_PR_NUMBER}\">🧩 PR#${params.GITHUB_PR_NUMBER}</a>"
+            def normalizedRepoUrl = REPO_URL.replaceAll('/+$', '')
+            def pr_href = "<a href=\"${normalizedRepoUrl}/pull/${params.GITHUB_PR_NUMBER}\">🧩 PR#${params.GITHUB_PR_NUMBER}</a>"
             artifactSupport.append_to_build_description(pr_href)
             def merge_commit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
             // The downstream hw-test job needs the PR merge ref as well as the
             // merge SHA, otherwise it cannot refetch GitHub's synthetic merge commit.
-            def normalizedRepoUrl = REPO_URL.replaceAll('/+$', '')
             def merge_flake_ref = "git+${normalizedRepoUrl}?ref=refs/pull/${params.GITHUB_PR_NUMBER}/merge&rev=${merge_commit}"
             PIPELINE = pipelineExecution.create_pipeline(TARGETS, null, merge_flake_ref)
           }
