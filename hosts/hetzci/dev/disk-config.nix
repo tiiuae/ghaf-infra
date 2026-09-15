@@ -31,8 +31,8 @@
       };
     };
   };
-  disko.devices.disk.nix = {
-    device = "/dev/disk/by-id/scsi-0HC_Volume_103180445";
+  disko.devices.disk.nix1 = {
+    device = "/dev/disk/by-id/scsi-0HC_Volume_106871524";
     type = "disk";
     content = {
       type = "filesystem";
