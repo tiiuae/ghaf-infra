@@ -70,6 +70,35 @@ def create_pipeline(
   def ghaf_checkout = pwd()
   def parallel_tests = options.get('parallel_tests', true)
   def sendResultsToZephyr = options.get('send_results_to_zephyr', false)
+  def source_vsa_required = options.get('source_vsa_required', false)
+  def source_vsa_requested = source_vsa_required || options.get('source_vsa', true)
+  def source_vsa_path = null
+
+  run_optional_stage(source_vsa_requested, "Source VSA") {
+    def target_repository = target_repo.replaceAll('/+$', '').replaceFirst(/\.git$/, '').replaceFirst(/^https:\/\/github\.com\//, '')
+    def quoted_target_repository = artifactSupport.shell_quote(target_repository)
+    def quoted_target_commit = artifactSupport.shell_quote(target_commit)
+    sh "mkdir -v -p '${artifacts_local_dir}'"
+    def source_vsa_status = sh(
+      script: """
+        source-vsa fetch \
+          --repository ${quoted_target_repository} \
+          --commit ${quoted_target_commit} \
+          --bundle '${artifacts_local_dir}/source-vsa.sigstore.json'
+      """,
+      returnStatus: true
+    )
+    if (source_vsa_status == 0) {
+      source_vsa_path = "attestations/source-vsa.sigstore.json"
+    } else if (source_vsa_required) {
+      error("Source VSA verification failed for ${target_repository}@${target_commit}")
+    } else {
+      def message = "Source VSA verification unavailable for ${target_repository}@${target_commit}; continuing without it"
+      catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE', message: message) {
+        error(message)
+      }
+    }
+  }
 
   stage("Eval") {
     lock('evaluator') {
@@ -119,6 +148,9 @@ def create_pipeline(
         signing_proxy: null,
       ],
       attestations: [
+        source_vsa: [
+          path: source_vsa_path,
+        ],
         provenance: [
           path: null,
           signature: empty_signature(),
@@ -184,6 +216,9 @@ def create_pipeline(
         lock(label: 'nix-build', quantity: 1) {
           stage("Build ${build_shortname}") {
             sh "mkdir -v -p ${output}"
+            if (source_vsa_path != null) {
+              sh "install -Dm644 '${artifacts_local_dir}/source-vsa.sigstore.json' '${output}/attestations/source-vsa.sigstore.json'"
+            }
             def system = build_target_name.tokenize('.')[1]
             def remote_stores = readJSON file: '/etc/jenkins/remote-stores.json'
             def remote_store = remote_stores[system]

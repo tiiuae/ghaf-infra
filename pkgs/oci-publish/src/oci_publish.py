@@ -37,6 +37,7 @@ SYSUPDATE_MEDIA_TYPES = {
     "kernel": SYSUPDATE_KERNEL_MEDIA_TYPE,
 }
 REFERRER_MEDIA_TYPES = {
+    "source_vsa": "application/vnd.dev.sigstore.bundle.v0.3+json",
     "provenance": "application/vnd.in-toto+json",
     "release_policy": RELEASE_ATTESTATION_ARTIFACT_TYPE,
     "sbom_cyclonedx": "application/vnd.cyclonedx+json",
@@ -44,6 +45,7 @@ REFERRER_MEDIA_TYPES = {
     "sbom_csv": "text/csv",
 }
 REFERRER_DESCRIPTIONS = {
+    "source_vsa": "SLSA Source VSA",
     "provenance": "SLSA Provenance",
     "release_policy": "Ghaf release policy attestation",
     "sbom_cyclonedx": "CycloneDX SBOM",
@@ -212,15 +214,25 @@ def publish_attestations(
     """Attach attestation referrers declared in the build manifest."""
     referrers: dict[str, Any] = {}
     attestations = manifest["attestations"]
-    for role in ("provenance", "sbom_cyclonedx", "sbom_spdx", "sbom_csv"):
-        relpath = attestations[role]["path"]
+    for role in (
+        "source_vsa",
+        "provenance",
+        "sbom_cyclonedx",
+        "sbom_spdx",
+        "sbom_csv",
+    ):
+        attestation = attestations.get(role)
+        if not attestation:
+            continue
+
+        relpath = attestation["path"]
         if not relpath:
             continue
 
         signature_relpath = None
-        signature = attestations[role].get("signature")
+        signature = attestation.get("signature")
         if signature:
-            signature_relpath = attestations[role]["signature"]["path"]
+            signature_relpath = signature["path"]
 
         referrers[role] = publish_referrer(
             common_args=common_args,
