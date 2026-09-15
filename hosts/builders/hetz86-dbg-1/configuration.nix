@@ -47,6 +47,7 @@
 
   nix.caches = [
     "nixos-org"
+    "ghaf-dev"
     "ghaf-dbg"
   ];
   nix.settings.trusted-users = [ "@wheel" ];
