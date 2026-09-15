@@ -13,6 +13,16 @@ properties([
     string(name: 'REPO_URL', defaultValue: DEFAULT_REPO_URL, description: 'Git repository URL'),
     string(name: 'GITREF', defaultValue: 'main', description: 'Ghaf git reference (Commit/Branch/Tag)'),
     string(name: 'TESTSET', defaultValue: null, description: 'By default tests are skipped. To run hw-tests, define the target testset here; e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.)'),
+    string(
+      name: 'CUSTOM_GHAF_TARGET',
+      defaultValue: '',
+      description: 'Additional Ghaf flake target to build.'
+    ),
+    booleanParam(
+      name: 'EXECUTE_ORIN_AGX_FLASH',
+      defaultValue: false,
+      description: 'Execute a custom Ghaf target ending with -flash-script or -flash-qspi after Build.'
+    ),
     booleanParam(name: 'doc', defaultValue: false, description: 'Build target packages.x86_64-linux.doc'),
     booleanParam(name: 'nvidia_jetson_orin_agx_debug_from_x86_64', defaultValue: false, description: 'Build target packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64'),
     booleanParam(name: 'nvidia_jetson_orin_agx_accelerated_guivm_debug_from_x86_64', defaultValue: false, description: 'Build target packages.x86_64-linux.nvidia-jetson-orin-agx-accelerated-guivm-debug-from-x86_64'),
@@ -176,6 +186,19 @@ pipeline {
               TARGETS.push(
                 [ target: "packages.x86_64-linux.intel-laptop-low-mem-debug-installer", uefisigniso: params.UEFISIGN, testset: null ])
             }
+            def customTarget = params.CUSTOM_GHAF_TARGET?.trim()
+            if (customTarget) {
+              if (customTarget.endsWith('-flash-script') || customTarget.endsWith('-flash-qspi')) {
+                TARGETS.push([ target: customTarget, no_image: true, testset: null, provenance: false ])
+              } else {
+                TARGETS.push([
+                  target: customTarget,
+                  uefisign: params.UEFISIGN,
+                  testset: null,
+                  provenance: false,
+                ])
+              }
+            }
 
             PIPELINE = pipelineExecution.create_pipeline(TARGETS)
           }
@@ -186,6 +209,120 @@ pipeline {
       steps {
         script {
           parallel PIPELINE
+        }
+      }
+    }
+    stage('Execute Orin AGX flash') {
+      agent none
+      when { expression { params && params.EXECUTE_ORIN_AGX_FLASH } }
+      steps {
+        script {
+          def flashTarget = params.CUSTOM_GHAF_TARGET?.trim()
+          if (!(flashTarget?.endsWith('-flash-script') || flashTarget?.endsWith('-flash-qspi'))) {
+            error("EXECUTE_ORIN_AGX_FLASH requires CUSTOM_GHAF_TARGET to end with '-flash-script' or '-flash-qspi'")
+          }
+          def flashScriptPath
+          artifactSupport.with_controller_workspace(artifactSupport.controller_workdir()) {
+            flashScriptPath = artifactSupport.run_cmd("nix path-info .#${flashTarget}")
+          }
+          def deviceInfo = pipelineModel.device_info(flashTarget, false)
+            ?: pipelineModel.device_info(null, false, 'orin-agx')
+          if (!deviceInfo || !['orin-agx', 'orin-agx-64'].contains(deviceInfo.tag)) {
+            error("Unable to resolve Orin AGX device config for flash target '${flashTarget}'")
+          }
+          node(deviceInfo.tag) {
+            env.ORIN_AGX_FLASH_SCRIPT_PATH = flashScriptPath
+            def flashGcRootTag = (env.BUILD_TAG ?: "build-${env.BUILD_NUMBER}")
+              .replaceAll(/[^A-Za-z0-9_.-]/, '_')
+            env.ORIN_AGX_FLASH_GCROOT = "/var/lib/jenkins/gcroots/orin-agx-flash-script-${flashGcRootTag}"
+            env.ORIN_AGX_RELAY_NAME = "relay-${deviceInfo.name}"
+            def testAgentHost = sh(
+              script: 'IFS= read -r host < /proc/sys/kernel/hostname; printf %s "$host"',
+              returnStdout: true
+            ).trim()
+            try {
+              sh """
+                set -eu
+                . /var/lib/jenkins/jenkins.env
+                controller_url="\${CONTROLLER:-}"
+                controller_host="\${controller_url#*://}"
+                controller_host="\${controller_host%%/*}"
+                if [ -z "\$controller_host" ]; then
+                  echo "Unable to derive Jenkins controller host from CONTROLLER='\$controller_url'"
+                  exit 1
+                fi
+                mkdir -p /var/lib/jenkins/gcroots
+                find /var/lib/jenkins/gcroots \
+                  -maxdepth 1 \
+                  -type l \
+                  -name 'orin-agx-flash-script-*' \
+                  -mtime +7 \
+                  -delete
+                NIX_SSHOPTS="-i /run/secrets/ssh_host_ed25519_key -o StrictHostKeyChecking=no" \
+                  nix copy \
+                    --from ssh://${testAgentHost}@\$controller_host \
+                    --no-check-sigs \
+                    ${flashScriptPath}
+                nix-store --add-root "\$ORIN_AGX_FLASH_GCROOT" \
+                  --realise "\$ORIN_AGX_FLASH_SCRIPT_PATH"
+              """
+              sh """
+                set -eu
+                curl --fail-with-body --silent --show-error \
+                  --request POST \
+                  --form "relay=\$ORIN_AGX_RELAY_NAME" \
+                  --form "state=ON" \
+                  http://127.0.0.1:8000/api/set_state
+                sleep 5
+              """
+              def boardctlOutput = sh(
+                script: '''
+                  set +e
+                  /run/wrappers/bin/sudo \
+                    /var/lib/nvidia/Linux_for_Tegra/tools/board_automation/boardctl \
+                    -t topo recovery 2>&1
+                  echo "BOARDCTL_RC=$?"
+                ''',
+                returnStdout: true
+              ).trim()
+              println(boardctlOutput)
+              def boardctlRcLine = boardctlOutput.readLines().find { it.startsWith('BOARDCTL_RC=') }
+              if (boardctlRcLine == null) {
+                error('Unable to read boardctl return code')
+              }
+              def boardctlRc = boardctlRcLine - 'BOARDCTL_RC='
+              if (boardctlRc != '0') {
+                error("boardctl failed with return code ${boardctlRc}")
+              }
+              if (!boardctlOutput.contains('Recovery mode done.')) {
+                error("boardctl output did not contain 'Recovery mode done.'")
+              }
+              timeout(time: 60, unit: 'MINUTES') {
+                sh '''
+                  set -eu
+                  flash_scripts="$(find "${ORIN_AGX_FLASH_SCRIPT_PATH}/bin" -maxdepth 1 -type f -executable)"
+                  flash_script_count="$(printf '%s\n' "$flash_scripts" | sed '/^$/d' | wc -l)"
+                  if [ "$flash_script_count" -ne 1 ]; then
+                    echo "Expected exactly one executable in ${ORIN_AGX_FLASH_SCRIPT_PATH}/bin"
+                    printf '%s\n' "$flash_scripts"
+                    exit 1
+                  fi
+                  flash_script="$(printf '%s\n' "$flash_scripts")"
+                  /run/wrappers/bin/sudo "$flash_script"
+                '''
+              }
+            } finally {
+              sh '''
+                curl --fail-with-body --silent --show-error \
+                  --request POST \
+                  --form "relay=$ORIN_AGX_RELAY_NAME" \
+                  --form "state=OFF" \
+                  http://127.0.0.1:8000/api/set_state || \
+                  echo "Warning: failed to turn off relay $ORIN_AGX_RELAY_NAME"
+                rm -f "$ORIN_AGX_FLASH_GCROOT" || true
+              '''
+            }
+          }
         }
       }
     }
