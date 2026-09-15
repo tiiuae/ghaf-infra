@@ -4,6 +4,7 @@
 
 def REPO_URL = 'https://github.com/tiiuae/ghaf/'
 def PIPELINE = [:]
+def PIPELINE_OPTIONS = [source_vsa_required: true]
 
 def ALL_RELEASE_TARGETS = [
   [ target: "packages.x86_64-linux.doc",
@@ -138,13 +139,13 @@ pipeline {
           script {
             if (params.RELEASE_TARGETS_SET.contains('All targets')) {
               println('All release targets selected')
-              PIPELINE = pipelineExecution.create_pipeline(ALL_RELEASE_TARGETS)
+              PIPELINE = pipelineExecution.create_pipeline(ALL_RELEASE_TARGETS, null, null, PIPELINE_OPTIONS)
             } else if (params.RELEASE_TARGETS_SET.contains('Only laptop targets')){
               println('Only laptop release targets selected')
-              PIPELINE = pipelineExecution.create_pipeline(LAPTOP_RELEASE_TARGETS)
+              PIPELINE = pipelineExecution.create_pipeline(LAPTOP_RELEASE_TARGETS, null, null, PIPELINE_OPTIONS)
             } else if (params.RELEASE_TARGETS_SET.contains('Minimal build targets')){
               println('Minimal build targets selected')
-              PIPELINE = pipelineExecution.create_pipeline(MINIMAL_BUILD_TARGETS)
+              PIPELINE = pipelineExecution.create_pipeline(MINIMAL_BUILD_TARGETS, null, null, PIPELINE_OPTIONS)
             } else {
               error('Release targets pre-set was not selected')
             }

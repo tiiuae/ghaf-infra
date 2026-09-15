@@ -246,6 +246,7 @@ in
           pkgs.oras
           self.packages.${pkgs.stdenv.hostPlatform.system}.oci-publish
           self.packages.${pkgs.stdenv.hostPlatform.system}.policy-checker
+          self.packages.${pkgs.stdenv.hostPlatform.system}.source-vsa
         ]
         ++ lib.optionals cfg.integrations.cachix.enable [
           pkgs.cachix

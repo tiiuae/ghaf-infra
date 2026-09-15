@@ -34,6 +34,10 @@ REGISTRY_ARTIFACT = "source-vsa"
 SLSA_VERSION = "1.2"
 SUPPORTED_LEVEL = "SLSA_SOURCE_LEVEL_1"
 COMMIT_PATTERN = re.compile(r"[0-9a-f]{40}")
+POLICY_DIGEST_PATTERN = re.compile(r"[0-9a-f]{64}")
+TRUSTED_VERIFIER_ID = "https://github.com/tiiuae/ghaf-infra/.github/actions/source-vsa"
+TRUSTED_WORKFLOW_PATH = ".github/workflows/source-vsa.yml"
+TRUSTED_SOURCE_REFS = [r"refs/heads/main"]
 
 
 class SourceVSAError(Exception):
@@ -43,18 +47,6 @@ class SourceVSAError(Exception):
 def ref_allowed(ref: str, allowed_refs: list[str]) -> bool:
     """Return whether a concrete source ref matches an allowed policy pattern."""
     return any(re.fullmatch(pattern, ref) for pattern in allowed_refs)
-
-
-def verifier_matches(verifier: Any, context: dict[str, Any]) -> bool:
-    """Match the verifier identity and an action revision when independently set."""
-    return (
-        isinstance(verifier, dict)
-        and verifier.get("id") == context["verifier_id"]
-        and (
-            "action_sha" not in context
-            or verifier.get("version") == {"action": context["action_sha"]}
-        )
-    )
 
 
 def run_command(
@@ -105,25 +97,44 @@ def load_policy(
     )
 
 
+def verification_context(
+    repository: str,
+    commit: str,
+    *,
+    verified_level: str,
+) -> dict[str, Any]:
+    """Validate consumer inputs and derive the trusted verification context."""
+    repository = repository.lower()
+    if not COMMIT_PATTERN.fullmatch(commit) or commit == "0" * 40:
+        raise SourceVSAError(f"invalid Git commit: {commit}")
+    if verified_level != SUPPORTED_LEVEL:
+        raise SourceVSAError(f"unsupported verified level: {verified_level}")
+
+    return {
+        "repository": repository,
+        "commit": commit,
+        "verified_level": verified_level,
+        "verifier_id": TRUSTED_VERIFIER_ID,
+        "allowed_refs": TRUSTED_SOURCE_REFS,
+        "workflow": f"{repository}/{TRUSTED_WORKFLOW_PATH}",
+        "reference": f"{REGISTRY_HOST}/{repository}/{REGISTRY_ARTIFACT}:{commit}",
+        "registry_host": REGISTRY_HOST,
+    }
+
+
 def policy_context(
     policy_source: tuple[dict[str, Any], str, str | None],
     repository: str,
     commit: str,
-    action_sha: str | None = None,
+    action_sha: str,
     *,
     verified_level: str,
 ) -> dict[str, Any]:
-    """Validate inputs and derive all policy-controlled names."""
+    """Validate the issuer policy and derive its issuance context."""
     policy, policy_digest, policy_path = policy_source
-    repository = repository.lower()
-    if not COMMIT_PATTERN.fullmatch(commit) or commit == "0" * 40:
-        raise SourceVSAError(f"invalid Git commit: {commit}")
-    if action_sha is not None and (
-        not COMMIT_PATTERN.fullmatch(action_sha) or action_sha == "0" * 40
-    ):
+    context = verification_context(repository, commit, verified_level=verified_level)
+    if not COMMIT_PATTERN.fullmatch(action_sha) or action_sha == "0" * 40:
         raise SourceVSAError(f"invalid issuer action commit: {action_sha}")
-    if verified_level != SUPPORTED_LEVEL:
-        raise SourceVSAError(f"unsupported verified level: {verified_level}")
 
     allowed_refs = policy.get("refs")
     if (
@@ -147,23 +158,21 @@ def policy_context(
     if not all(isinstance(value, str) and value for value in required_strings.values()):
         raise SourceVSAError("policy verifier or workflow configuration is invalid")
 
-    context = {
-        "repository": repository,
-        "commit": commit,
-        "allowed_refs": allowed_refs,
-        "verified_level": verified_level,
-        "verifier_id": verifier["id"],
-        "workflow": f"{repository}/{policy['workflowPath'].lstrip('/')}",
-        "policy_digest": policy_digest,
-        "reference": f"{REGISTRY_HOST}/{repository}/{REGISTRY_ARTIFACT}:{commit}",
-        "registry_host": REGISTRY_HOST,
-    }
-    if action_sha is not None:
-        context["action_sha"] = action_sha
-        if policy_path is not None:
-            context["policy_uri"] = (
-                f"https://github.com/{repository}/blob/{commit}/{policy_path}"
-            )
+    context.update(
+        {
+            "allowed_refs": allowed_refs,
+            "verifier_id": verifier["id"],
+            "workflow": (
+                f"{context['repository']}/{policy['workflowPath'].lstrip('/')}"
+            ),
+            "policy_digest": policy_digest,
+            "action_sha": action_sha,
+        }
+    )
+    if policy_path is not None:
+        context["policy_uri"] = (
+            f"https://github.com/{context['repository']}/blob/{commit}/{policy_path}"
+        )
     return context
 
 
@@ -216,8 +225,47 @@ def statement_from_bundle(bundle_path: Path) -> dict[str, Any]:
     return statement
 
 
-def verify_statement(statement: dict[str, Any], context: dict[str, Any]) -> None:
-    """Require the exact statement shape and policy decisions used by this issuer."""
+def verify_policy_claim(policy: Any, context: dict[str, Any]) -> None:
+    """Validate signed issuer-policy metadata without requiring its contents."""
+    policy_digest = (
+        policy.get("digest", {}).get("sha256")
+        if isinstance(policy, dict) and isinstance(policy.get("digest"), dict)
+        else None
+    )
+    if not isinstance(policy_digest, str) or not POLICY_DIGEST_PATTERN.fullmatch(
+        policy_digest
+    ):
+        raise SourceVSAError("VSA issuer policy digest is invalid")
+    if "policy_digest" in context and policy_digest != context["policy_digest"]:
+        raise SourceVSAError(
+            "VSA policy digest does not match the issuer policy: "
+            f"expected {context['policy_digest']!r}, got {policy_digest!r}"
+        )
+
+    expected_uri_prefix = (
+        f"https://github.com/{context['repository']}/blob/{context['commit']}/"
+    )
+    policy_uri = policy.get("uri")
+    if (
+        not isinstance(policy_uri, str)
+        or not policy_uri.startswith(expected_uri_prefix)
+        or policy_uri == expected_uri_prefix
+    ):
+        raise SourceVSAError(
+            "VSA policy URI does not match the source revision: "
+            f"expected a path under {expected_uri_prefix!r}, got {policy_uri!r}"
+        )
+    if "policy_uri" in context and policy_uri != context["policy_uri"]:
+        raise SourceVSAError(
+            "VSA policy URI does not match the supplied policy path: "
+            f"expected {context['policy_uri']!r}, got {policy_uri!r}"
+        )
+
+
+def verify_statement(  # pylint: disable=too-many-branches,too-many-locals
+    statement: dict[str, Any], context: dict[str, Any]
+) -> None:
+    """Require the canonical statement shape and trusted VSA claims."""
     expected_subject = {
         "uri": (
             f"https://github.com/{context['repository']}/commit/{context['commit']}"
@@ -228,58 +276,91 @@ def verify_statement(statement: dict[str, Any], context: dict[str, Any]) -> None
     if not isinstance(subjects, list) or len(subjects) != 1:
         raise SourceVSAError("VSA must contain exactly one subject")
     subject = subjects[0]
-    if not isinstance(subject, dict) or any(
-        subject.get(key) != value for key, value in expected_subject.items()
-    ):
-        raise SourceVSAError("VSA subject does not match the requested source commit")
+    if not isinstance(subject, dict):
+        raise SourceVSAError("VSA subject is not a mapping")
+    for key, expected_value in expected_subject.items():
+        if subject.get(key) != expected_value:
+            raise SourceVSAError(
+                f"VSA subject {key} does not match the requested source commit: "
+                f"expected {expected_value!r}, got {subject.get(key)!r}"
+            )
     annotations = subject.get("annotations")
     source_refs = (
         annotations.get("sourceRefs") if isinstance(annotations, dict) else None
     )
     if (
         not isinstance(source_refs, list)
-        or not source_refs
-        or not all(
-            isinstance(ref, str) and ref_allowed(ref, context["allowed_refs"])
-            for ref in source_refs
+        or len(source_refs) != 1
+        or not isinstance(source_refs[0], str)
+        or not source_refs[0]
+    ):
+        raise SourceVSAError("VSA must contain exactly one source ref")
+    if "allowed_refs" in context and not ref_allowed(
+        source_refs[0], context["allowed_refs"]
+    ):
+        raise SourceVSAError(
+            f"VSA source ref {source_refs[0]!r} is not allowed by the trusted policy: "
+            f"expected one of {context['allowed_refs']!r}"
         )
-    ):
-        raise SourceVSAError("VSA sourceRefs are not allowed by policy")
 
-    expected_predicate = {
-        "resourceUri": f"git+https://github.com/{context['repository']}",
-        "verificationResult": "PASSED",
-        "verifiedLevels": [context["verified_level"]],
-        "slsaVersion": SLSA_VERSION,
-    }
     predicate = statement.get("predicate")
-    if statement.get("_type") != STATEMENT_TYPE:
-        raise SourceVSAError("unexpected in-toto statement type")
-    if statement.get("predicateType") != PREDICATE_TYPE:
-        raise SourceVSAError("unexpected VSA predicate type")
-    if (
-        not isinstance(predicate, dict)
-        or not verifier_matches(predicate.get("verifier"), context)
-        or any(predicate.get(key) != value for key, value in expected_predicate.items())
+    for description, expected_value, actual_value in (
+        ("unexpected in-toto statement type", STATEMENT_TYPE, statement.get("_type")),
+        (
+            "unexpected VSA predicate type",
+            PREDICATE_TYPE,
+            statement.get("predicateType"),
+        ),
     ):
-        raise SourceVSAError("VSA predicate does not match the issuer policy")
-    statement_policy = predicate.get("policy")
-    expected_policy_uri_prefix = (
-        f"https://github.com/{context['repository']}/blob/{context['commit']}/"
-    )
-    if not isinstance(statement_policy, dict) or statement_policy.get("digest") != {
-        "sha256": context["policy_digest"]
+        if actual_value != expected_value:
+            raise SourceVSAError(
+                f"{description}: expected {expected_value!r}, got {actual_value!r}"
+            )
+    if not isinstance(predicate, dict):
+        raise SourceVSAError("VSA predicate is not a mapping")
+    verifier = predicate.get("verifier")
+    if not isinstance(verifier, dict):
+        raise SourceVSAError("VSA verifier is not a mapping")
+    if "action_sha" in context and verifier.get("version") != {
+        "action": context["action_sha"]
     }:
-        raise SourceVSAError("VSA policy does not match the issuer policy")
-    statement_policy_uri = statement_policy.get("uri")
-    if (
-        not isinstance(statement_policy_uri, str)
-        or not statement_policy_uri.startswith(expected_policy_uri_prefix)
-        or statement_policy_uri == expected_policy_uri_prefix
+        raise SourceVSAError(
+            "VSA verifier version does not match the issuing action revision: "
+            f"expected {{'action': {context['action_sha']!r}}}, "
+            f"got {verifier.get('version')!r}"
+        )
+    for description, expected_value, actual_value in (
+        (
+            "VSA verifier ID does not match the trusted issuer",
+            context["verifier_id"],
+            verifier.get("id"),
+        ),
+        (
+            "VSA predicate resourceUri does not match",
+            f"git+https://github.com/{context['repository']}",
+            predicate.get("resourceUri"),
+        ),
+        (
+            "VSA predicate verificationResult does not match",
+            "PASSED",
+            predicate.get("verificationResult"),
+        ),
+        (
+            "VSA predicate verifiedLevels does not match",
+            [context["verified_level"]],
+            predicate.get("verifiedLevels"),
+        ),
+        (
+            "VSA predicate slsaVersion does not match",
+            SLSA_VERSION,
+            predicate.get("slsaVersion"),
+        ),
     ):
-        raise SourceVSAError("VSA policy URI does not match the source revision")
-    if "policy_uri" in context and statement_policy_uri != context["policy_uri"]:
-        raise SourceVSAError("VSA policy URI does not match the supplied policy path")
+        if actual_value != expected_value:
+            raise SourceVSAError(
+                f"{description}: expected {expected_value!r}, got {actual_value!r}"
+            )
+    verify_policy_claim(predicate.get("policy"), context)
     time_verified = predicate.get("timeVerified")
     if not isinstance(time_verified, str):
         raise SourceVSAError("VSA timeVerified is missing")
@@ -546,8 +627,7 @@ def issue(args: argparse.Namespace) -> None:
 
 def verify(args: argparse.Namespace) -> None:
     """Verify a local VSA bundle."""
-    context = policy_context(
-        load_policy(args.policy),
+    context = verification_context(
         args.repository,
         args.commit,
         verified_level=args.verified_level,
@@ -557,17 +637,22 @@ def verify(args: argparse.Namespace) -> None:
 
 def fetch(args: argparse.Namespace) -> None:
     """Fetch a public VSA bundle and verify it before returning it."""
-    policy_source = load_policy(args.policy)
-    context = policy_context(
-        policy_source,
+    context = verification_context(
         args.repository,
         args.commit,
         verified_level=args.verified_level,
     )
+    print(f"source-vsa: fetching {context['reference']}", file=sys.stderr)
     with tempfile.TemporaryDirectory(prefix="source-vsa-") as temporary:
         bundle = pull_bundle(context["reference"], Path(temporary))
+        print("source-vsa: verifying bundle", file=sys.stderr)
         verify_bundle(bundle, context)
         shutil.copyfile(bundle, args.bundle)
+    print(
+        f"source-vsa: verified {context['repository']}@{context['commit']} "
+        f"and wrote {args.bundle}",
+        file=sys.stderr,
+    )
 
 
 def inspect_bundle(args: argparse.Namespace) -> None:
@@ -581,7 +666,6 @@ def parser() -> argparse.ArgumentParser:
     subparsers = command_parser.add_subparsers(dest="command", required=True)
 
     def common_arguments(subparser: argparse.ArgumentParser) -> None:
-        subparser.add_argument("--policy", required=True, type=Path)
         subparser.add_argument(
             "--repository", default=os.environ.get("GITHUB_REPOSITORY"), required=False
         )
@@ -592,6 +676,7 @@ def parser() -> argparse.ArgumentParser:
 
     issue_parser = subparsers.add_parser("issue", help="issue or reuse a Source VSA")
     common_arguments(issue_parser)
+    issue_parser.add_argument("--policy", required=True, type=Path)
     issue_parser.add_argument("--action-sha", required=True)
     issue_parser.add_argument("--ref", default=os.environ.get("GITHUB_REF"))
     issue_parser.add_argument(
