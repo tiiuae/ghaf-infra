@@ -33,7 +33,7 @@ jobs:
       #
       # The complete reports and findings.json are in the run's artifact.
       - name: Scan ci-prod hosts
-        uses: tiiuae/flakevuln@05c7746d37e90a4ae5ba76f2bbb9a711ad2a43c0
+        uses: tiiuae/flakevuln@b6866e2d96d1bf8fc2d16e993f7a3391b9e0957b
         with:
           targets: |
             nixosConfigurations.hetzci-prod.config.system.build.toplevel
