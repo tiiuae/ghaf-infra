@@ -15,6 +15,7 @@
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
+    baseline-reset
     hetzner-cloud
     zramSwap
     common
@@ -43,6 +44,11 @@
 
   cachix-push = {
     cacheName = "ghaf-dbg";
+  };
+
+  services.baseline-reset = {
+    enable = true;
+    rootDevice = "/dev/disk/by-partlabel/disk-os-root";
   };
 
   nix.caches = [

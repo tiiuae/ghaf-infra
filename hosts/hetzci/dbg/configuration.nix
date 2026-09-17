@@ -4,6 +4,7 @@
   config,
   lib,
   machines,
+  self,
   ...
 }:
 let
@@ -23,6 +24,7 @@ in
     ../common.nix
     ../cloud.nix
     ../signing.nix
+    self.nixosModules.baseline-reset
   ];
 
   system.stateVersion = lib.mkForce "25.11";
@@ -75,6 +77,11 @@ in
   services.monitoring = {
     metrics.enable = lib.mkForce false;
     logs.enable = lib.mkForce false;
+  };
+
+  services.baseline-reset = {
+    enable = true;
+    rootDevice = "/dev/disk/by-partlabel/disk-os-root";
   };
 
   # Configure /var/lib/caddy in /etc/fstab for persistent caddy state.
