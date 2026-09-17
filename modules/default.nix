@@ -15,5 +15,6 @@
     testagent = import ./testagent { inherit self inputs; };
     openssh = ./openssh.nix;
     nebula = ./nebula;
+    baseline-reset = ./baseline-reset;
   };
 }
