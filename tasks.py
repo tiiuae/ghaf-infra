@@ -441,7 +441,12 @@ def _get_deploy_host(alias: str, user: str | None = None) -> DeployHost:
 ################################################################################
 
 
-def _decrypt_host_key(target: TargetHost, tmpdir: str, yes: bool) -> None:
+def _decrypt_host_key(
+    target: TargetHost,
+    tmpdir: str,
+    yes: bool,
+    host_key_path: str = "/etc/ssh/ssh_host_ed25519_key",
+) -> None:
     """Run sops to extract `nixosconfig` secret `ssh_host_ed25519_key`."""
 
     if target.secretspath is None:
@@ -456,7 +461,10 @@ def _decrypt_host_key(target: TargetHost, tmpdir: str, yes: bool) -> None:
     tmpdir_path = Path(tmpdir)
     tmpdir_path.mkdir(parents=True, exist_ok=True)
     tmpdir_path.chmod(0o755)
-    host_key = tmpdir_path / "etc/ssh/ssh_host_ed25519_key"
+    destination = Path(host_key_path)
+    if not destination.is_absolute() or ".." in destination.parts:
+        raise ValueError(f"Invalid SSH host key path: {host_key_path}")
+    host_key = tmpdir_path.joinpath(*destination.parts[1:])
     host_key.parent.mkdir(parents=True, exist_ok=True)
     with open(host_key, "w", opener=opener, encoding="utf-8") as fh:
         try:
@@ -476,7 +484,7 @@ def _decrypt_host_key(target: TargetHost, tmpdir: str, yes: bool) -> None:
                 yes,
             )
         else:
-            pub_key = tmpdir_path / "etc/ssh/ssh_host_ed25519_key.pub"
+            pub_key = Path(f"{host_key}.pub")
             with open(pub_key, "w", encoding="utf-8") as fh:
                 _run_checked(
                     ["ssh-keygen", "-y", "-f", f"{host_key}"],
@@ -1161,7 +1169,25 @@ def _run_install(
         _log_status_info(f"[{alias}] install: preparing installer files")
         if copy_dir:
             shutil.copytree(Path(copy_dir), Path(tmpdir), dirs_exist_ok=True)
-        _decrypt_host_key(target, tmpdir, yes)
+        host_keys = _run_json(
+            [
+                "nix",
+                "eval",
+                "--json",
+                f"{ROOT}#nixosConfigurations.{target.nixosconfig}"
+                ".config.services.openssh.hostKeys",
+            ]
+        )
+        ed25519_host_keys = [
+            key["path"] for key in host_keys if key.get("type") == "ed25519"
+        ]
+        if len(ed25519_host_keys) != 1:
+            _log_error(
+                f"Expected exactly one ed25519 SSH host key for "
+                f"'{target.nixosconfig}', found {len(ed25519_host_keys)}"
+            )
+            sys.exit(1)
+        _decrypt_host_key(target, tmpdir, yes, ed25519_host_keys[0])
         ssh_target = f"{host.user}@{host.host}" if host.user is not None else host.host
         command = _build_nixos_anywhere_command(
             ssh_target,
