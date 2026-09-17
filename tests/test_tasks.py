@@ -748,6 +748,58 @@ def test_decrypt_host_key_respects_yes_on_sops_failure(
     tasks._decrypt_host_key(target, str(tmp_path / "out"), yes=True)
 
 
+def test_run_install_selects_configured_ed25519_host_key_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = tasks.TargetHost(
+        hostname="demo.example.com",
+        nixosconfig="demo",
+        secretspath="hosts/demo/secrets.yaml",
+        secrets_resolved=True,
+    )
+    staged: list[str] = []
+
+    def host_keys(command: list[str]) -> list[dict[str, str]]:
+        assert command[-1] == (
+            f"{tasks.ROOT}#nixosConfigurations.demo.config.services.openssh.hostKeys"
+        )
+        return [
+            {"path": "/etc/ssh/ssh_host_rsa_key", "type": "rsa"},
+            {
+                "path": "/var/lib/baseline-reset/ssh/ssh_host_ed25519_key",
+                "type": "ed25519",
+            },
+        ]
+
+    monkeypatch.setattr(
+        tasks, "TARGETS", SimpleNamespace(resolve_secrets=lambda _alias: target)
+    )
+    monkeypatch.setattr(tasks, "_confirm", lambda *_args: True)
+    monkeypatch.setattr(
+        tasks,
+        "_get_deploy_host",
+        lambda *_args: SimpleNamespace(host="192.0.2.1", user="operator"),
+    )
+    monkeypatch.setattr(tasks, "_run_json", host_keys)
+    monkeypatch.setattr(
+        tasks,
+        "_decrypt_host_key",
+        lambda _target, _tmpdir, _yes, path: staged.append(path),
+    )
+    for name in (
+        "_assert_stateversion",
+        "_check_remote_user_alignment",
+        "_check_remote_sudo",
+        "_wait_for_port",
+        "reboot",
+    ):
+        monkeypatch.setattr(tasks, name, lambda *_args: None)
+
+    tasks._run_install(SimpleNamespace(run=lambda _command: None), "demo", yes=True)
+
+    assert staged == ["/var/lib/baseline-reset/ssh/ssh_host_ed25519_key"]
+
+
 def test_sops_files_from_config_matches_existing_creation_rules(tmp_path: Path) -> None:
     sops_config = tmp_path / ".sops.yaml"
     sops_config.write_text(
