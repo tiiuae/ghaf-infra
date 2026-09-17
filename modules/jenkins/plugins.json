@@ -181,9 +181,9 @@
   },
   {
     "name": "echarts-api",
-    "version": "6.1.0-1306.vcee1648c16a_4",
-    "url": "https://updates.jenkins.io/download/plugins/echarts-api/6.1.0-1306.vcee1648c16a_4/echarts-api.hpi",
-    "sha256": "15y9ymnmmpbv1vy0x3ch1qdjmbh9yha8m290srrih0a9wdhl156g"
+    "version": "6.1.0-1321.v86c4c5114494",
+    "url": "https://updates.jenkins.io/download/plugins/echarts-api/6.1.0-1321.v86c4c5114494/echarts-api.hpi",
+    "sha256": "06zmrxsrjh42xi46zdlngqmjgx1alil1dijg50b8llyndy0661i8"
   },
   {
     "name": "eddsa-api",
@@ -391,9 +391,9 @@
   },
   {
     "name": "lockable-resources",
-    "version": "1554.v491fcb_27c716",
-    "url": "https://updates.jenkins.io/download/plugins/lockable-resources/1554.v491fcb_27c716/lockable-resources.hpi",
-    "sha256": "0cgvgib9wpb5xc6m7h69kna5gcw2yk353l39fiq0xqxgpghw6qdl"
+    "version": "1560.va_b_cd589f23eb_",
+    "url": "https://updates.jenkins.io/download/plugins/lockable-resources/1560.va_b_cd589f23eb_/lockable-resources.hpi",
+    "sha256": "16hb7ms5iqbg5bvl3w7mywshvnpclgaf7k0dyp0d3zjcdzzdssz9"
   },
   {
     "name": "mailer",
@@ -487,9 +487,9 @@
   },
   {
     "name": "pipeline-groovy-lib",
-    "version": "805.va_fc79344957d",
-    "url": "https://updates.jenkins.io/download/plugins/pipeline-groovy-lib/805.va_fc79344957d/pipeline-groovy-lib.hpi",
-    "sha256": "0js0bb9naf1qgg707vl166pwd6k1nps0mrs6f6fx94i2i3m7i6gk"
+    "version": "806.v408277b_33d1d",
+    "url": "https://updates.jenkins.io/download/plugins/pipeline-groovy-lib/806.v408277b_33d1d/pipeline-groovy-lib.hpi",
+    "sha256": "0d098ijh45iv1rq3v72l0165n71ks71xhzgnbvh2i46rsgy6gjc8"
   },
   {
     "name": "pipeline-input-step",
@@ -589,9 +589,9 @@
   },
   {
     "name": "robot",
-    "version": "6.2.2",
-    "url": "https://updates.jenkins.io/download/plugins/robot/6.2.2/robot.hpi",
-    "sha256": "122dwkznp33dmy81xw6ii0mz75l3pa5ahnjd3gbsziz0akmdayaw"
+    "version": "6.3.0",
+    "url": "https://updates.jenkins.io/download/plugins/robot/6.3.0/robot.hpi",
+    "sha256": "1y7ii5b3ywwi5l9jp8by4b4fijcjpggiz53qjfdxyk23bmbi33x4"
   },
   {
     "name": "run-condition",
@@ -607,9 +607,9 @@
   },
   {
     "name": "script-security",
-    "version": "1415.v9a_f9b_3a_c253d",
-    "url": "https://updates.jenkins.io/download/plugins/script-security/1415.v9a_f9b_3a_c253d/script-security.hpi",
-    "sha256": "0arwl79cm707w5jh5p3vcp8zjv9f6x7wsl8g74gprikxxmfbfl8j"
+    "version": "1422.v06869826dd9b_",
+    "url": "https://updates.jenkins.io/download/plugins/script-security/1422.v06869826dd9b_/script-security.hpi",
+    "sha256": "06dhd7ly117jni9rdwh9zaw2hqzpmy7r7grhgxzgq0aixrs64vrq"
   },
   {
     "name": "scriptler",
@@ -739,9 +739,9 @@
   },
   {
     "name": "workflow-cps",
-    "version": "4378.v7a_08f1b_b_f8f4",
-    "url": "https://updates.jenkins.io/download/plugins/workflow-cps/4378.v7a_08f1b_b_f8f4/workflow-cps.hpi",
-    "sha256": "0my3is4w0bydnd7wsf8ni2qibjlskiv6lqd0bn8yw2sbrjfr0bs0"
+    "version": "4383.v04fa_a_3d67b_d9",
+    "url": "https://updates.jenkins.io/download/plugins/workflow-cps/4383.v04fa_a_3d67b_d9/workflow-cps.hpi",
+    "sha256": "1f0lf4ssrjgnqrgxk1qiwmyrmb9hln4ic5xha0a57n47vilbzyrb"
   },
   {
     "name": "workflow-durable-task-step",
@@ -757,9 +757,9 @@
   },
   {
     "name": "workflow-multibranch",
-    "version": "841.vec5b_9e1806ec",
-    "url": "https://updates.jenkins.io/download/plugins/workflow-multibranch/841.vec5b_9e1806ec/workflow-multibranch.hpi",
-    "sha256": "1dx17ybanvydzhn4hlkmg5kcvwqxabjqv0pm90pcvl386d2srkrq"
+    "version": "842.v3a_b_59b_57b_e6e",
+    "url": "https://updates.jenkins.io/download/plugins/workflow-multibranch/842.v3a_b_59b_57b_e6e/workflow-multibranch.hpi",
+    "sha256": "0iky0p0b2wijdn43fs6gvnkx2aki0khx2n4g7lh0swsx7gcsy9mg"
   },
   {
     "name": "workflow-scm-step",
