@@ -142,6 +142,8 @@ in
     systemd.tmpfiles.rules = [
       "d ${state} 0700 root root -"
       "d ${state}/ssh 0700 root root -"
+      # nixos-anywhere only carries /etc/ssh/ssh_host_* into its kexec image.
+      "C /etc/ssh/ssh_host_ed25519_key 0600 root root - ${state}/ssh/ssh_host_ed25519_key"
     ];
 
     boot.initrd.systemd.enable = true;

@@ -36,8 +36,8 @@ cannot make that transition; reinstall the host with:
 inv install --alias HOST
 ```
 
-`inv install` repartitions and erases the target disk and establishes the
-initial btrfs baseline.
+`inv install` repartitions and erases the target disk. The installer preserves
+the configured SSH identity and establishes the initial btrfs baseline.
 
 ## Updates
 
