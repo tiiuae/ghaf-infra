@@ -29,10 +29,9 @@
     flake-utils.url = "github:numtide/flake-utils";
 
     # Secrets with sops-nix
-    sops-nix = {
-      url = "github:mic92/sops-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    # Keep sops-install-secrets on sops-nix's pinned nixpkgs until
+    # https://github.com/Mic92/sops-nix/pull/984 is merged.
+    sops-nix.url = "github:mic92/sops-nix";
 
     # Disko for disk partitioning
     disko = {
