@@ -16,6 +16,8 @@
     ./nix.nix
   ];
 
+  sops.package = inputs.sops-nix.packages.${pkgs.stdenv.hostPlatform.system}.sops-install-secrets;
+
   nix.caches = lib.mkDefault [
     "nixos-org"
     "ghaf-dev"
