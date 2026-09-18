@@ -58,7 +58,13 @@ deploy --boot .#HOST
 inv reboot HOST
 ```
 
-## Baseline save points
+## Saving and restoring baselines
+
+An installation or deployment saves the baseline; the following boot restores
+from it. The bootloader is written only after the baseline has been published,
+and the initrd completes every check before it erases anything. Each baseline is
+named after the Nix store hash of its system, so the entry selected in the boot
+menu decides which one is restored.
 
 | Command | Saves a baseline | Activation action |
 |---|---:|---|
@@ -74,6 +80,35 @@ The deployment command saves the baseline, and the subsequent reboot restores
 from it. If a baseline for the exact system already exists, the pre-switch
 check validates and reuses it instead of copying the closure again.
 
+```mermaid
+flowchart TD
+  A["inv install, deploy,<br/>or deploy --boot"] --> B
+
+  subgraph SAVE ["On the target (userspace)"]
+    direction LR
+    B["pre-switch hook"] --> C["baseline exists for<br/>this system?"]
+    C -- yes --> D["validate and reuse"]
+    C -- no --> E["copy closure, verify,<br/>publish read-only baseline"]
+    D --> H["install bootloader"]
+    E --> H
+  end
+
+  H --> R["reboot"]
+  R --> J
+
+  subgraph BOOT ["Next boot (initrd, before root is mounted)"]
+    direction LR
+    J["initrd checks:<br/>read-only baseline, layout,<br/>machine ID, SSH key"] -- pass --> K["recreate @root empty,<br/>snapshot @nix from baseline"]
+    J -- fail --> L["emergency.target<br/>nothing erased"]
+  end
+
+  K --> N["switch-root, then normal<br/>NixOS activation rebuilds<br/>/etc, secrets and services"]
+  N --> M["clean deployed system running"]
+
+  classDef failure stroke:#e5534b,stroke-width:2px
+  class L failure
+```
+
 ## Features and known limitations
 
 Baseline reset provides cleanliness between boots, not a security boundary:
@@ -87,6 +122,7 @@ Baseline reset provides cleanliness between boots, not a security boundary:
 | Boot chain | No Secure Boot, dm-verity, measured boot, or attestation. The current update workflow needs `/boot` writable during activation, when the bootloader installers write the kernel, initrd and boot entries |
 | Root of trust | None: the running system and the disk are trusted. Baselines are read-only btrfs subvolumes, but host root can clear that flag and alter them |
 | Erasure | Deleted, not securely erased; may remain forensically recoverable |
+| Deployment rollback | Do not rely on deploy-rs automatic or magic rollback; redeploy explicitly or select another generation from the console |
 | Platform requirements | Supported btrfs and boot layouts; no disk swap or NixOS specialisations |
 
 ## Future improvements
