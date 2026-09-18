@@ -92,6 +92,7 @@ ghaf-infra
 - [Adding a new host](./docs/adding-a-host.md): host configuration and first install
 - [Deployment tasks](./docs/tasks.md): install, reboot, and other operational tasks
 - [Deploying with deploy-rs](./docs/deploy-rs.md): how to deploy configuration changes
+- [Baseline reset](./docs/baseline-reset.md): disposable CI host storage and update procedure
 - [Monitoring](./docs/monitoring.md): Grafana and Prometheus setup
 - [Nebula overlay network](./docs/nebula.md): network connectivity between hosts
 - [NetHSM hardware signing](./docs/nethsm.md): hardware-backed signing
