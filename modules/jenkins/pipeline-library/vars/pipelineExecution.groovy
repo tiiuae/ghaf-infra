@@ -561,15 +561,17 @@ def create_pipeline(
             runCount > 1 ? "HW tests ${build_shortname} (${runCount})" : "HW test ${build_shortname}"
           def all_tests_skipped = normalized_test_runs.every { it.initial_status == 'SKIPPED' }
           normalized_test_runs.each { localTestRun ->
-            test_branches[localTestRun.stage_name] = {
-              stage(localTestRun.stage_name) {
+            // Jenkins marks skipped stages by name across the whole flow graph,
+            // so include the build in pre-skipped stage names.
+            def testStageName = localTestRun.initial_status == 'SKIPPED' ?
+              "${localTestRun.stage_name} / ${build_shortname}" : localTestRun.stage_name
+            test_branches[testStageName] = {
+              stage(testStageName) {
                 if (localTestRun.initial_status == 'SKIPPED') {
                   persist_test_result(localTestRun, [:])
                   echo("Skipping hardware test ${localTestRun.id}: ${localTestRun.initial_reason}")
-                  // Mark the child stage explicitly as skipped so graph views
-                  // do not misattribute sibling failures to this branch.
                   org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(
-                    localTestRun.stage_name
+                    testStageName
                   )
                   return
                 }

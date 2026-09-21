@@ -57,7 +57,8 @@ def TARGETS = [
     testset: '_relayboot_regression_', uefisign: true, sbom: true,
   ],
   [ target: "packages.aarch64-linux.nvidia-jetson-orin-agx64-debug",
-    testset: '_relayboot_regression_', uefisign: true, sbom: true,
+    testset: '_relayboot_regression_', test_secboot: true, secureboot_only: true,
+    uefisign: true, sbom: true,
   ],
   [ target: "packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64",
     testset: '_relayboot_regression_', uefisign: true, sbom: true,
@@ -66,7 +67,8 @@ def TARGETS = [
     no_image: true, testset: null, provenance: false,
   ],
   [ target: "packages.x86_64-linux.nvidia-jetson-orin-agx64-debug-from-x86_64",
-    testset: '_relayboot_regression_', uefisign: true, sbom: true,
+    testset: '_relayboot_regression_', test_secboot: true, secureboot_only: true,
+    uefisign: true, sbom: true,
   ],
   [ target: "packages.aarch64-linux.nvidia-jetson-orin-nx-debug",
     testset: '_relayboot_regression_', uefisign: true, sbom: true,
@@ -131,6 +133,37 @@ pipeline {
       steps {
         dir(artifactSupport.controller_workdir()) {
           script {
+            def securebootDeviceTags = [
+              'lenovo-x1': 'x1-sec-boot',
+              'darter-pro': 'darter-sec-boot',
+            ]
+            def securebootTags = [
+              'x1-sec-boot',
+              'darter-sec-boot',
+              'agx-64-sec-boot',
+            ]
+            def connectedSecurebootTags = securebootTags.findAll { deviceTag ->
+              !nodesByLabel(label: deviceTag, offline: false).isEmpty()
+            }
+            def offlineSecurebootTags = securebootTags - connectedSecurebootTags
+            if (env.SECUREBOOT_TESTS_REQUIRED == 'true' && !offlineSecurebootTags.isEmpty()) {
+              unstable("Secure Boot test devices offline: ${offlineSecurebootTags.join(', ')}")
+            }
+            TARGETS.each { targetConfig ->
+              targetConfig.tests?.each { testConfig ->
+                if (testConfig.test_secboot) {
+                  testConfig.secureboot_available = connectedSecurebootTags.contains(
+                    securebootDeviceTags[testConfig.device_tag]
+                  )
+                }
+              }
+              if (targetConfig.test_secboot) {
+                def securebootDeviceTag =
+                  pipelineModel.device_info(targetConfig.target, true)?.tag
+                targetConfig.secureboot_available =
+                  connectedSecurebootTags.contains(securebootDeviceTag)
+              }
+            }
             PIPELINE = pipelineExecution.create_pipeline(
               TARGETS,
               null,

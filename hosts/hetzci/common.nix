@@ -86,6 +86,7 @@
     };
     nodes = {
       devices = [
+        "agx-64-sec-boot"
         "darter-pro"
         "lenovo-x1"
         "orin-agx"

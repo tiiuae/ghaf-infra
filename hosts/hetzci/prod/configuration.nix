@@ -64,6 +64,8 @@ in
     ];
   };
 
+  services.jenkins.environment.SECUREBOOT_TESTS_REQUIRED = "true";
+
   hetzci.signing.proxy.enable = true;
 
   nix.settings.max-jobs = lib.mkForce 0;

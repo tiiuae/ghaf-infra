@@ -54,6 +54,9 @@ private def device_catalog() {
       name: 'OrinAGX64',
       target_substrings: ['nvidia-jetson-orin-agx64'],
     ],
+    'agx-64-sec-boot': [
+      name: 'OrinAGX64',
+    ],
     'orin-agx': [
       name: 'OrinAGX1',
       target_substrings: ['nvidia-jetson-orin-agx'],
@@ -100,6 +103,8 @@ private def display_device_tag(Map testRun) {
       return 'lenovo-x1'
     } else if (explicitTag == 'darter-sec-boot') {
       return 'darter-pro'
+    } else if (explicitTag == 'agx-64-sec-boot') {
+      return 'orin-agx-64'
     }
     return explicitTag
   }
@@ -118,6 +123,8 @@ private def display_device_tag(Map testRun) {
     return 'lenovo-x1'
   } else if (inferredTag == 'darter-sec-boot') {
     return 'darter-pro'
+  } else if (inferredTag == 'agx-64-sec-boot') {
+    return 'orin-agx-64'
   }
   return inferredTag
 }
@@ -211,6 +218,10 @@ private def inferred_device_info(String targetName, boolean secureboot) {
     return info_for_device_tag('darter-sec-boot')
   }
 
+  if (normalizedTarget.contains('nvidia-jetson-orin-agx64') && secureboot) {
+    return info_for_device_tag('agx-64-sec-boot')
+  }
+
   return device_catalog().findResult { String deviceTag, Map device ->
     def targetSubstrings = device.target_substrings
     if (targetSubstrings instanceof List && targetSubstrings.any { normalizedTarget.contains(it as String) }) {
@@ -237,13 +248,15 @@ def device_info(String targetName, boolean secureboot, String explicitDeviceTag 
     def explicitTag = normalizedDeviceTag
     if (
       (explicitTag == 'lenovo-x1' && inferredInfo.tag == 'x1-sec-boot') ||
-      (explicitTag == 'darter-pro' && inferredInfo.tag == 'darter-sec-boot')
+      (explicitTag == 'darter-pro' && inferredInfo.tag == 'darter-sec-boot') ||
+      (explicitTag == 'orin-agx-64' && inferredInfo.tag == 'agx-64-sec-boot')
     ) {
       return inferredInfo
     }
     if (
       (explicitTag == 'x1-sec-boot' && inferredInfo.tag == 'lenovo-x1') ||
-      (explicitTag == 'darter-sec-boot' && inferredInfo.tag == 'darter-pro')
+      (explicitTag == 'darter-sec-boot' && inferredInfo.tag == 'darter-pro') ||
+      (explicitTag == 'agx-64-sec-boot' && inferredInfo.tag == 'orin-agx-64')
     ) {
       return explicitInfo
     }
@@ -425,6 +438,7 @@ def normalize_tests(Map buildConfig, String defaultTestagentHost = null) {
       test_target: rawTarget,
       testset: legacyTestset,
       test_secboot: buildConfig.get('test_secboot', false),
+      secureboot_only: buildConfig.get('secureboot_only', false),
     ]]
   }
 
@@ -462,6 +476,10 @@ def normalize_tests(Map buildConfig, String defaultTestagentHost = null) {
     def testagentHostOverride = overrideFromExplicitField ?: overrideFromAlias
     def effectiveTestagentHost = testagentHostOverride ?: normalize_optional_string(defaultTestagentHost)
     def securebootRequested = rawTest.get('test_secboot', false)
+    def securebootOnly = rawTest.get('secureboot_only', false)
+    if (securebootOnly && !securebootRequested) {
+      fail("Invalid test config for '${testTarget}': 'secureboot_only' requires 'test_secboot'")
+    }
     def identity = test_identity([
       target: testTarget,
       testset: testset,
@@ -479,6 +497,7 @@ def normalize_tests(Map buildConfig, String defaultTestagentHost = null) {
     normalizedTest.testagent_host_override = testagentHostOverride
     normalizedTest.effective_testagent_host = effectiveTestagentHost
     normalizedTest.secureboot_requested = securebootRequested
+    normalizedTest.secureboot_only = securebootOnly
     normalizedTest.id = identity
     normalizedTest.test_path_key = safe_stage_key(identity)
     if (securebootRequested) {
@@ -534,7 +553,7 @@ private def expand_test_runs(
   String buildTarget,
   List normalizedTests,
   String ciEnv,
-  boolean securebootExecutionAllowed) {
+  boolean securebootPossible) {
   if (!(buildTarget instanceof String) || buildTarget.isEmpty()) {
     fail("Missing target name")
   }
@@ -542,13 +561,17 @@ private def expand_test_runs(
 
   normalizedTests.each { normalizedTest ->
     def skipReason = ciEnv == 'vm' ? 'ci_env_vm' : null
-    runs << test_run(
-      normalizedTest,
-      normalizedTest.id,
-      normalizedTest.test_path_key,
-      false,
-      skipReason
-    )
+    def securebootExecutionAllowed =
+      securebootPossible && normalizedTest.get('secureboot_available', false)
+    if (!normalizedTest.secureboot_only || !securebootExecutionAllowed) {
+      runs << test_run(
+        normalizedTest,
+        normalizedTest.id,
+        normalizedTest.test_path_key,
+        false,
+        skipReason
+      )
+    }
 
     if (normalizedTest.secureboot_requested) {
       runs << test_run(
@@ -611,11 +634,17 @@ def normalize_build_config(
   normalized.build_otapin_requested = normalized.get('build_otapin', false)
   normalized.sbom_requested = normalized.get('sbom', false)
   normalized.tests = normalize_tests(normalized, defaultTestagentHost)
+  def securebootAvailable = normalized.get('secureboot_available', ciEnv == "prod")
+  normalized.tests.each { normalizedTest ->
+    if (normalizedTest.get('secureboot_available', null) == null) {
+      normalizedTest.secureboot_available = securebootAvailable
+    }
+  }
   normalized.test_runs = expand_test_runs(
     targetName,
     normalized.tests,
     ciEnv,
-    !normalized.no_image && signingPossible && uefiSignRequested && ciEnv == "prod"
+    !normalized.no_image && signingPossible && uefiSignRequested
   )
   return normalized
 }

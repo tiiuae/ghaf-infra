@@ -37,7 +37,7 @@
     hardware = [
       "orin-agx"
       "orin-nx"
-      "orin-agx-64"
+      "agx-64-sec-boot"
     ];
   };
 
