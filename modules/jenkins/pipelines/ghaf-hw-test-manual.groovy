@@ -69,7 +69,7 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
         script: [
           classpath: [],
           sandbox: true,
-          script: "return ['orin-agx','orin-agx-64','orin-nx','lenovo-x1','darter-pro', 'x1-sec-boot', 'darter-sec-boot']"
+          script: "return ['orin-agx','orin-agx-64','orin-nx','lenovo-x1','darter-pro', 'x1-sec-boot', 'darter-sec-boot', 'agx-64-sec-boot']"
         ]
       ]
     ],
@@ -257,6 +257,8 @@ pipeline {
                 env.DEVICE_BOOT_TAG = 'lenovo-x1'
               } else if (env.DEVICE_TAG == 'darter-sec-boot'){
                 env.DEVICE_BOOT_TAG = 'darter-pro'
+              } else if (env.DEVICE_TAG == 'agx-64-sec-boot'){
+                env.DEVICE_BOOT_TAG = 'orin-agx-64'
               } else {
                  env.DEVICE_BOOT_TAG = env.DEVICE_TAG
               }

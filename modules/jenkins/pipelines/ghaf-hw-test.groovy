@@ -138,6 +138,8 @@ def ghaf_robot_test(String testname='relayboot') {
         bootTag = 'lenovo-x1'
     } else if (bootTag == 'darter-sec-boot') {
         bootTag = 'darter-pro'
+    } else if (bootTag == 'agx-64-sec-boot') {
+        bootTag = 'orin-agx-64'
     }
     env.INCLUDE_TEST_TAGS = "${bootTag}AND${testname}${env.EXTRATAG}"
   }

@@ -230,6 +230,12 @@ pipeline {
           if (!deviceInfo || !['orin-agx', 'orin-agx-64'].contains(deviceInfo.tag)) {
             error("Unable to resolve Orin AGX device config for flash target '${flashTarget}'")
           }
+          // The script is run without --secure-boot below, so do not fall back
+          // to a Secure Boot device when the ordinary AGX64 is unavailable.
+          def onlineTestagents = nodesByLabel(label: deviceInfo.tag, offline: false)
+          if (onlineTestagents.isEmpty()) {
+            error("No '${deviceInfo.tag}' test agent is online for '${flashTarget}'")
+          }
           node(deviceInfo.tag) {
             env.ORIN_AGX_FLASH_SCRIPT_PATH = flashScriptPath
             def flashGcRootTag = (env.BUILD_TAG ?: "build-${env.BUILD_NUMBER}")

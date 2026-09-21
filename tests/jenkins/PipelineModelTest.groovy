@@ -20,6 +20,7 @@ def sampleTestTarget = 'packages.x86_64-linux.lenovo-x1-carbon-gen11-debug'
 def sampleTestShortTarget = 'lenovo-x1-carbon-gen11-debug'
 def sampleTestIdentityTarget = 'x86_64-linux.lenovo-x1-carbon-gen11-debug'
 def sampleStoreDiskInstallerTarget = 'system76-darp11-b-storeDisk-debug-installer'
+def sampleAgx64Target = 'packages.aarch64-linux.nvidia-jetson-orin-agx64-debug'
 def explicitTestsBuildTarget = 'packages.x86_64-linux.intel-laptop-debug'
 def explicitTests = [
   [
@@ -60,6 +61,14 @@ assert pipelineModel.device_info(sampleTestShortTarget, false, 'x1-sec-boot') ==
   [name: 'X1-Secure-Boot', tag: 'x1-sec-boot']
 assert pipelineModel.device_info(sampleTestShortTarget, false, 'darter-pro') == null
 assert pipelineModel.device_info('system76-darp11-b-debug', true, 'lenovo-x1') == null
+assert pipelineModel.device_info(sampleAgx64Target, false) ==
+  [name: 'OrinAGX64', tag: 'orin-agx-64']
+assert pipelineModel.device_info(sampleAgx64Target, true) ==
+  [name: 'OrinAGX64', tag: 'agx-64-sec-boot']
+assert pipelineModel.device_info(sampleAgx64Target, true, 'orin-agx-64') ==
+  [name: 'OrinAGX64', tag: 'agx-64-sec-boot']
+assert pipelineModel.device_info(sampleAgx64Target, false, 'agx-64-sec-boot') ==
+  [name: 'OrinAGX64', tag: 'agx-64-sec-boot']
 
 def normalizedLegacyBuild = pipelineModel.normalize_build_config([
   target: sampleTestTarget,
@@ -79,6 +88,32 @@ assert normalizedLegacyBuild.test_runs*.stage_name == [
   'lenovo-x1 / relayboot bat / no-secureboot',
   'lenovo-x1 / relayboot bat / secureboot',
 ]
+
+def normalizedSecurebootOnlyBuild = pipelineModel.normalize_build_config([
+  target: sampleAgx64Target,
+  testset: sampleTestset,
+  test_secboot: true,
+  secureboot_only: true,
+  secureboot_available: true,
+  uefisign: true,
+], true, 'dev', 'prod')
+
+assert normalizedSecurebootOnlyBuild.test_runs*.secureboot == [true]
+assert !normalizedSecurebootOnlyBuild.test_runs[0].containsKey('initial_status')
+
+def normalizedUnavailableSecurebootOnlyBuild = pipelineModel.normalize_build_config([
+  target: sampleAgx64Target,
+  testset: sampleTestset,
+  test_secboot: true,
+  secureboot_only: true,
+  secureboot_available: false,
+  uefisign: true,
+], true, 'prod', 'prod')
+
+assert normalizedUnavailableSecurebootOnlyBuild.test_runs*.secureboot == [false, true]
+assert !normalizedUnavailableSecurebootOnlyBuild.test_runs[0].containsKey('initial_status')
+assert normalizedUnavailableSecurebootOnlyBuild.test_runs[1].initial_reason ==
+  'secureboot_not_available'
 
 def normalizedDocBuild = pipelineModel.normalize_build_config([
   target: 'packages.x86_64-linux.doc',
@@ -142,6 +177,32 @@ assert normalizedBuildWithExplicitTests.test_runs*.stage_name == [
 ]
 assert normalizedBuildWithExplicitTests.test_runs[1].initial_status == 'SKIPPED'
 assert normalizedBuildWithExplicitTests.test_runs[1].initial_reason == 'secureboot_not_available'
+
+def normalizedBuildWithDeviceAvailability = pipelineModel.normalize_build_config([
+  target: explicitTestsBuildTarget,
+  uefisign: true,
+  tests: [
+    [
+      device_tag: 'lenovo-x1',
+      variant: 'debug',
+      testset: sampleTestset,
+      test_secboot: true,
+      secureboot_available: true,
+    ],
+    [
+      device_tag: 'darter-pro',
+      variant: 'debug',
+      testset: sampleTestset,
+      test_secboot: true,
+      secureboot_available: false,
+    ],
+  ],
+], true, 'dev', null)
+
+assert normalizedBuildWithDeviceAvailability.test_runs*.secureboot == [false, true, false, true]
+assert normalizedBuildWithDeviceAvailability.test_runs[1].get('initial_status', null) == null
+assert normalizedBuildWithDeviceAvailability.test_runs[3].initial_reason ==
+  'secureboot_not_available'
 
 def normalizedInferredDeviceBuild = pipelineModel.normalize_build_config([
   target: 'packages.aarch64-linux.nvidia-jetson-orin-agx-debug',
@@ -219,6 +280,14 @@ assert finishedTestEntry.job == [
 
 expectFailure('Missing target name') {
   pipelineModel.normalize_build_config([:], true, 'prod', 'prod')
+}
+
+expectFailure("'secureboot_only' requires 'test_secboot'") {
+  pipelineModel.normalize_build_config([
+    target: 'packages.aarch64-linux.nvidia-jetson-orin-agx64-debug',
+    testset: sampleTestset,
+    secureboot_only: true,
+  ], true, 'prod', 'prod')
 }
 
 [
