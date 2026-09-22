@@ -343,7 +343,7 @@ def create_pipeline(
           signing_possible && target_config.provenance_requested,
           "Sign (SLSA) provenance ${build_shortname}"
         ) {
-          withRedundancyRouter("GhafInfraSignProv") { ctx ->
+          withRedundancyRouter("GhafInfraSignProv-${ci_env}") { ctx ->
             sh """
               openssl pkeyutl -sign -rawin \
                 -inkey "${ctx.uri}" \
@@ -361,6 +361,7 @@ def create_pipeline(
             script: """
             policy-checker '${output}/attestations/provenance.json' \
               --sig '${output}/attestations/provenance.json.sig' \
+              --signing-key '${manifest.attestations.provenance.signature.signing_key}' \
               --policy /etc/jenkins/provenance-trust-policy.yaml
             """,
             returnStatus: true
@@ -493,7 +494,7 @@ def create_pipeline(
           !target_config.no_image && signing_possible,
           "Sign (SLSA) image ${build_shortname}"
         ) {
-          withRedundancyRouter("GhafInfraSignECP256") { ctx ->
+          withRedundancyRouter("GhafInfraSignECP256-${ci_env}") { ctx ->
             sh "mkdir -p ${output}/images"
             manifest.images.each { image ->
               def img_name = artifactSupport.path_basename(image.path)
@@ -692,7 +693,7 @@ def create_pipeline(
             error("Release policy failed before writing attestation for ${build_shortname}")
           }
 
-          withRedundancyRouter("GhafInfraSignProv") { ctx ->
+          withRedundancyRouter("GhafInfraSignProv-${ci_env}") { ctx ->
             sh """
               openssl pkeyutl -sign -rawin \
                 -inkey "${ctx.uri}" \

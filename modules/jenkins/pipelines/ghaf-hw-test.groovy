@@ -15,6 +15,7 @@ import groovy.transform.Field
 @Field def IN_TOTO_MEDIA_TYPE = 'application/vnd.in-toto+json'
 @Field def DETACHED_SIGNATURE_MEDIA_TYPE = 'application/vnd.ghaf.signature.v1'
 @Field def IMAGE_MEDIA_TYPE = 'application/octet-stream'
+@Field def TARGET_CONFIG_MEDIA_TYPE = 'application/vnd.ghaf.manifest.v1+json'
 @Field def SOURCE_REF_ANNOTATION = 'org.ghaf.source.ref'
 @Field def TARGET_ANNOTATION = 'org.ghaf.target'
 @Field def SOURCE_REVISION_ANNOTATION = 'org.opencontainers.image.revision'
@@ -298,6 +299,7 @@ pipeline {
             script {
               def provenance_path
               def sig_path
+              def manifest_path
               if (params.OCI_IMAGE_REF) {
                 def discovery = readJSON(
                   text: artifactSupport.run_cmd("oras discover --format json '${params.OCI_IMAGE_REF}'")
@@ -316,6 +318,19 @@ pipeline {
                 if (!provenance_path || !sig_path) {
                   error("Unable to derive provenance files from OCI referrer '${provenanceRef}'")
                 }
+                def ociManifest = readJSON(
+                  text: artifactSupport.run_cmd(
+                    "oras manifest fetch --format json ${artifactSupport.shell_quote(params.OCI_IMAGE_REF)}"
+                  )
+                )
+                def config = ociManifest.content?.config
+                if (config?.mediaType != TARGET_CONFIG_MEDIA_TYPE || !config.digest) {
+                  error("Unable to derive build manifest from OCI image '${params.OCI_IMAGE_REF}'")
+                }
+                def repository = artifactSupport.parse_oci_reference(params.OCI_IMAGE_REF).repository
+                manifest_path = "${TMP_IMG_DIR}/manifest.json"
+                def configReference = "${repository}@${config.digest}"
+                sh "oras blob fetch --output ${artifactSupport.shell_quote(manifest_path)} ${artifactSupport.shell_quote(configReference)}"
               } else {
                 def split = split_img_url(params.IMG_URL)
                 def artifacts_url = split["artifacts_url"]
@@ -325,8 +340,20 @@ pipeline {
                 println("provenance_url: ${provenance_url}")
                 provenance_path = artifactSupport.run_wget(provenance_url, TMP_IMG_DIR)
                 sig_path = artifactSupport.run_wget(signature_url, TMP_IMG_DIR)
+                manifest_path = artifactSupport.run_wget("${artifacts_url}/${target}/manifest.json", TMP_IMG_DIR)
               }
-              sh "policy-checker ${provenance_path} --sig ${sig_path} --policy /etc/jenkins/provenance-trust-policy.yaml"
+              env.BUILD_MANIFEST_PATH = manifest_path
+              def buildManifest = readJSON file: manifest_path
+              def signingKey = buildManifest.attestations?.provenance?.signature?.signing_key
+              if (!signingKey) {
+                error("Unable to derive provenance signing key from build manifest")
+              }
+              sh """
+                policy-checker ${artifactSupport.shell_quote(provenance_path)} \
+                  --sig ${artifactSupport.shell_quote(sig_path)} \
+                  --signing-key ${artifactSupport.shell_quote(signingKey)} \
+                  --policy /etc/jenkins/provenance-trust-policy.yaml
+              """
             }
           }
         }
@@ -353,7 +380,15 @@ pipeline {
               }
               println "Downloaded image to workspace: ${img_path}"
               println "Downloaded SLSA signature file to workspace: ${sig_path}"
-              sh "verify-signature image ${img_path} ${sig_path}"
+              def buildManifest = readJSON file: env.BUILD_MANIFEST_PATH
+              def images = buildManifest.images ?: (buildManifest.image ? [buildManifest.image] : [])
+              def imageName = artifactSupport.path_basename(img_path)
+              def image = images.find { artifactSupport.path_basename(it.path) == imageName }
+              def signingKey = image?.signature?.signing_key
+              if (!signingKey) {
+                error("Unable to derive signing key for '${imageName}' from build manifest")
+              }
+              sh "verify-signature image ${artifactSupport.shell_quote(img_path)} ${artifactSupport.shell_quote(sig_path)} ${artifactSupport.shell_quote(signingKey)}"
               // flash-script handles .zst natively; pass the original download path.
               env.FLASH_INPUT_PATH = img_path
               env.INSTALLER_FLOW = img_path.endsWith(".iso") ? 'true' : env.INSTALLER_FLOW

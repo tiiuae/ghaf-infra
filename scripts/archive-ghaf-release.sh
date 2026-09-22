@@ -191,7 +191,11 @@ verify_signatures() {
     print_err "missing nix_build provenance signature: $dir"
     exit 1
   fi
-  while IFS=$'\t' read -r img_rel img_sig_rel; do
+  if ! prov_signing_key=$(jq -re '.attestations.provenance.signature.signing_key' "$manifest"); then
+    print_err "missing provenance signing key in manifest: $manifest"
+    exit 1
+  fi
+  while IFS=$'\t' read -r img_rel img_sig_rel img_signing_key; do
     img="$dir/$img_rel"
     if [[ -z $img_rel ]]; then
       print_err "missing image: $dir"
@@ -202,15 +206,19 @@ verify_signatures() {
       print_err "missing image signature: $dir"
       exit 1
     fi
+    if [[ -z $img_signing_key ]]; then
+      print_err "missing image signing key: $dir"
+      exit 1
+    fi
     echo "[+] Verifying: $img"
-    if ! verify-signature image "$img" "$img_sig"; then
+    if ! verify-signature image "$img" "$img_sig" "$img_signing_key"; then
       print_err "failed verifying image signature"
       print_err "  image: $img"
       print_err "  signature: $img_sig"
       exit 1
     fi
-  done < <(jq -re '(.images // (if .image then [.image] else [] end))[] | [.path // "", .signature.path // ""] | @tsv' "$manifest")
-  if ! verify-signature provenance "$prov" "$prov_sig"; then
+  done < <(jq -re '(.images // (if .image then [.image] else [] end))[] | [.path // "", .signature.path // "", .signature.signing_key // ""] | @tsv' "$manifest")
+  if ! verify-signature provenance "$prov" "$prov_sig" "$prov_signing_key"; then
     print_err "failed verifying provenance signature"
     print_err "  provenance: $prov"
     print_err "  signature: $prov_sig"
@@ -253,7 +261,11 @@ verify_release_attestation() {
     exit 1
   fi
 
-  if ! verify-signature release "$release_attestation" "$release_attestation_sig"; then
+  if ! release_signing_key=$(jq -re '.attestations.provenance.signature.signing_key' "$dir/manifest.json"); then
+    print_err "missing release attestation signing key in manifest: $dir/manifest.json"
+    exit 1
+  fi
+  if ! verify-signature release "$release_attestation" "$release_attestation_sig" "$release_signing_key"; then
     print_err "failed verifying release policy attestation signature"
     print_err "  attestation: $release_attestation"
     print_err "  signature: $release_attestation_sig"

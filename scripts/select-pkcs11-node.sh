@@ -44,8 +44,8 @@ This script can either be sourced to populate the environment,
 or executed normally to return json stdout for further processing.
 
 Options:
-  --regions REGIONS: comma-separated region list to try, defaults to ROUTER_PKCS11_REGIONS
-  --tokens TOKENS: comma-separated token list to try, defaults to ROUTER_PKCS11_TOKENS
+  --regions REGIONS: comma-separated region list to try, defaults to "tampere,uae" (ROUTER_PKCS11_REGIONS)
+  --tokens TOKENS: comma-separated token list to try, defaults to "NetHSM,YubiHSM" (ROUTER_PKCS11_TOKENS)
   OBJECT: The key that should be found on the node to consider it healthy
 
 Environment:

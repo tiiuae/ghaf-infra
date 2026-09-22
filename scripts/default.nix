@@ -10,14 +10,14 @@
         runtimeInputs = with pkgs; [
           openssl
         ];
-        runtimeEnv =
-          let
-            keySource = inputs.ghaf-infra-pki.packages.${pkgs.stdenv.hostPlatform.system}.yubi-slsa-pki;
-          in
-          {
-            IMG_CERT = "${keySource}/share/ghaf-infra-pki/slsa/GhafInfraSignECP256.pem";
-            PROV_CERT = "${keySource}/share/ghaf-infra-pki/slsa/GhafInfraSignProv.pem";
-          };
+        runtimeEnv = {
+          YUBIHSM_CERT_DIR = "${
+            inputs.ghaf-infra-pki.packages.${pkgs.stdenv.hostPlatform.system}.yubi-slsa-pki
+          }/share/ghaf-infra-pki/slsa";
+          NETHSM_CERT_DIR = "${
+            inputs.ghaf-infra-pki.packages.${pkgs.stdenv.hostPlatform.system}.nethsm-slsa-pki-tampere
+          }/share/ghaf-infra-pki/slsa-nethsm";
+        };
         text = builtins.readFile ./verify-signature.sh;
       };
       archive-ghaf-release = pkgs.writeShellApplication {
