@@ -10,12 +10,13 @@ every boot while preserving normal NixOS deployment. Runtime changes to the
 root filesystem and Nix store, including service and local build state, are
 discarded.
 
-Deployment saves the system's Nix store closure as a read-only btrfs baseline.
-During boot, the initrd creates a fresh root and replaces `/nix` with the
-baseline for the generation selected by the bootloader. This runs before the
-root filesystem is mounted, so an unclean shutdown cannot skip it. The machine
-ID and ed25519 SSH host key survive under `/var/lib/baseline-reset`; separately
-mounted service volumes are not reset.
+Deployment copies the system's Nix store closure into a read-only btrfs
+subvolume. During boot, the initrd creates a fresh root and replaces `/nix`
+with a writable btrfs snapshot of that subvolume for the generation selected
+by the bootloader. This runs before the root filesystem is mounted, so an
+unclean shutdown cannot skip it. The machine ID and ed25519 SSH host key
+survive under `/var/lib/baseline-reset`; separately mounted service volumes
+are not reset.
 
 This provides stable host identity, normal `deploy` updates, and selectable
 generations. It is an operational reset mechanism, not an immutable or
@@ -37,7 +38,8 @@ inv install --alias HOST
 ```
 
 `inv install` repartitions and erases the target disk. The installer preserves
-the configured SSH identity and establishes the initial btrfs baseline.
+the configured SSH identity and establishes the initial read-only baseline
+subvolume.
 
 ## Updates
 
@@ -58,27 +60,29 @@ deploy --boot .#HOST
 inv reboot HOST
 ```
 
-## Saving and restoring baselines
+## Publishing and restoring baseline subvolumes
 
-An installation or deployment saves the baseline; the following boot restores
-from it. The bootloader is written only after the baseline has been published,
-and the initrd completes every check before it erases anything. Each baseline is
-named after the Nix store hash of its system, so the entry selected in the boot
-menu decides which one is restored.
+An installation or deployment publishes a read-only baseline subvolume; the
+following boot restores from it by creating a writable snapshot. The bootloader
+is written only after the subvolume has been published, and the initrd completes
+every check before it erases anything. Each baseline subvolume is named after
+the Nix store hash of its system, so the entry selected in the boot menu decides
+which one is restored.
 
-| Command | Saves a baseline | Activation action |
+| Command | Publishes a baseline subvolume | Activation action |
 |---|---:|---|
 | `inv install --alias HOST` | Yes | The installer runs `switch-to-configuration boot` |
 | `deploy .#HOST` | Yes | `switch` |
 | `deploy --boot .#HOST` | Yes | `boot` |
-| `inv reboot HOST` | No | The initrd restores from the baseline selected by the bootloader |
+| `inv reboot HOST` | No | The initrd snapshots the baseline subvolume selected by the bootloader |
 
-When `switch-to-configuration` runs, NixOS uses a pre-switch hook to save the
-baseline before updating the bootloader.
+When `switch-to-configuration` runs, NixOS uses a pre-switch hook to publish the
+baseline subvolume before updating the bootloader.
 
-The deployment command saves the baseline, and the subsequent reboot restores
-from it. If a baseline for the exact system already exists, the pre-switch
-check validates and reuses it instead of copying the closure again.
+The deployment command publishes the baseline subvolume, and the subsequent
+reboot creates a writable `@nix` snapshot from it. If a subvolume for the exact
+system already exists, the pre-switch check validates and reuses it instead of
+copying the closure again.
 
 ```mermaid
 flowchart TD
@@ -86,9 +90,9 @@ flowchart TD
 
   subgraph SAVE ["On the target (userspace)"]
     direction LR
-    B["pre-switch hook"] --> C["baseline exists for<br/>this system?"]
+    B["pre-switch hook"] --> C["baseline subvolume exists<br/>for this system?"]
     C -- yes --> D["validate and reuse"]
-    C -- no --> E["copy closure, verify,<br/>publish read-only baseline"]
+    C -- no --> E["copy closure, verify,<br/>publish read-only subvolume"]
     D --> H["install bootloader"]
     E --> H
   end
@@ -98,7 +102,7 @@ flowchart TD
 
   subgraph BOOT ["Next boot (initrd, before root is mounted)"]
     direction LR
-    J["initrd checks:<br/>read-only baseline, layout,<br/>machine ID, SSH key"] -- pass --> K["recreate @root empty,<br/>snapshot @nix from baseline"]
+    J["initrd checks:<br/>read-only subvolume, layout,<br/>machine ID, SSH key"] -- pass --> K["recreate @root empty,<br/>snapshot @nix from baseline"]
     J -- fail --> L["emergency.target<br/>nothing erased"]
   end
 
@@ -115,7 +119,7 @@ Baseline reset provides cleanliness between boots, not a security boundary:
 
 | Property | baseline-reset |
 |---|---|
-| Reset on every boot | `/` (`@root`) is recreated empty with the machine ID restored. `/nix` (`@nix`) is replaced by the btrfs baseline for the selected generation |
+| Reset on every boot | `/` (`@root`) is recreated empty with the machine ID restored. `/nix` (`@nix`) is replaced by a writable btrfs snapshot of the read-only baseline subvolume for the selected generation |
 | Preserved by the module | `/var/lib/baseline-reset` (`@persist`). The machine ID is always required; the SSH host key is required when OpenSSH is enabled. Anything else written there also persists |
 | Outside the reset | `/boot`, which holds the bootloader, the generation menu, and the kernel and initrd that perform the reset. Plus separately mounted service volumes, such as the controller's `/var/lib/caddy` |
 | Build and Jenkins state | Discarded. Push required artifacts off-host before rebooting, for example to Cachix or the OCI registry |
@@ -130,7 +134,7 @@ Baseline reset provides cleanliness between boots, not a security boundary:
 | Improvement | Effect and requirements |
 |---|---|
 | Preserved by the module | An explicit allowlist would stop state left under `/var/lib/baseline-reset` from persisting unnoticed. It would narrow one of several surviving paths, not all of them, and would not constrain host root. Needs only a module change |
-| Tamper evidence | Off-host digests would record what a baseline and `/boot` should contain. Comparing the on-disk contents against those digests would catch accidental corruption and support forensics after an incident. The comparison would not prove what a host actually booted, which would need hardware measurement or reading the disk from outside the host. Requires further design |
+| Tamper evidence | Off-host digests would record what a baseline subvolume and `/boot` should contain. Comparing the on-disk contents against those digests would catch accidental corruption and support forensics after an incident. The comparison would not prove what a host actually booted, which would need hardware measurement or reading the disk from outside the host. Requires further design |
 | Boot chain | A tampered kernel or initrd would fail to boot, so the reset could not be skipped. Needs UEFI Secure Boot, which most current Hetzner CI hosts lack |
-| Root of trust | Host root could no longer alter a btrfs baseline undetected. Needs a verified boot chain, plus dm-verity or baseline signatures checked from it, so the Secure Boot requirement applies here too |
-| Erasure | Discarded root and store data would be unrecoverable rather than merely deleted, because the key that encrypted it is gone. Needs the baselines on persistent storage and the writable layer on a volume encrypted with a fresh in-memory key each boot. No new host capabilities, but the layout change means reinstalling hosts already using baseline reset |
+| Root of trust | Host root could no longer alter a baseline subvolume undetected. Needs a verified boot chain, plus dm-verity or signatures covering the baseline contents, so the Secure Boot requirement applies here too |
+| Erasure | Discarded root and store data would be unrecoverable rather than merely deleted, because the key that encrypted it is gone. Needs the baseline subvolumes on persistent storage and the writable layer on a volume encrypted with a fresh in-memory key each boot. No new host capabilities, but the layout change means reinstalling hosts already using baseline reset |
