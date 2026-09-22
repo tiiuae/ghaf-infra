@@ -23,7 +23,7 @@ let
     p11-kit = "${pkgs.p11-kit}/lib/p11-kit-proxy.so";
   };
 
-  nethsm-operator-username = "ghafinfrasign~ghafsigner";
+  nethsm-operator-username = "ghafsign~ghafsigner";
 
   nethsm-cmd = pkgs.writeShellScriptBin "nethsm-cmd" ''
     nitropy nethsm --no-verify-tls \
@@ -234,7 +234,6 @@ in
       "pkcs11/modules/yubihsm.module".text = ''
         module: ${pkcs11Modules.yubihsm}
         priority: 2
-        disable-in: pkcs11-daemon
       '';
     };
 
@@ -318,7 +317,7 @@ in
       };
 
       serviceConfig = {
-        ExecStart = "${lib.getExe pkcs11-proxy} ${pkcs11Modules.yubihsm}";
+        ExecStart = "${lib.getExe pkcs11-proxy} ${pkcs11Modules.p11-kit}";
         Restart = "on-failure";
         RestartSec = "5s";
       };

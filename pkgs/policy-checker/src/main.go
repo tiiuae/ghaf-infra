@@ -86,8 +86,8 @@ func fileSHA256(path string) (string, error) {
 	return hex.EncodeToString(sum[:]), nil
 }
 
-func verifySignature(mode string, artifact string, signature string) error {
-	cmd := exec.Command("verify-signature", mode, artifact, signature)
+func verifySignature(mode string, artifact string, signature string, signingKey string) error {
+	cmd := exec.Command("verify-signature", mode, artifact, signature, signingKey)
 	var stderr bytes.Buffer
 	var stdout bytes.Buffer
 	cmd.Stderr = &stderr
@@ -208,7 +208,7 @@ func fileExists(path string) bool {
 	return err == nil && !info.IsDir()
 }
 
-func verifyFileSignature(mode string, artifact string, signature string) map[string]any {
+func verifyFileSignature(mode string, artifact string, signature string, signingKey string) map[string]any {
 	result := map[string]any{
 		"verified": false,
 		"error":    "",
@@ -221,7 +221,11 @@ func verifyFileSignature(mode string, artifact string, signature string) map[str
 		result["error"] = fmt.Sprintf("missing signature: %s", signature)
 		return result
 	}
-	if err := verifySignature(mode, artifact, signature); err != nil {
+	if signingKey == "" {
+		result["error"] = "missing signing key metadata"
+		return result
+	}
+	if err := verifySignature(mode, artifact, signature, signingKey); err != nil {
 		result["error"] = err.Error()
 		return result
 	}
@@ -293,7 +297,8 @@ func releasePolicyInput(
 	for _, image := range images {
 		imagePath := filepath.Join(targetDir, stringAt(image, "path"))
 		imageSignaturePath := filepath.Join(targetDir, stringAt(image, "signature", "path"))
-		imageSignature := verifyFileSignature("image", imagePath, imageSignaturePath)
+		imageSigningKey := stringAt(image, "signature", "signing_key")
+		imageSignature := verifyFileSignature("image", imagePath, imageSignaturePath, imageSigningKey)
 
 		if !fileExists(imagePath) {
 			imageExists = false
@@ -310,8 +315,9 @@ func releasePolicyInput(
 	}
 	provenancePath := filepath.Join(targetDir, stringAt(manifest, "attestations", "provenance", "path"))
 	provenanceSignaturePath := filepath.Join(targetDir, stringAt(manifest, "attestations", "provenance", "signature", "path"))
+	provenanceSigningKey := stringAt(manifest, "attestations", "provenance", "signature", "signing_key")
 
-	provenanceSignature := verifyFileSignature("provenance", provenancePath, provenanceSignaturePath)
+	provenanceSignature := verifyFileSignature("provenance", provenancePath, provenanceSignaturePath, provenanceSigningKey)
 	provenance := map[string]any{}
 	if fileExists(provenancePath) {
 		provenance, err = readJSON(provenancePath)
@@ -438,6 +444,7 @@ func writeAttestation(path string, attestation map[string]any) error {
 func runProvenanceAction(cmd *cli.Command) error {
 	provenanceFile := cmd.StringArg("provenance")
 	provenanceSignature := cmd.String("sig")
+	provenanceSigningKey := cmd.String("signing-key")
 	configFile := cmd.String("policy")
 
 	if provenanceFile == "" {
@@ -456,8 +463,11 @@ func runProvenanceAction(cmd *cli.Command) error {
 		if provenanceSignature == "" {
 			return errors.New("trust policy requires verified signature, but no signature file was provided")
 		}
+		if provenanceSigningKey == "" {
+			return errors.New("trust policy requires verified signature, but no signing key was provided")
+		}
 		fmt.Println("Verifying signature")
-		if err := verifySignature("provenance", provenanceFile, provenanceSignature); err != nil {
+		if err := verifySignature("provenance", provenanceFile, provenanceSignature, provenanceSigningKey); err != nil {
 			return err
 		}
 	}
@@ -530,13 +540,18 @@ func main() {
 	cmd := &cli.Command{
 		Name:      "policy-checker",
 		Usage:     "Verify SLSA provenance or release policy",
-		UsageText: "policy-checker PROVENANCE_FILE [--sig FILE --policy FILE]",
+		UsageText: "policy-checker PROVENANCE_FILE [--sig FILE --signing-key URI --policy FILE]",
 		Commands:  []*cli.Command{releaseCommand()},
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "sig",
 				Value: "",
 				Usage: "Signature `FILE` to verify the provenance with.",
+			},
+			&cli.StringFlag{
+				Name:  "signing-key",
+				Value: "",
+				Usage: "PKCS#11 `URI` identifying the provenance signing key.",
 			},
 			&cli.StringFlag{
 				Name:  "policy",
