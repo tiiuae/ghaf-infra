@@ -26,6 +26,7 @@ SECRET_KEY="${SECRET_KEY:=}"
 OCI_REGISTRY="${OCI_REGISTRY:=registry.vedenemo.dev}"
 OCI_REPOSITORY="${OCI_REPOSITORY:=/ghaf/release-candidate}"
 REQUIRE_RELEASE_ATTESTATION="${REQUIRE_RELEASE_ATTESTATION:=true}"
+CI_ENV="${CI_ENV:=}"
 
 release_targets=(
   "packages.aarch64-linux.nvidia-jetson-orin-agx-debug"
@@ -157,6 +158,13 @@ is_release_target() {
   return 1
 }
 
+is_expected_signing_key() {
+  signing_key="$1"
+  object="$2"
+  [[ $signing_key == "pkcs11:token=NetHSM;object=$object" ||
+    $signing_key == "pkcs11:token=YubiHSM;object=$object" ]]
+}
+
 verify_signatures() {
   dir="$1"
   manifest="$dir/manifest.json"
@@ -195,6 +203,10 @@ verify_signatures() {
     print_err "missing provenance signing key in manifest: $manifest"
     exit 1
   fi
+  if ! is_expected_signing_key "$prov_signing_key" "GhafInfraSignProv-${CI_ENV}"; then
+    print_err "provenance signing key does not match environment '$CI_ENV': $prov_signing_key"
+    exit 1
+  fi
   while IFS=$'\t' read -r img_rel img_sig_rel img_signing_key; do
     img="$dir/$img_rel"
     if [[ -z $img_rel ]]; then
@@ -208,6 +220,10 @@ verify_signatures() {
     fi
     if [[ -z $img_signing_key ]]; then
       print_err "missing image signing key: $dir"
+      exit 1
+    fi
+    if ! is_expected_signing_key "$img_signing_key" "GhafInfraSignECP256-${CI_ENV}"; then
+      print_err "image signing key does not match environment '$CI_ENV': $img_signing_key"
       exit 1
     fi
     echo "[+] Verifying: $img"
@@ -224,7 +240,7 @@ verify_signatures() {
     print_err "  signature: $prov_sig"
     exit 1
   fi
-  verify_release_attestation "$dir"
+  verify_release_attestation "$dir" "$prov_signing_key"
 }
 
 expected_oci_digest() {
@@ -245,6 +261,7 @@ expected_oci_digest() {
 
 verify_release_attestation() {
   dir="$1"
+  release_signing_key="$2"
   if [[ $REQUIRE_RELEASE_ATTESTATION != "true" ]]; then
     echo "[+] Skipping release attestation verification"
     return 0
@@ -261,10 +278,6 @@ verify_release_attestation() {
     exit 1
   fi
 
-  if ! release_signing_key=$(jq -re '.attestations.provenance.signature.signing_key' "$dir/manifest.json"); then
-    print_err "missing release attestation signing key in manifest: $dir/manifest.json"
-    exit 1
-  fi
   if ! verify-signature release "$release_attestation" "$release_attestation_sig" "$release_signing_key"; then
     print_err "failed verifying release policy attestation signature"
     print_err "  attestation: $release_attestation"
@@ -461,6 +474,10 @@ main() {
     NONE='\033[0m'
   fi
   argparse "$@"
+  if [[ -z $CI_ENV ]]; then
+    print_err "missing CI_ENV environment variable"
+    exit 1
+  fi
   case "${REQUIRE_RELEASE_ATTESTATION,,}" in
   true | 1 | yes | y | on)
     REQUIRE_RELEASE_ATTESTATION="true"
