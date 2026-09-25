@@ -27,7 +27,7 @@ ghaf-auth and exposes a public web UI over Caddy with ACME TLS.
 |---|---|---|
 | `hetzci-prod` | ci-prod.vedenemo.dev | Production CI: runs on every push and PR to Ghaf |
 | `hetzci-dev` | ci-dev.vedenemo.dev | Development CI: for CI and hardware-test development |
-| `hetzci-release` | ci-release.vedenemo.dev | Release CI: ephemeral, re-installed per release cycle |
+| `hetzci-release` | ci-release.vedenemo.dev | Release CI: reset to a deployed baseline per release cycle |
 | `hetzci-dbg` | ci-dbg.vedenemo.dev | Debug CI: isolated controller/builder environment for troubleshooting |
 
 The `hetzci-vm` configuration runs locally (`localhost:8080`) via
@@ -176,16 +176,20 @@ Changes to the Ghaf repository trigger two parallel build paths:
 4. **Results**: test results flow back to Jenkins and build status is
    reported on the GitHub PR.
 
-The **release** environment is ephemeral: it is fully re-provisioned with
-`inv install-release` for each Ghaf release, giving it a clean state. It has
+The **release** environment is ephemeral: `inv install-release` deploys its
+controller and builders, resets them to that baseline, and starts a fresh
+[credential epoch](./baseline-reset.md#updates) for each Ghaf release. It has
 its own dedicated builders and test agents, and is the only environment
 authorized to push to the `ghaf-release` binary cache. Because the cache
-persists across re-installs, release builds can reuse earlier results and only
+persists across resets, release builds can reuse earlier results and only
 rebuild what has changed. The **dev** environment mirrors prod for CI and test
 development. The **dbg** controller and its dedicated builders only trust
 their own `ghaf-dbg` cache alongside `cache.nixos.org`, and only publish into
 `ghaf-dbg`. The `testagent-dbg` host currently still inherits the default
 `ghaf-dev` cache configuration.
+
+Normal releases reuse the existing ci-release disk layout. Reinstallation is
+reserved for initial provisioning or disk layout changes.
 
 Having a self-hosted CI solution alongside GitHub Actions ensures Ghaf
 is not fully dependent on a third-party service for build and test

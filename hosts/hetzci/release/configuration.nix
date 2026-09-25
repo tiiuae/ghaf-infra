@@ -4,6 +4,7 @@
   config,
   lib,
   machines,
+  self,
   ...
 }:
 let
@@ -25,8 +26,9 @@ let
     ramGiB = 30;
   };
 
-  x86BuilderSshKey = "/etc/ssh/certs/hetz86-rel-2-builder";
-  armBuilderSshKey = "/etc/ssh/certs/hetzarm-rel-1-builder";
+  credentialDirectory = "/run/release-builder-credentials";
+  x86BuilderSshKey = "${credentialDirectory}/hetz86-rel-2-builder";
+  armBuilderSshKey = "${credentialDirectory}/hetzarm-rel-1-builder";
 in
 {
   imports = [
@@ -34,6 +36,7 @@ in
     ../common.nix
     ../cloud.nix
     ../signing.nix
+    self.nixosModules.baseline-reset
   ];
 
   system.stateVersion = "26.11";
@@ -88,6 +91,11 @@ in
 
   hetzci.signing.proxy.enable = true;
 
+  services.baseline-reset = {
+    enable = true;
+    rootDevice = "/dev/disk/by-partlabel/disk-os-root";
+  };
+
   # Configure /var/lib/caddy in /etc/fstab for persistent caddy state.
   fileSystems."/var/lib/caddy" = {
     device = "/dev/disk/by-id/scsi-0HC_Volume_103219547";
@@ -102,11 +110,9 @@ in
   nix.settings.min-free = lib.mkOverride 60 controllerDisk.minFreeBytes;
   nix.settings.max-free = lib.mkOverride 60 controllerDisk.maxFreeBytes;
 
-  # install-release copies these generated private keys as root-owned extra files.
-  # Jenkins opens them directly through the remote-store ssh-key URI.
+  # install-release creates the generated keys here after every controller reset.
   systemd.tmpfiles.rules = [
-    "z ${x86BuilderSshKey} 0400 jenkins root - -"
-    "z ${armBuilderSshKey} 0400 jenkins root - -"
+    "d ${credentialDirectory} 0750 root jenkins -"
   ];
 
   # Configure (release) remote builders
