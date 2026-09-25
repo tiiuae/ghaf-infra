@@ -22,8 +22,8 @@ This provides stable host identity, normal `deploy` updates, and selectable
 generations. It is an operational reset mechanism, not an immutable or
 cryptographically ephemeral system.
 
-Baseline reset is currently enabled on the ci-dbg hosts: the `hetzci-dbg`
-controller and its `hetz86-dbg-1` and `hetzarm-dbg-1` builders.
+Baseline reset is enabled on the ci-dbg and ci-release controllers and their
+builders. Test agents are not reset.
 
 ## Installation
 
@@ -40,6 +40,13 @@ inv install --alias HOST
 `inv install` repartitions and erases the target disk. The installer preserves
 the configured SSH identity and establishes the initial read-only baseline
 subvolume.
+
+Install all three ci-release hosts and establish their first credential epoch
+with:
+
+```sh
+inv install-release --reinstall
+```
 
 ## Updates
 
@@ -60,6 +67,42 @@ deploy --boot .#HOST
 inv reboot HOST
 ```
 
+The normal release flow always uses `inv install-release`; it deploys a new
+baseline and resets the existing hosts without repartitioning them. The three
+available modes are:
+
+- `inv install-release`: deploy the current checkout to all three hosts,
+  reset them in parallel, and start a fresh credential epoch (a CA and set of
+  builder credentials that this run creates and the next run entirely
+  replaces). The task also deploys the release test agent. The normal choice
+  for each release.
+- `inv install-release --no-deploy`: reset the already deployed systems in
+  parallel and start a fresh credential epoch, without publishing a new
+  baseline.
+- `inv install-release --reinstall`: erase and reinstall all three hosts in
+  parallel and redeploy the test agent. Use this only for first-time setup or
+  when a disk layout change requires repartitioning; it is not part of a normal
+  release.
+
+Deploying or reinstalling requires a clean checkout of tracked files so the
+recorded Git revision exactly identifies the deployed configuration. Untracked
+files are ignored.
+
+Without `--reinstall`, the task aborts without changes if a host's disk layout
+doesn't match what baseline reset expects. `--no-deploy` also aborts if a host
+has a deployment waiting for its next boot.
+
+A controller reboot outside these commands still needs a follow-up
+`inv install-release`: its credentials live only in `/run` and don't survive
+reboot. A builder reboot doesn't, since it only keeps the (non-secret)
+trusted CA.
+
+The x86 release builder keeps Hetzner's PXE entries first in its persistent
+UEFI boot order so Robot rescue remains available. For its task-controlled
+reset, `inv install-release` uses the currently running local-disk entry as the
+one-shot `BootNext` entry, avoiding slow PXE timeouts without changing the
+persistent boot order.
+
 ## Publishing and restoring baseline subvolumes
 
 An installation or deployment publishes a read-only baseline subvolume; the
@@ -72,6 +115,9 @@ which one is restored.
 | Command | Publishes a baseline subvolume | Activation action |
 |---|---:|---|
 | `inv install --alias HOST` | Yes | The installer runs `switch-to-configuration boot` |
+| `inv install-release` | Yes | Boot-deploys and resets ci-release, then provisions credentials |
+| `inv install-release --no-deploy` | No | Resets the deployed ci-release systems and provisions credentials |
+| `inv install-release --reinstall` | Yes | Repartitions and reinstalls all three ci-release hosts, then provisions credentials |
 | `deploy .#HOST` | Yes | `switch` |
 | `deploy --boot .#HOST` | Yes | `boot` |
 | `inv reboot HOST` | No | The initrd snapshots the baseline subvolume selected by the bootloader |
@@ -120,7 +166,7 @@ Baseline reset provides cleanliness between boots, not a security boundary:
 | Property | baseline-reset |
 |---|---|
 | Reset on every boot | `/` (`@root`) is recreated empty with the machine ID restored. `/nix` (`@nix`) is replaced by a writable btrfs snapshot of the read-only baseline subvolume for the selected generation |
-| Preserved by the module | `/var/lib/baseline-reset` (`@persist`). The machine ID is always required; the SSH host key is required when OpenSSH is enabled. Anything else written there also persists |
+| Preserved by the module | `/var/lib/baseline-reset` (`@persist`). The machine ID is always required; the SSH host key is required when OpenSSH is enabled. Release builders also keep the current public builder CA. Anything else written there also persists |
 | Outside the reset | `/boot`, which holds the bootloader, the generation menu, and the kernel and initrd that perform the reset. Plus separately mounted service volumes, such as the controller's `/var/lib/caddy` |
 | Build and Jenkins state | Discarded. Push required artifacts off-host before rebooting, for example to Cachix or the OCI registry |
 | Boot chain | No Secure Boot, dm-verity, measured boot, or attestation. The current update workflow needs `/boot` writable during activation, when the bootloader installers write the kernel, initrd and boot entries |

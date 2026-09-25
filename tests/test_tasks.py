@@ -12,7 +12,6 @@ import shlex
 import subprocess
 import sys
 from collections import OrderedDict
-from collections.abc import Callable
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -147,17 +146,12 @@ def test_assert_stateversion_exits_when_confirmation_is_rejected(
             stderr="",
         )
 
-    monkeypatch.setattr(
-        tasks,
-        "TARGETS",
-        SimpleNamespace(get=lambda _alias: SimpleNamespace(nixosconfig="demo-host")),
-    )
     monkeypatch.setattr(tasks, "ROOT", Path("/tmp/ghaf-infra"))
     monkeypatch.setattr(tasks, "_confirm", fake_confirm)
     monkeypatch.setattr(tasks.subprocess, "run", fake_run)
 
     with pytest.raises(SystemExit):
-        tasks._assert_stateversion("demo", yes=False)
+        tasks._assert_stateversion("demo", "demo-host", yes=False)
 
 
 def test_generate_signed_user_key_runs_expected_commands(
@@ -353,7 +347,7 @@ def test_install_creates_detailed_log_and_runs_inner_install(
     """Single-host installs should always wrap the inner workflow in a log file."""
     outputs: list[str] = []
     clone_calls: list[tuple[object, str]] = []
-    run_calls: list[tuple[object, str, str | None, bool, str | None]] = []
+    run_calls: list[tuple[object, str, str | None, bool]] = []
     log_dir = tmp_path / "install-logs"
 
     def fake_log_info(message: str) -> None:
@@ -370,12 +364,10 @@ def test_install_creates_detailed_log_and_runs_inner_install(
     def fake_run_install(
         context: object,
         alias: str,
-        *,
-        user: str | None = None,
-        yes: bool = False,
-        copy_dir: str | None = None,
+        **kwargs: object,
     ) -> None:
-        run_calls.append((context, alias, user, yes, copy_dir))
+        assert kwargs["flake"] is None
+        run_calls.append((context, alias, kwargs["user"], kwargs["yes"]))
 
     monkeypatch.setattr(tasks.logger, "info", fake_log_info)
     monkeypatch.setattr(tasks, "mkdtemp", fake_mkdtemp)
@@ -390,13 +382,12 @@ def test_install_creates_detailed_log_and_runs_inner_install(
         "demo",
         user="operator",
         yes=True,
-        copy_dir="/tmp/copied",
     )
 
     log_path = log_dir / "demo.log"
     assert outputs == [f"Writing install log for 'demo' to {log_path}"]
     assert clone_calls == [(root_context, str(log_path))]
-    assert run_calls == [("logged-context", "demo", "operator", True, "/tmp/copied")]
+    assert run_calls == [("logged-context", "demo", "operator", True)]
     assert log_path.exists()
 
 
@@ -417,11 +408,13 @@ def test_install_reports_failure_with_log_path(
     def fail_run_install(
         _context: object,
         _alias: str,
-        *,
-        user: str | None = None,
-        yes: bool = False,
-        copy_dir: str | None = None,
+        **kwargs: object,
     ) -> None:
+        assert kwargs == {
+            "user": None,
+            "yes": True,
+            "flake": None,
+        }
         raise subprocess.CalledProcessError(2, "nixos-anywhere")
 
     def fake_log_error(message: str) -> None:
@@ -441,190 +434,82 @@ def test_install_reports_failure_with_log_path(
     assert errors[1] == f"See detailed install log: {log_path}"
 
 
-def test_install_release_hosts_parallelizes_all_release_hosts(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+def test_install_release_hosts_use_pinned_flake(
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """All release hosts should be dispatched through the parallel install phase."""
-    expected_jobs = [
-        ("hetz86-rel-2", str(tmp_path / "builder")),
-        ("hetzarm-rel-1", str(tmp_path / "builder")),
-        ("hetzci-release", str(tmp_path / "controller")),
-    ]
-    submitted: list[tuple[object, str, str]] = []
-    install_calls: list[tuple[object, str, bool, str | None]] = []
-    clone_calls: list[object] = []
-    prepare_calls: list[str] = []
-    call_order: list[tuple[str, str]] = []
-
-    class FakeFuture:
-        """Minimal future stub that runs the task when awaited."""
-
-        def __init__(self, callback: Callable[[], None]) -> None:
-            self._callback = callback
-
-        def result(self) -> None:
-            self._callback()
-
-    class FakeExecutor:
-        """Minimal executor stub for deterministic release-install tests."""
-
-        def __init__(self, *, max_workers: int) -> None:
-            assert max_workers == len(expected_jobs)
-
-        def __enter__(self) -> "FakeExecutor":
-            return self
-
-        def __exit__(self, *_args: object) -> None:
-            pass
-
-        def submit(
-            self, func: Callable[..., None], *args: object, **kwargs: object
-        ) -> FakeFuture:
-            submitted.append((args[0], args[1], kwargs["copy_dir"]))
-            return FakeFuture(lambda: func(*args, **kwargs))
-
-    def fake_clone_context(context: object) -> str:
-        clone_calls.append(context)
-        return f"host-context-{len(clone_calls)}"
-
-    def fake_resolve_secrets(alias: str) -> object:
-        prepare_calls.append(alias)
-        call_order.append(("resolve", alias))
-        return object()
-
-    def fake_install(
-        context: object,
-        alias: str,
-        *,
-        yes: bool,
-        copy_dir: str | None = None,
-    ) -> None:
-        install_calls.append((context, alias, yes, copy_dir))
-        call_order.append(("install", alias))
-
-    monkeypatch.setattr(tasks, "ThreadPoolExecutor", FakeExecutor)
+    calls: list[tuple[str, object]] = []
+    monkeypatch.setattr(tasks, "_clone_context", lambda context: context)
     monkeypatch.setattr(
-        tasks, "as_completed", lambda submitted_futures: submitted_futures
+        tasks,
+        "_install_with_log",
+        lambda _context, alias, **kwargs: calls.append((alias, kwargs["flake"])),
     )
-    monkeypatch.setattr(
-        tasks, "TARGETS", SimpleNamespace(resolve_secrets=fake_resolve_secrets)
-    )
-    monkeypatch.setattr(tasks, "_clone_context", fake_clone_context)
-    monkeypatch.setattr(tasks, "install", fake_install)
 
-    root_context = object()
-    tasks._install_release_hosts(root_context, tmp_path)
+    tasks._install_release_hosts(object(), "path:/snapshot")
 
-    assert prepare_calls == [alias for alias, _copy_dir in expected_jobs]
-    assert submitted == [
-        ("host-context-1", "hetz86-rel-2", str(tmp_path / "builder")),
-        ("host-context-2", "hetzarm-rel-1", str(tmp_path / "builder")),
-        ("host-context-3", "hetzci-release", str(tmp_path / "controller")),
-    ]
-    assert clone_calls == [root_context, root_context, root_context]
-    assert install_calls == [
-        (
-            "host-context-1",
-            "hetz86-rel-2",
-            True,
-            str(tmp_path / "builder"),
-        ),
-        (
-            "host-context-2",
-            "hetzarm-rel-1",
-            True,
-            str(tmp_path / "builder"),
-        ),
-        (
-            "host-context-3",
-            "hetzci-release",
-            True,
-            str(tmp_path / "controller"),
-        ),
-    ]
-    assert call_order[:3] == [
-        ("resolve", "hetz86-rel-2"),
-        ("resolve", "hetzarm-rel-1"),
-        ("resolve", "hetzci-release"),
+    assert sorted(calls) == [
+        ("hetz86-rel-2", "path:/snapshot"),
+        ("hetzarm-rel-1", "path:/snapshot"),
+        ("hetzci-release", "path:/snapshot"),
     ]
 
 
 def test_install_release_hosts_reports_all_parallel_failures(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Parallel release install should log every failing host before exiting."""
-    errors: list[str] = []
-
-    class FakeFuture:
-        """Minimal future stub that runs the task when awaited."""
-
-        def __init__(self, callback: Callable[[], None]) -> None:
-            self._callback = callback
-
-        def result(self) -> None:
-            self._callback()
-
-    class FakeExecutor:
-        """Minimal executor stub for failure aggregation tests."""
-
-        def __init__(self, *, max_workers: int) -> None:
-            assert max_workers == 3
-
-        def __enter__(self) -> "FakeExecutor":
-            return self
-
-        def __exit__(self, *_args: object) -> None:
-            pass
-
-        def submit(
-            self, func: Callable[..., None], *args: object, **kwargs: object
-        ) -> FakeFuture:
-            return FakeFuture(lambda: func(*args, **kwargs))
-
-    def fake_install(
-        _context: object,
-        alias: str,
-        *,
-        yes: bool,
-        copy_dir: str | None = None,
-    ) -> None:
-        assert yes
-        assert copy_dir is not None
+    def fail_one_host(_context: object, alias: str, **_kwargs: object) -> None:
         if alias == "hetz86-rel-2":
             raise SystemExit(1)
-        if alias == "hetzci-release":
-            raise subprocess.CalledProcessError(2, "nixos-anywhere")
 
-    def identity_as_completed(submitted_futures: object) -> object:
-        return submitted_futures
+    monkeypatch.setattr(tasks, "_clone_context", lambda context: context)
+    monkeypatch.setattr(tasks, "_install_with_log", fail_one_host)
 
-    def same_context(context: object) -> object:
-        return context
+    with pytest.raises(RuntimeError, match="1 host\\(s\\): hetz86-rel-2"):
+        tasks._install_release_hosts(object(), "path:/snapshot")
 
-    def fake_log_error(message: str) -> None:
-        errors.append(message)
 
-    monkeypatch.setattr(tasks, "ThreadPoolExecutor", FakeExecutor)
-    monkeypatch.setattr(tasks, "as_completed", identity_as_completed)
+def test_preflight_release_reset_rejects_legacy_layout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    hosts = dict.fromkeys(tasks.RELEASE_HOST_ALIASES, object())
     monkeypatch.setattr(
-        tasks, "TARGETS", SimpleNamespace(resolve_secrets=lambda _alias: object())
+        tasks,
+        "_remote_stdout",
+        lambda *_args, **_kwargs: "ext4 /\next4 /\nmissing\nvfat",
     )
-    monkeypatch.setattr(tasks, "_clone_context", same_context)
-    monkeypatch.setattr(tasks, "install", fake_install)
-    monkeypatch.setattr(tasks.logger, "error", fake_log_error)
 
     with pytest.raises(
-        RuntimeError, match="2 host\\(s\\): hetz86-rel-2, hetzci-release"
+        RuntimeError, match=r"hetz86-rel-2.*not reset-ready.*--reinstall"
     ):
-        tasks._install_release_hosts(object(), tmp_path)
+        tasks._preflight_release_reset(hosts)
 
-    assert any(
-        "hetz86-rel-2" in message and "SystemExit: 1" in message for message in errors
+
+def test_prepare_release_baselines_uses_pinned_flake(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    flake = "git+file:///repo?rev=revision"
+    commands: list[list[str]] = []
+    hosts = {alias: object() for alias in tasks.RELEASE_HOST_ALIASES}
+    monkeypatch.setattr(tasks, "_run_checked", commands.append)
+    monkeypatch.setattr(tasks, "_expected_release_system", lambda *_args: "system")
+
+    systems = tasks._prepare_release_baselines(
+        reinstall=False,
+        flake=flake,
+        hosts=hosts,
     )
-    assert any(
-        "hetzci-release" in message and "CalledProcessError:" in message
-        for message in errors
-    )
+
+    assert commands == [
+        [
+            "deploy",
+            "--boot",
+            "--targets",
+            f"{flake}#hetz86-rel-2",
+            f"{flake}#hetzarm-rel-1",
+            f"{flake}#hetzci-release",
+        ]
+    ]
+    assert systems == dict.fromkeys(tasks.RELEASE_HOST_ALIASES, "system")
 
 
 def test_build_nixos_anywhere_command_is_shell_safe(tmp_path: Path) -> None:
@@ -709,7 +594,7 @@ def test_deploy_release_testagent_skips_unreachable_host(
 
     host = SimpleNamespace(host="172.18.16.32", port=None)
 
-    assert tasks._deploy_release_testagent(FakeContext(), host) is False
+    assert tasks._deploy_release_testagent(FakeContext(), host, ".") is False
     assert probes == [("172.18.16.32", 22, tasks.RELEASE_DEPLOY_SSH_PROBE_TIMEOUT_SEC)]
     assert infos[0] == (
         "Failed deploying 'testagent-release'. "
@@ -758,6 +643,14 @@ def test_run_install_selects_configured_ed25519_host_key_path(
         secrets_resolved=True,
     )
     staged: list[str] = []
+    host_calls: list[tuple[str, str | None, tasks.TargetHost]] = []
+
+    def get_host(
+        alias: str, user: str | None = None, target: tasks.TargetHost | None = None
+    ) -> SimpleNamespace:
+        assert target is not None
+        host_calls.append((alias, user, target))
+        return SimpleNamespace(host="192.0.2.1", user=user or "operator")
 
     def host_keys(command: list[str]) -> list[dict[str, str]]:
         assert command[-1] == (
@@ -775,11 +668,7 @@ def test_run_install_selects_configured_ed25519_host_key_path(
         tasks, "TARGETS", SimpleNamespace(resolve_secrets=lambda _alias: target)
     )
     monkeypatch.setattr(tasks, "_confirm", lambda *_args: True)
-    monkeypatch.setattr(
-        tasks,
-        "_get_deploy_host",
-        lambda *_args: SimpleNamespace(host="192.0.2.1", user="operator"),
-    )
+    monkeypatch.setattr(tasks, "_get_deploy_host", get_host)
     monkeypatch.setattr(tasks, "_run_json", host_keys)
     monkeypatch.setattr(
         tasks,
@@ -791,13 +680,16 @@ def test_run_install_selects_configured_ed25519_host_key_path(
         "_check_remote_user_alignment",
         "_check_remote_sudo",
         "_wait_for_port",
-        "reboot",
     ):
         monkeypatch.setattr(tasks, name, lambda *_args: None)
+    monkeypatch.setattr(tasks, "_reboot_host", lambda *_args: True)
 
-    tasks._run_install(SimpleNamespace(run=lambda _command: None), "demo", yes=True)
+    tasks._run_install(
+        SimpleNamespace(run=lambda _command: None), "demo", user="root", yes=True
+    )
 
     assert staged == ["/var/lib/baseline-reset/ssh/ssh_host_ed25519_key"]
+    assert host_calls == [("demo", "root", target), ("demo", None, target)]
 
 
 def test_sops_files_from_config_matches_existing_creation_rules(tmp_path: Path) -> None:

@@ -15,6 +15,7 @@
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
+    baseline-reset
     zramSwap
     hetzner-robot
     common
@@ -44,6 +45,12 @@
 
   cachix-push = {
     cacheName = "ghaf-release";
+  };
+
+  services.baseline-reset = {
+    enable = true;
+    rootDevice = "/dev/disk/by-partlabel/disk-nvme0-root";
+    nixDevice = "/dev/disk/by-partlabel/disk-nvme1-nix";
   };
 
   services.monitoring = {
