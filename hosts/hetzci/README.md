@@ -205,7 +205,11 @@ On non-VM environments, manually connect the test HW agents to the deployed Jenk
 
 ## Release Environment Setup
 
-The release environment is completely re-installed for each Ghaf release to support ephemeral release builds. See the [`install-release` task](../../docs/tasks.md#install-release) for automation details.
+The release environment is deployed and reset to a clean baseline for each
+Ghaf release. Hosts are reinstalled only for initial provisioning or required
+disk layout changes. See the
+[`install-release` task](../../docs/tasks.md#install-release) for automation
+details.
 
 ## Jenkins Pipeline Overview
 

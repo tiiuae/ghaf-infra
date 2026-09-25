@@ -20,7 +20,7 @@ Available tasks:
 
   alias-list          List available targets (i.e. configurations and alias names)
   install             Install `alias` configuration using nixos-anywhere, deploying host private key.
-  install-release     Initialize hetzner release environment
+  install-release     Deploy and reset release hosts; reinstall only for disk layout changes.
   print-keys          Decrypt host private key, print ssh and age public keys for `alias` config.
   print-revision      Print the currently deployed git revision on the 'alias' host.
   reboot              Reboot host identified as `alias`, selected aliases, or hosts needing reboot.
@@ -133,18 +133,23 @@ inv update-sops-files
 
 ## install-release
 
-The `install-release` task installs all the hosts in ci-release environment to allow ephemeral release builds.
-It runs the `install` task non-interactively on all the release environment hosts (Jenkins controller, nix remote builders), as well as [connects the relevant testagent](https://github.com/tiiuae/ghaf-infra/tree/main/hosts/hetzci#connect-test-agents) to the release Jenkins controller to fully automate the release environment setup.
+The `install-release` task deploys the current checkout to the ci-release
+Jenkins controller, its two builders, and its test agent; resets the controller
+and builders to that baseline in parallel; and starts a fresh credential epoch.
+
+Use `inv install-release` for the normal release flow. It deploys and resets the
+existing hosts without repartitioning them. Use `--reinstall` only for initial
+provisioning or when a disk layout change requires reinstalling the three
+release hosts; it is not part of a normal release.
 
 ```bash
-❯ inv install-release
-...
-# Install hetz86-rel-2
-# Install hetzarm-rel-1
-# Install hetzci-release
-# Connect testagent
-...
+❯ inv install-release              # deploy and reset (normal release)
+❯ inv install-release --no-deploy  # reset the deployed systems only
+❯ inv install-release --reinstall  # disk layout change: erase and reinstall
 ```
+
+See [baseline reset updates](./baseline-reset.md#updates) for when to use each
+mode and the checks it performs.
 
 ## reboot
 

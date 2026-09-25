@@ -14,7 +14,7 @@
           };
           ESP = {
             type = "EF00";
-            size = "512M";
+            size = "1024M";
             content = {
               type = "filesystem";
               format = "vfat";
@@ -24,9 +24,11 @@
           root = {
             size = "100%";
             content = {
-              type = "filesystem";
-              format = "ext4";
-              mountpoint = "/";
+              type = "btrfs";
+              subvolumes = {
+                "@root".mountpoint = "/";
+                "@persist".mountpoint = "/var/lib/baseline-reset";
+              };
             };
           };
         };
@@ -42,9 +44,8 @@
           nix = {
             size = "100%";
             content = {
-              type = "filesystem";
-              format = "ext4";
-              mountpoint = "/nix";
+              type = "btrfs";
+              subvolumes."@nix".mountpoint = "/nix";
             };
           };
         };
