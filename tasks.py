@@ -119,6 +119,7 @@ class TargetHost:
 
     hostname: str
     nixosconfig: str
+    public_key: str | None = None
     secretspath: str | None = None
     secrets_resolved: bool = False
 
@@ -145,6 +146,7 @@ class Targets:
                 name: TargetHost(
                     hostname=node["hostname"],
                     nixosconfig=node["config"],
+                    public_key=node.get("publicKey"),
                 )
                 for name, node in _run_json(
                     ["nix", "eval", "--json", f"{self.flake}#installationTargets"]
@@ -450,15 +452,33 @@ def _clone_context_for_stream(c: Context, stream: TextIO) -> Context:
 
 
 def _get_deploy_host(
-    alias: str, user: str | None = None, target: TargetHost | None = None
+    alias: str,
+    user: str | None = None,
+    target: TargetHost | None = None,
+    *,
+    known_hosts: Path | None = None,
 ) -> DeployHost:
     """Return DeployHost object, given `alias`."""
     hostname = target.hostname if target is not None else TARGETS.get(alias).hostname
+    extra_ssh_opts = ["-o", "LogLevel=ERROR"]
+    if known_hosts is not None:
+        extra_ssh_opts.extend(
+            [
+                "-o",
+                "StrictHostKeyChecking=yes",
+                "-o",
+                f"UserKnownHostsFile={known_hosts}",
+                "-o",
+                "GlobalKnownHostsFile=/dev/null",
+            ]
+        )
     return DeployHost(
         host=hostname,
         user=user,
-        host_key_check=HostKeyCheck.NONE,
-        extra_ssh_opts=["-o", "LogLevel=ERROR"],
+        host_key_check=(
+            HostKeyCheck.STRICT if known_hosts is not None else HostKeyCheck.NONE
+        ),
+        extra_ssh_opts=extra_ssh_opts,
         # verbose_ssh=True,
     )
 
@@ -882,6 +902,9 @@ def _copy_release_file(
     owner: str,
 ) -> None:
     """Copy one generated credential and install it atomically."""
+    if host.host_key_check != HostKeyCheck.STRICT:
+        raise ValueError("Release credentials require a pinned SSH host key")
+
     remote = _remote_stdout(
         host,
         "path=$(mktemp /run/install-release.XXXXXXXX) && "
@@ -893,15 +916,12 @@ def _copy_release_file(
     command = [
         "scp",
         "-q",
-        "-o",
-        "StrictHostKeyChecking=no",
-        "-o",
-        "UserKnownHostsFile=/dev/null",
     ]
     if host.port:
         command.extend(["-P", str(host.port)])
     if host.key:
         command.extend(["-i", host.key])
+    command.extend(host.extra_ssh_opts)
     command.extend([str(source), f"{target}:{remote}"])
     try:
         _run_checked(command, timeout=20)
@@ -1090,6 +1110,39 @@ def _connect_release_testagent(host: DeployHost) -> bool:
                 return False
             time.sleep(RELEASE_CONNECT_SLEEP_SEC)
     return False
+
+
+@contextmanager
+def _pinned_release_hosts(targets: Targets) -> Iterator[dict[str, DeployHost]]:
+    """Return release hosts pinned to the public keys in the target inventory."""
+    aliases = (*RELEASE_HOST_ALIASES, RELEASE_TESTAGENT_ALIAS)
+    release_targets = {alias: targets.get(alias) for alias in aliases}
+    missing_keys = [
+        alias for alias, target in release_targets.items() if target.public_key is None
+    ]
+    if missing_keys:
+        raise RuntimeError(
+            "Missing pinned SSH host key for release target(s): "
+            + ", ".join(missing_keys)
+        )
+
+    with TemporaryDirectory() as ssh_dir:
+        known_hosts = Path(ssh_dir) / "known_hosts"
+        known_hosts.write_text(
+            "".join(
+                f"{target.hostname} {target.public_key}\n"
+                for target in release_targets.values()
+            ),
+            encoding="utf-8",
+        )
+        yield {
+            alias: _get_deploy_host(
+                alias,
+                target=release_targets[alias],
+                known_hosts=known_hosts,
+            )
+            for alias in aliases
+        }
 
 
 ################################################################################
@@ -1345,78 +1398,81 @@ def _run_release_install(c: Context, reinstall: bool, flake: str | None) -> None
     """Run the release workflow against one pinned flake snapshot."""
     _log_status_info("Preparing ci-release targets")
     targets = Targets(flake) if flake else TARGETS
-    hosts = {
-        alias: _get_deploy_host(alias, target=targets.get(alias))
-        for alias in (*RELEASE_HOST_ALIASES, RELEASE_TESTAGENT_ALIAS)
-    }
-    with _quiet_deploykit_commands():
-        if not reinstall:
-            _preflight_release_reset(hosts)
-        expected_systems = _prepare_release_baselines(reinstall, flake, hosts)
-
-        # Stop Jenkins before revoking the previous builder CA, then record boot IDs.
-        _log_status_info("Preparing ci-release hosts for reset")
-        previous_boot_ids: dict[str, str] = {}
-        for alias in (RELEASE_CONTROLLER_ALIAS, *RELEASE_BUILDER_ALIASES):
-            if alias == RELEASE_CONTROLLER_ALIAS:
-                command = ["systemctl", "stop", "jenkins.service"]
-            else:
-                command = ["rm", "-f", RELEASE_BUILDER_CA_PATH]
-                if reinstall:
-                    command.append("/etc/ssh/keys/ssh_user_ca.pub")
-            try:
-                hosts[alias].run(
-                    command,
-                    become_root=True,
-                    timeout=120 if alias == RELEASE_CONTROLLER_ALIAS else 20,
-                )
-                previous_boot_ids[alias] = _remote_stdout(
-                    hosts[alias], "cat /proc/sys/kernel/random/boot_id", timeout=20
-                )
-            except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as err:
-                if not reinstall:
-                    raise
-                _log_warning(
-                    f"[{alias}] could not prepare for reset or read the boot ID: "
-                    f"{_install_error_summary(err)}"
-                )
-
-    if reinstall:
-        assert flake is not None
-        _install_release_hosts(c, flake)
-    else:
+    with _pinned_release_hosts(targets) as hosts:
         with _quiet_deploykit_commands():
-            _reboot_release_hosts(hosts)
+            if not reinstall:
+                _preflight_release_reset(hosts)
+            expected_systems = _prepare_release_baselines(reinstall, flake, hosts)
 
-    with _quiet_deploykit_commands():
-        _verify_release_hosts(previous_boot_ids, expected_systems, hosts)
-        _log_status_info("Provisioning release builder credentials")
-        with TemporaryDirectory() as tmpdir_name:
-            _provision_release_credentials(Path(tmpdir_name), hosts)
-        _log_status_info("Provisioned release builder credentials")
+            # Stop Jenkins before revoking the previous builder CA, then record boot IDs.
+            _log_status_info("Preparing ci-release hosts for reset")
+            previous_boot_ids: dict[str, str] = {}
+            for alias in (RELEASE_CONTROLLER_ALIAS, *RELEASE_BUILDER_ALIASES):
+                if alias == RELEASE_CONTROLLER_ALIAS:
+                    command = ["systemctl", "stop", "jenkins.service"]
+                else:
+                    command = ["rm", "-f", RELEASE_BUILDER_CA_PATH]
+                    if reinstall:
+                        command.append("/etc/ssh/keys/ssh_user_ca.pub")
+                try:
+                    hosts[alias].run(
+                        command,
+                        become_root=True,
+                        timeout=120 if alias == RELEASE_CONTROLLER_ALIAS else 20,
+                    )
+                    previous_boot_ids[alias] = _remote_stdout(
+                        hosts[alias], "cat /proc/sys/kernel/random/boot_id", timeout=20
+                    )
+                except (
+                    subprocess.CalledProcessError,
+                    subprocess.TimeoutExpired,
+                ) as err:
+                    if not reinstall:
+                        raise
+                    _log_warning(
+                        f"[{alias}] could not prepare for reset or read the boot ID: "
+                        f"{_install_error_summary(err)}"
+                    )
 
-    host = hosts[RELEASE_TESTAGENT_ALIAS]
-    log_path = _new_install_log_path(RELEASE_TESTAGENT_ALIAS, "install-release-logs-")
-    _announce_install_log_path(RELEASE_TESTAGENT_ALIAS, log_path)
-    with _thread_log_to_file(log_path) as stream:
-        logged_context = _clone_context_for_stream(c, stream)
-        if flake is not None:
-            _log_status_info(f"[{RELEASE_TESTAGENT_ALIAS}] deploy: starting")
-            if not _deploy_release_testagent(logged_context, host, flake):
+        if reinstall:
+            assert flake is not None
+            _install_release_hosts(c, flake)
+        else:
+            with _quiet_deploykit_commands():
+                _reboot_release_hosts(hosts)
+
+        with _quiet_deploykit_commands():
+            _verify_release_hosts(previous_boot_ids, expected_systems, hosts)
+            _log_status_info("Provisioning release builder credentials")
+            with TemporaryDirectory() as tmpdir_name:
+                _provision_release_credentials(Path(tmpdir_name), hosts)
+            _log_status_info("Provisioned release builder credentials")
+
+        host = hosts[RELEASE_TESTAGENT_ALIAS]
+        log_path = _new_install_log_path(
+            RELEASE_TESTAGENT_ALIAS, "install-release-logs-"
+        )
+        _announce_install_log_path(RELEASE_TESTAGENT_ALIAS, log_path)
+        with _thread_log_to_file(log_path) as stream:
+            logged_context = _clone_context_for_stream(c, stream)
+            if flake is not None:
+                _log_status_info(f"[{RELEASE_TESTAGENT_ALIAS}] deploy: starting")
+                if not _deploy_release_testagent(logged_context, host, flake):
+                    return
+            _log_status_info(
+                f"[{RELEASE_TESTAGENT_ALIAS}] connect: attaching to "
+                f"{RELEASE_TESTAGENT_URL}"
+            )
+            if _connect_release_testagent(host):
+                _log_status_info(f"[{RELEASE_TESTAGENT_ALIAS}] connect: finished")
                 return
-        _log_status_info(
-            f"[{RELEASE_TESTAGENT_ALIAS}] connect: attaching to {RELEASE_TESTAGENT_URL}"
-        )
-        if _connect_release_testagent(host):
-            _log_status_info(f"[{RELEASE_TESTAGENT_ALIAS}] connect: finished")
-            return
-        _log_status_info(
-            "Failed connecting 'testagent-release' to the installed release environment. "
-            "The release environment is otherwise up, but you need to manually connect "
-            "the testagent to the release Jenkins instance. "
-            f"Hint: is the testagent at '{host.host}' accessible over SSH? "
-            "Perhaps you need to connect a VPN?"
-        )
+            _log_status_info(
+                "Failed connecting 'testagent-release' to the installed release "
+                "environment. The release environment is otherwise up, but you need "
+                "to manually connect the testagent to the release Jenkins instance. "
+                f"Hint: is the testagent at '{host.host}' accessible over SSH? "
+                "Perhaps you need to connect a VPN?"
+            )
 
 
 @task
