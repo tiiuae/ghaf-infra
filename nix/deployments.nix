@@ -47,8 +47,9 @@ in
 
     # Split between metadata (cheap) and secrets (forces nixosConfigurations eval)
     # so tasks.py can list aliases without materialising every host config.
-    installationTargets = lib.attrsets.mapAttrs (_: node: {
+    installationTargets = lib.attrsets.mapAttrs (name: node: {
       inherit (node) hostname config;
+      publicKey = hostInventory.${name}.machine.publicKey or null;
     }) nodes;
 
     installationTargetSecrets = lib.attrsets.mapAttrs (
