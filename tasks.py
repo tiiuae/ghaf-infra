@@ -96,6 +96,9 @@ RELEASE_BUILDER_ALIASES = (
     "hetzarm-rel-1",
 )
 RELEASE_CONTROLLER_ALIAS = "hetzci-release"
+RELEASE_HOST_ALIASES = (*RELEASE_BUILDER_ALIASES, RELEASE_CONTROLLER_ALIAS)
+RELEASE_BUILDER_CA_PATH = "/var/lib/baseline-reset/release-builder-ca.pub"
+RELEASE_CONTROLLER_CREDENTIALS = "/run/release-builder-credentials"
 RELEASE_TESTAGENT_ALIAS = "testagent-release"
 RELEASE_TESTAGENT_URL = "https://ci-release.vedenemo.dev"
 RELEASE_CONNECT_ATTEMPTS = 3
@@ -116,6 +119,7 @@ class TargetHost:
 
     hostname: str
     nixosconfig: str
+    public_key: str | None = None
     secretspath: str | None = None
     secrets_resolved: bool = False
 
@@ -123,7 +127,8 @@ class TargetHost:
 class Targets:
     """Represents all installation targets."""
 
-    def __init__(self) -> None:
+    def __init__(self, flake: str | None = None) -> None:
+        self.flake = flake or str(ROOT)
         self.populated = False
         self.target_dict: OrderedDict[str, TargetHost] = OrderedDict()
 
@@ -141,9 +146,10 @@ class Targets:
                 name: TargetHost(
                     hostname=node["hostname"],
                     nixosconfig=node["config"],
+                    public_key=node.get("publicKey"),
                 )
                 for name, node in _run_json(
-                    ["nix", "eval", "--json", f"{ROOT}#installationTargets"]
+                    ["nix", "eval", "--json", f"{self.flake}#installationTargets"]
                 ).items()
             }
         )
@@ -166,7 +172,12 @@ class Targets:
             return target
 
         target.secretspath = _run_json(
-            ["nix", "eval", "--json", f"{ROOT}#installationTargetSecrets.{alias}"]
+            [
+                "nix",
+                "eval",
+                "--json",
+                f"{self.flake}#installationTargetSecrets.{alias}",
+            ]
         )
         target.secrets_resolved = True
         return target
@@ -217,6 +228,18 @@ def _configure_context_stream_logger(logger_obj: logging.Logger) -> None:
     handler = _ContextLoguruHandler()
     handler.setLevel(handler_level)
     logger_obj.addHandler(handler)
+
+
+@contextmanager
+def _quiet_deploykit_commands() -> Iterator[None]:
+    """Hide routine remote commands while preserving warnings and errors."""
+    command_logger = logging.getLogger("deploykit.command")
+    previous_level = command_logger.level
+    command_logger.setLevel(logging.WARNING)
+    try:
+        yield
+    finally:
+        command_logger.setLevel(previous_level)
 
 
 _configure_context_stream_logger(logging.getLogger("deploykit.command"))
@@ -374,14 +397,16 @@ def _remote_stdout(
     return host.run(**run_kwargs).stdout.strip()
 
 
-def _build_target_ref(target: TargetHost) -> str:
+def _build_target_ref(target: TargetHost, flake: str = ".") -> str:
     """Return the flake output used for local system builds."""
-    return f".#nixosConfigurations.{target.nixosconfig}.config.system.build.toplevel"
+    return (
+        f"{flake}#nixosConfigurations.{target.nixosconfig}.config.system.build.toplevel"
+    )
 
 
-def _build_local_build_command(target: TargetHost) -> str:
+def _build_local_build_command(target: TargetHost, flake: str = ".") -> str:
     """Return the `nix build` command string used by invoke."""
-    return shlex.join(["nix", "build", "--no-link", _build_target_ref(target)])
+    return shlex.join(["nix", "build", "--no-link", _build_target_ref(target, flake)])
 
 
 def _build_nixos_anywhere_command(
@@ -390,6 +415,7 @@ def _build_nixos_anywhere_command(
     target: TargetHost,
     *,
     kexec_url: str | None = None,
+    flake: str = ".",
 ) -> str:
     """Return the `nixos-anywhere` command string used by invoke."""
     cmd = [
@@ -403,7 +429,7 @@ def _build_nixos_anywhere_command(
     cmd.extend(
         [
             "--flake",
-            f".#{target.nixosconfig}",
+            f"{flake}#{target.nixosconfig}",
             "--option",
             "accept-flake-config",
             "true",
@@ -425,13 +451,34 @@ def _clone_context_for_stream(c: Context, stream: TextIO) -> Context:
     return clone
 
 
-def _get_deploy_host(alias: str, user: str | None = None) -> DeployHost:
+def _get_deploy_host(
+    alias: str,
+    user: str | None = None,
+    target: TargetHost | None = None,
+    *,
+    known_hosts: Path | None = None,
+) -> DeployHost:
     """Return DeployHost object, given `alias`."""
-    hostname = TARGETS.get(alias).hostname
+    hostname = target.hostname if target is not None else TARGETS.get(alias).hostname
+    extra_ssh_opts = ["-o", "LogLevel=ERROR"]
+    if known_hosts is not None:
+        extra_ssh_opts.extend(
+            [
+                "-o",
+                "StrictHostKeyChecking=yes",
+                "-o",
+                f"UserKnownHostsFile={known_hosts}",
+                "-o",
+                "GlobalKnownHostsFile=/dev/null",
+            ]
+        )
     return DeployHost(
         host=hostname,
         user=user,
-        host_key_check=HostKeyCheck.NONE,
+        host_key_check=(
+            HostKeyCheck.STRICT if known_hosts is not None else HostKeyCheck.NONE
+        ),
+        extra_ssh_opts=extra_ssh_opts,
         # verbose_ssh=True,
     )
 
@@ -576,9 +623,11 @@ def _replace_nebula_secrets(
 ################################################################################
 
 
-def _assert_stateversion(alias: str, yes: bool) -> None:
+def _assert_stateversion(
+    alias: str, host: str, yes: bool, flake: str | None = None
+) -> None:
     """Assert that stateVersion matches nixpkgs version."""
-    host = TARGETS.get(alias).nixosconfig
+    flake = flake or f"git+file://{ROOT}"
     ret = subprocess.run(
         [
             "nix",
@@ -586,12 +635,12 @@ def _assert_stateversion(alias: str, yes: bool) -> None:
             "--impure",
             "--json",
             "--expr",
-            f'let \
-                flake = builtins.getFlake ("git+file://" + toString {ROOT}); \
+            f"let \
+                flake = builtins.getFlake {json.dumps(flake)}; \
                 host = flake.nixosConfigurations.{host}; \
                 nixpkgsVersion = builtins.substring 0 5 host.lib.version; \
                 stateVersion = host.config.system.stateVersion; \
-              in {{ inherit stateVersion nixpkgsVersion; }}',
+              in {{ inherit stateVersion nixpkgsVersion; }}",
         ],
         capture_output=True,
         text=True,
@@ -733,26 +782,36 @@ def _install_error_summary(err: Exception | SystemExit) -> str:
     return f"{type(err).__name__}: {detail}" if detail else type(err).__name__
 
 
-def _install_release_hosts(c: Context, tmpdir: Path) -> None:
-    """Install all release hosts using the public install task."""
-    jobs = [
-        *((alias, str(tmpdir / "builder")) for alias in RELEASE_BUILDER_ALIASES),
-        (RELEASE_CONTROLLER_ALIAS, str(tmpdir / "controller")),
-    ]
-    _log_info(f"Installing {len(jobs)} release host(s) in parallel")
+def _release_flake_ref(enabled: bool) -> str | None:
+    """Return the current clean Git revision as an immutable flake reference."""
+    if not enabled:
+        return None
+    if _run_checked(
+        ["git", "status", "--porcelain", "--untracked-files=no"],
+        capture_output=True,
+    ).stdout:
+        raise RuntimeError("install-release requires a clean tracked checkout")
+    revision = _run_checked(
+        ["git", "rev-parse", "HEAD"], capture_output=True
+    ).stdout.strip()
+    return f"git+{ROOT.as_uri()}?rev={revision}"
 
-    # Populate shared target metadata before worker threads start touching the
-    # lazy TARGETS cache.
-    for alias, _copy_dir in jobs:
-        TARGETS.resolve_secrets(alias)
+
+def _install_release_hosts(c: Context, flake: str) -> None:
+    """Install all release hosts using the public install task."""
+    _log_info(f"Installing {len(RELEASE_HOST_ALIASES)} release host(s) in parallel")
 
     failures: list[str] = []
-    with ThreadPoolExecutor(max_workers=len(jobs)) as executor:
+    with ThreadPoolExecutor(max_workers=len(RELEASE_HOST_ALIASES)) as executor:
         future_to_alias = {
             executor.submit(
-                install, _clone_context(c), alias, yes=True, copy_dir=copy_dir
+                _install_with_log,
+                _clone_context(c),
+                alias,
+                yes=True,
+                flake=flake,
             ): alias
-            for alias, copy_dir in jobs
+            for alias in RELEASE_HOST_ALIASES
         }
         for future in as_completed(future_to_alias):
             alias = future_to_alias[future]
@@ -771,7 +830,244 @@ def _install_release_hosts(c: Context, tmpdir: Path) -> None:
         )
 
 
-def _deploy_release_testagent(c: Context, host: DeployHost) -> bool:
+def _prepare_release_baselines(
+    reinstall: bool,
+    flake: str | None,
+    hosts: dict[str, DeployHost],
+) -> dict[str, str]:
+    """Deploy new baselines and record the systems the reset must select."""
+    if flake is not None:
+        _log_status_info("Preparing ci-release host baselines")
+        expected = {
+            alias: _expected_release_system(alias, flake)
+            for alias in RELEASE_HOST_ALIASES
+        }
+        if not reinstall:
+            _run_checked(
+                [
+                    "deploy",
+                    "--boot",
+                    "--targets",
+                    *(f"{flake}#{alias}" for alias in RELEASE_HOST_ALIASES),
+                ]
+            )
+        return expected
+
+    _log_status_info("Reading current ci-release host baselines")
+    expected = {}
+    for alias in RELEASE_HOST_ALIASES:
+        host = hosts[alias]
+        booted = _remote_stdout(host, "readlink -f /run/booted-system", timeout=20)
+        profile = _remote_stdout(
+            host, "readlink -f /nix/var/nix/profiles/system", timeout=20
+        )
+        if booted != profile:
+            raise RuntimeError(
+                f"'{alias}' booted {booted}, but its selected system is {profile}; "
+                "reboot it or deploy a baseline before using --no-deploy"
+            )
+        expected[alias] = booted
+    return expected
+
+
+def _preflight_release_reset(hosts: dict[str, DeployHost]) -> None:
+    """Require the baseline-reset disk layout."""
+    _log_status_info("Checking ci-release reset prerequisites")
+    paths = ("/", "/nix", "/var/lib/baseline-reset", "/boot")
+    expected = ["btrfs /@root", "btrfs /@nix", "btrfs /@persist", "vfat /"]
+    for alias in RELEASE_HOST_ALIASES:
+        layout = _remote_stdout(
+            hosts[alias],
+            f"for path in {shlex.join(paths)}; do "
+            'findmnt -nro FSTYPE,FSROOT --mountpoint "$path" || echo missing; '
+            "done",
+            timeout=20,
+        ).splitlines()
+        if layout != expected:
+            observed = ", ".join(
+                f"{path}={value}" for path, value in zip(paths, layout, strict=True)
+            )
+            raise RuntimeError(
+                f"'{alias}' is not reset-ready: expected the baseline-reset disk "
+                f"layout, observed {observed}. Inspect the host and rerun with "
+                "'inv install-release --reinstall' only if repartitioning is intended"
+            )
+
+
+def _copy_release_file(
+    host: DeployHost,
+    source: Path,
+    destination: str,
+    mode: str,
+    owner: str,
+) -> None:
+    """Copy one generated credential and install it atomically."""
+    if host.host_key_check != HostKeyCheck.STRICT:
+        raise ValueError("Release credentials require a pinned SSH host key")
+
+    remote = _remote_stdout(
+        host,
+        "path=$(mktemp /run/install-release.XXXXXXXX) && "
+        'chown "${SUDO_USER:-root}" "$path" && printf "%s\\n" "$path"',
+        timeout=20,
+        become_root=True,
+    )
+    target = f"{host.user}@{host.host}" if host.user else host.host
+    command = [
+        "scp",
+        "-q",
+    ]
+    if host.port:
+        command.extend(["-P", str(host.port)])
+    if host.key:
+        command.extend(["-i", host.key])
+    command.extend(host.extra_ssh_opts)
+    command.extend([str(source), f"{target}:{remote}"])
+    try:
+        _run_checked(command, timeout=20)
+        incoming = f"{destination}.new"
+        host.run(
+            f"install -o {shlex.quote(owner)} -g root -m {shlex.quote(mode)} "
+            f"{shlex.quote(remote)} {shlex.quote(incoming)} && "
+            f"sync {shlex.quote(incoming)} && "
+            f"mv -T {shlex.quote(incoming)} {shlex.quote(destination)} && "
+            f"sync -f {shlex.quote(str(Path(destination).parent))}",
+            become_root=True,
+            timeout=20,
+        )
+    finally:
+        host.run(
+            ["rm", "-f", remote],
+            become_root=True,
+            check=False,
+            timeout=20,
+        )
+
+
+def _expected_release_system(alias: str, flake: str) -> str:
+    """Evaluate one release host's NixOS toplevel from a pinned flake."""
+    return _run_checked(
+        [
+            "nix",
+            "eval",
+            "--raw",
+            f"{flake}#nixosConfigurations.{alias}.config.system.build.toplevel",
+        ],
+        capture_output=True,
+    ).stdout.strip()
+
+
+def _verify_release_hosts(
+    previous_boot_ids: dict[str, str],
+    expected_systems: dict[str, str],
+    hosts: dict[str, DeployHost],
+) -> None:
+    """Require fresh boots into the selected release systems."""
+    _log_status_info("Verifying ci-release host baselines")
+    for alias in RELEASE_HOST_ALIASES:
+        host = hosts[alias]
+        boot_id = _remote_stdout(
+            host, "cat /proc/sys/kernel/random/boot_id", timeout=20
+        )
+        if alias in previous_boot_ids and boot_id == previous_boot_ids[alias]:
+            raise RuntimeError(f"'{alias}' did not reboot")
+        booted = _remote_stdout(host, "readlink -f /run/booted-system", timeout=20)
+        expected = expected_systems[alias]
+        if booted != expected:
+            raise RuntimeError(
+                f"'{alias}' booted {booted}, expected {expected}; check its boot deployment"
+            )
+
+
+def _reboot_release_hosts(hosts: dict[str, DeployHost]) -> None:
+    """Reset release hosts, bypassing slow PXE probing on the x86 builder."""
+    alias = "hetz86-rel-2"
+    _log_status_info(f"[{alias}] reboot: selecting the current EFI entry for next boot")
+    hosts[alias].run(
+        [
+            "sh",
+            "-c",
+            "current=$(efibootmgr | sed -n 's/^BootCurrent: //p') && "
+            'test -n "$current" && exec efibootmgr --bootnext "$current"',
+        ],
+        become_root=True,
+        timeout=20,
+    )
+    _reboot_hosts(
+        list(RELEASE_HOST_ALIASES),
+        "Reset all three ci-release hosts",
+        hosts,
+        parallel=True,
+    )
+
+
+def _provision_release_credentials(tmpdir: Path, hosts: dict[str, DeployHost]) -> None:
+    """Rotate builder trust and install volatile controller credentials."""
+    ca = _generate_release_ssh_ca(tmpdir)
+    ca_pub = Path(f"{ca}.pub")
+    keys = [
+        _generate_signed_user_key(ca, tmpdir, user) for user in RELEASE_BUILDER_USERS
+    ]
+    ca.unlink()
+
+    for alias in RELEASE_BUILDER_ALIASES:
+        _copy_release_file(
+            hosts[alias],
+            ca_pub,
+            RELEASE_BUILDER_CA_PATH,
+            "0644",
+            "root",
+        )
+
+    controller = hosts[RELEASE_CONTROLLER_ALIAS]
+    for key in keys:
+        destination = f"{RELEASE_CONTROLLER_CREDENTIALS}/{key.name}"
+        _copy_release_file(controller, key, destination, "0400", "jenkins")
+        _copy_release_file(
+            controller,
+            Path(f"{key}-cert.pub"),
+            f"{destination}-cert.pub",
+            "0444",
+            "jenkins",
+        )
+
+    for alias, user in zip(RELEASE_BUILDER_ALIASES, RELEASE_BUILDER_USERS, strict=True):
+        key = f"{RELEASE_CONTROLLER_CREDENTIALS}/{user}"
+        store = f"ssh-ng://{user}@{alias}?trusted=true&ssh-key={key}"
+        try:
+            controller.run(
+                [
+                    "runuser",
+                    "-u",
+                    "jenkins",
+                    "--",
+                    "env",
+                    "HOME=/var/lib/jenkins",
+                    "PATH=/run/current-system/sw/bin",
+                    "nix",
+                    "store",
+                    "info",
+                    "--store",
+                    store,
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                become_root=True,
+                timeout=20,
+            )
+        except subprocess.CalledProcessError as err:
+            detail = (err.stderr or err.stdout or "").strip() or str(err)
+            raise RuntimeError(
+                f"Release builder store check failed for '{alias}': {detail}"
+            ) from err
+    controller.run(
+        ["systemctl", "start", "jenkins.service"],
+        become_root=True,
+        timeout=180,
+    )
+
+
+def _deploy_release_testagent(c: Context, host: DeployHost, flake: str) -> bool:
     """Deploy the release testagent without reinstalling it."""
     port = host.port or 22
     if not _can_connect(host.host, port, timeout=RELEASE_DEPLOY_SSH_PROBE_TIMEOUT_SEC):
@@ -785,7 +1081,10 @@ def _deploy_release_testagent(c: Context, host: DeployHost) -> bool:
         )
         return False
 
-    deploy = c.run(f"deploy -s --targets .#{RELEASE_TESTAGENT_ALIAS}", warn=True)
+    deploy = c.run(
+        shlex.join(["deploy", "-s", "--targets", f"{flake}#{RELEASE_TESTAGENT_ALIAS}"]),
+        warn=True,
+    )
     if deploy.ok:
         return True
 
@@ -811,6 +1110,39 @@ def _connect_release_testagent(host: DeployHost) -> bool:
                 return False
             time.sleep(RELEASE_CONNECT_SLEEP_SEC)
     return False
+
+
+@contextmanager
+def _pinned_release_hosts(targets: Targets) -> Iterator[dict[str, DeployHost]]:
+    """Return release hosts pinned to the public keys in the target inventory."""
+    aliases = (*RELEASE_HOST_ALIASES, RELEASE_TESTAGENT_ALIAS)
+    release_targets = {alias: targets.get(alias) for alias in aliases}
+    missing_keys = [
+        alias for alias, target in release_targets.items() if target.public_key is None
+    ]
+    if missing_keys:
+        raise RuntimeError(
+            "Missing pinned SSH host key for release target(s): "
+            + ", ".join(missing_keys)
+        )
+
+    with TemporaryDirectory() as ssh_dir:
+        known_hosts = Path(ssh_dir) / "known_hosts"
+        known_hosts.write_text(
+            "".join(
+                f"{target.hostname} {target.public_key}\n"
+                for target in release_targets.values()
+            ),
+            encoding="utf-8",
+        )
+        yield {
+            alias: _get_deploy_host(
+                alias,
+                target=release_targets[alias],
+                known_hosts=known_hosts,
+            )
+            for alias in aliases
+        }
 
 
 ################################################################################
@@ -1062,45 +1394,131 @@ def print_keys(_c: Context, alias: str) -> None:
         _run_checked(["ssh-to-age"], input=pub_data)
 
 
+def _run_release_install(c: Context, reinstall: bool, flake: str | None) -> None:
+    """Run the release workflow against one pinned flake snapshot."""
+    _log_status_info("Preparing ci-release targets")
+    targets = Targets(flake) if flake else TARGETS
+    with _pinned_release_hosts(targets) as hosts:
+        with _quiet_deploykit_commands():
+            if not reinstall:
+                _preflight_release_reset(hosts)
+            expected_systems = _prepare_release_baselines(reinstall, flake, hosts)
+
+            # Stop Jenkins before revoking the previous builder CA, then record boot IDs.
+            _log_status_info("Preparing ci-release hosts for reset")
+            previous_boot_ids: dict[str, str] = {}
+            for alias in (RELEASE_CONTROLLER_ALIAS, *RELEASE_BUILDER_ALIASES):
+                if alias == RELEASE_CONTROLLER_ALIAS:
+                    command = ["systemctl", "stop", "jenkins.service"]
+                else:
+                    command = ["rm", "-f", RELEASE_BUILDER_CA_PATH]
+                    if reinstall:
+                        command.append("/etc/ssh/keys/ssh_user_ca.pub")
+                try:
+                    hosts[alias].run(
+                        command,
+                        become_root=True,
+                        timeout=120 if alias == RELEASE_CONTROLLER_ALIAS else 20,
+                    )
+                    previous_boot_ids[alias] = _remote_stdout(
+                        hosts[alias], "cat /proc/sys/kernel/random/boot_id", timeout=20
+                    )
+                except (
+                    subprocess.CalledProcessError,
+                    subprocess.TimeoutExpired,
+                ) as err:
+                    if not reinstall:
+                        raise
+                    _log_warning(
+                        f"[{alias}] could not prepare for reset or read the boot ID: "
+                        f"{_install_error_summary(err)}"
+                    )
+
+        if reinstall:
+            assert flake is not None
+            _install_release_hosts(c, flake)
+        else:
+            with _quiet_deploykit_commands():
+                _reboot_release_hosts(hosts)
+
+        with _quiet_deploykit_commands():
+            _verify_release_hosts(previous_boot_ids, expected_systems, hosts)
+            _log_status_info("Provisioning release builder credentials")
+            with TemporaryDirectory() as tmpdir_name:
+                _provision_release_credentials(Path(tmpdir_name), hosts)
+            _log_status_info("Provisioned release builder credentials")
+
+        host = hosts[RELEASE_TESTAGENT_ALIAS]
+        log_path = _new_install_log_path(
+            RELEASE_TESTAGENT_ALIAS, "install-release-logs-"
+        )
+        _announce_install_log_path(RELEASE_TESTAGENT_ALIAS, log_path)
+        with _thread_log_to_file(log_path) as stream:
+            logged_context = _clone_context_for_stream(c, stream)
+            if flake is not None:
+                _log_status_info(f"[{RELEASE_TESTAGENT_ALIAS}] deploy: starting")
+                if not _deploy_release_testagent(logged_context, host, flake):
+                    return
+            _log_status_info(
+                f"[{RELEASE_TESTAGENT_ALIAS}] connect: attaching to "
+                f"{RELEASE_TESTAGENT_URL}"
+            )
+            if _connect_release_testagent(host):
+                _log_status_info(f"[{RELEASE_TESTAGENT_ALIAS}] connect: finished")
+                return
+            _log_status_info(
+                "Failed connecting 'testagent-release' to the installed release "
+                "environment. The release environment is otherwise up, but you need "
+                "to manually connect the testagent to the release Jenkins instance. "
+                f"Hint: is the testagent at '{host.host}' accessible over SSH? "
+                "Perhaps you need to connect a VPN?"
+            )
+
+
 @task
-def install_release(c: Context) -> None:
+def install_release(c: Context, reinstall: bool = False, deploy: bool = True) -> None:
     """
-    Initialize hetzner release environment
+    Deploy and reset release hosts; reinstall only for disk layout changes.
 
     Example usage:
     inv install-release
+    inv install-release --no-deploy
+    inv install-release --reinstall
     """
-    with TemporaryDirectory() as tmpdir_name:
-        tmpdir = Path(tmpdir_name)
-        ca = _generate_release_ssh_ca(tmpdir)
-        ca_pub = tmpdir / "builder/etc/ssh/keys/ssh_user_ca.pub"
-        ca_pub.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(f"{ca}.pub", ca_pub)
-        for user in RELEASE_BUILDER_USERS:
-            _generate_signed_user_key(ca, tmpdir, user)
-        _install_release_hosts(c, tmpdir)
+    if reinstall and not deploy:
+        _log_error("--no-deploy cannot be used with --reinstall")
+        sys.exit(1)
 
-    host = _get_deploy_host(RELEASE_TESTAGENT_ALIAS)
-    log_path = _new_install_log_path(RELEASE_TESTAGENT_ALIAS, "install-release-logs-")
-    _announce_install_log_path(RELEASE_TESTAGENT_ALIAS, log_path)
-    with _thread_log_to_file(log_path) as stream:
-        logged_context = _clone_context_for_stream(c, stream)
-        _log_status_info(f"[{RELEASE_TESTAGENT_ALIAS}] deploy: starting")
-        if not _deploy_release_testagent(logged_context, host):
-            return
-        _log_status_info(
-            f"[{RELEASE_TESTAGENT_ALIAS}] connect: attaching to {RELEASE_TESTAGENT_URL}"
-        )
-        if _connect_release_testagent(host):
-            _log_status_info(f"[{RELEASE_TESTAGENT_ALIAS}] connect: finished")
-            return
-        _log_status_info(
-            "Failed connecting 'testagent-release' to the installed release environment. "
-            "The release environment is otherwise up, but you need to manually connect "
-            "the testagent to the release Jenkins instance. "
-            f"Hint: is the testagent at '{host.host}' accessible over SSH? "
-            "Perhaps you need to connect a VPN?"
-        )
+    _run_release_install(c, reinstall, _release_flake_ref(deploy))
+
+
+def _install_with_log(
+    c: Context,
+    alias: str,
+    user: str | None = None,
+    yes: bool = False,
+    *,
+    flake: str | None = None,
+) -> None:
+    """Run one install with its detailed output routed to a host log."""
+    log_path = _new_install_log_path(alias)
+    _announce_install_log_path(alias, log_path)
+    try:
+        with _thread_log_to_file(log_path) as stream:
+            _run_install(
+                _clone_context_for_stream(c, stream),
+                alias,
+                user=user,
+                yes=yes,
+                flake=flake,
+            )
+    # Top-level installs should still surface a concise terminal summary while
+    # keeping the detailed command output in the host log file.
+    except (Exception, SystemExit) as err:
+        detail = _install_error_summary(err)
+        _log_error(f"Install failed for '{alias}': {detail}")
+        _log_error(f"See detailed install log: {log_path}")
+        raise
 
 
 @task
@@ -1109,7 +1527,6 @@ def install(
     alias: str,
     user: str | None = None,
     yes: bool = False,
-    copy_dir: str | None = None,
 ) -> None:
     """
     Install `alias` configuration using nixos-anywhere, deploying host private key.
@@ -1121,24 +1538,7 @@ def install(
     Example usage:
     inv install hetzci-release --yes
     """
-    log_path = _new_install_log_path(alias)
-    _announce_install_log_path(alias, log_path)
-    try:
-        with _thread_log_to_file(log_path) as stream:
-            _run_install(
-                _clone_context_for_stream(c, stream),
-                alias,
-                user=user,
-                yes=yes,
-                copy_dir=copy_dir,
-            )
-    # Top-level installs should still surface a concise terminal summary while
-    # keeping the detailed command output in the host log file.
-    except (Exception, SystemExit) as err:
-        detail = _install_error_summary(err)
-        _log_error(f"Install failed for '{alias}': {detail}")
-        _log_error(f"See detailed install log: {log_path}")
-        raise
+    _install_with_log(c, alias, user=user, yes=yes)
 
 
 def _run_install(
@@ -1146,7 +1546,8 @@ def _run_install(
     alias: str,
     user: str | None = None,
     yes: bool = False,
-    copy_dir: str | None = None,
+    *,
+    flake: str | None = None,
 ) -> None:
     """Execute the install workflow; see `install` for the user-facing docs."""
     _log_status_info(f"[{alias}] install: starting")
@@ -1154,27 +1555,25 @@ def _run_install(
         _log_status_info(f"[{alias}] install: cancelled")
         return
 
-    target = TARGETS.resolve_secrets(alias)
-    host = _get_deploy_host(alias, user)
+    target = (Targets(flake) if flake else TARGETS).resolve_secrets(alias)
+    host = _get_deploy_host(alias, user, target)
 
     _log_status_info(f"[{alias}] install: validating target and remote access")
-    _assert_stateversion(alias, yes)
+    _assert_stateversion(alias, target.nixosconfig, yes, flake)
     _check_remote_user_alignment(target, host, user, yes)
     _check_remote_sudo(host, yes)
 
     _log_status_info(f"[{alias}] install: building target system locally")
-    c.run(_build_local_build_command(target))
+    c.run(_build_local_build_command(target, flake or "."))
 
     with TemporaryDirectory() as tmpdir:
         _log_status_info(f"[{alias}] install: preparing installer files")
-        if copy_dir:
-            shutil.copytree(Path(copy_dir), Path(tmpdir), dirs_exist_ok=True)
         host_keys = _run_json(
             [
                 "nix",
                 "eval",
                 "--json",
-                f"{ROOT}#nixosConfigurations.{target.nixosconfig}"
+                f"{flake or ROOT}#nixosConfigurations.{target.nixosconfig}"
                 ".config.services.openssh.hostKeys",
             ]
         )
@@ -1194,6 +1593,7 @@ def _run_install(
             tmpdir,
             target,
             kexec_url=KEXEC_IMAGES.get(alias),
+            flake=flake or ".",
         )
         _log_status_info(f"[{alias}] install: running nixos-anywhere")
         _log_warning(command)
@@ -1202,7 +1602,8 @@ def _run_install(
     _log_status_info(f"[{alias}] install: waiting for SSH on {host.host}")
     _wait_for_port(host.host, 22)
     _log_status_info(f"[{alias}] install: rebooting to finalize")
-    reboot(c, alias)
+    if not _reboot_host(alias, _get_deploy_host(alias, target=target)):
+        sys.exit(1)
     _log_status_info(f"[{alias}] install: finished")
 
 
@@ -1334,21 +1735,43 @@ def reboot(
         sys.exit(1)
 
 
-def _reboot_hosts(target_aliases: list[str], success_message: str) -> None:
+def _reboot_hosts(
+    target_aliases: list[str],
+    success_message: str,
+    hosts: dict[str, DeployHost] | None = None,
+    *,
+    parallel: bool = False,
+) -> None:
     """Reboot multiple target hosts and exit with a summary on failure."""
+
+    def reboot_target(target_alias: str) -> bool:
+        return (
+            _reboot_host(target_alias, hosts[target_alias])
+            if hosts is not None
+            else _reboot_host(target_alias)
+        )
+
     failures = []
-    for target_alias in target_aliases:
-        if not _reboot_host(target_alias):
-            failures.append(target_alias)
+    if parallel:
+        with ThreadPoolExecutor(max_workers=len(target_aliases)) as executor:
+            future_to_alias = {
+                executor.submit(reboot_target, alias): alias for alias in target_aliases
+            }
+            for future in as_completed(future_to_alias):
+                if not future.result():
+                    failures.append(future_to_alias[future])
+    else:
+        failures = [alias for alias in target_aliases if not reboot_target(alias)]
     if failures:
+        failures.sort(key=target_aliases.index)
         _log_error(f"Reboot failed on {len(failures)} host(s): {', '.join(failures)}")
         sys.exit(1)
     _log_status_info(success_message)
 
 
-def _reboot_host(alias: str) -> bool:
+def _reboot_host(alias: str, host: DeployHost | None = None) -> bool:
     """Reboot one target host and wait for it to come back."""
-    host = _get_deploy_host(alias)
+    host = host or _get_deploy_host(alias)
     try:
         host.run("sudo reboot &")
     except subprocess.CalledProcessError as err:

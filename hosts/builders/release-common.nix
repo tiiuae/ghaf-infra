@@ -8,6 +8,6 @@
   ];
   nix.settings.trusted-users = [ "@wheel" ];
   services.openssh = {
-    extraConfig = "TrustedUserCAKeys /etc/ssh/keys/ssh_user_ca.pub";
+    extraConfig = "TrustedUserCAKeys /var/lib/baseline-reset/release-builder-ca.pub";
   };
 }
