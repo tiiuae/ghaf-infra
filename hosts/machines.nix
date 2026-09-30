@@ -340,15 +340,4 @@
     };
   };
 
-  uae-azureci-dev = {
-    module = ./uae/azureci/dev/configuration.nix;
-    system = "x86_64-linux";
-    machine = {
-      ip = "20.174.185.164";
-      internal_ip = "10.52.32.4";
-      nebula_ip = "10.42.42.36";
-      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJiajaY3bfjPdPtp8psMMRv42s6aFUN3Vba+iJlP954U";
-    };
-  };
-
 }
