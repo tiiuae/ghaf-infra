@@ -17,6 +17,7 @@
     team-devenv
     openssh
     nebula
+    user-xzr
   ]);
 
   sops.secrets.loki_password.owner = "alloy";
