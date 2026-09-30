@@ -58,6 +58,9 @@
     # SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTFMF0X0", SYMLINK+="ttyDARTER", MODE="0666", GROUP="dialout"
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B7283C09CCC", SYMLINK+="ssdDARTER", MODE="0666", GROUP="dialout"
+
+    # Bluetooth Board
+    SUBSYSTEM=="tty", ATTRS{idVendor}=="1366", ATTRS{idProduct}=="1061", ATTRS{serial}=="001050290059", ENV{ID_USB_INTERFACE_NUM}=="00", SYMLINK+="ttyBTboard", MODE="0666", GROUP="dialout"
   '';
 
   # Details of the hardware devices connected to this host
@@ -69,6 +72,8 @@
     builtins.toJSON {
       addresses = {
         relay_serial_port = "NONE";
+        bluetooth_serial_port = "/dev/ttyBTboard";
+        bluetooth_name = "Ghaf Test BT Board Prod";
         LenovoX1-1 = {
           inherit location;
           device_id = "00-87-26-3f-89";
