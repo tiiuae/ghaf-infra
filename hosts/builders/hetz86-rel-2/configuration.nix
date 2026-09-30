@@ -35,12 +35,12 @@
   networking.hostName = "hetz86-rel-2";
   boot.kernelModules = [ "kvm-amd" ];
 
-  # Current host sizing: 96 vCPU, 251 GiB RAM, ~1760 GiB root (/nix) disk.
+  # Current host sizing: 96 vCPU, 251 GiB RAM, ~1696 GiB writable Nix partition.
   builder.tuning = {
     enable = true;
     cpus = 96;
     ramGiB = 251;
-    diskGiB = 1760;
+    diskGiB = 1696;
   };
 
   cachix-push = {
@@ -49,8 +49,8 @@
 
   services.baseline-reset = {
     enable = true;
-    rootDevice = "/dev/disk/by-partlabel/disk-nvme0-root";
-    nixDevice = "/dev/disk/by-partlabel/disk-nvme1-nix";
+    rootDevice = "/dev/disk/by-partlabel/disk-nvme0-baseline";
+    nixDevice = "/dev/disk/by-partlabel/disk-nvme1-baseline";
   };
 
   services.monitoring = {

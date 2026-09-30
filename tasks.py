@@ -873,9 +873,24 @@ def _prepare_release_baselines(
 def _preflight_release_reset(hosts: dict[str, DeployHost]) -> None:
     """Require the baseline-reset disk layout."""
     _log_status_info("Checking ci-release reset prerequisites")
-    paths = ("/", "/nix", "/var/lib/baseline-reset", "/boot")
-    expected = ["btrfs /@root", "btrfs /@nix", "btrfs /@persist", "vfat /"]
     for alias in RELEASE_HOST_ALIASES:
+        paths = (
+            "/",
+            "/nix",
+            "/var/lib/baseline-reset",
+            "/.baseline-reset/lower",
+            "/boot",
+        )
+        expected = [
+            "btrfs /",
+            "overlay /",
+            "btrfs /@persist",
+            "btrfs /@lower",
+            "vfat /",
+        ]
+        if alias == "hetz86-rel-2":
+            paths += ("/.baseline-reset/nix-writable",)
+            expected.append("btrfs /")
         layout = _remote_stdout(
             hosts[alias],
             f"for path in {shlex.join(paths)}; do "

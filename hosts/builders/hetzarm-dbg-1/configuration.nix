@@ -34,12 +34,12 @@
   networking.hostName = "hetzarm-dbg-1";
   virtualisation.hetzner.withEfiSupport = true;
 
-  # Current host sizing: 16 vCPU, 30 GiB RAM, ~300 GiB root disk.
+  # Current host sizing: 16 vCPU, 30 GiB RAM, ~235 GiB writable root (including Nix).
   builder.tuning = {
     enable = true;
     cpus = 16;
     ramGiB = 30;
-    diskGiB = 300;
+    diskGiB = 235;
   };
 
   # Nixos-anywhere kexec switch fails on hetzner cloud arm VMs without this
@@ -51,7 +51,7 @@
 
   services.baseline-reset = {
     enable = true;
-    rootDevice = "/dev/disk/by-partlabel/disk-os-root";
+    rootDevice = "/dev/disk/by-partlabel/disk-os-baseline";
   };
 
   nix.caches = [

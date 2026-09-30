@@ -11,8 +11,8 @@ let
   tuning = import ../../lib/nix-tuning.nix { inherit lib; };
   trustedBuilderHost = host: "${host}?trusted=true";
 
-  # Current host sizing: 16 vCPU, 30 GiB RAM, ~337 GiB root disk.
-  controllerDisk = tuning.mkDiskThresholds 337;
+  # Current host sizing: 16 vCPU, 30 GiB RAM, ~272 GiB writable root (including Nix).
+  controllerDisk = tuning.mkDiskThresholds 272;
 
   # Current release builder sizing:
   # - hetz86-rel-2: 96 vCPU, 251 GiB RAM
@@ -93,7 +93,7 @@ in
 
   services.baseline-reset = {
     enable = true;
-    rootDevice = "/dev/disk/by-partlabel/disk-os-root";
+    rootDevice = "/dev/disk/by-partlabel/disk-os-baseline";
   };
 
   # Configure /var/lib/caddy in /etc/fstab for persistent caddy state.
@@ -107,8 +107,8 @@ in
   };
 
   nix.settings.max-jobs = lib.mkForce 0;
-  nix.settings.min-free = lib.mkOverride 60 controllerDisk.minFreeBytes;
-  nix.settings.max-free = lib.mkOverride 60 controllerDisk.maxFreeBytes;
+  nix.settings.min-free = lib.mkOverride 40 controllerDisk.minFreeBytes;
+  nix.settings.max-free = lib.mkOverride 40 controllerDisk.maxFreeBytes;
 
   # install-release creates the generated keys here after every controller reset.
   systemd.tmpfiles.rules = [
