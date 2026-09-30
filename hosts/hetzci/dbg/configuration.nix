@@ -11,8 +11,8 @@ let
   tuning = import ../../lib/nix-tuning.nix { inherit lib; };
   trustedBuilderHost = host: "${host}?trusted=true";
 
-  # Current host sizing: 16 vCPU, 30 GiB RAM, ~300 GiB root disk.
-  controllerDisk = tuning.mkDiskThresholds 300;
+  # Current host sizing: 16 vCPU, 30 GiB RAM, ~235 GiB writable root (including Nix).
+  controllerDisk = tuning.mkDiskThresholds 235;
   builder = tuning.mkBuildLimits {
     cpus = 16;
     ramGiB = 30;
@@ -81,7 +81,7 @@ in
 
   services.baseline-reset = {
     enable = true;
-    rootDevice = "/dev/disk/by-partlabel/disk-os-root";
+    rootDevice = "/dev/disk/by-partlabel/disk-os-baseline";
   };
 
   # Configure /var/lib/caddy in /etc/fstab for persistent caddy state.

@@ -3,6 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 set -euo pipefail
 umask 077
+root_mapper=/dev/mapper/baseline-root
+nix_mapper=/dev/mapper/baseline-nix
+lower_mount=/.baseline-reset/lower
+writable_nix=/.baseline-reset/nix-writable
+created_mappers=()
 
 fail() {
   echo "baseline-reset: $*" >&2
@@ -18,6 +23,21 @@ device_uuid() {
   matches=$(blkid -c /dev/null -t "UUID=$id" -o device)
   [ "$(realpath "$device")" = "$matches" ] || fail "ambiguous filesystem $id on $device"
   printf '%s\n' "$id"
+}
+
+# Partition identity survives an interrupted LUKS format.
+writable_device() {
+  local partuuid=$1 device matches type status=0
+  device=/dev/disk/by-partuuid/$partuuid
+  [ -b "$device" ] || fail "missing device $device"
+  matches=$(blkid -c /dev/null -t "PARTUUID=$partuuid" -o device)
+  [ "$(realpath "$device")" = "$matches" ] || fail "ambiguous partition $partuuid on $device"
+  type=$(blkid -p --no-part-details -s TYPE -o value "$device") || status=$?
+  case "$status:$type" in
+  0:crypto_LUKS | 2:) ;;
+  *) fail "unexpected contents on $device" ;;
+  esac
+  realpath "$device"
 }
 
 remove_subvolume() {
@@ -39,9 +59,9 @@ valid_machine_id() {
 }
 
 cleanup_mounts() {
-  local status=$1 cleanup_status=0 path
+  local status=$1 cleanup_status=0 path i
   trap - EXIT
-  for path in "$seed/nix" "$store" "$root"; do
+  for path in "$seed/nix" "$fresh_root" "$store" "$root"; do
     if findmnt --mountpoint "$path" >/dev/null 2>&1 && ! umount "$path"; then
       echo "baseline-reset: failed to unmount $path during cleanup" >&2
       cleanup_status=1
@@ -51,19 +71,39 @@ cleanup_mounts() {
     echo "baseline-reset: failed to remove $work during cleanup" >&2
     cleanup_status=1
   fi
+  if [ -n "${keydir:-}" ] && ! rm -rf -- "$keydir"; then
+    echo "baseline-reset: failed to remove initrd keys during cleanup" >&2
+    cleanup_status=1
+  fi
+  if [ "$status" -ne 0 ] || [ "$cleanup_status" -ne 0 ]; then
+    for ((i = ${#created_mappers[@]} - 1; i >= 0; i--)); do
+      if ! cryptsetup close "${created_mappers[i]}"; then
+        echo "baseline-reset: failed to close ${created_mappers[i]} during cleanup" >&2
+        cleanup_status=1
+      fi
+    done
+  fi
   [ "$status" -ne 0 ] && exit "$status"
   exit "$cleanup_status"
 }
 
 mount_top_levels() {
+  if [ -e /etc/initrd-release ]; then
+    udevadm settle --timeout=30 || fail "device discovery did not finish"
+  fi
   root_uuid=$(device_uuid "${BASELINE_ROOT:?}" btrfs)
   nix_uuid=$(device_uuid "${BASELINE_NIX:?}" btrfs)
   boot_uuid=$(device_uuid "${BASELINE_BOOT:?}" vfat)
+  root_writable=$(writable_device "${BASELINE_ROOT_WRITABLE_PARTUUID:?}")
+  if [ -n "${BASELINE_NIX_WRITABLE_PARTUUID:-}" ]; then
+    nix_writable=$(writable_device "$BASELINE_NIX_WRITABLE_PARTUUID")
+  fi
   work=$(mktemp -d /run/baseline-reset.XXXXXXXX)
   root=$work/root
   store=$work/store
   seed=$work/seed
-  mkdir "$root" "$store" "$seed"
+  fresh_root=$work/fresh-root
+  mkdir "$root" "$store" "$seed" "$fresh_root"
   trap 'cleanup_mounts "$?"' EXIT
   mount -t btrfs -o subvolid=5 "$BASELINE_ROOT" "$root"
   mount -t btrfs -o subvolid=5 "$BASELINE_NIX" "$store"
@@ -76,6 +116,29 @@ check_mount() {
   [ "$(findmnt -nro UUID --mountpoint "$path")" = "$id" ] || fail "wrong filesystem mounted at $path"
   [ "$(findmnt -nro FSTYPE --mountpoint "$path")" = "$type" ] || fail "wrong filesystem type at $path"
   [ "$(findmnt -nro FSROOT --mountpoint "$path")" = "/$subvolume" ] || fail "wrong subvolume mounted at $path"
+}
+
+check_mapper_mount() {
+  local path=$1 mapper=$2 raw=$3 source field value backing=
+  [ "$(findmnt -nro FSTYPE --mountpoint "$path")" = btrfs ] || fail "wrong filesystem at $path"
+  source=$(findmnt -nro SOURCE --mountpoint "$path")
+  source=${source%%\[*}
+  [ "$(realpath "$source")" = "$(realpath "$mapper")" ] || fail "wrong mapper mounted at $path"
+  while read -r field value _; do
+    [ "$field" != device: ] || backing=$value
+  done < <(cryptsetup status "${mapper##*/}")
+  [ -n "$backing" ] && [ "$(realpath "$backing")" = "$raw" ] || fail "wrong device behind $mapper"
+}
+
+format_writable() {
+  local raw=$1 name=$2 key=$keydir/$2.key
+  head -c 64 /dev/random >"$key"
+  cryptsetup luksFormat --batch-mode --type luks2 \
+    --pbkdf pbkdf2 --pbkdf-force-iterations 1000 --key-file "$key" "$raw"
+  cryptsetup open --type luks --key-file "$key" "$raw" "$name"
+  created_mappers+=("$name")
+  rm -f -- "$key"
+  mkfs.btrfs -f "/dev/mapper/$name" >/dev/null
 }
 
 keep_system() {
@@ -106,7 +169,7 @@ retain_baselines() {
 }
 
 save_baseline() {
-  local action=$2 snapshot incoming expected actual id system_path
+  local action=$2 snapshot incoming expected actual id system_path opts
   case "$action" in
   check | dry-activate | test) exit 0 ;;
   boot | switch) ;;
@@ -117,11 +180,30 @@ save_baseline() {
   parse_system "$system_path"
   [ -e "$system/init" ] || fail "system has no init: $system"
   mount_top_levels
-  check_mount / "$root_uuid" btrfs @root
-  check_mount /nix "$nix_uuid" btrfs @nix
+  check_mapper_mount / "$root_mapper" "$root_writable"
+  check_mount "$lower_mount" "$nix_uuid" btrfs @lower
+  [[ ,$(findmnt -nro OPTIONS --mountpoint "$lower_mount"), == *,ro,* ]] || fail "lower mount is writable"
   check_mount /var/lib/baseline-reset "$root_uuid" btrfs @persist
   [ "$(findmnt -nro UUID --mountpoint /boot)" = "$boot_uuid" ] || fail "wrong filesystem mounted at /boot"
   [ "$(findmnt -nro FSTYPE --mountpoint /boot)" = vfat ] || fail "wrong filesystem type at /boot"
+  if [ -n "${nix_writable:-}" ]; then
+    check_mapper_mount "$writable_nix" "$nix_mapper" "$nix_writable"
+  else
+    install -d -m 755 "$writable_nix"
+    [ "$(findmnt -nro TARGET -T "$writable_nix")" = / ] || fail "Nix writable path is outside root"
+  fi
+  if findmnt --mountpoint /nix >/dev/null 2>&1; then
+    [ "$(findmnt -nro FSTYPE --mountpoint /nix)" = overlay ] || fail "wrong filesystem at /nix"
+    [ "$(btrfs property get "$store/@lower" ro)" = ro=true ] || fail "lower snapshot is writable"
+    opts=$(findmnt -nro OPTIONS --mountpoint /nix)
+    opts=${opts//\/sysroot/}
+    [[ ,$opts, == *,lowerdir=$lower_mount,* ]] || fail "wrong overlay lower directory"
+    [[ ,$opts, == *,upperdir=$writable_nix/upper,* ]] || fail "wrong overlay upper directory"
+    [[ ,$opts, == *,workdir=$writable_nix/work,* ]] || fail "wrong overlay work directory"
+  else
+    [ "$(findmnt -nro TARGET -T /nix)" = / ] || fail "installer /nix is outside encrypted root"
+    [ "$(btrfs property get "$store/@lower" ro)" = ro=false ] || fail "missing running /nix overlay"
+  fi
 
   if [ "$BASELINE_SSH" = 1 ]; then
     [ -s "$state/ssh/ssh_host_ed25519_key" ] || fail "missing SSH host identity"
@@ -202,18 +284,27 @@ restore_baseline() {
   if [ "$BASELINE_SSH" = 1 ]; then
     [ -s "$state/ssh/ssh_host_ed25519_key" ] || fail "missing SSH host identity"
   fi
+  cryptsetup status baseline-root >/dev/null 2>&1 && fail "root mapper is already open"
+  if [ -n "${nix_writable:-}" ]; then
+    cryptsetup status baseline-nix >/dev/null 2>&1 && fail "Nix mapper is already open"
+  fi
 
-  remove_subvolume "$root/@root"
-  btrfs subvolume create "$root/@root" >/dev/null
-  chmod 755 "$root/@root"
-  mkdir -m 755 "$root/@root/etc"
-  install -m 444 "$state/machine-id" "$root/@root/etc/machine-id"
-  remove_subvolume "$store/@nix"
-  btrfs subvolume snapshot "$snapshot" "$store/@nix" >/dev/null
-  btrfs filesystem sync "$root" >/dev/null
+  remove_subvolume "$store/@lower"
+  btrfs subvolume snapshot -r "$snapshot" "$store/@lower" >/dev/null
   btrfs filesystem sync "$store" >/dev/null
-  btrfs subvolume show "$root/@root" >/dev/null
-  btrfs subvolume show "$store/@nix" >/dev/null
+  keydir=$(mktemp -d /baseline-reset-keys.XXXXXXXX)
+  format_writable "$root_writable" baseline-root
+  if [ -n "${nix_writable:-}" ]; then
+    format_writable "$nix_writable" baseline-nix
+  fi
+
+  mount -t btrfs "$root_mapper" "$fresh_root"
+  install -d -m 755 "$fresh_root/etc" "$fresh_root/nix" "$fresh_root/.baseline-reset/lower" \
+    "$fresh_root/.baseline-reset/nix-writable" "$fresh_root/var/lib/baseline-reset"
+  install -m 444 "$state/machine-id" "$fresh_root/etc/machine-id"
+  sync -f "$fresh_root"
+  umount "$fresh_root"
+  [ "$(btrfs property get "$store/@lower" ro)" = ro=true ] || fail "lower snapshot is not read-only"
 }
 
 case "${1:-}" in

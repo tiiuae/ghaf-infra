@@ -472,16 +472,36 @@ def test_preflight_release_reset_rejects_legacy_layout(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     hosts = dict.fromkeys(tasks.RELEASE_HOST_ALIASES, object())
-    monkeypatch.setattr(
-        tasks,
-        "_remote_stdout",
-        lambda *_args, **_kwargs: "ext4 /\next4 /\nmissing\nvfat",
-    )
 
-    with pytest.raises(
-        RuntimeError, match=r"hetz86-rel-2.*not reset-ready.*--reinstall"
-    ):
+    def legacy_layout(_host: object, command: str, **_kwargs: object) -> str:
+        lines = ["ext4 /", "ext4 /", "missing", "missing", "vfat /"]
+        if "/.baseline-reset/nix-writable" in command:
+            lines.append("missing")
+        return "\n".join(lines)
+
+    monkeypatch.setattr(tasks, "_remote_stdout", legacy_layout)
+
+    with pytest.raises(RuntimeError, match=r"not reset-ready.*--reinstall"):
         tasks._preflight_release_reset(hosts)
+
+
+def test_preflight_release_reset_accepts_encrypted_layout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    hosts = {alias: object() for alias in tasks.RELEASE_HOST_ALIASES}
+
+    def layout(host: object, command: str, **_kwargs: object) -> str:
+        assert "/.baseline-reset/lower" in command
+        result = "btrfs /\noverlay /\nbtrfs /@persist\nbtrfs /@lower\nvfat /"
+        if host is hosts["hetz86-rel-2"]:
+            assert "/.baseline-reset/nix-writable" in command
+            result += "\nbtrfs /"
+        else:
+            assert "/.baseline-reset/nix-writable" not in command
+        return result
+
+    monkeypatch.setattr(tasks, "_remote_stdout", layout)
+    tasks._preflight_release_reset(hosts)
 
 
 def test_prepare_release_baselines_uses_pinned_flake(

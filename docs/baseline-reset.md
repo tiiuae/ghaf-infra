@@ -11,35 +11,37 @@ root filesystem and Nix store, including service and local build state, are
 discarded.
 
 Deployment copies the system's Nix store closure into a read-only btrfs
-subvolume. During boot, the initrd creates a fresh root and replaces `/nix`
-with a writable btrfs snapshot of that subvolume for the generation selected
-by the bootloader. This runs before the root filesystem is mounted, so an
-unclean shutdown cannot skip it. The machine ID and ed25519 SSH host key
-survive under `/var/lib/baseline-reset`; separately mounted service volumes
-are not reset.
+subvolume. During boot, the initrd selects that baseline, recreates a fixed
+read-only `@lower` snapshot, and formats the writable root with a fresh random
+LUKS2 key. An OverlayFS mount at `/nix` puts writable Nix data on the encrypted
+root, or on a separate encrypted Nix partition when configured. This runs
+before the root filesystem is mounted, so an unclean shutdown cannot skip it.
+The machine ID and ed25519 SSH host key survive under
+`/var/lib/baseline-reset`; separately mounted service volumes are not reset.
 
 This provides stable host identity, normal `deploy` updates, and selectable
-generations. It is an operational reset mechanism, not an immutable or
-cryptographically ephemeral system.
+generations. Lost per-boot keys make discarded local writable data
+unrecoverable after power-off, subject to the [limits below](#features-and-known-limitations).
 
 Baseline reset is enabled on the ci-dbg and ci-release controllers and their
 builders. Test agents are not reset.
 
 ## Installation
 
-A host with baseline reset enabled needs three btrfs subvolumes: `@root` at
-`/`, `@nix` at `/nix`, and `@persist` at `/var/lib/baseline-reset`. It also
-needs a separate vfat `/boot`. In this repository, enabling or disabling
-baseline reset changes the disk layout between ext4 and btrfs. A deployment
-cannot make that transition; reinstall the host with:
+The encrypted layout keeps host identity and deployed baselines on persistent
+storage, while root and Nix writes use fresh encryption keys on every boot.
+Writable partitions have fixed GPT PARTUUIDs, so a boot interrupted during LUKS
+formatting can be retried even if the LUKS header is missing. The reset accepts
+LUKS or no recognized signature on these partitions and rejects other contents.
+The x86 release builder has a separate encrypted Nix partition. A deployment
+cannot change the disk layout; install or reinstall a host with this layout:
 
 ```sh
 inv install --alias HOST
 ```
 
 `inv install` repartitions and erases the target disk. The installer preserves
-the configured SSH identity and establishes the initial read-only baseline
-subvolume.
+the configured SSH identity and establishes the initial read-only baseline.
 
 Install all three ci-release hosts and establish their first credential epoch
 with:
@@ -107,11 +109,11 @@ persistent boot order.
 ## Publishing and restoring baseline subvolumes
 
 An installation or deployment publishes a read-only baseline subvolume; the
-following boot restores from it by creating a writable snapshot. The bootloader
-is written only after the subvolume has been published, and the initrd completes
-every check before it erases anything. Each baseline subvolume is named after
-the Nix store hash of its system, so the entry selected in the boot menu decides
-which one is restored.
+following boot recreates `@lower` from it and formats the writable partitions
+with new keys. The bootloader is written only after the subvolume has been
+published, and the initrd completes every check before it erases anything.
+Each baseline subvolume is named after the Nix store hash of its system, so the
+entry selected in the boot menu decides which one is restored.
 
 | Command | Publishes a baseline subvolume | Activation action |
 |---|---:|---|
@@ -127,7 +129,7 @@ When `switch-to-configuration` runs, NixOS uses a pre-switch hook to publish the
 baseline subvolume before updating the bootloader.
 
 The deployment command publishes the baseline subvolume, and the subsequent
-reboot creates a writable `@nix` snapshot from it. If a subvolume for the exact
+reboot creates a read-only `@lower` snapshot from it. If a subvolume for the exact
 system already exists, the pre-switch check validates and reuses it instead of
 copying the closure again.
 
@@ -149,7 +151,7 @@ flowchart TD
 
   subgraph BOOT ["Next boot (initrd, before root is mounted)"]
     direction LR
-    J["initrd checks:<br/>read-only subvolume, layout,<br/>machine ID, SSH key"] -- pass --> K["recreate @root empty,<br/>snapshot @nix from baseline"]
+    J["initrd checks:<br/>device identities, baseline,<br/>machine ID, SSH key"] -- pass --> K["snapshot @lower,<br/>re-key and format writable partitions"]
     J -- fail --> L["emergency.target<br/>nothing erased"]
   end
 
@@ -162,19 +164,20 @@ flowchart TD
 
 ## Features and known limitations
 
-Baseline reset provides cleanliness between boots, not a security boundary:
+Baseline reset provides cleanliness between boots and confidentiality of
+discarded writable data after power-off, with these limits:
 
 | Property | baseline-reset |
 |---|---|
-| Reset on every boot | `/` (`@root`) is recreated empty with the machine ID restored. `/nix` (`@nix`) is replaced by a writable btrfs snapshot of the read-only baseline subvolume for the selected generation |
+| Reset on every boot | `/` is a freshly keyed LUKS2 and btrfs filesystem with the machine ID restored. `/nix` overlays the selected read-only baseline with upper and work directories on encrypted btrfs |
 | Preserved by the module | `/var/lib/baseline-reset` (`@persist`). The machine ID is always required; the SSH host key is required when OpenSSH is enabled. Release builders also keep the current public builder CA. Anything else written there also persists |
 | Outside the reset | `/boot`, which holds the bootloader, the generation menu, and the kernel and initrd that perform the reset. Plus separately mounted service volumes, such as the controller's `/var/lib/caddy` |
 | Build and Jenkins state | Discarded. Push required artifacts off-host before rebooting, for example to Cachix or the OCI registry |
-| Boot chain | No Secure Boot, dm-verity, measured boot, or attestation. The current update workflow needs `/boot` writable during activation, when the bootloader installers write the kernel, initrd and boot entries |
+| Boot chain | No Secure Boot, dm-verity, measured boot, or attestation. Bootloader installation writes the kernel, initrd and boot entries to `/boot` during activation |
 | Root of trust | None: the running system and the disk are trusted. Baselines are read-only btrfs subvolumes, but host root can clear that flag and alter them |
-| Erasure | Deleted, not securely erased; may remain forensically recoverable |
+| Erasure | Discarded root and Nix writes are unreadable from local disks after the per-boot keys are lost. `/boot`, persistent volumes, shipped logs and artifacts, and preexisting plaintext on reused disks are not covered |
 | Deployment rollback | Do not rely on deploy-rs automatic or magic rollback; redeploy explicitly or select another generation from the console |
-| Platform requirements | Supported btrfs and boot layouts; no disk swap or NixOS specialisations |
+| Platform requirements | Supported btrfs and boot layouts, LUKS2 and OverlayFS; no disk swap or NixOS specialisations |
 
 ## Future improvements
 
@@ -182,6 +185,5 @@ Baseline reset provides cleanliness between boots, not a security boundary:
 |---|---|
 | Preserved by the module | An explicit allowlist would stop state left under `/var/lib/baseline-reset` from persisting unnoticed. It would narrow one of several surviving paths, not all of them, and would not constrain host root. Needs only a module change |
 | Tamper evidence | Off-host digests would record what a baseline subvolume and `/boot` should contain. Comparing the on-disk contents against those digests would catch accidental corruption and support forensics after an incident. The comparison would not prove what a host actually booted, which would need hardware measurement or reading the disk from outside the host. Requires further design |
-| Boot chain | A tampered kernel or initrd would fail to boot, so the reset could not be skipped. Needs UEFI Secure Boot, which most current Hetzner CI hosts lack |
+| Boot chain | A tampered kernel or initrd would fail to boot, so the reset could not be skipped. Needs UEFI Secure Boot |
 | Root of trust | Host root could no longer alter a baseline subvolume undetected. Needs a verified boot chain, plus dm-verity or signatures covering the baseline contents, so the Secure Boot requirement applies here too |
-| Erasure | Discarded root and store data would be unrecoverable rather than merely deleted, because the key that encrypted it is gone. Needs the baseline subvolumes on persistent storage and the writable layer on a volume encrypted with a fresh in-memory key each boot. No new host capabilities, but the layout change means reinstalling hosts already using baseline reset |
