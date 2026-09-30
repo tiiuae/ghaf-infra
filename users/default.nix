@@ -19,6 +19,7 @@
     user-uae-remote-build = import ./uae-remote-build.nix;
     user-ctsopokis = import ./ctsopokis.nix;
     user-pavelf = import ./pavelf.nix;
+    user-xzr = import ./xzr.nix;
 
     team-devenv = import ./teams/devenv.nix;
     team-testers = import ./teams/testers.nix;
