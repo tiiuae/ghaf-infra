@@ -341,3 +341,6 @@
   };
 
 }
+
+# Reserved Nebula IPs for externally managed hosts:
+# nebula_ip = 10.42.42.36 | uae-azureci-dev (managed in the humanoid repository)
