@@ -72,7 +72,6 @@ Current ghaf-infra targets:
 │ testagent-release     │ testagent-release     │ 172.18.16.32    │
 │ testagent2-prod       │ testagent2-prod       │ 172.18.16.25    │
 │ uae-azureci-az86-1    │ uae-azureci-az86-1    │ 20.46.48.30     │
-│ uae-azureci-dev       │ uae-azureci-dev       │ 20.174.185.164  │
 │ uae-azureci-hetzarm-1 │ uae-azureci-hetzarm-1 │ 91.98.90.243    │
 │ uae-azureci-prod      │ uae-azureci-prod      │ 74.162.68.205   │
 │ uae-azureci-registry  │ uae-azureci-registry  │ 74.162.68.150   │
@@ -179,10 +178,7 @@ The output looks like this, with timestamps and hosts depending on the current f
 ```text
 ❯ inv reboot --needs-reboot
 2026-08-12 10:15:00 | INFO     | Probing 34 host(s) (up to 5s each)
-Reboot 2 host(s) needing reboot: uae-azureci-dev, uae-azureci-prod? [y/N] y
-2026-08-12 10:15:04 | INFO     | [uae-azureci-dev] reboot: waiting for 20.174.185.164 to shut down
-2026-08-12 10:15:22 | INFO     | [uae-azureci-dev] reboot: waiting for 20.174.185.164 to start
-2026-08-12 10:16:01 | INFO     | [uae-azureci-dev] reboot: host is back up
+Reboot 2 host(s) needing reboot: uae-azureci-prod? [y/N] y
 2026-08-12 10:16:01 | INFO     | [uae-azureci-prod] reboot: waiting for 74.162.68.205 to shut down
 2026-08-12 10:16:19 | INFO     | [uae-azureci-prod] reboot: waiting for 74.162.68.205 to start
 2026-08-12 10:16:58 | INFO     | [uae-azureci-prod] reboot: host is back up

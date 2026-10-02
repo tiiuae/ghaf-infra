@@ -155,7 +155,6 @@ and connects back via the Nebula overlay.
 | `uae-testagent2-prod` | On-prem test agent with Orin hardware devices |
 | `uae-lab-node1` | Lab node with Kubernetes tooling |
 | `uae-nethsm-gateway` | NetHSM signing gateway (see above) |
-| `uae-azureci-dev` | Azure-hosted Dev Jenkins controller (ci-dev.uaenorth.cloudapp.azure.com) |
 | `uae-azureci-registry` | UAE [Zot](https://zotregistry.dev/) OCI registry in Azure (registry.uaenorth.cloudapp.azure.com), OIDC-authenticated via ghaf-auth |
 
 ## CI/CD Pipeline Flow
@@ -289,7 +288,7 @@ addresses within the overlay.
 Hosts with Nebula addresses are listed under `nebula_ip` in
 `hosts/machines.nix`: the Hetzner Jenkins controllers (`hetzci-prod`,
 `hetzci-dev`, `hetzci-dbg`, `hetzci-release`), the UAE Azure controllers
-(`uae-azureci-prod`, `uae-azureci-dev`), the test agents (`testagent-dbg`,
+(`uae-azureci-prod`), the test agents (`testagent-dbg`,
 `testagent-dev`, `testagent-prod`, `testagent2-prod`, `testagent-release`),
 all three NetHSM gateways, `ghaf-monitoring`, and `ghaf-lighthouse`. The UAE
 test agents are not enrolled in Nebula.
