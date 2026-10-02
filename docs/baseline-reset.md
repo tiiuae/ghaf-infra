@@ -5,10 +5,11 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 # Baseline reset
 
-Baseline reset returns a compatible NixOS host to a clean deployed state on
-every boot while preserving normal NixOS deployment. Runtime changes to the
-root filesystem and Nix store, including service and local build state, are
-discarded.
+Baseline reset discards changes to the root filesystem and Nix store on every
+boot, including service state and local builds. Normal NixOS deployment and
+selectable generations keep working. The reset relies on the boot code and the
+deployed baseline being trustworthy, so rebooting alone cannot guarantee
+recovery from a root compromise.
 
 Deployment copies the system's Nix store closure into a read-only btrfs
 subvolume. During boot, the initrd selects that baseline, recreates a fixed
@@ -19,9 +20,9 @@ before the root filesystem is mounted, so an unclean shutdown cannot skip it.
 The machine ID and ed25519 SSH host key survive under
 `/var/lib/baseline-reset`; separately mounted service volumes are not reset.
 
-This provides stable host identity, normal `deploy` updates, and selectable
-generations. Lost per-boot keys make discarded local writable data
-unrecoverable after power-off, subject to the [limits below](#features-and-known-limitations).
+The per-boot keys are lost at power-off, so discarded writes cannot be read
+back from the local disks afterwards. See the
+[limits below](#features-and-known-limitations).
 
 Baseline reset is enabled on the ci-dbg and ci-release controllers and their
 builders. Test agents are not reset.
@@ -156,7 +157,7 @@ flowchart TD
   end
 
   K --> N["switch-root, then normal<br/>NixOS activation rebuilds<br/>/etc, secrets and services"]
-  N --> M["clean deployed system running"]
+  N --> M["deployed system running<br/>with fresh writable storage"]
 
   classDef failure stroke:#e5534b,stroke-width:2px
   class L failure
@@ -164,26 +165,87 @@ flowchart TD
 
 ## Features and known limitations
 
-Baseline reset provides cleanliness between boots and confidentiality of
-discarded writable data after power-off, with these limits:
-
 | Property | baseline-reset |
 |---|---|
-| Reset on every boot | `/` is a freshly keyed LUKS2 and btrfs filesystem with the machine ID restored. `/nix` overlays the selected read-only baseline with upper and work directories on encrypted btrfs |
-| Preserved by the module | `/var/lib/baseline-reset` (`@persist`). The machine ID is always required; the SSH host key is required when OpenSSH is enabled. Release builders also keep the current public builder CA. Anything else written there also persists |
-| Outside the reset | `/boot`, which holds the bootloader, the generation menu, and the kernel and initrd that perform the reset. Plus separately mounted service volumes, such as the controller's `/var/lib/caddy` |
+| Reset on every boot | Root and writable Nix state are recreated with fresh LUKS2 keys, and `/nix` overlays the selected read-only baseline. Once the old keys are gone, discarded writes cannot be recovered from the local disks |
+| Preserved state | Everything under `/var/lib/baseline-reset` (`@persist`): the machine ID, the SSH host key, the release builders' public CA, and anything else written there |
+| Outside the reset | `/boot` (bootloader, generation menu, kernel and initrd) and separately mounted service volumes, such as the controller's `/var/lib/caddy` |
 | Build and Jenkins state | Discarded. Push required artifacts off-host before rebooting, for example to Cachix or the OCI registry |
-| Boot chain | No Secure Boot, dm-verity, measured boot, or attestation. Bootloader installation writes the kernel, initrd and boot entries to `/boot` during activation |
-| Root of trust | None: the running system and the disk are trusted. Baselines are read-only btrfs subvolumes, but host root can clear that flag and alter them |
-| Erasure | Discarded root and Nix writes are unreadable from local disks after the per-boot keys are lost. `/boot`, persistent volumes, shipped logs and artifacts, and preexisting plaintext on reused disks are not covered |
+| Boot chain | No Secure Boot, measured boot or attestation, so root can replace the kernel or initrd that performs the reset. The release task checks boot IDs and system paths over SSH, but a compromised host can report whatever it wants. See [Hetzner limitations](#hetzner-limitations) |
+| Baseline integrity | No dm-verity or signature check on the baseline contents. Root can clear the btrfs read-only flag and modify a baseline. Checking the baseline at boot would also need a trusted boot path (see [Hetzner limitations](#hetzner-limitations)) |
+| Credentials | `inv install-release` rotates the builder CA and the controller's builder keys. It does not rotate SSH host keys or service credentials stored in SOPS. A reset does not revoke stolen credentials |
+| Reinstallation | `inv install-release --reinstall` repartitions the configured disks, but it starts the installer from the running OS over SSH and `kexec`. A compromised OS can interfere with that, so a successful reinstall does not prove the host is clean. See the [install task](../tasks.py) |
 | Deployment rollback | Do not rely on deploy-rs automatic or magic rollback; redeploy explicitly or select another generation from the console |
 | Platform requirements | Supported btrfs and boot layouts, LUKS2 and OverlayFS; no disk swap or NixOS specialisations |
 
-## Future improvements
+The reset does not erase preexisting plaintext on reused disks, or copies
+already sent to logging and artifact services.
+
+If a host might be compromised, preserve evidence before resetting it. Once the
+per-boot keys are gone, a disk image of the writable partitions can no longer
+be decrypted.
+
+Logs already sent to [monitoring](monitoring.md) survive a reset. The local
+journal and Alloy state are discarded, so anything that has not reached Loki
+is lost, even on a clean reboot.
+
+## Hetzner limitations
+
+Boot settings reported by the ci-release hosts over SSH, using DMI data, EFI
+variables and `bootctl status`:
+
+| Host | Platform | Boot capabilities |
+|---|---|---|
+| `hetzci-release` (controller) | Hetzner Cloud, x86 | Legacy BIOS boot; no TPM exposed |
+| `hetzarm-rel-1` (ARM builder) | Hetzner Cloud, ARM | UEFI; Secure Boot reported unsupported; no TPM exposed |
+| `hetz86-rel-2` (x86 builder) | Dedicated EPYC 9454P, ASUS K14PA-U12 | UEFI; Secure Boot disabled; no TPM exposed |
+
+Hetzner's [Cloud FAQ](https://docs.hetzner.com/cloud/servers/faq/#is-secure-boot-supported)
+says Cloud servers support neither Secure Boot nor TPM/vTPM, so the controller
+and the ARM builder can use neither, even though the ARM builder boots with
+UEFI.
+
+For dedicated servers, Hetzner's
+[UEFI policy](https://docs.hetzner.com/robot/dedicated-server/operating-systems/uefi/#secure-boot-support)
+lets you enable Secure Boot, but Hetzner doesn't support it, and the Rescue
+system and automatic installation stop working once it is on. The
+[ASUS manual](https://dlcdnets.asus.com/pub/ASUS/server/K14PA-U12/Manual/E28198_K14PA-U12_UM_V3_WEB.pdf#page=80)
+for the x86 builder's board describes Secure Boot with custom key management.
+We have not tried enrolling keys, or checked whether Hetzner's firmware build
+allows it. Hetzner lists its [RX ARM servers](https://www.hetzner.com/dedicated-rootserver/matrix-rx/)
+as unavailable, so that range offers no replacement for the ARM builder.
+
+Using Secure Boot would also need a signed kernel, initrd and command line, an
+authenticated baseline, and a boot policy that always runs the reset. The
+signing keys, and the decision about which images get signed, have to stay off
+the release hosts.
+
+### Alternatives to Secure Boot
+
+SOPS and services that supply secrets cannot, on their own, prove what a host
+booted. Hash checks and dm-verity also need a trusted boot path. Without one,
+root can replace the code that enforces those checks. An external verifier
+cannot rely on the host's own boot reports, because root can falsify them.
+
+TPM measurements could provide evidence of what booted, if the measurement
+chain is trusted (see
+[Keylime's trust model](https://keylime.readthedocs.io/en/latest/design/security.html)),
+but none of the release hosts exposes a TPM. A network boot image or `kexec`
+installer only helps if the firmware or an external management system starts
+it, not the suspect OS.
+
+Replacing the Cloud VMs from [approved snapshots](https://docs.hetzner.com/cloud/servers/backups-snapshots/overview/),
+or booting trusted installation media without going through the installed OS,
+could give us a recovery path. Both need a different workflow from the current
+one. That assumes we can trust the system creating the new Cloud VMs and
+Hetzner's infrastructure. We would still need to revoke and replace exposed
+credentials, and check or rebuild any storage reused from the old Cloud VMs.
+
+## Further work
 
 | Improvement | Effect and requirements |
 |---|---|
-| Preserved by the module | An explicit allowlist would stop state left under `/var/lib/baseline-reset` from persisting unnoticed. It would narrow one of several surviving paths, not all of them, and would not constrain host root. Needs only a module change |
-| Tamper evidence | Off-host digests would record what a baseline subvolume and `/boot` should contain. Comparing the on-disk contents against those digests would catch accidental corruption and support forensics after an incident. The comparison would not prove what a host actually booted, which would need hardware measurement or reading the disk from outside the host. Requires further design |
-| Boot chain | A tampered kernel or initrd would fail to boot, so the reset could not be skipped. Needs UEFI Secure Boot |
-| Root of trust | Host root could no longer alter a baseline subvolume undetected. Needs a verified boot chain, plus dm-verity or signatures covering the baseline contents, so the Secure Boot requirement applies here too |
+| Persistence allowlist | Only let listed paths survive under `/var/lib/baseline-reset`, so stray state doesn't persist unnoticed. Needs only a module change |
+| Tamper evidence | Build digests of `/boot` and the baseline contents independently and keep them off the hosts. After an incident, compare them with disk images taken without booting the suspect OS. This shows what is stored on disk, not what booted or whether secrets were stolen. Needs more design |
+| Recovery procedure | Write down and test the steps: isolate the host, collect evidence before rebooting, then recover with a trusted provisioner or installation media booted without the suspect OS. Cover persistent volumes, and revoking and replacing exposed host and service credentials |
+| Log delivery before reset | Check that each release host's journal reaches Loki, and wait for pending entries before a routine reset. Decide what a reset should do if Loki is down |
