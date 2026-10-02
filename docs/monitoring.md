@@ -17,6 +17,8 @@ starts Grafana Alloy to send systemd journal logs to Loki. Both default to off.
 
 The monitoring server has an additional Hetzner volume attached which stores the
 state (metrics and logs) of Grafana, Prometheus & Loki.
+Prometheus keeps metrics for 90 days. Loki has no retention period configured,
+so it does not expire logs by age.
 
 ## Hosts
 
@@ -72,6 +74,24 @@ The `uae` job scrapes `uae-azureci-prod` and `uae-nethsm-gateway` at their
 The `nebula` job includes every host with a `nebula_ip` in `hosts/machines.nix`.
 It scrapes Nebula metrics on port 9101, using `internal_ip` for hosts in
 `hetznerCloudHosts` and `nebula_ip` for the rest.
+
+## Alert coverage
+
+Grafana sends alerts to Slack. The
+[`up? (Nebula)`](../hosts/ghaf-monitoring/provision/alert-rules/nebula_up.json)
+alert fires when Prometheus has failed to scrape a host's Nebula metrics for
+two minutes. For ci-release, that only covers the controller: the builders have
+no Nebula scrape target, and the general
+[`up?`](../hosts/ghaf-monitoring/provision/alert-rules/up.json) alert excludes
+all three release hosts.
+
+The only Loki-based alert,
+[`earlyoom SIGTERM`](../hosts/ghaf-monitoring/provision/alert-rules/earlyoom.json),
+looks for low-memory messages. If its query fails, Grafana raises a
+[datasource error](https://grafana.com/docs/grafana/latest/alerting/guides/connectivity-errors/)
+alert; if the query returns nothing, the rule stays OK. No rule checks whether
+a host has stopped sending journal entries. Entries that haven't reached Loki
+are lost when a [baseline reset](baseline-reset.md) host reboots.
 
 ## ghaf-log (separate instance)
 
