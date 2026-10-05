@@ -58,6 +58,38 @@ valid_machine_id() {
   [[ $id =~ ^[0-9a-f]{32}$ ]] && [ "$id" != 00000000000000000000000000000000 ]
 }
 
+prune_persistent_state() {
+  local target
+  local -a persistent_files
+  read -r -a persistent_files <<<"${BASELINE_PERSISTENT_FILES:?}"
+
+  shopt -s dotglob nullglob
+  for target in "$state"/*; do
+    prune_persistent_entry "$target" "${target##*/}"
+  done
+  shopt -u dotglob nullglob
+}
+
+prune_persistent_entry() {
+  local path=$1 relative=$2 allowed child parent=0
+  for allowed in "${persistent_files[@]}"; do
+    if [ "$relative" = "$allowed" ]; then
+      [ -f "$path" ] && [ ! -L "$path" ] || fail "invalid persistent file: $relative"
+      return
+    fi
+    [[ $allowed != "$relative/"* ]] || parent=1
+  done
+  if [ "$parent" = 1 ]; then
+    [ -d "$path" ] && [ ! -L "$path" ] || fail "invalid persistent directory: $relative"
+    for child in "$path"/*; do
+      prune_persistent_entry "$child" "$relative/${child##*/}"
+    done
+  else
+    echo "baseline-reset: removing unlisted persistent path: $relative" >&2
+    rm -rf --one-file-system -- "$path"
+  fi
+}
+
 cleanup_mounts() {
   local status=$1 cleanup_status=0 path i
   trap - EXIT
@@ -288,6 +320,8 @@ restore_baseline() {
   if [ -n "${nix_writable:-}" ]; then
     cryptsetup status baseline-nix >/dev/null 2>&1 && fail "Nix mapper is already open"
   fi
+
+  prune_persistent_state
 
   remove_subvolume "$store/@lower"
   btrfs subvolume snapshot -r "$snapshot" "$store/@lower" >/dev/null
