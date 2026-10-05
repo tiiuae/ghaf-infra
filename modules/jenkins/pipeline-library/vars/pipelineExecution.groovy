@@ -21,9 +21,9 @@ private def ghaf_flake_ref(String repo, String rev) {
   return "${normalizedRepo}${separator}rev=${rev}"
 }
 
-private def withRedundancyRouter(String object, Closure body) {
+private def withRedundancyRouter(String purpose, Closure body) {
   lock('signing') {
-    def signingEnv = readJSON text: artifactSupport.run_cmd("select-pkcs11-node ${object}")
+    def signingEnv = readJSON text: artifactSupport.run_cmd("select-pkcs11-node ${purpose}")
     withEnv([
       "PKCS11_PROXY_SOCKET=${signingEnv.socket}" // overrides the socket with one that works
     ]) {
@@ -343,7 +343,7 @@ def create_pipeline(
           signing_possible && target_config.provenance_requested,
           "Sign (SLSA) provenance ${build_shortname}"
         ) {
-          withRedundancyRouter("GhafInfraSignProv-${ci_env}") { ctx ->
+          withRedundancyRouter('provenance') { ctx ->
             sh """
               openssl pkeyutl -sign -rawin \
                 -inkey "${ctx.uri}" \
@@ -443,9 +443,9 @@ def create_pipeline(
               }
               def sysupdate_manifest_name = artifactSupport.path_basename(sysupdate_manifest_image.path)
 
-              withRedundancyRouter("uefi-ghaf-db") { ctx ->
+              withRedundancyRouter('uefi') { ctx ->
                 sh """
-                  uefi-sign-sysupdate /etc/jenkins/keys/secboot/DB.pem \
+                  uefi-sign-sysupdate "${env.JENKINS_UEFI_CERTIFICATE_FILE}" \
                     "${ctx.uri}" \
                     '${output}/${uefi_image.path}' \
                     '${tmpdir}/${img_name}'
@@ -467,9 +467,9 @@ def create_pipeline(
               sysupdate_manifest_image.path = "images/${sysupdate_manifest_name}"
             } else {
               def signer = build_target_name.contains("nvidia-jetson-orin") ? "uefisign-simple" : "uefisign"
-              withRedundancyRouter("uefi-ghaf-db") { ctx ->
+              withRedundancyRouter('uefi') { ctx ->
                 sh """
-                  ${signer} /etc/jenkins/keys/secboot/DB.pem \
+                  ${signer} "${env.JENKINS_UEFI_CERTIFICATE_FILE}" \
                     "${ctx.uri}" \
                     ${output}/${uefi_image.path} \
                     '${tmpdir}'
@@ -494,7 +494,7 @@ def create_pipeline(
           !target_config.no_image && signing_possible,
           "Sign (SLSA) image ${build_shortname}"
         ) {
-          withRedundancyRouter("GhafInfraSignECP256-${ci_env}") { ctx ->
+          withRedundancyRouter('image') { ctx ->
             sh "mkdir -p ${output}/images"
             manifest.images.each { image ->
               def img_name = artifactSupport.path_basename(image.path)
@@ -693,7 +693,7 @@ def create_pipeline(
             error("Release policy failed before writing attestation for ${build_shortname}")
           }
 
-          withRedundancyRouter("GhafInfraSignProv-${ci_env}") { ctx ->
+          withRedundancyRouter('provenance') { ctx ->
             sh """
               openssl pkeyutl -sign -rawin \
                 -inkey "${ctx.uri}" \

@@ -120,8 +120,8 @@ get-secureboot-keys /path/to/output
 ```
 
 The public certificates used for build-time signing are distributed via the
-`ghaf-infra-pki` flake input (`yubi-uefi-pki` package) and deployed to
-`/etc/jenkins/keys/secboot/` on Jenkins controllers.
+`ghaf-infra-pki` flake input (`yubi-uefi-pki` package). The Jenkins signing
+configuration points directly to the certificate in that package.
 
 ### Signing tools
 

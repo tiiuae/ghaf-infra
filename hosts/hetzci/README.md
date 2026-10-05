@@ -46,6 +46,59 @@ The Jenkins module accepts secret file paths and does not manage the secret
 provider. The test-agent module currently takes a SOPS credentials file through
 `services.testagent.credentialsFile`.
 
+### Signing configuration
+
+The Jenkins module can configure OpenSSL and Jenkins for any PKCS#11 library.
+For a library accessed directly, provide its path and any library-specific
+runtime settings:
+
+```nix
+services.ghaf-jenkins.signing = {
+  enable = true;
+  modulePath = "${pkgs.softhsm}/lib/softhsm/libsofthsm2.so";
+  pinFile = config.sops.secrets.signing-pin.path;
+  extraEnvironment.SOFTHSM2_CONF = "/etc/softhsm2.conf";
+  keys.provenance = [ "pkcs11:token=ci;object=provenance" ];
+};
+```
+
+For a `pkcs11-proxy` gateway, enable the proxy client instead of setting
+`modulePath`:
+
+```nix
+services.ghaf-jenkins.signing = {
+  enable = true;
+  pinFile = config.sops.secrets.signing-pin.path;
+  proxy = {
+    enable = true;
+    endpoints = [
+      { name = "primary"; socket = "tls://signing-gateway.example.com:2345"; }
+      { name = "backup"; socket = "tls://backup-gateway.example.com:2345"; }
+    ];
+    tlsPskFile = config.sops.secrets.proxy-psk.path;
+    # identity defaults to networking.hostName
+  };
+  keys.provenance = [ "pkcs11:token=ci;object=provenance" ];
+  # Set signing.uefi.certificateFile when keys.uefi is configured.
+};
+```
+
+The caller must make the PIN and proxy PSK files readable by `jenkins` and
+keep their contents out of the Nix store. The module exposes the selected
+library as `JENKINS_PKCS11_MODULE` and an ordered, purpose-keyed JSON map of
+key URIs via `JENKINS_SIGNING_KEYS_FILE`. Proxy endpoints are published via
+`JENKINS_PKCS11_ENDPOINTS_FILE`. The pipeline calls `select-pkcs11-node PURPOSE`
+with `provenance`, `image`, or `uefi`. The selector tries each configured key URI
+in order, trying all endpoints in their configured order before moving to the
+next key. It returns the first working URI, socket, and region as JSON.
+The selector is executed, not sourced; token and region overrides are no longer
+supported. The first configured endpoint is also the default proxy socket.
+Set `signing.uefi.certificateFile` to the public certificate
+matching the UEFI key; Jenkins receives it as `JENKINS_UEFI_CERTIFICATE_FILE`.
+The existing pipelines still disable signing when `CI_ENV=vm`. Signature
+verification configuration is separate. HetzCI's Ghaf-specific signing tools,
+certificates, and SOPS declarations remain in [`signing.nix`](./signing.nix).
+
 Pipeline tests live in [`tests/jenkins/`](../../tests/jenkins/) at the
 repository root and run through the `nix fmt` hooks.
 

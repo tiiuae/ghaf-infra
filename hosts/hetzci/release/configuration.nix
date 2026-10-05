@@ -89,7 +89,7 @@ in
     ];
   };
 
-  hetzci.signing.proxy.enable = true;
+  services.ghaf-jenkins.signing.enable = true;
 
   services.baseline-reset = {
     enable = true;

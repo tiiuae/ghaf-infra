@@ -9,6 +9,57 @@
 }:
 let
   cfg = config.services.ghaf-jenkins;
+  signing = cfg.signing;
+  proxyEndpoints = signing.proxy.endpoints;
+  proxyEndpointsFile = toString (
+    pkgs.writeText "jenkins-pkcs11-endpoints.json" (builtins.toJSON proxyEndpoints)
+  );
+  proxyModule = "${
+    self.packages.${pkgs.stdenv.hostPlatform.system}.pkcs11-proxy
+  }/lib/libpkcs11-proxy.so";
+  signingModule = if signing.proxy.enable then proxyModule else signing.modulePath;
+  signingEnvironment =
+    signing.extraEnvironment
+    // {
+      JENKINS_PKCS11_MODULE = signingModule;
+      JENKINS_SIGNING_KEYS_FILE = toString (
+        pkgs.writeText "jenkins-signing-keys.json" (builtins.toJSON signing.keys)
+      );
+      OPENSSL_CONF = toString (
+        pkgs.writeText "jenkins-openssl.cnf" ''
+          openssl_conf = openssl_init
+
+          [openssl_init]
+          providers = provider_sect
+
+          [provider_sect]
+          default = default_sect
+          pkcs11 = pkcs11_sect
+
+          [default_sect]
+          activate = 1
+
+          [pkcs11_sect]
+          activate = 1
+          module = "${pkgs.pkcs11-provider}/lib/ossl-modules/pkcs11.so"
+          pkcs11-module-path = "${signingModule}"
+          ${lib.optionalString (
+            signing.providerQuirks != null
+          ) "pkcs11-module-quirks = ${signing.providerQuirks}"}
+          ${lib.optionalString (signing.pinFile != null) "pkcs11-module-token-pin = file:${signing.pinFile}"}
+        ''
+      );
+    }
+    // lib.optionalAttrs (signing.uefi.certificateFile != null) {
+      JENKINS_UEFI_CERTIFICATE_FILE = signing.uefi.certificateFile;
+    }
+    // lib.optionalAttrs signing.proxy.enable {
+      JENKINS_PKCS11_ENDPOINTS_FILE = proxyEndpointsFile;
+      PKCS11_PROXY_MODULE = proxyModule;
+      PKCS11_PROXY_SOCKET = if proxyEndpoints == [ ] then "" else (builtins.head proxyEndpoints).socket;
+      PKCS11_PROXY_TLS_PSK_FILE = signing.proxy.tlsPskFile;
+      PKCS11_TLS_IDENTITY = signing.proxy.identity;
+    };
 
   remoteStoresFromBuildMachines = builtins.listToAttrs (
     map (
@@ -218,8 +269,97 @@ in
         };
       };
     };
+    signing = {
+      enable = lib.mkEnableOption "PKCS#11 signing for Jenkins";
+      modulePath = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "Path to a PKCS#11 library for direct signing";
+      };
+      pinFile = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "Runtime path to the PKCS#11 token PIN file";
+      };
+      providerQuirks = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = if signing.proxy.enable then "no-deinit" else null;
+        description = "OpenSSL PKCS#11 provider quirks";
+      };
+      extraEnvironment = lib.mkOption {
+        type = lib.types.attrsOf lib.types.str;
+        default = { };
+        description = "Additional runtime environment for the PKCS#11 library";
+      };
+      keys = lib.mkOption {
+        type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+        default = { };
+        description = "Ordered PKCS#11 key URI candidates by signing purpose";
+      };
+      uefi.certificateFile = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "Path to the public certificate used when signing UEFI images";
+      };
+      proxy = {
+        enable = lib.mkEnableOption "the PKCS#11 signing proxy client";
+        endpoints = lib.mkOption {
+          type = lib.types.listOf (
+            lib.types.submodule {
+              options = {
+                name = lib.mkOption {
+                  type = lib.types.str;
+                  description = "Endpoint name recorded in the signing result";
+                };
+                socket = lib.mkOption {
+                  type = lib.types.str;
+                  description = "PKCS#11 proxy socket URL";
+                };
+              };
+            }
+          );
+          default = [ ];
+          description = "Proxy endpoints in preference order";
+        };
+        tlsPskFile = lib.mkOption {
+          type = lib.types.str;
+          description = "Runtime path to the proxy TLS PSK file";
+        };
+        identity = lib.mkOption {
+          type = lib.types.str;
+          default = config.networking.hostName;
+          description = "Identity presented to the PKCS#11 proxy";
+        };
+      };
+    };
   };
   config = lib.mkIf cfg.enable {
+    assertions = lib.optionals signing.enable [
+      {
+        assertion = signing.proxy.enable || signing.modulePath != null;
+        message = "services.ghaf-jenkins.signing.modulePath is required without the proxy";
+      }
+      {
+        assertion = !signing.proxy.enable || signing.modulePath == null;
+        message = "services.ghaf-jenkins.signing.modulePath must be unset when the proxy is enabled";
+      }
+      {
+        assertion = !signing.proxy.enable || proxyEndpoints != [ ];
+        message = "services.ghaf-jenkins.signing.proxy.endpoints must contain at least one endpoint";
+      }
+      {
+        assertion = !(signing.keys ? uefi) || signing.uefi.certificateFile != null;
+        message = "services.ghaf-jenkins.signing.uefi.certificateFile is required for a UEFI signing key";
+      }
+    ];
+    environment.variables = lib.mkIf signing.enable signingEnvironment;
+    environment.systemPackages = lib.optionals signing.enable (
+      with pkgs;
+      [
+        opensc
+        openssl
+      ]
+    );
     services.jenkins = {
       enable = true;
       listenAddress = "localhost";
@@ -255,9 +395,16 @@ in
         ++ lib.optionals cfg.archive.enable [
           pkgs.tree
           self.packages.${pkgs.stdenv.hostPlatform.system}.archive-ghaf-release
-        ];
+        ]
+        ++ lib.optionals signing.enable (
+          with pkgs;
+          [
+            opensc
+            openssl
+          ]
+        );
 
-      environment = {
+      environment = lib.optionalAttrs signing.enable signingEnvironment // {
         CI_ENV = cfg.envType;
         OCI_REGISTRY = cfg.registry.url;
         JIRA_TOKEN_AVAILABLE = lib.boolToString cfg.integrations.jira.enable;
@@ -544,6 +691,5 @@ in
         OnCalendar = "minutely";
       };
     };
-
   };
 }

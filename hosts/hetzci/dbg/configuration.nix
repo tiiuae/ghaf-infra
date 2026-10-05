@@ -59,7 +59,7 @@ in
     ];
   };
 
-  hetzci.signing.proxy.enable = true;
+  services.ghaf-jenkins.signing.enable = true;
 
   sops = {
     defaultSopsFile = ./secrets.yaml;
