@@ -103,15 +103,15 @@
   },
   {
     "name": "commons-compress-api",
-    "version": "1.28.0-93.v26f0a_316f7d4",
-    "url": "https://updates.jenkins.io/download/plugins/commons-compress-api/1.28.0-93.v26f0a_316f7d4/commons-compress-api.hpi",
-    "sha256": "09g69minmmiwdqb35m98bflhi5fkpzbdqid6nj0xlslzi2mwyk40"
+    "version": "1.28.0-95.vb_e5e24f83645",
+    "url": "https://updates.jenkins.io/download/plugins/commons-compress-api/1.28.0-95.vb_e5e24f83645/commons-compress-api.hpi",
+    "sha256": "0znyj0xrj306391nadrhj2i9n7qq9qyrh8zrb6ykzv16fqihmv0j"
   },
   {
     "name": "commons-lang3-api",
-    "version": "3.20.0-109.ve43756e2d2b_4",
-    "url": "https://updates.jenkins.io/download/plugins/commons-lang3-api/3.20.0-109.ve43756e2d2b_4/commons-lang3-api.hpi",
-    "sha256": "0li0bhriyiyc2gsgqwbzgjyxzxlsxb93cphzvwlw68rc03h0h2da"
+    "version": "3.21.0-122.v6a_ea_4fd34049",
+    "url": "https://updates.jenkins.io/download/plugins/commons-lang3-api/3.21.0-122.v6a_ea_4fd34049/commons-lang3-api.hpi",
+    "sha256": "0mqnfvvq4pz4mbv67qzl85m26ihqlpjkyh7hcj9bdwmksgw98qad"
   },
   {
     "name": "commons-text-api",
@@ -133,9 +133,9 @@
   },
   {
     "name": "configuration-as-code",
-    "version": "2121.v86fe99d4b_b_a_b_",
-    "url": "https://updates.jenkins.io/download/plugins/configuration-as-code/2121.v86fe99d4b_b_a_b_/configuration-as-code.hpi",
-    "sha256": "1kz4754b6yjm2sc8rini624sa1yy8bk1cr2d942nln65jvk94r7r"
+    "version": "2132.v60435f73c18a_",
+    "url": "https://updates.jenkins.io/download/plugins/configuration-as-code/2132.v60435f73c18a_/configuration-as-code.hpi",
+    "sha256": "1ajzzpw3zmck9p48s3k6nqmklqh8ngby60v0313z1k4ln0dfnxj3"
   },
   {
     "name": "configuration-as-code-groovy",
@@ -145,9 +145,9 @@
   },
   {
     "name": "copyartifact",
-    "version": "795.ve8e151429b_27",
-    "url": "https://updates.jenkins.io/download/plugins/copyartifact/795.ve8e151429b_27/copyartifact.hpi",
-    "sha256": "12lgxy0qk3m11y3c7czvi5zb2mmkv9vf6lrz8xvzzkfdyw41xxhh"
+    "version": "805.v9d1393350780",
+    "url": "https://updates.jenkins.io/download/plugins/copyartifact/805.v9d1393350780/copyartifact.hpi",
+    "sha256": "0h974faayw669z644h90c93a9c7pb33p9dz5ikx9qcxbdjmpjpvc"
   },
   {
     "name": "credentials",
@@ -343,9 +343,9 @@
   },
   {
     "name": "joda-time-api",
-    "version": "2.14.4-206.vc0945a_7c5f95",
-    "url": "https://updates.jenkins.io/download/plugins/joda-time-api/2.14.4-206.vc0945a_7c5f95/joda-time-api.hpi",
-    "sha256": "0jfa2yg8dwl9q21pxz24dq56xsdal1kmprm2g5h1y7i0rcmw3wxb"
+    "version": "2.15.0-208.v6b_084e7a_d9f0",
+    "url": "https://updates.jenkins.io/download/plugins/joda-time-api/2.15.0-208.v6b_084e7a_d9f0/joda-time-api.hpi",
+    "sha256": "1pqxhyjc33yfldjpd3jnf2d3p4cmr26g0ap5v3y64bqjbmii6xa2"
   },
   {
     "name": "jquery3-api",
@@ -385,9 +385,9 @@
   },
   {
     "name": "junit",
-    "version": "1431.vc0d98912a_756",
-    "url": "https://updates.jenkins.io/download/plugins/junit/1431.vc0d98912a_756/junit.hpi",
-    "sha256": "1k6hhknkmwykphzzx2k2kv21c5l2yrlfw5n2bl1xlyzc2vily11n"
+    "version": "1432.v3f9a_b_73dd986",
+    "url": "https://updates.jenkins.io/download/plugins/junit/1432.v3f9a_b_73dd986/junit.hpi",
+    "sha256": "0dmqz3r5bfrb38b42fyis59j3408wz8npkiksskbwig9qw0fjvk6"
   },
   {
     "name": "lockable-resources",
@@ -481,9 +481,9 @@
   },
   {
     "name": "pipeline-graph-view",
-    "version": "1038.v5b_b_dfc9553cf",
-    "url": "https://updates.jenkins.io/download/plugins/pipeline-graph-view/1038.v5b_b_dfc9553cf/pipeline-graph-view.hpi",
-    "sha256": "0pkm209z0lf5gjx8amvb9yp544pkjr33adgqirpyiaww4qpq2axr"
+    "version": "1053.v9df19e6ceed2",
+    "url": "https://updates.jenkins.io/download/plugins/pipeline-graph-view/1053.v9df19e6ceed2/pipeline-graph-view.hpi",
+    "sha256": "1zzqpxspz031zai53pr07iylphac3gpi20hp4kdy00pv048nb4ja"
   },
   {
     "name": "pipeline-groovy-lib",
@@ -709,9 +709,9 @@
   },
   {
     "name": "vsphere-cloud",
-    "version": "4.573.v2a_8a_a_1871263",
-    "url": "https://updates.jenkins.io/download/plugins/vsphere-cloud/4.573.v2a_8a_a_1871263/vsphere-cloud.hpi",
-    "sha256": "0p8lycvsdhj1cbxd63716llvk6f7fjxppbdcp8fcxqsp1ln73aa1"
+    "version": "5.692.v8c617b_d8b_f92",
+    "url": "https://updates.jenkins.io/download/plugins/vsphere-cloud/5.692.v8c617b_d8b_f92/vsphere-cloud.hpi",
+    "sha256": "1cj27m1igmkjimwv0ppdmcxzalf87q5pp2l94pn3z8ha1qyzj69k"
   },
   {
     "name": "woodstox-core-api",
