@@ -63,7 +63,15 @@
     ];
   };
 
-  hetzci.signing.proxy.enable = true;
-
-  services.jenkins.environment.ROUTER_PKCS11_REGIONS = "uae,tampere";
+  services.ghaf-jenkins.signing.enable = true;
+  services.ghaf-jenkins.signing.proxy.endpoints = lib.mkForce [
+    {
+      name = "uae";
+      socket = "tls://uae-nethsm-gateway.sumu.vedenemo.dev:2345";
+    }
+    {
+      name = "tampere";
+      socket = "tls://nethsm-gateway.sumu.vedenemo.dev:2345";
+    }
+  ];
 }

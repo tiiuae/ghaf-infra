@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
+# SPDX-FileCopyrightText: 2022-2026 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 {
   self,
@@ -9,52 +9,10 @@
   ...
 }:
 let
-  cfg = config.hetzci.signing;
-
-  inherit (self.packages.${pkgs.stdenv.hostPlatform.system}) pkcs11-proxy systemd-sbsign;
-  inherit (pkgs) pkcs11-provider;
-
+  signing = config.services.ghaf-jenkins.signing;
   keySourceUefi = inputs.ghaf-infra-pki.packages.${pkgs.stdenv.hostPlatform.system}.yubi-uefi-pki;
-
-  proxyEnv = {
-    PKCS11_PROXY_MODULE = "${pkcs11-proxy}/lib/libpkcs11-proxy.so";
-    PKCS11_PROXY_TLS_PSK_FILE = config.sops.secrets.tls-pks-file.path;
-    # the default socket to use when redundancy router is not used
-    PKCS11_PROXY_SOCKET = "tls://nethsm-gateway.sumu.vedenemo.dev:2345";
-    PKCS11_TLS_IDENTITY = config.networking.hostName;
-    OPENSSL_CONF = toString (
-      pkgs.writeText "openssl.cnf" # ini
-        ''
-          openssl_conf = openssl_init
-
-          [openssl_init]
-          providers = provider_sect
-
-          [provider_sect]
-          default = default_sect
-          pkcs11 = pkcs11_sect
-
-          # basic openssl functionality such as tls breaks when default provider is not present
-          [default_sect]
-          activate = 1
-
-          [pkcs11_sect]
-          activate = 1
-          module = "${pkcs11-provider}/lib/ossl-modules/pkcs11.so"
-          pkcs11-module-path = "${pkcs11-proxy}/lib/libpkcs11-proxy.so"
-          # fixes segfault in openssl commands
-          pkcs11-module-quirks = no-deinit
-          pkcs11-module-token-pin = file:${config.sops.secrets.yubihsm-pin.path}
-        ''
-    );
-  };
-
-  signingPackages =
-    (with pkgs; [
-      opensc # pkcs11-tool
-      openssl
-    ])
-    ++ (with inputs.ci-yubi.packages.${pkgs.stdenv.hostPlatform.system}; [
+  ghafSigningPackages =
+    (with inputs.ci-yubi.packages.${pkgs.stdenv.hostPlatform.system}; [
       uefisign
       uefisigniso
       uefisign-simple
@@ -64,22 +22,16 @@ let
       verify-signature
       select-pkcs11-node
       run-cosign
-    ])
-    ++ [
       systemd-sbsign
-    ];
+    ]);
 in
 {
-  options.hetzci.signing = {
-    proxy.enable = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
-      description = "Enable the pkcs11-proxy configuration";
-    };
-  };
-
   config = lib.mkMerge [
-    (lib.mkIf cfg.proxy.enable {
+    {
+      environment.systemPackages = ghafSigningPackages;
+      services.jenkins.packages = ghafSigningPackages;
+    }
+    (lib.mkIf signing.enable {
       sops.secrets = {
         tls-pks-file = {
           owner = "jenkins";
@@ -93,16 +45,38 @@ in
         };
       };
 
-      environment.variables = proxyEnv;
-      services.jenkins.environment = proxyEnv;
-    })
-    {
-      environment.etc = {
-        "jenkins/keys/secboot".source = "${keySourceUefi}/share/ghaf-infra-pki/uefi";
+      services.ghaf-jenkins.signing = {
+        pinFile = config.sops.secrets.yubihsm-pin.path;
+        uefi.certificateFile = "${keySourceUefi}/share/ghaf-infra-pki/uefi/DB.pem";
+        proxy = {
+          enable = true;
+          endpoints = [
+            {
+              name = "tampere";
+              socket = "tls://nethsm-gateway.sumu.vedenemo.dev:2345";
+            }
+            {
+              name = "uae";
+              socket = "tls://uae-nethsm-gateway.sumu.vedenemo.dev:2345";
+            }
+          ];
+          tlsPskFile = config.sops.secrets.tls-pks-file.path;
+        };
+        keys = {
+          provenance = [
+            "pkcs11:token=NetHSM;object=GhafInfraSignProv-${config.services.ghaf-jenkins.envType}"
+            "pkcs11:token=YubiHSM;object=GhafInfraSignProv"
+          ];
+          image = [
+            "pkcs11:token=NetHSM;object=GhafInfraSignECP256-${config.services.ghaf-jenkins.envType}"
+            "pkcs11:token=YubiHSM;object=GhafInfraSignECP256"
+          ];
+          uefi = [
+            # "pkcs11:token=NetHSM;object=uefi-ghaf-db"
+            "pkcs11:token=YubiHSM;object=uefi-ghaf-db"
+          ];
+        };
       };
-
-      environment.systemPackages = signingPackages;
-      services.jenkins.packages = signingPackages;
-    }
+    })
   ];
 }
