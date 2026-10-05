@@ -42,6 +42,15 @@ let
         lib.escapeShellArg (if cfg.nixWritablePartUUID == null then "" else cfg.nixWritablePartUUID)
       }
       export BASELINE_SSH=${if config.services.openssh.enable then "1" else "0"}
+      export BASELINE_PERSISTENT_FILES=${
+        lib.escapeShellArg (
+          lib.concatStringsSep " " (
+            [ "machine-id" ]
+            ++ lib.optional config.services.openssh.enable "ssh/ssh_host_ed25519_key"
+            ++ cfg.persistentFiles
+          )
+        )
+      }
       export PATH=${
         if initrd then
           "/bin:/sbin"
@@ -88,10 +97,23 @@ in
       default = null;
       description = "Fixed GPT PARTUUID of a separate per-boot writable Nix partition.";
     };
+    persistentFiles = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Additional relative regular files to keep in @persist across resets. The machine ID and enabled SSH host key are always kept.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
     assertions = [
+      {
+        assertion = lib.all (
+          path:
+          builtins.match "[A-Za-z0-9._/-]+" path != null
+          && lib.all (part: part != "" && part != "." && part != "..") (lib.splitString "/" path)
+        ) cfg.persistentFiles;
+        message = "baseline-reset persistentFiles must contain safe relative file paths.";
+      }
       {
         assertion =
           validSubvolume config.fileSystems.${lower} nixDevice "@lower"

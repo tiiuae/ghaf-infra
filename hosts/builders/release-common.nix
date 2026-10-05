@@ -7,6 +7,7 @@
     "ghaf-release"
   ];
   nix.settings.trusted-users = [ "@wheel" ];
+  services.baseline-reset.persistentFiles = [ "release-builder-ca.pub" ];
   services.openssh = {
     extraConfig = "TrustedUserCAKeys /var/lib/baseline-reset/release-builder-ca.pub";
   };

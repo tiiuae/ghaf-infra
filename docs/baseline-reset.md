@@ -112,7 +112,8 @@ persistent boot order.
 An installation or deployment publishes a read-only baseline subvolume; the
 following boot recreates `@lower` from it and formats the writable partitions
 with new keys. The bootloader is written only after the subvolume has been
-published, and the initrd completes every check before it erases anything.
+published. The initrd checks the baseline and required host identity before
+pruning `@persist` and formatting the writable partitions.
 Each baseline subvolume is named after the Nix store hash of its system, so the
 entry selected in the boot menu decides which one is restored.
 
@@ -152,7 +153,7 @@ flowchart TD
 
   subgraph BOOT ["Next boot (initrd, before root is mounted)"]
     direction LR
-    J["initrd checks:<br/>device identities, baseline,<br/>machine ID, SSH key"] -- pass --> K["snapshot @lower,<br/>re-key and format writable partitions"]
+    J["initrd checks:<br/>device identities, baseline,<br/>machine ID, SSH key"] -- pass --> K["prune @persist, snapshot @lower,<br/>re-key and format writable partitions"]
     J -- fail --> L["emergency.target<br/>nothing erased"]
   end
 
@@ -168,7 +169,7 @@ flowchart TD
 | Property | baseline-reset |
 |---|---|
 | Reset on every boot | Root and writable Nix state are recreated with fresh LUKS2 keys, and `/nix` overlays the selected read-only baseline. Once the old keys are gone, discarded writes cannot be recovered from the local disks |
-| Preserved state | Everything under `/var/lib/baseline-reset` (`@persist`): the machine ID, the SSH host key, the release builders' public CA, and anything else written there |
+| Preserved state | The machine ID and SSH host key under `/var/lib/baseline-reset` (`@persist`), plus the release builders' public CA on those hosts. Other entries are removed by the initrd on reset |
 | Outside the reset | `/boot` (bootloader, generation menu, kernel and initrd) and separately mounted service volumes, such as the controller's `/var/lib/caddy` |
 | Build and Jenkins state | Discarded. Push required artifacts off-host before rebooting, for example to Cachix or the OCI registry |
 | Boot chain | No Secure Boot, measured boot or attestation, so root can replace the kernel or initrd that performs the reset. The release task checks boot IDs and system paths over SSH, but a compromised host can report whatever it wants. See [Hetzner limitations](#hetzner-limitations) |
@@ -178,8 +179,15 @@ flowchart TD
 | Deployment rollback | Do not rely on deploy-rs automatic or magic rollback; redeploy explicitly or select another generation from the console |
 | Platform requirements | Supported btrfs and boot layouts, LUKS2 and OverlayFS; no disk swap or NixOS specialisations |
 
+`services.baseline-reset.persistentFiles` lists additional relative regular-file
+paths to keep in `@persist`. The machine ID and enabled SSH host key are always
+kept independently of this option. Reset stops if an allowed path is a symlink
+or cleanup fails.
+
 The reset does not erase preexisting plaintext on reused disks, or copies
 already sent to logging and artifact services.
+Removing an unlisted file from `@persist` does not securely erase its data from
+the persistent btrfs device.
 
 If a host might be compromised, preserve evidence before resetting it. Once the
 per-boot keys are gone, a disk image of the writable partitions can no longer
@@ -245,7 +253,6 @@ credentials, and check or rebuild any storage reused from the old Cloud VMs.
 
 | Improvement | Effect and requirements |
 |---|---|
-| Persistence allowlist | Only let listed paths survive under `/var/lib/baseline-reset`, so stray state doesn't persist unnoticed. Needs only a module change |
 | Tamper evidence | Build digests of `/boot` and the baseline contents independently and keep them off the hosts. After an incident, compare them with disk images taken without booting the suspect OS. This shows what is stored on disk, not what booted or whether secrets were stolen. Needs more design |
 | Recovery procedure | Write down and test the steps: isolate the host, collect evidence before rebooting, then recover with a trusted provisioner or installation media booted without the suspect OS. Cover persistent volumes, and revoking and replacing exposed host and service credentials |
 | Log delivery before reset | Check that each release host's journal reaches Loki, and wait for pending entries before a routine reset. Decide what a reset should do if Loki is down |
