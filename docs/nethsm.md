@@ -23,6 +23,18 @@ The requests are encrypted with a PKS key which comes from the host secrets.
 Signing operations can be done from Hetzner CI, with configured pkcs11-proxy.
 The keys used will be the ones stored on the NetHSM.
 
+Jenkins uses `select-pkcs11-node` to choose a signing endpoint. Each probe has a
+default 75-second timeout to allow Nebula tunnels to recover; healthy probes
+return immediately. 75 seconds covers Linux's last SYN retry (about 67 seconds
+with default `tcp_syn_retries` and `tcp_syn_linear_timeouts`) plus a short
+margin for TLS and key lookup. It is a recovery budget, not a guarantee.
+
+Each signing step re-runs selection under the controller-wide `signing` lock.
+With the default two tokens and two regions, four probes that reach the timeout
+take about five minutes before selection fails, and queued signing steps can
+accumulate these waits. The timeout bounds endpoint selection, not the signing
+operation itself.
+
 The HSM handles **SLSA signing** (supply chain integrity for disk images and
 provenance) and **UEFI Secure Boot signing** (EFI binary authentication on
 target hardware). Both use the same PKCS#11 proxy but different keys and tools.
