@@ -51,6 +51,7 @@ Options:
 Environment:
   ROUTER_PKCS11_REGIONS: comma-separated region list to try. Default: tampere,uae
   ROUTER_PKCS11_TOKENS: comma-separated token list to try. Default: NetHSM,YubiHSM
+  SOCKET_TIMEOUT: timeout per probe. Default: 75s
   YUBIHSM_PIN: set to the pin of YubiHSM. When not specified, it's read from /run/secrets
 EOF
 }
@@ -114,8 +115,9 @@ fi
 
 YUBIHSM_PIN="${YUBIHSM_PIN:-$(cat /run/secrets/yubihsm-pin 2>/dev/null || true)}"
 
-# the default timeout for unreachable pkcs11 proxy is minutes, we want to exit much earlier than that
-SOCKET_TIMEOUT="${SOCKET_TIMEOUT:-30s}"
+# Allow time for Nebula tunnels to recover while bounding how long an
+# unreachable proxy delays selection.
+SOCKET_TIMEOUT="${SOCKET_TIMEOUT:-75s}"
 
 if [[ -z $ROUTER_PKCS11_REGIONS || $ROUTER_PKCS11_REGIONS == ,* || $ROUTER_PKCS11_REGIONS == *, || $ROUTER_PKCS11_REGIONS == *,,* ]]; then
   echo "Error: ROUTER_PKCS11_REGIONS/--regions contains an empty region" 1>&2
