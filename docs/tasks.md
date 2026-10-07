@@ -22,7 +22,7 @@ Available tasks:
   install             Install `alias` configuration using nixos-anywhere, deploying host private key.
   install-release     Deploy and reset release hosts; reinstall only for disk layout changes.
   print-keys          Decrypt host private key, print ssh and age public keys for `alias` config.
-  print-revision      Print the currently deployed git revision on the 'alias' host.
+  print-revision      Print the deployed git revision, reboot state and kernels on the 'alias' host.
   reboot              Reboot host identified as `alias`, selected aliases, or hosts needing reboot.
   renew-nebula-certificates
                       Renew Nebula host certificates and keys stored in sops.
@@ -161,35 +161,38 @@ The `reboot` task reboots the host identified by the given alias. It triggers a 
 You can also pass one or more explicit aliases through `--aliases`. Multiple aliases are comma-separated:
 
 ```bash
-❯ inv reboot --aliases hetzci-release
-❯ inv reboot --aliases hetzci-release,hetzci-dbg,hetzci-dev
+❯ inv reboot --aliases hetzci-dbg
+❯ inv reboot --aliases hetzci-dbg,hetzci-dev
 ```
 
-It can also reboot every host where the currently running kernel, initrd, or kernel modules differ from the active system profile:
+It can also reboot every host where the booted kernel, initrd, or kernel modules differ from the persistent system profile selected for the next boot:
 
 ```bash
 ❯ inv reboot --needs-reboot
 ```
 
-The `--needs-reboot` mode probes all targets, skips hosts with `no` or `(unknown)` reboot state, asks for confirmation, and reboots the matching hosts sequentially. Explicit `--aliases` mode asks for confirmation when more than one host is listed. Without `--yes`, answer `y` to continue; any other answer cancels before rebooting hosts. Use `--yes` to skip these confirmation prompts.
+The `--needs-reboot` mode excludes the release hosts (`hetz86-rel-2`, `hetzarm-rel-1` and `hetzci-release`) and logs that they were skipped. Use `inv install-release` for their boot selection, baseline verification and credential provisioning. The remaining targets are probed; hosts with `no` or `(unknown)` reboot state are skipped, and matching hosts are rebooted sequentially after confirmation. Explicit `--aliases` mode asks for confirmation when more than one host is listed. Without `--yes`, answer `y` to continue; any other answer cancels before rebooting hosts. Use `--yes` to skip these confirmation prompts.
+
+If a host was deliberately booted into an older generation, its persistent profile can still select the newer generation. That host may report `needs reboot: yes`, and `--needs-reboot` can reboot it into the newer generation. Use `--aliases` to reboot other hosts without including the host running the older generation.
 
 The output looks like this, with timestamps and hosts depending on the current fleet state:
 
 ```text
 ❯ inv reboot --needs-reboot
-2026-08-12 10:15:00 | INFO     | Probing 34 host(s) (up to 5s each)
-Reboot 2 host(s) needing reboot: uae-azureci-prod? [y/N] y
+2026-08-12 10:15:00 | INFO     | Skipping release hosts in --needs-reboot: hetz86-rel-2, hetzarm-rel-1, hetzci-release; use 'inv install-release'
+2026-08-12 10:15:00 | INFO     | Probing 31 host(s) (up to 5s each)
+Reboot 1 host(s) needing reboot: uae-azureci-prod? [y/N] y
 2026-08-12 10:16:01 | INFO     | [uae-azureci-prod] reboot: waiting for 74.162.68.205 to shut down
 2026-08-12 10:16:19 | INFO     | [uae-azureci-prod] reboot: waiting for 74.162.68.205 to start
 2026-08-12 10:16:58 | INFO     | [uae-azureci-prod] reboot: host is back up
-2026-08-12 10:16:58 | INFO     | Rebooted 2 host(s) needing reboot
+2026-08-12 10:16:58 | INFO     | Rebooted 1 host(s) needing reboot
 ```
 
 With `--yes`, the probe, per-host wait logs, and final summary are the same, but the confirmation prompt is omitted:
 
 ```bash
 ❯ inv reboot --needs-reboot --yes
-❯ inv reboot --aliases hetzci-release,hetzci-dbg,hetzci-dev --yes
+❯ inv reboot --aliases hetzci-dbg,hetzci-dev --yes
 ```
 
 The task confirms each reboot by waiting for the host's SSH port to disappear and then become reachable again. For reboot waits, shutdown must happen within 120 seconds and startup within 600 seconds. In single-host mode, a failed reboot command or timeout exits with an error. In multi-host modes, the task logs failed hosts, continues with the remaining selected hosts, and exits with an error summary if any host failed.
@@ -206,7 +209,7 @@ age1abc123...
 
 ## print-revision
 
-The `print-revision` task probes the remote host and prints the currently deployed ghaf-infra git revision for the given `alias` host:
+The `print-revision` task probes the remote host and prints the currently deployed ghaf-infra git revision, reboot state and kernel versions for the given `alias` host:
 
 ```bash
 ❯ inv print-revision --alias=hetzarm
@@ -214,20 +217,25 @@ The `print-revision` task probes the remote host and prints the currently deploy
 
 Currently deployed revision(s):
 
-╒═════════╤══════════════╤════════════════╤══════════════════╤════════════╤══════════════════════════════════════╕
-│ alias   │ host address │ needs reboot   │ revision (rev)   │ rev date   │ rev subject                          │
-╞═════════╪══════════════╪════════════════╪══════════════════╪════════════╪══════════════════════════════════════╡
-│ hetzarm │ 65.21.20.242 │ no             │ 4966d195a6a1     │ 2026-08-06 │ hosts/hetzci: update Jenkins plugins │
-╘═════════╧══════════════╧════════════════╧══════════════════╧════════════╧══════════════════════════════════════╛
+╒═════════╤════════════════╤══════════╤═══════════════════╤══════════════════╤════════════╤══════════════════════════════════════╕
+│ alias   │ host address   │ needs    │ kernel            │ revision (rev)   │ rev date   │ rev subject                          │
+│         │                │ reboot   │                   │                  │            │                                      │
+╞═════════╪════════════════╪══════════╪═══════════════════╪══════════════════╪════════════╪══════════════════════════════════════╡
+│ hetzarm │ 65.21.20.242   │ yes      │ 6.12.78 → 6.12.79 │ 4966d195a6a1     │ 2026-08-06 │ hosts/hetzci: update Jenkins plugins │
+╘═════════╧════════════════╧══════════╧═══════════════════╧══════════════════╧════════════╧══════════════════════════════════════╛
+Kernel: running version; → next boot when different.
 ```
 
 The output table includes the following details:
-- `alias`: Target ghaf-infra host `alias` name
+- `alias`: Target ghaf-infra host alias name
 - `host address`: Target host address, matching the `host address` column in `inv alias-list`
-- `needs reboot`: Whether booted `initrd`, `kernel`, or `kernel-modules` differ from the current system closure. `yes` means rebooting is required to activate the current boot artifacts, `no` means they match, and `(unknown)` means the remote probe failed
-- `revision (rev)`: Ghaf-infra git commit revision currently deployed on the target host. This detail is read from the remote host with command `nixos-version --configuration-revision`. The table shows a short revision prefix, keeping `-dirty` when the deployed system was built from a dirty tree. On [OSC 8 compatible](https://github.com/Alhadis/OSC8-Adoption/) terminals, clean revisions are hyperlinks to the full ghaf-infra github commit
+- `needs reboot`: Whether booted `initrd`, `kernel`, or `kernel-modules` differ from the persistent `/nix/var/nix/profiles/system` closure selected for the next boot. `yes` means rebooting is required to activate those boot artifacts, `no` means they match, and `(unknown)` means the comparison could not be read
+- `kernel`: Running kernel release from `uname -r`. When the next kernel release differs, the same line shows `running → next`, with the next release read from `/nix/var/nix/profiles/system/kernel-modules/lib/modules/`. A single version means both match. If only the next kernel is unreadable, the running version is followed by `(next: unknown)`. The persistent system profile also reflects deployments staged with `nixos-rebuild boot`. `(unknown)` means that kernel release could not be read
+- `revision (rev)`: Ghaf-infra git commit revision of the active system on the target host, read with `nixos-version --configuration-revision`. A deployment staged with `deploy --boot` can show the old active revision alongside a newer next-boot kernel. The table shows a 12-character revision prefix, or an 8-character prefix followed by `-dirty` when the deployed system was built from a dirty tree. On [OSC 8 compatible](https://github.com/Alhadis/OSC8-Adoption/) terminals, clean revisions are hyperlinks to the full ghaf-infra github commit
 - `rev date`: Git log [committer date](https://git-scm.com/docs/git-log#Documentation/git-log.txt-cs) in short format
-- `rev subject`: Git log [commit subject](https://git-scm.com/docs/git-log#Documentation/git-log.txt-s)
+- `rev subject`: Git log [commit subject](https://git-scm.com/docs/git-log#Documentation/git-log.txt-s), truncated to 40 characters to limit table width
+
+Matching kernel versions can still have `needs reboot` set to `yes` if the initrd or module paths changed.
 
 If `alias` is not specified, `print-revision` lists the deployed git revisions for all ghaf-infra hosts sorted by the git revision date:
 
@@ -237,15 +245,16 @@ If `alias` is not specified, `print-revision` lists the deployed git revisions f
 
 Currently deployed revision(s):
 
-╒══════════════════╤═══════════════╤════════════════╤════════════════════╤════════════╤══════════════════════════════════════╕
-│ alias            │ host address  │ needs reboot   │ revision (rev)     │ rev date   │ rev subject                          │
-╞══════════════════╪═══════════════╪════════════════╪════════════════════╪════════════╪══════════════════════════════════════╡
-│ ghaf-auth        │ 37.27.190.109 │ no             │ 4966d195a6a1       │ 2026-08-06 │ hosts/hetzci: update Jenkins plugins │
-│ hetzci-dbg       │ 95.216.200.85 │ no             │ bccecd160df0-dirty │            │                                      │
-│ uae-azureci-prod │ 74.162.68.205 │ yes            │ 4966d195a6a1       │ 2026-08-06 │ hosts/hetzci: update Jenkins plugins │
-│ testagent-dbg    │ 172.18.16.26  │ (unknown)      │ (unknown)          │            │                                      │
-╘══════════════════╧═══════════════╧════════════════╧════════════════════╧════════════╧══════════════════════════════════════╛
+╒══════════════════╤════════════════╤═══════════╤═══════════════════╤══════════════════╤════════════╤══════════════════════════════════════╕
+│ alias            │ host address   │ needs     │ kernel            │ revision (rev)   │ rev date   │ rev subject                          │
+│                  │                │ reboot    │                   │                  │            │                                      │
+╞══════════════════╪════════════════╪═══════════╪═══════════════════╪══════════════════╪════════════╪══════════════════════════════════════╡
+│ ghaf-auth        │ 37.27.190.109  │ no        │ 6.12.78           │ 4966d195a6a1     │ 2026-08-06 │ hosts/hetzci: update Jenkins plugins │
+│ uae-azureci-prod │ 74.162.68.205  │ yes       │ 6.12.78           │ 4966d195a6a1     │ 2026-08-06 │ hosts/hetzci: update Jenkins plugins │
+│ hetzci-dbg       │ 95.216.200.85  │ yes       │ 6.12.78 → 6.12.79 │ bccecd16-dirty   │            │                                      │
+│ testagent-dbg    │ 172.18.16.26   │ (unknown) │ (unknown)         │ (unknown)        │            │                                      │
+╘══════════════════╧════════════════╧═══════════╧═══════════════════╧══════════════════╧════════════╧══════════════════════════════════════╛
+Kernel: running version; → next boot when different.
 ```
 
-Revision or needs-reboot value '`(unknown)`' indicates running the remote probe failed.
-This may happen, for instance, if you don't have access to the given host on the current network.
+An `(unknown)` value means the corresponding information could not be read. If the remote probe fails entirely, revision, reboot state and both kernel versions are unknown. This may happen, for instance, if you don't have access to the given host on the current network.
