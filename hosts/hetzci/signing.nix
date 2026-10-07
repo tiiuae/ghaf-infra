@@ -65,11 +65,11 @@ in
         keys = {
           provenance = [
             "pkcs11:token=NetHSM;object=GhafInfraSignProv-${config.services.ghaf-jenkins.envType}"
-            "pkcs11:token=YubiHSM;object=GhafInfraSignProv"
+            "pkcs11:token=YubiHSM;object=GhafInfraSignProv-${config.services.ghaf-jenkins.envType}"
           ];
           image = [
             "pkcs11:token=NetHSM;object=GhafInfraSignECP256-${config.services.ghaf-jenkins.envType}"
-            "pkcs11:token=YubiHSM;object=GhafInfraSignECP256"
+            "pkcs11:token=YubiHSM;object=GhafInfraSignECP256-${config.services.ghaf-jenkins.envType}"
           ];
           uefi = [
             # "pkcs11:token=NetHSM;object=uefi-ghaf-db"

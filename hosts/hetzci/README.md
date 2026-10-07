@@ -85,12 +85,14 @@ services.ghaf-jenkins.signing = {
 
 The caller must make the PIN and proxy PSK files readable by `jenkins` and
 keep their contents out of the Nix store. The module exposes the selected
-library as `JENKINS_PKCS11_MODULE` and an ordered, purpose-keyed JSON map of
-key URIs via `JENKINS_SIGNING_KEYS_FILE`. Proxy endpoints are published via
+library as `JENKINS_PKCS11_MODULE`, the PIN file as `JENKINS_SIGNING_PIN_FILE`,
+and an ordered, purpose-keyed JSON map of key URIs via
+`JENKINS_SIGNING_KEYS_FILE`. Proxy endpoints are published via
 `JENKINS_PKCS11_ENDPOINTS_FILE`. The pipeline calls `select-pkcs11-node PURPOSE`
 with `provenance`, `image`, or `uefi`. The selector tries each configured key URI
-in order, trying all endpoints in their configured order before moving to the
-next key. It returns the first working URI, socket, and region as JSON.
+in order, trying all proxy endpoints in their configured order before moving to
+the next key. With a direct PKCS#11 library, it probes each key once without
+proxy endpoints. It returns the first working URI, socket, and region as JSON.
 The selector is executed, not sourced; token and region overrides are no longer
 supported. The first configured endpoint is also the default proxy socket.
 Set `signing.uefi.certificateFile` to the public certificate

@@ -30,10 +30,10 @@ with default `tcp_syn_retries` and `tcp_syn_linear_timeouts`) plus a short
 margin for TLS and key lookup. It is a recovery budget, not a guarantee.
 
 Each signing step re-runs selection under the controller-wide `signing` lock.
-With the default two tokens and two regions, four probes that reach the timeout
-take about five minutes before selection fails, and queued signing steps can
-accumulate these waits. The timeout bounds endpoint selection, not the signing
-operation itself.
+With two configured key URIs and two proxy endpoints, four probes that reach
+the timeout take about five minutes before selection fails, and queued signing
+steps can accumulate these waits. The timeout bounds endpoint selection, not
+the signing operation itself.
 
 The HSM handles **SLSA signing** (supply chain integrity for disk images and
 provenance) and **UEFI Secure Boot signing** (EFI binary authentication on

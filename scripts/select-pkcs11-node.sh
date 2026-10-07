@@ -15,12 +15,22 @@ fi
 keys=$(jq -er --arg purpose "$1" '
   .[$purpose] | if length > 0 then .[] else error("no keys for signing purpose") end
 ' "$JENKINS_SIGNING_KEYS_FILE")
-endpoints=$(jq -er '
-  if length > 0 then .[] | [.name, .socket] | @tsv
-  else error("no proxy endpoints") end
-' "$JENKINS_PKCS11_ENDPOINTS_FILE")
+if [[ -n ${JENKINS_PKCS11_ENDPOINTS_FILE:-} ]]; then
+  endpoints=$(jq -er '
+    if length > 0 then .[] | [.name, .socket] | @tsv
+    else error("no proxy endpoints") end
+  ' "$JENKINS_PKCS11_ENDPOINTS_FILE")
+else
+  endpoints=$'local\t'
+fi
 
-YUBIHSM_PIN="${YUBIHSM_PIN:-$(cat /run/secrets/yubihsm-pin 2>/dev/null || true)}"
+if [[ -n ${YUBIHSM_PIN:-} ]]; then
+  signing_pin=$YUBIHSM_PIN
+elif [[ -n ${JENKINS_SIGNING_PIN_FILE:-} ]]; then
+  signing_pin=$(<"$JENKINS_SIGNING_PIN_FILE")
+else
+  signing_pin=
+fi
 # Allow time for Nebula tunnels to recover while bounding how long an
 # unreachable proxy delays selection.
 SOCKET_TIMEOUT="${SOCKET_TIMEOUT:-75s}"
@@ -28,7 +38,7 @@ SOCKET_TIMEOUT="${SOCKET_TIMEOUT:-75s}"
 while IFS= read -r uri; do
   while IFS=$'\t' read -r region socket; do
     echo "[>] Checking $uri on $socket ($region)" >&2
-    if GNUTLS_PIN="$YUBIHSM_PIN" \
+    if GNUTLS_PIN="$signing_pin" \
       PKCS11_PROXY_SOCKET="$socket" \
       timeout "$SOCKET_TIMEOUT" \
       p11tool \
