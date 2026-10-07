@@ -65,7 +65,8 @@ Build results are pushed to three Cachix binary caches:
   The push service does not check PR authorship.
 - **[`ghaf-dbg`](https://app.cachix.org/organization/tiiuae/cache/ghaf-dbg)**: populated by the debug controller/builders and consumed by those
   hosts, keeping dbg-published results isolated from the main development
-  cache.
+  cache. The dbg builders also substitute from `ghaf-dev`, so `ghaf-dbg`
+  holds mostly debug-specific results and can be cleared cheaply.
 - **[`ghaf-release`](https://app.cachix.org/organization/tiiuae/cache/ghaf-release)**: populated exclusively by the release environment. The
   ephemeral release controller and builders pull earlier build results from this
   cache so that only changed derivations need to be rebuilt.
@@ -81,8 +82,8 @@ device, effectively acting as a lock for each piece of hardware.
 |---|---|---|
 | `testagent-dbg` | dbg | Orin NX |
 | `testagent-dev` | dev | Orin AGX, Orin NX, Orin AGX-64, Lenovo X1, Darter Pro |
-| `testagent-prod` | prod | Lenovo X1, Darter Pro |
-| `testagent2-prod` | prod | (secondary prod agent) |
+| `testagent-prod` | prod | Lenovo X1, Darter Pro, plus a Secure Boot Lenovo X1 and Darter Pro |
+| `testagent2-prod` | prod | Orin AGX, Orin NX, Secure Boot Orin AGX-64 |
 | `testagent-release` | release | Orin AGX, Orin NX, Lenovo X1, Darter Pro |
 
 Each agent also runs:
@@ -139,7 +140,9 @@ signing operations without direct access to the HSM.
 
 Each gateway runs a `pkcs11-proxy` daemon on a TLS port reachable from the
 Nebula network. Requests are encrypted with a host-specific key from sops
-secrets.
+secrets. Each gateway also has a locally attached YubiHSM 2 as a second
+token. Jenkins picks the first healthy token and gateway for each signing
+step, so signing keeps working if one HSM or site is unavailable.
 
 ### UAE Site
 
@@ -164,14 +167,19 @@ Changes to the Ghaf repository trigger two parallel build paths:
 ### Jenkins Pipeline
 
 1. **Trigger**: a push or PR to the [Ghaf](https://github.com/tiiuae/ghaf)
-   repo sends a GitHub webhook to the **prod** Jenkins controller.
+   repo sends a GitHub webhook to the **prod** Jenkins controller. Jenkins
+   fetches and verifies the commit's Source VSA from GHCR; the
+   `ghaf-release-candidate` pipeline fails without one, other pipelines
+   continue without it.
 2. **Build**: Jenkins dispatches Nix builds to the shared prod/dev builders
    (`hetz86-1`, `hetzarm`). [sbomnix](https://github.com/tiiuae/sbomnix)
    generates SBOMs and SLSA provenance on the controller, and build
-   artifacts are signed via the [NetHSM](#nethsm-gateways).
-3. **Test**: built images are deployed to on-prem test agents over the Nebula
-   overlay. Each agent houses physical hardware devices and runs one Jenkins
-   agent service per test device.
+   artifacts are signed via the [NetHSM](#nethsm-gateways). Images are then
+   published to the environment's OCI registry (`registry.vedenemo.dev` for
+   the Hetzner controllers).
+3. **Test**: hardware tests fetch the published images and run them on
+   on-prem test agents over the Nebula overlay. Each agent houses physical
+   hardware devices and runs one Jenkins agent service per test device.
 4. **Results**: test results flow back to Jenkins and build status is
    reported on the GitHub PR.
 
@@ -182,10 +190,12 @@ its own dedicated builders and test agents, and is the only environment
 authorized to push to the `ghaf-release` binary cache. Because the cache
 persists across resets, release builds can reuse earlier results and only
 rebuild what has changed. The **dev** environment mirrors prod for CI and test
-development. The **dbg** controller and its dedicated builders only trust
-their own `ghaf-dbg` cache alongside `cache.nixos.org`, and only publish into
-`ghaf-dbg`. The `testagent-dbg` host currently still inherits the default
-`ghaf-dev` cache configuration.
+development. The **dbg** controller trusts only its own `ghaf-dbg` cache
+alongside `cache.nixos.org`. Its dedicated builders also substitute from
+`ghaf-dev`, and they publish only into `ghaf-dbg`. The `testagent-dbg` host
+currently still inherits the default `ghaf-dev` cache configuration. The dbg
+controller and builders also use [baseline reset](./baseline-reset.md), but
+are updated with a normal deploy and reboot rather than `inv install-release`.
 
 Normal releases reuse the existing ci-release disk layout. Reinstallation is
 reserved for initial provisioning or disk layout changes.
@@ -209,9 +219,24 @@ access to Jenkins.
 
 During builds, Jenkins stores artifacts (disk images, SLSA provenance,
 signatures, test results) locally under `/var/lib/jenkins/artifacts/` on the
-controller. For releases, the `ghaf-release-publish` pipeline verifies all
-signatures, packages the artifacts into tarballs, and uploads them to Hetzner
-Object Storage (an S3-compatible service, bucket `ghaf-artifacts`) using
+controller. Image targets are also published to the OCI registry as
+`ghaf/<pipeline>/<target>` (for example
+`ghaf/release-candidate/x86_64-linux.intel-laptop-debug`), tagged with an
+immutable `<env>-<timestamp>-<commit>` tag and a mutable `<env>-latest` tag.
+Test results and the release-policy attestation are attached as OCI
+referrers. To download an artifact and its referrers, run
+`nix run .#ghaf-fetch -- <reference>`.
+
+For releases, the `ghaf-release-publish` pipeline archives the artifacts from
+the controller's artifact directory or, when `OCI_TAG` is set, from the
+registry. Either way, the local artifact directory (`ARTIFACTS_URL`) must
+still exist: the pipeline checks it and reads it for OTA pinning. On
+ci-release, baseline reset discards that directory on reboot, so publish a
+release candidate before the controller reboots. Archival verifies all
+signatures and requires the signing keys of the environment it runs in, so
+artifacts archived from ci-release must also have been built there. The
+artifacts are then packaged into tarballs and uploaded to Hetzner Object
+Storage (an S3-compatible service, bucket `ghaf-artifacts`) using
 minio-client. The [ghaf-archive](https://github.com/tiiuae/ghaf-archive) web
 application provides a browsable frontend to the archived releases.
 
@@ -287,7 +312,7 @@ addresses within the overlay.
 
 Hosts with Nebula addresses are listed under `nebula_ip` in
 `hosts/machines.nix`: the Hetzner Jenkins controllers (`hetzci-prod`,
-`hetzci-dev`, `hetzci-dbg`, `hetzci-release`), the UAE Azure controllers
+`hetzci-dev`, `hetzci-dbg`, `hetzci-release`), the UAE Azure controller
 (`uae-azureci-prod`), the test agents (`testagent-dbg`,
 `testagent-dev`, `testagent-prod`, `testagent2-prod`, `testagent-release`),
 all three NetHSM gateways, `ghaf-monitoring`, and `ghaf-lighthouse`. The UAE

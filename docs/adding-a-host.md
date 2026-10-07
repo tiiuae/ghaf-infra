@@ -57,7 +57,10 @@ service modules the host needs, and user modules:
 
 The `hetzner-cloud` module selects GRUB for legacy BIOS and supplies the
 QEMU guest and network defaults. The disk layout below includes the `EF02`
-partition needed by GRUB. The `common` module imports sops-nix.
+partition needed by GRUB. For servers that boot with UEFI, such as Hetzner
+Arm cloud servers, set `virtualisation.hetzner.withEfiSupport = true` to use
+systemd-boot instead (see [`hosts/ghaf-registry/`](../hosts/ghaf-registry/)).
+The `common` module imports sops-nix.
 
 The `team-devenv` import provides admin users with SSH keys and sudo access.
 Use the appropriate user or team module for the new host; `openssh` disables

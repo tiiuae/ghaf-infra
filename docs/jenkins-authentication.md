@@ -20,10 +20,20 @@ The Jenkins authentication setup relies on a few pieces working together:
 - [Oauth2 Proxy](https://oauth2-proxy.github.io/oauth2-proxy/) on the
   controller, requests to Jenkins are proxied through here with caddy.
   Configuration needs to include a client secret that matches the client
-  configured in ghaf-auth.
+  configured in ghaf-auth. The proxy and Caddy are enabled with
+  `services.ghaf-jenkins.auth` in the [Jenkins module](../modules/jenkins/).
 - The Jenkins controller itself, accessible only through the proxy.
 
 ![diagram](./auth.png)
+
+## Authorization
+
+Jenkins trusts the user and group headers set by OAuth2 Proxy and maps OIDC
+groups to Jenkins permissions through `services.ghaf-jenkins.auth.groups`.
+The shared mapping in [`hosts/hetzci/common.nix`](../hosts/hetzci/common.nix)
+gives all authenticated users read access, `tiiuae:devenv-fi` members
+administrator access, and `tiiuae:ci-dev-admins` members permission to build,
+configure, and replay jobs.
 
 ## Generating secrets
 
