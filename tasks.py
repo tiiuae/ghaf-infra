@@ -1207,30 +1207,41 @@ def _git_revision_info(revisions: Iterable[str] | None = None) -> dict[str, list
     return git_info
 
 
-def _read_deployed_revision(target_alias: str) -> tuple[str, str, str]:
-    """Read the currently deployed revision and reboot state from one target host."""
+def _read_deployed_revision(target_alias: str) -> tuple[str, str, str, str, str]:
+    """Read the deployed revision, reboot state and kernel versions from one host."""
     host = _get_deploy_host(target_alias)
     command = """
 revision="$(nixos-version --configuration-revision 2>/dev/null || true)"
 [ -n "$revision" ] || revision="(unknown)"
 printf '%s\\n' "$revision"
 
-booted="$(readlink \
+# Pin the next boot profile so both probes read the same staged generation.
+next_system="$(readlink -f /nix/var/nix/profiles/system 2>/dev/null || true)"
+if [ -n "$next_system" ] && booted="$(readlink \
   /run/booted-system/initrd \
   /run/booted-system/kernel \
   /run/booted-system/kernel-modules 2>/dev/null)" &&
-current="$(readlink \
-  /run/current-system/initrd \
-  /run/current-system/kernel \
-  /run/current-system/kernel-modules 2>/dev/null)" || {
-  printf '%s\\n' "(unknown)"
-  exit 0
-}
-
-if [ "$booted" = "$current" ]; then
-  printf '%s\\n' "no"
+next_boot="$(readlink \
+  "$next_system/initrd" \
+  "$next_system/kernel" \
+  "$next_system/kernel-modules" 2>/dev/null)"; then
+  if [ "$booted" = "$next_boot" ]; then
+    printf '%s\\n' "no"
+  else
+    printf '%s\\n' "yes"
+  fi
 else
-  printf '%s\\n' "yes"
+  printf '%s\\n' "(unknown)"
+fi
+
+running_kernel="$(uname -r 2>/dev/null || true)"
+printf '%s\\n' "${running_kernel:-(unknown)}"
+
+set -- "$next_system"/kernel-modules/lib/modules/*
+if [ -n "$next_system" ] && [ "$#" -eq 1 ] && [ -d "$1" ]; then
+  printf '%s\\n' "${1##*/}"
+else
+  printf '%s\\n' "(unknown)"
 fi
 """.strip()
     try:
@@ -1241,18 +1252,20 @@ fi
             suppress_stderr=True,
         ).splitlines()
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        return target_alias, "(unknown)", "(unknown)"
+        return target_alias, "(unknown)", "(unknown)", "(unknown)", "(unknown)"
 
     revision = lines[0] if lines else "(unknown)"
     reboot_needed = lines[1] if len(lines) > 1 else "(unknown)"
     if reboot_needed not in {"yes", "no", "(unknown)"}:
         reboot_needed = "(unknown)"
-    return target_alias, revision, reboot_needed
+    running_kernel = lines[2] if len(lines) > 2 and lines[2] else "(unknown)"
+    next_kernel = lines[3] if len(lines) > 3 and lines[3] else "(unknown)"
+    return target_alias, revision, reboot_needed, running_kernel, next_kernel
 
 
 def _read_deployed_revisions(
     target_aliases: Iterable[str],
-) -> list[tuple[str, str, str]]:
+) -> list[tuple[str, str, str, str, str]]:
     """Read deployed revision state from multiple target hosts."""
     aliases = list(target_aliases)
     if not aliases:
@@ -1274,7 +1287,7 @@ def _format_revision_link(rev: str) -> str:
     if rev == "(unknown)":
         return rev
     if rev.endswith("-dirty"):
-        return f"{rev.removesuffix('-dirty')[:12]}-dirty"
+        return f"{rev.removesuffix('-dirty')[:8]}-dirty"
 
     # Format as terminal link: https://github.com/Alhadis/OSC8-Adoption/
     url = f"https://github.com/tiiuae/ghaf-infra/commit/{rev}"
@@ -1666,8 +1679,8 @@ def reboot(
     Reboot host identified as `alias`, selected aliases, or hosts needing reboot.
 
     Example usage:
-    inv reboot hetzci-release
-    inv reboot --aliases hetzci-release,hetzci-dbg
+    inv reboot hetzci-dbg
+    inv reboot --aliases hetzci-dbg,hetzci-dev
     inv reboot --needs-reboot --yes
     """
     if needs_reboot:
@@ -1675,10 +1688,18 @@ def reboot(
             _log_error("Use --needs-reboot, an alias, or --aliases, not a mix")
             sys.exit(1)
 
+        targets = TARGETS.all()
+        skipped_aliases = [alias for alias in targets if alias in RELEASE_HOST_ALIASES]
+        if skipped_aliases:
+            _log_status_info(
+                "Skipping release hosts in --needs-reboot: "
+                f"{', '.join(skipped_aliases)}; use 'inv install-release'"
+            )
+
         target_aliases = [
             target_alias
-            for target_alias, _revision, reboot_needed in _read_deployed_revisions(
-                TARGETS.all()
+            for target_alias, _, reboot_needed, *_ in _read_deployed_revisions(
+                alias for alias in targets if alias not in RELEASE_HOST_ALIASES
             )
             if reboot_needed == "yes"
         ]
@@ -1810,7 +1831,7 @@ def _reboot_host(alias: str, host: DeployHost | None = None) -> bool:
 @task
 def print_revision(_c: Context, alias: str = "") -> None:
     """
-    Print the currently deployed git revision on the 'alias' host.
+    Print the deployed git revision, reboot state and kernels on the 'alias' host.
     If 'alias' is not specified, prints deployed revisions on all TARGETS.
 
     Example usage:
@@ -1822,24 +1843,39 @@ def print_revision(_c: Context, alias: str = "") -> None:
 
     git_info = _git_revision_info(
         rev
-        for _, rev, _ in deployed_revisions
+        for _, rev, *_state in deployed_revisions
         if rev != "(unknown)" and "-dirty" not in rev
     )
     table_rows = []
 
-    for target_alias, rev, reboot_needed in deployed_revisions:
+    for (
+        target_alias,
+        rev,
+        reboot_needed,
+        running_kernel,
+        next_kernel,
+    ) in deployed_revisions:
+        kernel = running_kernel
+        if next_kernel == "(unknown)" and running_kernel != "(unknown)":
+            kernel += " (next: unknown)"
+        elif next_kernel != running_kernel:
+            kernel += f" → {next_kernel}"
+        subject = git_info.get(rev, ["", "", ""])[2]
+        if len(subject) > 40:
+            subject = subject[:39] + "…"
         table_rows.append(
             [
                 target_alias,
                 targets[target_alias].hostname,
                 reboot_needed,
+                kernel,
                 _format_revision_link(rev),
                 git_info.get(rev, ["", "", ""])[1],
-                git_info.get(rev, ["", "", ""])[2],
+                subject,
             ]
         )
 
-    table_rows.sort(reverse=True, key=lambda row: row[4])  # sort by git_date
+    table_rows.sort(reverse=True, key=lambda row: row[5])  # sort by git_date
     _print_output(
         "\nCurrently deployed revision(s):\n\n"
         + tabulate(
@@ -1847,13 +1883,15 @@ def print_revision(_c: Context, alias: str = "") -> None:
             headers=[
                 "alias",
                 "host address",
-                "needs reboot",
+                "needs\nreboot",
+                "kernel",
                 "revision (rev)",
                 "rev date",
                 "rev subject",
             ],
             tablefmt="fancy_outline",
         )
+        + "\nKernel: running version; → next boot when different."
     )
 
 

@@ -109,25 +109,24 @@ def test_remote_stdout_passes_requested_timeout_and_stderr_pipe() -> None:
     ]
 
 
-def test_read_deployed_revision_reports_reboot_state(
+def test_read_deployed_revision_reports_reboot_state_and_kernels(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    calls: list[dict[str, object]] = []
-
     def fake_run(**kwargs: object) -> SimpleNamespace:
-        calls.append(kwargs)
-        return SimpleNamespace(stdout="abc123\nyes\n")
+        assert "/nix/var/nix/profiles/system" in str(kwargs["cmd"])
+        return SimpleNamespace(stdout="abc123\nyes\n6.12.78\n6.12.79\n")
 
     monkeypatch.setattr(
         tasks, "_get_deploy_host", lambda _alias: SimpleNamespace(run=fake_run)
     )
 
-    assert tasks._read_deployed_revision("alpha") == ("alpha", "abc123", "yes")
-    command = calls[0]["cmd"]
-    assert isinstance(command, str)
-    assert "nixos-version --configuration-revision" in command
-    assert "/run/booted-system/kernel" in command
-    assert "/run/current-system/kernel-modules" in command
+    assert tasks._read_deployed_revision("alpha") == (
+        "alpha",
+        "abc123",
+        "yes",
+        "6.12.78",
+        "6.12.79",
+    )
 
 
 def test_assert_stateversion_exits_when_confirmation_is_rejected(
@@ -910,87 +909,58 @@ def test_alias_list_labels_target_address(
     assert "192.0.2.10" in output
 
 
-def test_print_revision_collects_remote_hosts_before_git_lookup(
+def test_print_revision_shows_kernel_versions(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    class FakeExecutor:
-        """Minimal executor stub for deterministic tests."""
-
-        def __init__(self, *, max_workers: int) -> None:
-            self.max_workers = max_workers
-
-        def __enter__(self) -> "FakeExecutor":
-            return self
-
-        def __exit__(self, *_args: object) -> None:
-            return None
-
-        def map(self, func: object, aliases: list[str]) -> list[tuple[str, str, str]]:
-            assert self.max_workers == len(aliases)
-            assert func is tasks._read_deployed_revision
-            assert logging.getLogger("deploykit.command").disabled
-            return [func(alias) for alias in aliases]
-
     host_states = {
-        "alpha": ("alpha.example", "abc1234567890abc", "no"),
-        "beta": ("beta.example", "abc1234567890abc", "yes"),
-        "gamma": ("gamma.example", "dirtyrev123456789-dirty", "no"),
-        "delta": ("delta.example", "(unknown)", "(unknown)"),
+        "alpha": ("alpha", "abc123", "no", "6.12.78", "6.12.78"),
+        "beta": ("beta", "def456", "yes", "6.12.78", "6.12.79"),
     }
-
     monkeypatch.setattr(
         tasks,
         "TARGETS",
         SimpleNamespace(
             all=lambda: OrderedDict(
-                (alias, SimpleNamespace(hostname=state[0]))
-                for alias, state in host_states.items()
+                (alias, SimpleNamespace(hostname=f"{alias}.example"))
+                for alias in host_states
             )
         ),
     )
-    monkeypatch.setattr(
-        tasks,
-        "_read_deployed_revision",
-        lambda alias: (alias, *host_states[alias][1:]),
-    )
-    monkeypatch.setattr(
-        tasks,
-        "_git_revision_info",
-        lambda selected: (
-            {"abc1234567890abc": ["abc1234567890abc", "2026-01-01", "initial commit"]}
-            if list(selected) == ["abc1234567890abc", "abc1234567890abc"]
-            else {}
-        ),
-    )
-    monkeypatch.setattr(tasks, "ThreadPoolExecutor", FakeExecutor)
+    monkeypatch.setattr(tasks, "_read_deployed_revision", host_states.__getitem__)
 
-    tasks.print_revision.body(None, alias="")
-    assert not logging.getLogger("deploykit.command").disabled
+    def fake_git_info(selected: object) -> dict:
+        assert list(selected) == ["abc123", "def456"]
+        return {}
 
-    output = capsys.readouterr().out
-    assert "│" in output
-    expected = (
-        "alpha|beta.example|host address|needs reboot|yes|no|abc123456789|"
-        "dirtyrev1234-dirty|2026-01-01|initial commit"
-    )
-    assert all(value in output for value in expected.split("|"))
+    monkeypatch.setattr(tasks, "_git_revision_info", fake_git_info)
+
+    tasks.print_revision.body(None)
+
+    assert "6.12.78 → 6.12.79" in capsys.readouterr().out
 
 
 def test_reboot_needs_reboot_only_reboots_matching_hosts(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     rebooted: list[str] = []
-    targets = OrderedDict((alias, object()) for alias in ["alpha", "beta", "gamma"])
+    targets = OrderedDict(
+        (alias, object())
+        for alias in ["alpha", "beta", "gamma", *tasks.RELEASE_HOST_ALIASES]
+    )
+
+    def fake_read_revisions(aliases: object) -> list[tuple[str, str, str, str, str]]:
+        assert list(aliases) == ["alpha", "beta", "gamma"]
+        return [
+            ("alpha", "abc123", "yes", "6.12.78", "6.12.79"),
+            ("beta", "abc123", "no", "6.12.78", "6.12.78"),
+            ("gamma", "(unknown)", "(unknown)", "(unknown)", "(unknown)"),
+        ]
 
     monkeypatch.setattr(tasks, "TARGETS", SimpleNamespace(all=lambda: targets))
     monkeypatch.setattr(
         tasks,
         "_read_deployed_revisions",
-        lambda _aliases: [
-            ("alpha", "abc123", "yes"),
-            ("beta", "abc123", "no"),
-            ("gamma", "(unknown)", "(unknown)"),
-        ],
+        fake_read_revisions,
     )
     monkeypatch.setattr(tasks, "_confirm", lambda _prompt, yes: yes)
     monkeypatch.setattr(
@@ -1013,8 +983,8 @@ def test_reboot_needs_reboot_continues_and_exits_on_failure(
         tasks,
         "_read_deployed_revisions",
         lambda _aliases: [
-            ("alpha", "abc123", "yes"),
-            ("beta", "abc123", "yes"),
+            ("alpha", "abc123", "yes", "6.12.78", "6.12.79"),
+            ("beta", "abc123", "yes", "6.12.78", "6.12.78"),
         ],
     )
     monkeypatch.setattr(tasks, "_confirm", lambda _prompt, yes: yes)
@@ -1045,7 +1015,7 @@ def test_reboot_cli_accepts_positional_alias_and_flag_modes(
     monkeypatch.setattr(
         tasks,
         "_read_deployed_revisions",
-        lambda _aliases: [("gamma", "abc123", "yes")],
+        lambda _aliases: [("gamma", "abc123", "yes", "6.12.78", "6.12.79")],
     )
     monkeypatch.setattr(tasks, "_confirm", lambda _prompt, yes: yes)
     monkeypatch.setattr(
