@@ -109,7 +109,7 @@ repository root and run through the `nix fmt` hooks.
 - **`prod`**: production CI for ghaf development. Web UI: https://ci-prod.vedenemo.dev/
 - **`release`**: release CI for ghaf release builds. Web UI: https://ci-release.vedenemo.dev/
 - **`dev`**: development CI for ghaf-infra and hw-test development. Web UI: https://ci-dev.vedenemo.dev/
-- **`dbg`**: debug CI environment.
+- **`dbg`**: debug CI environment. Web UI: https://ci-dbg.vedenemo.dev/
 - **`vm`**: local QEMU VM for testing changes before deploying. Modified for local use: simplified Caddy config, no Jenkins authentication, auto-login as root.
 
 ### Jenkins configuration
@@ -283,7 +283,7 @@ Pipeline to help Ghaf HW test development.
 Runs on push to Ghaf main. Triggered by a GitHub webhook sent to `prod` environment.
 
 #### ghaf-manual
-Allows manually triggering a set of Ghaf builds and optionally running a specified set of hw-tests against the builds.
+Allows manually triggering a set of Ghaf builds, including an optional custom flake target, and optionally running a specified set of hw-tests against the builds. A custom `-flash-script` or `-flash-qspi` target can also be run against an Orin AGX after the build.
 
 #### ghaf-nightly
 Triggers the main nightly builds and tests on schedule.

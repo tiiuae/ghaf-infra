@@ -180,7 +180,7 @@ The output looks like this, with timestamps and hosts depending on the current f
 ```text
 ❯ inv reboot --needs-reboot
 2026-08-12 10:15:00 | INFO     | Skipping release hosts in --needs-reboot: hetz86-rel-2, hetzarm-rel-1, hetzci-release; use 'inv install-release'
-2026-08-12 10:15:00 | INFO     | Probing 31 host(s) (up to 5s each)
+2026-08-12 10:15:00 | INFO     | Probing 30 host(s) (up to 5s each)
 Reboot 1 host(s) needing reboot: uae-azureci-prod? [y/N] y
 2026-08-12 10:16:01 | INFO     | [uae-azureci-prod] reboot: waiting for 74.162.68.205 to shut down
 2026-08-12 10:16:19 | INFO     | [uae-azureci-prod] reboot: waiting for 74.162.68.205 to start

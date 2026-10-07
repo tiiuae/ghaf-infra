@@ -11,7 +11,7 @@ This repository declaratively defines the NixOS configuration for the [Ghaf](htt
 
 The infrastructure includes:
 
-- **Jenkins CI environments** (prod, dev, dbg, release) hosted at Hetzner
+- **Jenkins CI environments** (prod, dev, dbg, release) hosted at Hetzner, plus a [UAE prod environment](./docs/architecture.md#uae-site)
 - **Multi-architecture remote builders** for x86_64 and aarch64
 - **On-prem test agents** with connected hardware devices
 - **Supporting services**: monitoring, logging, authentication, [Nebula](./docs/nebula.md) overlay network, [NetHSM](./docs/nethsm.md) hardware signing, and an OCI container registry
@@ -114,7 +114,9 @@ ghaf-infra
 
 **Note**: Hosts may be reinstalled at any time. Do not store important
 data outside the configurations in this repository, including in `/home`
-directories on the hosts.
+directories on the hosts. The ci-dbg and ci-release controllers and builders
+use [baseline reset](./docs/baseline-reset.md) and discard local changes on
+every reboot.
 
 ## License
 
