@@ -50,6 +50,9 @@ let
         ''
       );
     }
+    // lib.optionalAttrs (signing.pinFile != null) {
+      JENKINS_SIGNING_PIN_FILE = signing.pinFile;
+    }
     // lib.optionalAttrs (signing.uefi.certificateFile != null) {
       JENKINS_UEFI_CERTIFICATE_FILE = signing.uefi.certificateFile;
     }
