@@ -162,6 +162,9 @@ and connects back via the Nebula overlay.
 
 ## CI/CD Pipeline Flow
 
+For a visual, step-by-step overview of this flow, see the
+[CI map](https://tiiuae.github.io/ghaf-infra/).
+
 Changes to the Ghaf repository trigger two parallel build paths:
 
 ### Jenkins Pipeline
@@ -292,6 +295,9 @@ The ghaf-infra repository has its own GitHub Actions workflows
   robot-framework flake input.
 - `update-flake-inputs.yml`: weekly automated PR to update all flake inputs
   and Jenkins plugin manifests.
+- `pages.yml`: publishes the interactive
+  [CI map](https://tiiuae.github.io/ghaf-infra/) (`docs/ci-map.html`) to
+  GitHub Pages when it changes on `main`.
 - Dependabot (`.github/dependabot.yml`) keeps GitHub Actions and Go module
   dependencies up to date.
 

@@ -1,0 +1,1731 @@
+<!DOCTYPE html>
+<!--
+SPDX-FileCopyrightText: 2026 TII (SSRC) and the Ghaf contributors
+SPDX-License-Identifier: CC-BY-SA-4.0
+-->
+<!--
+ghaf-infra CI map, published to https://tiiuae.github.io/ghaf-infra/ by
+.github/workflows/pages.yml whenever this file changes on main.
+
+This page is hand-written and self-contained: no build step, no generator.
+Its look follows archify's swimlane diagrams, but archify is not needed to
+edit it. To change the content, edit the data tables at the top of the script:
+
+  LANES, NODES  lanes and boxes. Box text is per view in t.o / t.p / t.m / t.r
+                (overview, pre-merge, main, release; main falls back to p).
+                Keep box names within ~18 characters and the other two lines
+                within ~26; longer text is squeezed to fit.
+  EDGES         arrows, routed through node anchors (T/B/Lf/R) and the gutters
+                between lanes (G); labels are placed at lp.
+  ROUTES        the walks: each step lists the boxes and arrows it lights up.
+  ENVS, SUPPORT the Environments and Supporting services tables.
+  GLOSSARY      the Terms section.
+  Paths in `files` and `config` become links to this repository.
+
+Check the result in a browser at about 1280x800: every walk step's text
+should fit next to the map without scrolling, in both light and dark mode.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ghaf-infra CI map</title>
+<script>
+  // Resolve the theme before first paint.
+  (function () {
+    var theme = null;
+    try { theme = new URLSearchParams(location.search).get('theme'); } catch (_) {}
+    if (theme !== 'light' && theme !== 'dark') {
+      try { theme = localStorage.getItem('ghaf-ci-map-theme'); } catch (_) {}
+    }
+    if (theme !== 'light' && theme !== 'dark') {
+      theme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    }
+    document.documentElement.setAttribute('data-theme', theme);
+  })();
+</script>
+<style>
+  /* GitHub (Primer) colours on archify's swimlane layout. */
+  :root, :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --panel: #0d1117;
+    --panel-border: #30363d;
+    --lane-fill: #161b22;
+    --lane-stroke: #30363d;
+    --text: #e6edf3;
+    --text-muted: #9198a1;
+    --text-dim: #6e7681;
+    --text-faint: #8b949e;
+    --mask: #161b22;
+    --config-fill: rgba(121, 192, 255, 0.1);    --config: #79c0ff;
+    --pipeline-fill: rgba(63, 185, 80, 0.1);    --pipeline: #3fb950;
+    --store-fill: rgba(163, 113, 247, 0.1);     --store: #a371f7;
+    --build-fill: rgba(210, 153, 34, 0.1);      --build: #d29922;
+    --trust-fill: rgba(248, 81, 73, 0.1);       --trust: #f85149;
+    --event-fill: rgba(219, 109, 40, 0.1);      --event: #db6d28;
+    --external-fill: rgba(139, 148, 158, 0.1);  --external: #8b949e;
+    --arrow: #6e7681;
+    --accent: #58a6ff;
+    --btn-bg: #21262d;
+    --btn-hover: #30363d;
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --panel: #ffffff;
+    --panel-border: #d0d7de;
+    --lane-fill: #f6f8fa;
+    --lane-stroke: #d0d7de;
+    --text: #1f2328;
+    --text-muted: #59636e;
+    --text-dim: #818b98;
+    --text-faint: #656d76;
+    --mask: #f6f8fa;
+    --config-fill: rgba(5, 80, 174, 0.07);      --config: #0550ae;
+    --pipeline-fill: rgba(26, 127, 55, 0.07);   --pipeline: #1a7f37;
+    --store-fill: rgba(130, 80, 223, 0.07);     --store: #8250df;
+    --build-fill: rgba(154, 103, 0, 0.08);      --build: #9a6700;
+    --trust-fill: rgba(209, 36, 47, 0.06);      --trust: #d1242f;
+    --event-fill: rgba(188, 76, 0, 0.07);       --event: #bc4c00;
+    --external-fill: rgba(89, 99, 110, 0.07);   --external: #59636e;
+    --arrow: #8c959f;
+    --accent: #0969da;
+    --btn-bg: #f6f8fa;
+    --btn-hover: #eaeef2;
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); }
+  body {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 14px;
+    line-height: 1.55;
+    min-height: 100vh;
+  }
+  .page { max-width: 2200px; margin: 0 auto; padding: 0 1rem 2.5rem; }
+
+  /* Toolbar: title, routes, search, zoom. Sticky so it stays reachable. */
+  .toolbar {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; flex-wrap: wrap; gap: 0.5rem 0.9rem; align-items: center;
+    margin: 0 -1rem; padding: 0.55rem 1rem;
+    background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(4px);
+    border-bottom: 1px solid color-mix(in srgb, var(--panel-border) 55%, transparent);
+  }
+  .brand { display: flex; align-items: center; gap: 0.6rem; margin-right: 0.3rem; }
+  .mark {
+    flex: none; width: 10px; height: 10px;
+    border: 1px solid var(--config); border-radius: 1px;
+    box-shadow: inset 0 0 0 2px var(--bg);
+    transform: rotate(45deg);
+  }
+  h1 { font-size: 1.05rem; font-weight: 650; letter-spacing: -0.01em; white-space: nowrap; }
+  .group { display: inline-flex; align-items: center; gap: 0.35rem; }
+  .grow { flex: 1 1 14rem; }
+  #find {
+    font: inherit; font-size: 0.78rem; color: var(--text); background: var(--btn-bg);
+    border: 1px solid var(--panel-border); border-radius: 0.3rem; padding: 0.42rem 0.6rem; width: 100%; min-width: 10rem; max-width: 22rem;
+  }
+  #find::placeholder { color: var(--text-dim); }
+  #find-status { font-size: 0.72rem; color: var(--text-faint); min-width: 8ch; white-space: nowrap; }
+  .seg { display: inline-flex; border: 1px solid var(--panel-border); border-radius: 0.3rem; overflow: hidden; }
+  .seg button, .btn {
+    font: inherit; font-size: 0.78rem; color: var(--text-muted); background: var(--btn-bg);
+    border: 0; padding: 0.45rem 0.8rem; cursor: pointer;
+  }
+  .seg button + button { border-left: 1px solid var(--panel-border); }
+  .seg button:hover, .btn:hover { background: var(--btn-hover); color: var(--text); }
+  .seg button[aria-pressed="true"] { color: var(--bg); background: var(--config); font-weight: 600; }
+  .btn { border: 1px solid var(--panel-border); border-radius: 0.3rem; }
+  .btn:disabled { opacity: 0.4; cursor: default; }
+  .btn.primary { border-color: var(--accent); color: var(--text); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+  button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Stage: map and explanation side by side, sized to the window */
+  .stage {
+    display: grid; grid-template-columns: minmax(0, 1fr) clamp(320px, 30vw, 460px); gap: 0.9rem;
+    height: var(--stage-h, calc(100vh - var(--tb-h, 56px) - 1.4rem));
+    min-height: 440px; margin: 0.7rem 0;
+  }
+  .diagram-container {
+    position: relative; display: flex; min-height: 0; overflow: hidden;
+    border: 1px solid var(--panel-border); border-radius: 0.35rem;
+    background: var(--panel);
+    padding: 0.4rem;
+  }
+  #map {
+    display: block; flex: 1; width: 100%; height: 100%; min-width: 0; min-height: 0; font-family: inherit;
+    touch-action: pan-y; user-select: none; -webkit-user-select: none;
+  }
+  #map.zoomed { cursor: grab; touch-action: none; }
+  #map.dragging { cursor: grabbing; }
+  .side { overflow-y: auto; display: flex; flex-direction: column; min-height: 0; padding-bottom: 0; }
+  .side .nav {
+    position: sticky; bottom: 0; margin: auto -1.15rem 0; padding: 0.7rem 1.15rem 0.9rem;
+    display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: space-between;
+    background: var(--mask); border-top: 1px solid color-mix(in srgb, var(--panel-border) 50%, transparent);
+  }
+  .side .body { padding-bottom: 0.8rem; }
+  .side p, .side .callout p, .side .read-list { font-size: 0.8rem; line-height: 1.5; }
+  .side h3 { font-size: 1rem; }
+  .side .callout { margin: 0.3rem 0 0.6rem; }
+  .side .files li code { font-size: 0.7rem; overflow-wrap: anywhere; }
+
+  /* SVG */
+  .c-lane { fill: var(--lane-fill); stroke: var(--lane-stroke); stroke-dasharray: 7 3; }
+  .c-band { fill: color-mix(in srgb, var(--config-fill) 58%, transparent); stroke: var(--config); stroke-dasharray: 12 4 2 4; }
+  .lane-label { fill: var(--text-faint); font-size: 13px; font-weight: 600; letter-spacing: 0.02em; }
+  .band-label { fill: var(--config); font-size: 13px; font-weight: 600; letter-spacing: 0.02em; }
+  .lane-note { fill: var(--text-dim); font-size: 11.5px; }
+  .phase-line { stroke: var(--lane-stroke); stroke-width: 1.1; }
+  .phase-text { fill: var(--text-faint); font-size: 11.5px; font-weight: 600; letter-spacing: 0.12em; }
+  .mask { fill: var(--mask); }
+  .mask-panel { fill: var(--panel); }
+  .rail-text { fill: var(--config); font-size: 11px; font-weight: 600; letter-spacing: 0.16em; }
+
+  .node { cursor: pointer; transition: opacity 0.2s; }
+  svg.no-trans * { transition: none !important; }
+  .node .box { stroke-width: 1.5; }
+  .node .name { fill: var(--text); font-size: 16.5px; font-weight: 600; }
+  .node .sub { fill: var(--text-muted); font-size: 12px; }
+  .node .acc { font-size: 11.5px; }
+  .node .chip { fill: var(--mask); stroke: var(--k); stroke-width: 1; }
+  .node .sigil { fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+  .node:hover .box, .node:focus-visible .box { filter: drop-shadow(0 0 3px var(--config)); }
+  .node.selected .box { stroke-width: 2.4; filter: drop-shadow(0 0 4px var(--config)); }
+  .node:focus { outline: none; }
+  .nixos-tag rect { fill: var(--mask); stroke: var(--config); stroke-width: 0.8; }
+  .nixos-tag text { fill: var(--config); font-size: 8.5px; font-weight: 700; letter-spacing: 0.12em; }
+
+  .k-config   { --k: var(--config);   --kf: var(--config-fill); }
+  .k-pipeline { --k: var(--pipeline); --kf: var(--pipeline-fill); }
+  .k-store    { --k: var(--store);    --kf: var(--store-fill); }
+  .k-build    { --k: var(--build);    --kf: var(--build-fill); }
+  .k-trust    { --k: var(--trust);    --kf: var(--trust-fill); }
+  .k-event    { --k: var(--event);    --kf: var(--event-fill); }
+  .k-external { --k: var(--external); --kf: var(--external-fill); }
+  .k-flow     { --k: var(--arrow);    --kf: transparent; }
+  .node .box { fill: var(--kf); stroke: var(--k); }
+  .node .acc, .node .sigil { stroke: var(--k); }
+  .node .acc { fill: var(--k); stroke: none; }
+
+  .edge { transition: opacity 0.2s; }
+  .edge .line { fill: none; stroke: var(--k); stroke-width: 1.4; }
+  .edge.dashed .line { stroke-dasharray: 5 4; }
+  .edge .under { fill: none; stroke: var(--mask); stroke-width: 7; }
+  .elabel { transition: opacity 0.2s; }
+  .elabel text { font-size: 11.5px; fill: var(--text-muted); }
+  .elabel rect { fill: var(--mask); }
+  .arrowhead { fill: var(--k); }
+
+  .badge-step { cursor: pointer; }
+  .badge-step polygon { fill: var(--mask); stroke: var(--accent); stroke-width: 1.3; }
+  .badge-step text { fill: var(--accent); font-size: 11.5px; font-weight: 700; }
+  .badge-step.current polygon { fill: var(--accent); }
+  .badge-step.current text { fill: var(--mask); }
+
+  /* Route and step emphasis */
+  svg[data-route] .node[data-node]:not(.on-route) { opacity: 0.2; }
+  svg[data-route] .edge[data-edge]:not(.on-route) { opacity: 0.08; }
+  svg[data-route] .elabel[data-edge]:not(.on-route) { opacity: 0; }
+  svg[data-route] .edge.on-route .line { stroke-width: 1.8; }
+  svg[data-step] .node.on-route:not(.in-step) { opacity: 0.5; }
+  svg[data-step] .edge.on-route:not(.in-step) { opacity: 0.35; }
+  svg[data-step] .elabel.on-route:not(.in-step) text { opacity: 0.35; }
+  svg[data-step] .edge.in-step .line { stroke-width: 2.2; stroke-dasharray: 7 5; animation: flow 0.9s linear infinite; }
+  svg[data-step] .node.in-step .box { stroke-width: 2.2; }
+  svg[data-step] .elabel.in-step text { fill: var(--text); }
+  @keyframes flow { to { stroke-dashoffset: -12; } }
+
+  /* Search wins over route and step emphasis */
+  svg[data-search] .node[data-node]:not(.hit) { opacity: 0.13 !important; }
+  svg[data-search] .node[data-node].hit { opacity: 1 !important; }
+  svg[data-search] .node.hit .box { stroke-width: 2.6; filter: drop-shadow(0 0 5px var(--k)); }
+  svg[data-search] .edge[data-edge] { opacity: 0.1 !important; }
+  svg[data-search] .elabel[data-edge] text { opacity: 0.1; }
+  svg[data-search] .badge-step { opacity: 0.3; }
+
+  /* Legend: click a colour (or NIXOS) to light up only those boxes and arrows */
+  .legend-item { cursor: pointer; }
+  .legend-item .legend-hit { fill: transparent; }
+  .legend-item .swatch-box { fill: var(--kf); stroke: var(--k); stroke-width: 1.5; }
+  .legend-item .legend-text { fill: var(--text-muted); font-size: 11.5px; }
+  .legend-item:hover .legend-text, .legend-item.on .legend-text { fill: var(--text); }
+  .legend-item.on .legend-text { font-weight: 700; }
+  .legend-item:focus { outline: none; }
+  .legend-item:focus-visible .legend-hit { stroke: var(--accent); stroke-width: 1.5; }
+  svg[data-legend] .legend-item:not(.on) { opacity: 0.45; }
+  svg[data-legend] .node[data-node]:not(.lit) { opacity: 0.13 !important; }
+  svg[data-legend] .node[data-node].lit { opacity: 1 !important; }
+  svg[data-legend] .node.lit .box { stroke-width: 2.6; filter: drop-shadow(0 0 5px var(--k)); }
+  svg[data-legend] .edge[data-edge]:not(.lit) { opacity: 0.08 !important; }
+  svg[data-legend] .elabel[data-edge]:not(.lit) text { opacity: 0.1; }
+  svg[data-legend] .edge[data-edge].lit, svg[data-legend] .elabel[data-edge].lit { opacity: 1 !important; }
+  svg[data-legend] .badge-step { opacity: 0.3; }
+  .lane-nixos.lit rect { stroke-width: 1.6; filter: drop-shadow(0 0 4px var(--config)); }
+  @media (prefers-reduced-motion: reduce) {
+    svg[data-step] .edge.in-step .line { animation: none; }
+  }
+
+  /* Cards */
+  .card {
+    position: relative; border: 1px solid var(--panel-border); border-radius: 0.3rem;
+    background: var(--panel); padding: 1rem 1.15rem 1.1rem;
+  }
+  .card h2 { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); font-weight: 600; margin-bottom: 0.7rem; }
+  .card h3 { font-size: 1.05rem; font-weight: 650; margin: 0.15rem 0 0.35rem; }
+  .card p { font-size: 0.84rem; color: var(--text-muted); margin-bottom: 0.6rem; }
+  .card p strong { color: var(--text); font-weight: 600; }
+  .kicker { font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+  .mono-sub { font-size: 0.78rem; color: var(--text-faint); margin-bottom: 0.6rem; }
+  code { font-family: inherit; font-size: 0.92em; color: var(--text); background: color-mix(in srgb, var(--lane-fill) 80%, transparent); padding: 0 0.25em; border-radius: 2px; }
+  .callout { border-left: 2px solid var(--config); padding: 0.4rem 0.75rem; margin: 0.4rem 0 0.75rem; background: var(--config-fill); }
+  .callout .lbl { font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--config); display: block; margin-bottom: 0.15rem; }
+  .callout p { margin: 0; }
+  .route-note { border-left-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .route-note .lbl { color: var(--accent); }
+  .files { margin-top: 0.5rem; }
+  .files .lbl { font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); }
+  .files ul { list-style: none; margin-top: 0.3rem; display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .files li a, .envs .url a { text-decoration: none; }
+  .files li a:hover code { border-color: var(--accent); color: var(--text); }
+  .envs .url a code { background: transparent; padding: 0; font-size: inherit; color: var(--text-dim); }
+  .envs .url a:hover code { color: var(--accent); }
+  a.hostlink { color: inherit; text-decoration: underline dotted; text-underline-offset: 2px; }
+  a.hostlink:hover { color: var(--accent); }
+  .gloss-item .more { display: block; margin-top: 0.3rem; font-size: 0.74rem; color: var(--text-faint); }
+  .files li code { font-size: 0.74rem; color: var(--text-muted); border: 1px solid color-mix(in srgb, var(--panel-border) 60%, transparent); background: transparent; padding: 0.1rem 0.4rem; }
+
+  .steps { display: grid; gap: 0.1rem; }
+  .step-item {
+    display: grid; grid-template-columns: 1.9rem 1fr; gap: 0.55rem; align-items: start; width: 100%;
+    font: inherit; font-size: 0.82rem; text-align: left; color: var(--text-muted); background: none; border: 0;
+    padding: 0.38rem 0.45rem; border-radius: 0.2rem; cursor: pointer;
+  }
+  .step-item:hover { background: color-mix(in srgb, var(--lane-fill) 90%, transparent); color: var(--text); }
+  .dia {
+    width: 1.55rem; height: 1.55rem; display: grid; place-items: center; font: inherit; font-size: 0.72rem; font-weight: 700;
+    color: var(--accent); background: none; border: 1px solid var(--accent); transform: rotate(45deg) scale(0.82); margin-top: 0.05rem;
+  }
+  .dia span { transform: rotate(-45deg); }
+  .dia.on { background: var(--accent); color: var(--mask); }
+  .dia.done { opacity: 0.55; }
+  .pager { display: flex; flex-wrap: wrap; gap: 0.1rem; margin: 0.45rem 0 0.6rem -0.15rem; }
+  .pager .dia { cursor: pointer; }
+  .step-item .t { font-weight: 600; color: inherit; }
+  .step-item .where { display: block; font-size: 0.7rem; color: var(--text-dim); }
+  .read-list { list-style: none; display: grid; gap: 0.45rem; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.8rem; }
+  .read-list b { color: var(--text); font-weight: 600; }
+  .swatch { display: inline-block; width: 0.75rem; height: 0.75rem; border: 1.5px solid var(--k); background: var(--kf); vertical-align: -0.1rem; margin-right: 0.35rem; border-radius: 2px; }
+
+  .gloss, .envs { margin-top: 1rem; }
+  .table-scroll { overflow-x: auto; }
+  .envs table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+  .envs th { text-align: left; font-weight: 600; font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--panel-border); white-space: nowrap; }
+  .envs td { vertical-align: top; padding: 0.55rem 0.6rem; color: var(--text-muted); border-bottom: 1px solid color-mix(in srgb, var(--panel-border) 40%, transparent); }
+  .envs .env-name { color: var(--text); font-weight: 600; display: block; }
+  .envs .url { font-size: 0.7rem; color: var(--text-dim); display: block; overflow-wrap: anywhere; }
+  .envs tr.on-map td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
+  body.searching [data-row]:not(.hit) { opacity: 0.35; }
+  tr.hit td, .gloss-item.hit { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+  tr.hit.current td, .gloss-item.hit.current { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+  .gloss-item.hit { border-color: var(--accent); }
+  .envs .btn { margin-top: 0.35rem; font-size: 0.7rem; padding: 0.2rem 0.5rem; }
+  .envs .nw { white-space: nowrap; }
+  .envs td.purpose { min-width: 14rem; }
+  .envs td:first-child { min-width: 11rem; }
+  .gloss-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 0.75rem; }
+  .gloss-item { border: 1px solid color-mix(in srgb, var(--panel-border) 55%, transparent); border-radius: 0.2rem; padding: 0.65rem 0.75rem; }
+  .gloss-item dt { font-weight: 600; font-size: 0.84rem; color: var(--text); margin-bottom: 0.2rem; }
+  .gloss-item dd { font-size: 0.78rem; color: var(--text-muted); }
+  .gloss-item dd .ci { display: block; margin-top: 0.3rem; color: var(--config); }
+
+  footer { margin-top: 1.25rem; font-size: 0.72rem; color: var(--text-dim); }
+  footer code { background: transparent; color: var(--text-faint); }
+  footer a { color: var(--accent); }
+
+  @media (max-width: 900px) {
+    .stage { grid-template-columns: 1fr; height: auto; }
+    .diagram-container { height: var(--map-h, 62vh); }
+    .side { overflow: visible; }
+    .side .nav { position: static; }
+  }
+  @media (max-width: 640px) {
+    .page { padding: 0 0.75rem 2rem; }
+    .toolbar { margin: 0 -0.75rem; padding: 0.5rem 0.75rem; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="toolbar" id="toolbar">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"></span>
+      <h1>ghaf-infra · CI map</h1>
+    </div>
+    <div class="seg" role="group" aria-label="Route">
+      <button type="button" data-route="o" title="Overview (O)">Overview</button>
+      <button type="button" data-route="p" title="Walk a PR build on ci-prod (P)">ci-prod pre-merge</button>
+      <button type="button" data-route="m" title="Walk a merge to main on ci-prod (M)">ci-prod main</button>
+      <button type="button" data-route="r" title="Walk a release on ci-release (R)">ci-release</button>
+    </div>
+    <div class="group grow">
+      <input id="find" type="search" placeholder="Find a host, file or tool" title="Search the map and the sections below it (/). Enter steps through the matches." aria-label="Find a component" autocomplete="off">
+      <span id="find-status" aria-live="polite"></span>
+    </div>
+    <div class="group" role="group" aria-label="Zoom">
+      <button type="button" class="btn" id="zoom-out" title="Zoom out (−, or Ctrl + scroll)" aria-label="Zoom out">−</button>
+      <button type="button" class="btn" id="zoom-reset" title="Show the whole map (0)">Reset</button>
+      <button type="button" class="btn" id="zoom-in" title="Zoom in (+, or Ctrl + scroll). Drag to pan." aria-label="Zoom in">+</button>
+    </div>
+    <button type="button" class="btn" id="theme" title="Light / dark (T)">Theme</button>
+  </div>
+
+  <section class="stage" id="stage">
+    <div class="diagram-container" id="diagram" aria-label="Diagram">
+      <svg id="map" viewBox="0 0 1932 1120" role="img" aria-labelledby="map-title map-desc">
+        <title id="map-title">ghaf-infra CI map</title>
+        <desc id="map-desc">Swimlane map of the Ghaf CI: ghaf-infra flake provisioning, GitHub, Nix builders and binary cache, HSM signing, the Jenkins controller, the OCI registry and release archive, and the hardware test lab.</desc>
+      </svg>
+    </div>
+    <aside class="card side" id="side" aria-live="polite"></aside>
+  </section>
+
+  <section class="card envs">
+    <h2>Environments</h2>
+    <p>The map walks two environments: ci-prod (pre-merge and main) and ci-release. The same Jenkins module (<code>modules/jenkins</code>) runs on four more controllers; only the host config differs: which pipelines, builders, cache, test agents and signing keys it uses. The GitHub Actions row is what runs outside Jenkins.</p>
+    <div class="table-scroll"><table id="env-table"></table></div>
+  </section>
+
+  <section class="card envs">
+    <h2>Supporting services</h2>
+    <p>Hosts ghaf-infra runs that are not on a build route. They keep the CI reachable and observable, or serve the devices Ghaf builds.</p>
+    <div class="table-scroll"><table id="support-table"></table></div>
+  </section>
+
+  <section class="card gloss">
+    <h2>Terms</h2>
+    <p>Nix and infrastructure terms used on this page. The line marked ≈ gives the closest general CI equivalent.</p>
+    <dl class="gloss-grid" id="gloss"></dl>
+  </section>
+
+  <footer>
+    Drawn from <a href="https://github.com/tiiuae/ghaf-infra" target="_blank" rel="noopener">tiiuae/ghaf-infra</a> at <a href="https://github.com/tiiuae/ghaf-infra/commit/d09fe7cc" target="_blank" rel="noopener"><code>d09fe7cc</code></a> (2026-10-08).
+    Source: <a href="https://github.com/tiiuae/ghaf-infra/blob/main/docs/ci-map.html" target="_blank" rel="noopener"><code>docs/ci-map.html</code></a>; the comment at its top explains how to edit it.
+  </footer>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  // ------------------------------------------------------------------
+  // Geometry. Columns are pipeline phases, lanes are machines/services.
+  // ------------------------------------------------------------------
+  var NW = 196, NH = 80;
+  var C = function (i) { return 168 + 224 * (i - 1); };
+  // Lane: label row on top, then one row of nodes. Gutters between lanes
+  // carry the horizontal edge segments.
+  var LANE_X = 40, LANE_W = C(8) + NW / 2 + 30 - LANE_X, LANE_H = 132, NODE_DY = 37, LANE_STEP = 146;
+  var RAIL_X = LANE_X + LANE_W + 32;
+  var LANES = [
+    { id: 'L1', label: { o: '01 / Source, people & sign-in' } },
+    { id: 'L2', label: { o: '02 / Nix remote builders + binary cache' } },
+    { id: 'L3', label: { o: '03 / Signing · HSM gateways on the Nebula overlay' } },
+    // The controller is the lane itself (its boxes are pipeline stages), so the
+    // NIXOS tag goes on the lane label.
+    { id: 'L4', nixos: true,
+      label: { o: '04 / Jenkins controller · hetzci-{prod,release,dev,dbg} + uae-azureci-prod',
+               r: '04 / Jenkins controller · hetzci-release (baseline reset) · ci-release.vedenemo.dev',
+               p: '04 / Jenkins controller · hetzci-prod · ci-prod.vedenemo.dev' } },
+    { id: 'L5', label: { o: '05 / Registry & release archive' } },
+    { id: 'L6', label: { o: '06 / Test lab · on-prem test agents + devices' }, note: { o: 'Tampere office' } }
+  ];
+  var LANE_Y = {};
+  var BAND = { x: LANE_X, y: 14, w: LANE_W, h: 138, nodeY: 52 };
+  var PHASE_Y = BAND.y + BAND.h + 20;
+  LANES.forEach(function (l, i) { l.y = PHASE_Y + 20 + LANE_STEP * i; LANE_Y[l.id] = l.y; });
+  // Band nodes are spread evenly between the first and last column.
+  var BX = function (i) { return C(1) + (C(8) - C(1)) * (i - 1) / 4; };
+  var LEGEND_Y = LANE_Y.L6 + LANE_H + 34;
+  var W = RAIL_X + 36, H = LEGEND_Y + 32;
+  // Gutter below a lane, and the vertical middle of a lane's node row.
+  var G = function (lane) { return LANE_Y[lane] + LANE_H + (LANE_STEP - LANE_H) / 2; };
+  var MID = function (lane) { return LANE_Y[lane] + NODE_DY + NH / 2; };
+  var PHASES = ['Trigger', 'Checkout + eval', 'Build', 'Attest + sign', 'Publish', 'Hardware test', 'Gate + report', 'Archive'];
+
+  // ------------------------------------------------------------------
+  // Nodes. t: text per route (o = overview, r = ci-release, p = ci-prod
+  // pre-merge); n = name, s = identifier line, a = accent line.
+  // ------------------------------------------------------------------
+  var NODES = [
+    // 00 / ghaf-infra flake
+    { id: 'b1', band: true, cx: BX(1), kind: 'config',
+      t: { o: { n: 'ghaf-infra flake', s: 'flake.nix + flake.lock', a: 'pins nixpkgs + every tool' } },
+      info: {
+        what: 'The repository you are reading. <code>flake.nix</code> declares the inputs (nixpkgs, deploy-rs, sops-nix, disko, sbomnix, ci-yubi, robot-framework, ...) and the outputs: one <code>nixosConfiguration</code> per host, the reusable modules, packages and the dev shell. <code>flake.lock</code> pins every input to an exact revision and hash.',
+        ci: 'A lockfile for the whole toolchain and operating system, not just for app dependencies. Bumping an input is a reviewed PR (the weekly update-flake-inputs workflow opens one), and every ghaf-infra PR is evaluated and has all its host configurations built by GitHub Actions before merge.',
+        files: ['flake.nix', 'flake.lock', 'nix/', 'hosts/machines.nix', '.github/workflows/test-ghaf-infra.yml']
+      } },
+    { id: 'b2', band: true, cx: BX(2), kind: 'config',
+      t: { o: { n: 'NixOS modules', s: 'jenkins, testagent, ...', a: 'plugins, pipelines, JCasC' } },
+      info: {
+        what: 'Reusable pieces of host configuration. <code>modules/jenkins</code> turns a host into a Ghaf Jenkins controller: it fetches every plugin listed in <code>plugins.json</code> by hash, copies the selected <code>pipelines/*.groovy</code> and the shared <code>pipeline-library</code> into <code>/etc/jenkins</code>, writes the JCasC YAML, and puts the tools jobs call on the PATH (nix, oras, oci-publish, policy-checker, sbomnix, signing tools). On every start a cleanup service deletes Jenkins\' own XML config, so nothing configured by hand in the UI survives.',
+        ci: 'Like Ansible roles or Helm charts, but evaluated together with the rest of the host, so a typo fails at build time instead of on the server.',
+        files: ['modules/jenkins/default.nix', 'modules/jenkins/plugins.json', 'modules/jenkins/casc/', 'modules/jenkins/pipelines/', 'modules/jenkins/pipeline-library/vars/', 'modules/testagent/', 'modules/baseline-reset/']
+      } },
+    { id: 'b3', band: true, cx: BX(3), kind: 'config',
+      t: { o: { n: 'Host config', s: 'hosts/<host>/', a: '+ sops secrets.yaml' },
+           r: { s: 'hosts/hetzci/release/' },
+           p: { s: 'hosts/hetzci/prod/' } },
+      info: {
+        what: 'One directory per machine. It imports modules and sets what is specific to that host: hostname, which pipelines this controller runs, which remote builders and caches it uses, and which secrets it needs. Secrets are stored encrypted in <code>secrets.yaml</code> (sops) and only decrypted on the host itself. Who may SSH in is declared here too: <code>users/*.nix</code> and <code>users/teams/</code> give admins and testers their keys.',
+        r: '<code>hosts/hetzci/release</code> enables baseline reset, Cachix <code>ghaf-release</code>, the S3 archive credentials, and only three pipelines: <code>ghaf-hw-test</code>, <code>ghaf-release-candidate</code>, <code>ghaf-release-publish</code>.',
+        p: '<code>hosts/hetzci/prod</code> enables GitHub webhooks and commit statuses, Jira, the shared <code>hetz86-1</code>/<code>hetzarm</code> builders, and pipelines such as <code>ghaf-pre-merge</code>, <code>ghaf-main</code>, <code>ghaf-nightly</code> and <code>ghaf-hw-test</code>.',
+        files: ['hosts/hetzci/release/', 'hosts/hetzci/prod/', 'hosts/hetzci/dev/', 'hosts/hetzci/dbg/', 'hosts/hetzci/vm/', 'hosts/uae/azureci/prod/', 'hosts/hetzci/common.nix', 'hosts/hetzci/signing.nix', '.sops.yaml', 'users/']
+      } },
+    { id: 'b4', band: true, cx: BX(4), kind: 'config',
+      t: { o: { n: 'System closure', s: 'nix build ...toplevel', a: 'whole OS = one store path' } },
+      info: {
+        what: 'Building <code>nixosConfigurations.&lt;host&gt;.config.system.build.toplevel</code> produces a single store path containing the whole OS: kernel, systemd units, Jenkins with its plugins and pipelines, and every tool the jobs run. Nothing is installed on the server afterwards. Because a closure is a complete inventory, it can also be scanned: the nightly <code>flakevuln</code> workflow checks the ci-prod closures (hetzci-prod, hetz86-1, hetzarm, ghaf-auth) for known vulnerabilities.',
+        ci: 'Like a golden VM image, except it is built from source, reproducible, can be built and diffed on a laptop before deploying, and every previous version stays bootable for rollback.',
+        files: ['nix build .#nixosConfigurations.hetzci-release.config.system.build.toplevel', '.github/workflows/flakevuln.yml']
+      } },
+    { id: 'b5', band: true, cx: BX(5), kind: 'config',
+      t: { o: { n: 'Deploy', s: 'deploy-rs / inv tasks', a: 'copy closure + activate' },
+           r: { s: 'inv install-release', a: 'fresh baseline + creds' },
+           p: { s: 'deploy .#hetzci-prod', a: 'activate, state is kept' } },
+      info: {
+        what: '<code>deploy-rs</code> copies the closure to the host over SSH and activates it, rolling back automatically if the host does not come back. New hosts are installed with <code>inv install</code> (nixos-anywhere + disko, which repartitions the disk).',
+        r: '<code>inv install-release</code> deploys the current checkout to hetzci-release, hetz86-rel-2 and hetzarm-rel-1, reboots them into the new baseline and starts a fresh credential epoch (a new SSH CA and builder keys that the next run replaces entirely). It also deploys testagent-release. Baseline reset discards root and <code>/nix</code> writes on every boot, so each release starts from a known state.',
+        p: 'hetzci-prod is long-lived. Admins deploy ghaf-infra changes to it with <code>deploy .#hetzci-prod</code>; nothing deploys automatically. Builders and test agents are deployed the same way. Jenkins state, build history and artifacts survive deploys.',
+        files: ['tasks.py', 'nix/deployments.nix', 'docs/deploy-rs.md', 'docs/baseline-reset.md', 'docs/tasks.md']
+      } },
+
+    // 01 / Source & people
+    { id: 'p1', lane: 'L1', cx: C(1), kind: 'event', sigil: 'person',
+      t: { o: { n: 'People', s: 'engineer or developer', a: 'start a run' },
+           r: { n: 'Release engineer', s: 'Build with Parameters', a: 'GITREF + target set' },
+           p: { n: 'Developer', s: 'opens or updates a PR', a: 'tiiuae org members only' },
+           m: { n: 'Developer', s: 'merges a PR to main', a: 'a push to tiiuae/ghaf' } },
+      info: {
+        what: 'Runs start either from a person in the Jenkins UI (ci-release) or from a GitHub event (ci-prod). Jenkins sits behind Caddy and oauth2-proxy; people sign in with GitHub through ghaf-auth (Dex).',
+        r: 'A release engineer signs in to ci-release.vedenemo.dev and runs <code>ghaf-release-candidate</code> with <code>GITREF</code> (commit, branch or tag) and a target set: all targets, laptop targets only, or a minimal cache-warming build.',
+        p: 'A tiiuae org member opens a pull request against tiiuae/ghaf, or pushes new commits to it. PRs from outside the org do not trigger ci-prod.',
+        m: 'Merging a PR pushes new commits to <code>main</code> on tiiuae/ghaf, and that push is what starts <code>ghaf-main</code>.',
+        files: ['modules/jenkins/default.nix', 'hosts/ghaf-auth/', 'docs/jenkins-authentication.md']
+      } },
+    { id: 'gh', lane: 'L1', cx: C(2), kind: 'external',
+      t: { o: { n: 'GitHub tiiuae/ghaf', s: 'the build target repo', a: 'Ghaf is a Nix flake' },
+           r: { s: 'commit at GITREF' },
+           p: { s: 'refs/pull/N/merge' },
+           m: { s: 'main (tip)' } },
+      info: {
+        what: 'Ghaf itself is a Nix flake. Each build target is a flake output such as <code>packages.x86_64-linux.intel-laptop-debug</code>, and Ghaf\'s own <code>flake.lock</code> pins all of its dependencies, so a commit hash fully determines what gets built.',
+        r: 'Fetched at the <code>GITREF</code> the engineer entered.',
+        p: 'Jenkins fetches GitHub\'s synthetic merge commit <code>refs/pull/N/merge</code>, so it tests the PR as if it were already merged into the target branch. The downstream hardware tests receive the same merge ref.',
+        m: 'Jenkins checks out the tip of <code>main</code> as it is when the run starts.',
+        files: ['modules/jenkins/pipeline-library/vars/checkoutUtils.groovy']
+      } },
+    { id: 'ghcr', lane: 'L1', cx: C(3), kind: 'trust',
+      t: { o: { n: 'Source VSA', s: 'attestation in GHCR', a: 'required on ci-release' },
+           r: { a: 'required' },
+           p: { a: 'best effort' } },
+      info: {
+        what: 'A Source Verification Summary Attestation (SLSA Source level 1), stored in GHCR. <code>source-vsa fetch</code> checks its Sigstore signature: it must come from the repository\'s own <code>source-vsa.yml</code> workflow, run by a push of this exact commit to <code>main</code>. The verified attestation is saved next to the build outputs, so it travels with the artifacts.',
+        r: 'Required: <code>ghaf-release-candidate</code> fails if the commit has no valid VSA.',
+        p: 'Best effort: a PR merge commit normally has none. The stage turns unstable and the run continues.',
+        m: 'Best effort: fetched and kept if the commit has one; a missing VSA does not fail the run.',
+        files: ['pkgs/source-vsa/', 'modules/jenkins/pipeline-library/vars/pipelineExecution.groovy', 'slsa/source-vsa-policy.yaml']
+      } },
+    { id: 'auth', lane: 'L1', cx: C(4), kind: 'trust', nixos: true,
+      t: { o: { n: 'ghaf-auth', s: 'Dex OIDC, GitHub login', a: 'SSO: Jenkins + registry' } },
+      info: {
+        what: 'Central sign-in at auth.vedenemo.dev: a Dex OIDC provider backed by GitHub org membership. Every Jenkins controller sits behind oauth2-proxy, which sends people here, and Jenkins turns the GitHub teams that come back into permissions (for example <code>tiiuae:devenv-fi</code> administers). The OCI registries log in through it too. Test agents do not: they authenticate to their controller with their SSH host key.',
+        r: 'The release engineer signs in here before starting a release; what they may do in Jenkins follows their GitHub team.',
+        files: ['hosts/ghaf-auth/', 'modules/jenkins/default.nix', 'hosts/hetzci/common.nix', 'docs/jenkins-authentication.md']
+      } },
+    { id: 'status', lane: 'L1', cx: C(7), kind: 'event',
+      t: { o: { n: 'Commit status', s: 'jenkins-pre-merge', a: 'pending → success/failure' } },
+      info: {
+        what: 'Jenkins sets the <code>jenkins-pre-merge</code> status on the PR head commit: pending when the run starts, success or failure when it ends, linking back to the Jenkins run. This is what reviewers see on the PR.',
+        files: ['modules/jenkins/pipelines/ghaf-pre-merge.groovy', 'modules/jenkins/pipeline-library/vars/pipelineExecution.groovy']
+      } },
+    { id: 'p2', lane: 'L1', cx: C(8), kind: 'event', sigil: 'person',
+      t: { o: { n: 'Release engineer', s: 'runs ghaf-release-publish', a: 'GHAF_VERSION + artifacts' } },
+      info: {
+        what: 'Publishing is a separate, manual job. The engineer gives <code>GHAF_VERSION</code> (for example <code>ghaf-25.12.1</code>) and the candidate\'s <code>ARTIFACTS_URL</code>, optionally with an <code>OCI_TAG</code> to archive from the registry instead. The local artifacts directory must still exist, so publish before ci-release reboots: baseline reset discards it.',
+        files: ['modules/jenkins/pipelines/ghaf-release-publish.groovy']
+      } },
+
+    // 02 / Nix builders
+    { id: 'builders', lane: 'L2', cx: C(3), kind: 'build', nixos: true,
+      t: { o: { n: 'Remote builders', s: 'x86_64 + aarch64', a: 'ssh-ng remote store' },
+           r: { s: 'hetz86-rel-2, hetzarm-rel-1' },
+           p: { s: 'hetz86-1, hetzarm' } },
+      info: {
+        what: 'Large Hetzner machines that do the actual compiling. The controller never builds itself (<code>max-jobs = 0</code>); it hands each target to the builder for its CPU architecture over SSH. The builders have other users too: GitHub Actions in tiiuae/ghaf currently builds on <code>hetz86-1</code> and <code>hetzarm</code>, and developers build remotely on <code>hetz86-builder</code> (builder.vedenemo.dev) and <code>hetzarm</code> (see Environments).',
+        r: 'hetz86-rel-2 (x86_64, 96 vCPU) and hetzarm-rel-1 (aarch64), used only by ci-release. They also run baseline reset, and their SSH credentials only live for one release epoch.',
+        p: 'hetz86-1 (x86_64) and hetzarm (aarch64), shared by ci-prod and ci-dev. hetzarm also serves GitHub Actions and developer remote builds.',
+        ci: '<code>nix build --store ssh-ng://builder --eval-store auto</code>: evaluate on the controller, build on the builder. Like a build agent, except Nix does the scheduling and only builds what no cache already has.',
+        files: ['hosts/builders/', 'hosts/hetzci/release/configuration.nix', 'hosts/hetzci/remote-builders.nix', 'hosts/lib/nix-tuning.nix']
+      } },
+    { id: 'cache', lane: 'L2', cx: C(5), kind: 'store',
+      t: { o: { n: 'Binary cache', s: 'Cachix ghaf-{dev,release}', a: '+ cache.nixos.org' },
+           r: { s: 'Cachix ghaf-release' },
+           p: { s: 'Cachix ghaf-dev' } },
+      info: {
+        what: 'Before building, a builder asks its caches whether each store path already exists and downloads it instead ("substitution"). After building, the <code>cachix-push</code> service on the builder uploads new store paths.',
+        r: 'Only the release environment can push to <code>ghaf-release</code>. The cache survives baseline resets, so each release rebuilds only what changed since the previous one.',
+        p: '<code>ghaf-dev</code> is the main development cache. Developers and other CI runs substitute from it too.',
+        m: 'Main builds keep <code>ghaf-dev</code> warm: everything built for the newest main, except the disk images, is pushed here, so developers building on top of main mostly download.',
+        ci: 'A remote build cache keyed by a hash of all inputs, like Bazel or Gradle remote caching. Same inputs, same path, safe to reuse.',
+        files: ['hosts/builders/cachix-push.nix', 'hosts/builders/cachix-push.sh', 'hosts/builders/release-common.nix', 'modules/common/nix-caches.nix']
+      } },
+
+    // 03 / Signing
+    { id: 'gw', lane: 'L3', cx: C(5), kind: 'trust', nixos: true,
+      t: { o: { n: 'PKCS#11 gateways', s: 'Tampere + UAE, failover', a: 'pkcs11-proxy over Nebula' } },
+      info: {
+        what: 'Signing keys live on HSMs that are physically isolated from the CI network. A gateway host sits next to each HSM and exposes it as a PKCS#11 service (pkcs11-proxy with TLS-PSK) on the Nebula overlay network (hosts find each other through <code>ghaf-lighthouse</code>). Jenkins signs through <code>nethsm-gateway</code> (Tampere) and <code>uae-nethsm-gateway</code> (UAE): for every signing step, <code>select-pkcs11-node</code> picks the first healthy gateway and token, so signing keeps working if one site or HSM is down. A third gateway, <code>nethsm-gateway-dev</code> in Tampere, is not part of that selection.',
+        files: ['hosts/nethsm-gateway/', 'hosts/hetzci/signing.nix', 'scripts/select-pkcs11-node.sh', 'docs/nethsm.md', 'docs/nebula.md', 'modules/nebula/']
+      } },
+    { id: 'hsm', lane: 'L3', cx: C(6) + 30, kind: 'trust',
+      t: { o: { n: 'NetHSM / YubiHSM', s: 'keys never leave the HSM', a: 'one key set per env' } },
+      info: {
+        what: 'NetHSM appliances and YubiHSM 2 tokens hold the private keys. Each environment has its own key objects (for example <code>GhafInfraSignProv-release</code> and <code>GhafInfraSignECP256-prod</code>), so a prod signature can never pass as a release one. UEFI Secure Boot signing uses the <code>uefi-ghaf-db</code> key.',
+        files: ['hosts/hetzci/signing.nix', 'docs/nethsm.md', 'keys/']
+      } },
+
+    // 04 / Jenkins controller
+    { id: 'job', lane: 'L4', cx: C(1), kind: 'pipeline',
+      t: { o: { n: 'Jenkins job', s: 'pipelines/*.groovy', a: 'baked in by Nix' },
+           r: { n: 'Release candidate', s: 'ghaf-release-candidate', a: 'manual, no webhooks' },
+           p: { n: 'Pre-merge job', s: 'ghaf-pre-merge', a: 'PR trigger, aborts stale' },
+           m: { n: 'Main build', s: 'ghaf-main', a: 'push trigger, newest wins' } },
+      info: {
+        what: 'A Jenkins pipeline written in Groovy. It lives in this repo, not in Jenkins: Nix copies it to <code>/etc/jenkins/pipelines</code> and a JCasC script recreates the job on every Jenkins start. Shared logic lives in the <code>ghafInfra</code> pipeline library.',
+        r: 'Triggered by hand only: ci-release has no GitHub webhooks.',
+        p: 'The <code>githubPullRequests</code> trigger reacts to PR events, accepts only tiiuae org members, aborts a running build when new commits arrive, and polls every 15 minutes in case a webhook was missed.',
+        m: 'The <code>githubPush</code> trigger starts it on every push to main. <code>disableConcurrentBuilds(abortPrevious: true)</code> means a newer push aborts the build in progress, so the newest main always wins.',
+        files: ['modules/jenkins/pipelines/ghaf-release-candidate.groovy', 'modules/jenkins/pipelines/ghaf-pre-merge.groovy', 'modules/jenkins/pipelines/ghaf-main.groovy', 'modules/jenkins/casc/common.yaml', 'modules/jenkins/casc/githubWebhook.yaml']
+      } },
+    { id: 'checkout', lane: 'L4', cx: C(2), kind: 'pipeline',
+      t: { o: { n: 'Checkout + eval', s: 'git checkout, Source VSA', a: 'nix flake show' },
+           r: { s: 'ghaf @ GITREF, Source VSA' },
+           p: { s: 'PR merge commit, VSA' },
+           m: { s: 'main tip, Source VSA' } },
+      info: {
+        what: 'Checks out ghaf on the controller and fetches the Source VSA, then evaluates the flake once (<code>nix flake show</code>) under a global evaluator lock. Evaluating means Nix works out every derivation that would have to be built, without building anything yet.',
+        p: 'Also sets the PR status to pending.',
+        m: '',
+        ci: 'Evaluation is the "plan" step: cheap, deterministic, and it fails fast on Nix errors before any builder time is spent.',
+        files: ['modules/jenkins/pipeline-library/vars/pipelineExecution.groovy', 'modules/jenkins/pipeline-library/vars/checkoutUtils.groovy']
+      } },
+    { id: 'build', lane: 'L4', cx: C(3), kind: 'build',
+      t: { o: { n: 'Build targets', s: 'nix build --store ssh-ng', a: 'one branch per target' } },
+      info: {
+        what: 'One parallel branch per target (up to 12 at a time). Each runs <code>nix build --store ssh-ng://&lt;builder&gt; --eval-store auto</code>, then <code>nix copy</code> brings the output back to the controller\'s <code>/nix/store</code> and roots it under the run\'s artifacts directory so garbage collection keeps it. Which builder serves which architecture comes from <code>/etc/jenkins/remote-stores.json</code>, generated from the host\'s <code>nix.buildMachines</code>.',
+        files: ['modules/jenkins/pipeline-library/vars/pipelineExecution.groovy', 'modules/jenkins/default.nix', 'modules/jenkins/casc/common.yaml']
+      } },
+    { id: 'attest', lane: 'L4', cx: C(4), kind: 'trust',
+      t: { o: { n: 'Attest + sign', s: 'sbomnix: provenance, SBOM', a: 'OTA pin + UEFI/SLSA signing' },
+           p: { s: 'sbomnix: SLSA provenance', a: 'SLSA signatures' } },
+      info: {
+        what: 'Records how each target was built and signs the results through the HSM gateways. Provenance and SBOMs both come from <code>sbomnix</code> (tiiuae/sbomnix, a ghaf-infra flake input), which reads the target\'s Nix dependency graph instead of scanning files, so nothing is guessed.',
+        r: 'For every target: SLSA provenance (sbomnix <code>provenance</code>: every input store path, plus the ghaf-infra revision the controller runs), SBOMs in CycloneDX, SPDX and CSV, and an OTA pin build for the laptop image. Laptop images and installers get UEFI Secure Boot signatures, then provenance and images get SLSA signatures. The provenance is checked against <code>slsa/provenance-trust-policy.yaml</code> right away.',
+        p: 'SLSA provenance, and SLSA signatures for provenance and image, made with the prod keys. SBOMs, UEFI signing and the OTA pin are left to releases.',
+        m: 'SLSA provenance, and SLSA signatures for provenance and image, made with the prod keys. SBOMs, UEFI signing and the OTA pin are left to releases.',
+        files: ['modules/jenkins/pipeline-library/vars/pipelineExecution.groovy', 'slsa/provenance-trust-policy.yaml', 'slsa/v1.0/', 'scripts/verify-signature.sh']
+      } },
+    { id: 'publish', lane: 'L4', cx: C(5), kind: 'store',
+      t: { o: { n: 'Publish', s: 'oci-publish target', a: '+ local artifacts dir' } },
+      info: {
+        what: 'Writes images, signatures, attestations and a per-target <code>manifest.json</code> under <code>/var/lib/jenkins/artifacts/&lt;job&gt;/&lt;stamp&gt;-commit_&lt;sha&gt;/</code> (linked from the run page), then <code>oci-publish</code> pushes the image to the registry with its provenance and signatures attached. Tags: an immutable <code>&lt;env&gt;-&lt;stamp&gt;-&lt;sha&gt;</code> and a moving <code>&lt;env&gt;-latest</code>.',
+        files: ['pkgs/oci-publish/', 'modules/jenkins/pipeline-library/vars/pipelineExecution.groovy', 'modules/jenkins/purge-jenkins-artifacts.sh']
+      } },
+    { id: 'hwtest', lane: 'L4', cx: C(6), kind: 'pipeline',
+      t: { o: { n: 'Hardware tests', s: 'triggers ghaf-hw-test', a: 'per device, waits' },
+           r: { a: 'relayboot + BAT' },
+           p: { a: 'pre-merge testset' },
+           m: { a: 'relayboot + BAT' } },
+      info: {
+        what: 'For each test run, the build triggers the downstream <code>ghaf-hw-test</code> job with the image\'s OCI reference and waits for it. ghaf-hw-test is scheduled on the Jenkins agent labelled with the device name (<code>lenovo-x1</code>, <code>orin-agx</code>, ...), which in effect locks that physical device. Results are collected into <code>test-results.json</code> and attached to the image in the registry.',
+        r: 'Test set <code>_relayboot_bat_</code> on testagent-release. The Robot Framework test sources are pinned by ghaf-infra\'s own flake (the <code>robot-framework</code> input).',
+        p: 'Test set <code>_relayboot_pre-merge_</code> on the prod test agents.',
+        m: 'Test set <code>_relayboot_bat_</code> on the prod test agents.',
+        files: ['modules/jenkins/pipeline-library/vars/hwTestUtils.groovy', 'modules/jenkins/pipelines/ghaf-hw-test.groovy']
+      } },
+    { id: 'gate', lane: 'L4', cx: C(7), kind: 'pipeline', kindBy: { r: 'trust', p: 'event', m: 'pipeline' },
+      t: { o: { n: 'Gate / report', s: 'release policy or status', a: 'end of the run' },
+           r: { n: 'Release policy', s: 'policy-checker release', a: 'signed attestation' },
+           p: { n: 'Report', s: 'post commit status', a: 'success / failure' },
+           m: { n: 'Result', s: 'Jenkins build status', a: 'images + warm ghaf-dev' } },
+      info: {
+        what: 'The last stage of the run: a release decision on ci-release, a PR status on ci-prod pre-merge, and just the build result on ci-prod main.',
+        r: '<code>policy-checker release</code> evaluates <code>slsa/release-policy.yaml</code> for each image: image signature, provenance signature, the earlier provenance trust verdict, SBOM presence and hardware test status. The resulting <code>release-policy.json</code> is signed with the provenance key on the HSM and attached to the image as an OCI referrer. A failed required criterion marks the run unstable.',
+        p: 'Posts success or failure to the PR as the <code>jenkins-pre-merge</code> status. Nothing is archived.',
+        m: '<code>ghaf-main</code> posts no GitHub commit status and archives nothing. Its outputs are the Jenkins build result, the tested images under <code>ghaf/main</code> in the registry, and the store paths it built, which the builders push to Cachix <code>ghaf-dev</code> for everyone building on top of main.',
+        files: ['slsa/release-policy.yaml', 'pkgs/policy-checker/', 'modules/jenkins/pipeline-library/vars/pipelineExecution.groovy']
+      } },
+    { id: 'archive', lane: 'L4', cx: C(8), kind: 'pipeline',
+      t: { o: { n: 'Release publish', s: 'ghaf-release-publish', a: 'verifies every signature' } },
+      info: {
+        what: 'Pushes the OTA pin closures to Cachix <code>ghaf-release</code> and pins them (keeping two revisions), then runs <code>archive-ghaf-release</code>. That script verifies every image and provenance signature and the signed release-policy attestation (with the keys of the environment it runs in, so artifacts archived from ci-release must have been built there), packs tarballs and uploads them with minio-client.',
+        files: ['modules/jenkins/pipelines/ghaf-release-publish.groovy', 'scripts/archive-ghaf-release.sh']
+      } },
+
+    // 05 / Registry & archive
+    { id: 'registry', lane: 'L5', cx: C(5), kind: 'store', nixos: true,
+      t: { o: { n: 'OCI registry', s: 'registry.vedenemo.dev', a: 'image + referrers' } },
+      info: {
+        what: 'A Zot OCI registry run by ghaf-infra, with OIDC login via ghaf-auth. Images land at <code>ghaf/&lt;pipeline&gt;/&lt;target&gt;</code>. Signatures, provenance, test results and the release attestation are attached as OCI referrers, so the image digest never changes as evidence is added. Fetch an image with everything attached: <code>nix run .#ghaf-fetch -- &lt;reference&gt;</code>.',
+        ci: 'Same registry protocol as container images; the "image" here is a disk image, and referrers are the standard way to hang signatures and SBOMs off it.',
+        files: ['hosts/ghaf-registry/configuration.nix', 'modules/zot-registry.nix', 'pkgs/oci-publish/', 'scripts/ghaf-fetch.sh']
+      } },
+    { id: 's3', lane: 'L5', cx: C(8), kind: 'store',
+      t: { o: { n: 'Release archive', s: 'Hetzner Object Storage', a: 'bucket ghaf-artifacts' } },
+      info: {
+        what: 'S3-compatible object storage: bucket <code>ghaf-artifacts</code> for ci-release (<code>ghaf-artifacts-dev</code> elsewhere). This is the permanent home of releases. The ghaf-archive web app (tiiuae/ghaf-archive) is the browsable front end.',
+        files: ['scripts/archive-ghaf-release.sh', 'modules/jenkins/casc/archiveArtifacts.yaml']
+      } },
+
+    // 06 / Test lab
+    { id: 'agent', lane: 'L6', cx: C(6), kind: 'pipeline', nixos: true,
+      t: { o: { n: 'Test agent', s: 'testagent-<env>', a: 'verify → flash → Robot' },
+           r: { s: 'testagent-release' },
+           p: { s: 'testagent(2)-prod' } },
+      info: {
+        what: 'An on-prem NixOS machine with test devices attached. It connects out to its controller (<code>connect &lt;url&gt;</code>: SSH to fetch the agent secret, then a websocket) and runs one Jenkins agent per device. In ghaf-hw-test it pulls the image with <code>oras</code>, verifies provenance with <code>policy-checker</code> and the image signature with <code>verify-signature</code>, builds Ghaf\'s <code>flash-script</code> from the same commit, switches the USB hub to write the device\'s boot drive, and runs Robot Framework tests.',
+        r: 'testagent-release: Orin AGX, Orin NX, Lenovo X1, Darter Pro. It is deployed by <code>inv install-release</code> but not reset.',
+        p: 'testagent-prod and testagent2-prod: Lenovo X1, Darter Pro, Orin AGX, Orin NX, plus Secure Boot variants.',
+        files: ['modules/testagent/', 'hosts/testagent/', 'docs/jenkins-testagents.md']
+      } },
+    { id: 'dut', lane: 'L6', cx: C(7) + 30, kind: 'external', sigil: 'chip',
+      t: { o: { n: 'Device under test', s: 'Orin AGX/NX, X1, Darter', a: 'USB hub + relay power' } },
+      info: {
+        what: 'Real hardware: NVIDIA Jetson Orin AGX and NX, Lenovo X1 and Darter Pro laptops. Acroname USB hubs switch the boot drive between agent and device; relay boards control power for boot and turn-off tests.',
+        files: ['hosts/testagent/release/configuration.nix', 'modules/testagent/relay_board_exporter.py', 'modules/jenkins/pipeline-library/vars/hwTestUtils.groovy']
+      } }
+  ];
+
+  // ------------------------------------------------------------------
+  // Edges: orthogonal polylines through node anchors and lane gutters.
+  // T/B/Lf/R = top/bottom/left/right anchor of a node (+ offset along
+  // that side). lp = label position. bridge = cut a gap where it crosses.
+  // ------------------------------------------------------------------
+  var BOX = {};
+  NODES.forEach(function (n) {
+    var y = n.band ? BAND.nodeY : LANE_Y[n.lane] + NODE_DY;
+    BOX[n.id] = { x: n.cx - NW / 2, y: y, w: NW, h: NH, cx: n.cx, cy: y + NH / 2 };
+  });
+  var T = function (id, d) { var b = BOX[id]; return [b.cx + (d || 0), b.y]; };
+  var B = function (id, d) { var b = BOX[id]; return [b.cx + (d || 0), b.y + b.h]; };
+  var Lf = function (id, d) { var b = BOX[id]; return [b.x, b.cy + (d || 0)]; };
+  var R = function (id, d) { var b = BOX[id]; return [b.x + b.w, b.cy + (d || 0)]; };
+  var mid = function (a, b) { return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; };
+  var X = function (id, d) { return BOX[id].cx + (d || 0); };
+  var Y = function (id, d) { return BOX[id].cy + (d || 0); };
+  var LANE_RIGHT = LANE_X + LANE_W;
+
+  var EDGES = [
+    // ghaf-infra flake band
+    { id: 'e_b12', kind: 'config', pts: [R('b1'), Lf('b2')], label: 'pins inputs' },
+    { id: 'e_b23', kind: 'config', pts: [R('b2'), Lf('b3')], label: 'composed into' },
+    { id: 'e_b34', kind: 'config', pts: [R('b3'), Lf('b4')], label: 'nix build' },
+    { id: 'e_b45', kind: 'config', pts: [R('b4'), Lf('b5')], label: 'copy + activate' },
+    { id: 'rail', kind: 'config', dashed: true, noArrow: true, pts: [R('b5'), [RAIL_X, Y('b5')], [RAIL_X, MID('L6')]] },
+    { id: 'br_L2', kind: 'config', dashed: true, pts: [[RAIL_X, MID('L2')], [LANE_RIGHT + 2, MID('L2')]] },
+    { id: 'br_L3', kind: 'config', dashed: true, pts: [[RAIL_X, MID('L3')], [LANE_RIGHT + 2, MID('L3')]] },
+    { id: 'br_L4', kind: 'config', dashed: true, pts: [[RAIL_X, MID('L4')], [LANE_RIGHT + 2, MID('L4')]] },
+    { id: 'br_L5', kind: 'config', dashed: true, pts: [[RAIL_X, MID('L5')], [LANE_RIGHT + 2, MID('L5')]] },
+    { id: 'br_L6', kind: 'config', dashed: true, pts: [[RAIL_X, MID('L6')], [LANE_RIGHT + 2, MID('L6')]] },
+
+    // Trigger and checkout
+    { id: 'e_p1_job', kind: 'event', pts: [B('p1', -20), T('job', -20)], label: 'run job', lp: [X('p1', -20), MID('L2')] },
+    { id: 'e_dev_gh', kind: 'event', pts: [R('p1'), Lf('gh')] },
+    { id: 'e_webhook', kind: 'event', pts: [B('gh', -60), [X('gh', -60), G('L1')], [X('job', 40), G('L1')], T('job', 40)], label: { o: 'webhook', m: 'push webhook' }, lp: [X('job', 40), MID('L3')] },
+    { id: 'e_gh_checkout', kind: 'flow', pts: [B('gh', -10), T('checkout', -10)], label: 'git fetch', lp: [X('gh', -10), MID('L2')] },
+    { id: 'e_ghcr_checkout', kind: 'trust', pts: [B('ghcr', -40), [X('ghcr', -40), G('L1')], [X('checkout', 50), G('L1')], T('checkout', 50)], label: 'verify VSA', lp: [X('checkout', 50), MID('L3')] },
+    { id: 'e_job_checkout', kind: 'flow', pts: [R('job'), Lf('checkout')] },
+
+    // Build
+    { id: 'e_checkout_build', kind: 'flow', pts: [R('checkout'), Lf('build')] },
+    { id: 'e_build_builders', kind: 'build', both: true, pts: [T('build', -20), B('builders', -20)], label: 'ssh-ng: build, copy back', lp: [X('build', -20), MID('L3')] },
+    { id: 'e_cache_builders', kind: 'store', dashed: true, pts: [Lf('cache', -11), R('builders', -11)], label: 'substitute' },
+    { id: 'e_builders_cache', kind: 'store', pts: [R('builders', 12), Lf('cache', 12)], label: 'cachix-push' },
+
+    // Attest + sign
+    { id: 'e_build_attest', kind: 'flow', pts: [R('build'), Lf('attest')] },
+    { id: 'e_attest_gw', kind: 'trust', pts: [T('attest', 40), [X('attest', 40), Y('gw')], Lf('gw')], label: 'PKCS#11', lp: mid([X('attest', 40), Y('gw')], Lf('gw')) },
+    { id: 'e_gw_hsm', kind: 'trust', pts: [R('gw'), Lf('hsm')] },
+
+    // Publish
+    { id: 'e_attest_publish', kind: 'flow', pts: [R('attest'), Lf('publish')] },
+    { id: 'e_publish_registry', kind: 'store', pts: [B('publish', -20), T('registry', -20)], label: 'oci-publish', lp: [X('publish', -20), G('L4')] },
+
+    // Hardware test
+    { id: 'e_publish_hwtest', kind: 'flow', pts: [R('publish'), Lf('hwtest')] },
+    { id: 'e_hwtest_agent', kind: 'pipeline', pts: [B('hwtest', 20), T('agent', 20)], label: 'ghaf-hw-test', lp: [X('hwtest', 20), MID('L5') - 14] },
+    { id: 'e_registry_agent', kind: 'store', pts: [R('registry'), [X('agent', -40), Y('registry')], T('agent', -40)], label: 'oras pull', lp: mid(R('registry'), [X('agent', -40), Y('registry')]) },
+    { id: 'e_agent_dut', kind: 'external', pts: [R('agent'), Lf('dut')], label: 'flash' },
+    { id: 'e_hwtest_registry', kind: 'store', pts: [B('hwtest', -50), [X('hwtest', -50), G('L4')], [X('registry', 35), G('L4')], T('registry', 35)], label: 'results', lp: [(X('hwtest', -50) + X('registry', 35)) / 2, G('L4')] },
+
+    // Gate + report
+    { id: 'e_hwtest_gate', kind: 'flow', pts: [R('hwtest'), Lf('gate')] },
+    { id: 'e_gate_gw', kind: 'trust', pts: [T('gate', -40), [X('gate', -40), G('L3')], [X('gw', 40), G('L3')], B('gw', 40)], label: 'sign attestation', lp: [X('hwtest', 80), G('L3')] },
+    { id: 'e_gate_registry', kind: 'trust', bridge: true, pts: [B('gate', -50), [X('gate', -50), G('L4')], [X('registry', 35), G('L4')], T('registry', 35)], label: 'attestation', lp: [X('hwtest', 90), G('L4')] },
+    { id: 'e_gate_status', kind: 'event', pts: [T('gate', 40), B('status', 40)], label: 'post status', lp: [X('gate', 40), MID('L2')] },
+
+    // Archive
+    { id: 'e_gate_archive', kind: 'flow', dashed: true, pts: [R('gate'), Lf('archive')] },
+    { id: 'e_p2_archive', kind: 'event', pts: [B('p2', -30), T('archive', -30)], label: 'GHAF_VERSION', lp: [X('p2', -30), MID('L2')] },
+    { id: 'e_archive_cache', kind: 'store', bridge: true, pts: [Lf('archive', -25), [X('archive', -112), Y('archive', -25)], [X('archive', -112), G('L2')], [X('cache', 50), G('L2')], B('cache', 50)], label: 'cachix pin (OTA)', lp: [X('hwtest', 0), G('L2')] },
+    { id: 'e_archive_s3', kind: 'store', pts: [B('archive'), T('s3')], label: 'archive-ghaf-release', lp: [X('archive'), G('L4')] }
+  ];
+  // Default label position: middle of a two-point edge.
+  EDGES.forEach(function (e) { if (e.label && !e.lp) e.lp = mid(e.pts[0], e.pts[e.pts.length - 1]); });
+
+  // ------------------------------------------------------------------
+  // Routes. Each step lists the nodes and edges it lights up; badge is
+  // the node that carries the step number on the map.
+  // ------------------------------------------------------------------
+  var BAND_NODES = ['b1', 'b2', 'b3', 'b4', 'b5'];
+  var BAND_EDGES = ['e_b12', 'e_b23', 'e_b34', 'e_b45', 'rail', 'br_L2', 'br_L4', 'br_L6'];
+
+  var ROUTES = {
+    r: {
+      title: 'ci-release · release candidate → archive',
+      intro: 'A Ghaf release: one manually triggered candidate build on the isolated release environment, hardware tests, a signed release decision, and a second manual job that archives the result.',
+      steps: [
+        { badge: 'b5', title: 'Reset ci-release to a fresh baseline',
+          nodes: BAND_NODES, edges: BAND_EDGES, focus: ['b3', 'b4', 'b5'],
+          text: '<code>inv install-release</code> deploys the current ghaf-infra checkout to <strong>hetzci-release</strong>, <strong>hetz86-rel-2</strong>, <strong>hetzarm-rel-1</strong> and <strong>testagent-release</strong>, then resets the first three to that baseline with a fresh credential epoch.',
+          ci: 'Jenkins and its pipelines are part of each host\'s system closure, which is the baseline: every reboot returns the host to it, so nothing from a previous release (state, builds, credentials) carries over.',
+          files: ['tasks.py', 'hosts/hetzci/release/', 'docs/baseline-reset.md'] },
+        { badge: 'p1', title: 'Start a release candidate',
+          nodes: ['p1', 'auth', 'job'], edges: ['e_p1_job'],
+          text: 'A release engineer signs in to <strong>ci-release.vedenemo.dev</strong> through <strong>ghaf-auth</strong> (GitHub SSO) and runs <code>ghaf-release-candidate</code> with <code>GITREF</code> and a target set. ci-release has no webhooks; every run here is deliberate.',
+          files: ['modules/jenkins/pipelines/ghaf-release-candidate.groovy', 'hosts/ghaf-auth/'] },
+        { badge: 'checkout', title: 'Check out ghaf and verify where it came from',
+          nodes: ['job', 'checkout', 'gh', 'ghcr'], edges: ['e_job_checkout', 'e_gh_checkout', 'e_ghcr_checkout'],
+          text: 'The controller checks out tiiuae/ghaf at <code>GITREF</code>, fetches the commit\'s <strong>Source VSA</strong> from GHCR (no valid VSA stops the run), then evaluates the flake with <code>nix flake show</code>.',
+          ci: 'Ghaf\'s flake lockfile means the commit decides every input of the build. The VSA proves that commit landed on main: tiiuae/ghaf\'s own source-vsa workflow signed it on a push of that exact commit to main, so a branch, PR or fork commit cannot be released.',
+          files: ['pkgs/source-vsa/'] },
+        { badge: 'build', title: 'Build every target on the release builders',
+          nodes: ['checkout', 'build', 'builders', 'cache'], edges: ['e_checkout_build', 'e_build_builders', 'e_cache_builders', 'e_builders_cache'],
+          text: 'Each target, such as <code>packages.x86_64-linux.intel-laptop-debug</code>, runs <code>nix build --store ssh-ng://hetz86-rel-2</code> (hetzarm-rel-1 for aarch64). The builder downloads what <strong>Cachix ghaf-release</strong> already has, builds the rest and uploads new paths with cachix-push; the result is copied back to the controller.',
+          ci: 'The release cache survives baseline resets, so each release only rebuilds what changed.',
+          files: ['hosts/hetzci/release/configuration.nix', 'hosts/builders/cachix-push.nix'] },
+        { badge: 'attest', title: 'Attest and sign through the HSMs',
+          nodes: ['build', 'attest', 'gw', 'hsm'], edges: ['e_build_attest', 'e_attest_gw', 'e_gw_hsm'],
+          text: 'The controller writes <strong>SLSA provenance</strong> and <strong>SBOMs</strong> with sbomnix, builds the OTA pin for the laptop image, then signs: UEFI Secure Boot signatures for laptop images and installers, SLSA signatures for provenance and images. Signing goes through a PKCS#11 gateway (Tampere or UAE) to keys that never leave the HSM. The provenance is checked against the trust policy immediately.',
+          files: ['hosts/hetzci/signing.nix', 'scripts/select-pkcs11-node.sh', 'slsa/provenance-trust-policy.yaml', 'docs/nethsm.md'] },
+        { badge: 'publish', title: 'Publish the candidate',
+          nodes: ['attest', 'publish', 'registry'], edges: ['e_attest_publish', 'e_publish_registry'],
+          text: 'Artifacts land in <code>/var/lib/jenkins/artifacts/ghaf-release-candidate/&lt;stamp&gt;-commit_&lt;sha&gt;/</code> on the controller, and <code>oci-publish</code> pushes each image to <strong>registry.vedenemo.dev</strong> as <code>ghaf/release-candidate/&lt;target&gt;</code>, tagged <code>release-&lt;stamp&gt;-&lt;sha&gt;</code> and <code>release-latest</code>.',
+          files: ['pkgs/oci-publish/', 'hosts/ghaf-registry/configuration.nix'] },
+        { badge: 'agent', title: 'Test on real hardware',
+          nodes: ['publish', 'hwtest', 'agent', 'dut', 'registry'], edges: ['e_publish_hwtest', 'e_hwtest_agent', 'e_registry_agent', 'e_agent_dut'],
+          text: 'For each device (Lenovo X1 and Darter Pro for the laptop image, Orin AGX/NX for the Jetson images) the run triggers <code>ghaf-hw-test</code> on <strong>testagent-release</strong>. The agent pulls the image, verifies its provenance and signature again, flashes it with Ghaf\'s own flash-script and runs the Robot Framework <code>relayboot</code> and <code>bat</code> tests.',
+          files: ['modules/jenkins/pipelines/ghaf-hw-test.groovy', 'modules/jenkins/pipeline-library/vars/hwTestUtils.groovy', 'hosts/testagent/release/'] },
+        { badge: 'registry', title: 'Attach test results to the image',
+          nodes: ['hwtest', 'registry'], edges: ['e_hwtest_registry'],
+          text: 'Per-device results are collected into <code>test-results.json</code> and attached to the image as <strong>OCI referrers</strong>, so the image and its evidence can be fetched together later with <code>nix run .#ghaf-fetch</code>.',
+          files: ['modules/jenkins/pipeline-library/vars/pipelineExecution.groovy', 'scripts/ghaf-fetch.sh'] },
+        { badge: 'gate', title: 'Decide: release policy',
+          nodes: ['hwtest', 'gate', 'gw', 'hsm', 'registry'], edges: ['e_hwtest_gate', 'e_gate_gw', 'e_gw_hsm', 'e_gate_registry'],
+          text: '<code>policy-checker release</code> checks image and provenance signatures, the provenance trust verdict, SBOM presence and hardware test results against <code>slsa/release-policy.yaml</code>. The verdict is signed on the HSM and attached to the image as another referrer.',
+          files: ['slsa/release-policy.yaml', 'pkgs/policy-checker/'] },
+        { badge: 'archive', title: 'Promote the candidate',
+          nodes: ['gate', 'p2', 'archive'], edges: ['e_gate_archive', 'e_p2_archive'],
+          text: 'When the candidate is good, the release engineer runs <code>ghaf-release-publish</code> with <code>GHAF_VERSION</code> and the candidate\'s <code>ARTIFACTS_URL</code>. Do this before ci-release reboots: baseline reset throws away the local artifacts directory.',
+          files: ['modules/jenkins/pipelines/ghaf-release-publish.groovy'] },
+        { badge: 's3', title: 'Pin the OTA closure and archive the release',
+          nodes: ['archive', 'cache', 's3'], edges: ['e_archive_cache', 'e_archive_s3'],
+          text: 'The OTA closure is pushed to <strong>Cachix ghaf-release</strong> and pinned, so devices can update from the cache. <code>archive-ghaf-release</code> verifies every signature and the release attestation, packs tarballs and uploads them to <strong>Hetzner Object Storage</strong> (<code>ghaf-artifacts</code>), where ghaf-archive serves them.',
+          files: ['scripts/archive-ghaf-release.sh'] }
+      ]
+    },
+    p: {
+      title: 'ci-prod · pre-merge',
+      intro: 'Every PR to tiiuae/ghaf: build the merge result on the shared prod builders, sign it, flash it on real devices, and report back to the PR.',
+      steps: [
+        { badge: 'b5', title: 'ci-prod is a long-lived NixOS host',
+          nodes: BAND_NODES, edges: BAND_EDGES, focus: ['b3', 'b4', 'b5'],
+          text: '<strong>hetzci-prod</strong> is a long-lived host. Admins deploy ghaf-infra changes to it with <code>deploy .#hetzci-prod</code> (deploy-rs); nothing deploys automatically. The prod builders and test agents are deployed the same way, and Jenkins keeps its state across deploys and reboots.',
+          ci: 'Jenkins, every plugin, the pipelines and JCasC are part of the host\'s system closure. Changing the CI is a reviewed ghaf-infra PR plus a deploy, never clicks in the Jenkins UI, and the previous system generation stays available to roll back to.',
+          files: ['hosts/hetzci/prod/configuration.nix', 'nix/deployments.nix', 'docs/deploy-rs.md'] },
+        { badge: 'p1', title: 'Open or update a PR',
+          nodes: ['p1', 'gh'], edges: ['e_dev_gh'],
+          text: 'A tiiuae org member opens a pull request against <strong>tiiuae/ghaf</strong>, or pushes new commits to one.' },
+        { badge: 'job', title: 'Webhook triggers ghaf-pre-merge',
+          nodes: ['gh', 'job'], edges: ['e_webhook'],
+          text: 'GitHub sends the PR event to <strong>ci-prod.vedenemo.dev</strong>. The trigger accepts tiiuae org members only, aborts a running build when new commits arrive, and polls every 15 minutes in case a webhook was missed.',
+          files: ['modules/jenkins/pipelines/ghaf-pre-merge.groovy', 'modules/jenkins/casc/githubWebhook.yaml'] },
+        { badge: 'checkout', title: 'Check out the merge commit',
+          nodes: ['job', 'checkout', 'gh', 'ghcr', 'status'], focus: ['job', 'checkout', 'gh', 'ghcr'], edges: ['e_job_checkout', 'e_gh_checkout', 'e_ghcr_checkout'],
+          text: 'Jenkins checks out GitHub\'s merge commit <code>refs/pull/N/merge</code> (main as it would look after merging) and sets <strong>jenkins-pre-merge: pending</strong> on the PR. A Source VSA is fetched if one exists; its absence does not fail the run. Then the flake is evaluated.',
+          ci: 'Ghaf\'s flake lockfile means the commit decides every input of the build, so testing the merge commit tests exactly what main would build.',
+          files: ['modules/jenkins/pipeline-library/vars/checkoutUtils.groovy'] },
+        { badge: 'build', title: 'Build on the shared prod builders',
+          nodes: ['checkout', 'build', 'builders', 'cache'], edges: ['e_checkout_build', 'e_build_builders', 'e_cache_builders', 'e_builders_cache'],
+          text: 'Each target, such as <code>packages.x86_64-linux.intel-laptop-debug</code>, runs <code>nix build --store ssh-ng://hetz86-1</code> (<strong>hetzarm</strong> for aarch64); ci-dev shares these builders. The builder downloads what <strong>Cachix ghaf-dev</strong> already has, builds the rest and pushes new paths back with cachix-push; the result is copied back to the controller.',
+          files: ['hosts/hetzci/remote-builders.nix', 'hosts/builders/hetz86-1/', 'hosts/builders/cachix-push.sh'] },
+        { badge: 'attest', title: 'Provenance and signatures',
+          nodes: ['build', 'attest', 'gw', 'hsm'], edges: ['e_build_attest', 'e_attest_gw', 'e_gw_hsm'],
+          text: 'Each target gets <strong>SLSA provenance</strong> from sbomnix, and provenance and image are signed with the <strong>prod keys</strong> through the HSM gateways. SBOMs, UEFI signing and the OTA pin are left to releases.',
+          files: ['hosts/hetzci/signing.nix'] },
+        { badge: 'publish', title: 'Publish to the registry',
+          nodes: ['attest', 'publish', 'registry'], edges: ['e_attest_publish', 'e_publish_registry'],
+          text: 'The image goes to <strong>registry.vedenemo.dev</strong> as <code>ghaf/pre-merge/&lt;target&gt;:prod-&lt;stamp&gt;-&lt;sha&gt;</code> (plus <code>prod-latest</code>).',
+          files: ['pkgs/oci-publish/'] },
+        { badge: 'agent', title: 'Test on real hardware',
+          nodes: ['publish', 'hwtest', 'agent', 'dut', 'registry'], edges: ['e_publish_hwtest', 'e_hwtest_agent', 'e_registry_agent', 'e_agent_dut'],
+          text: 'For each device (Lenovo X1, Darter Pro, Orin AGX, Orin NX) the run triggers <code>ghaf-hw-test</code> on <strong>testagent-prod / testagent2-prod</strong>. The agent pulls the image, verifies its provenance and signature, flashes it with Ghaf\'s own flash-script and runs the Robot Framework <code>_relayboot_pre-merge_</code> test set.',
+          files: ['modules/jenkins/pipelines/ghaf-hw-test.groovy', 'hosts/testagent/prod/'] },
+        { badge: 'registry', title: 'Attach test results to the image',
+          nodes: ['hwtest', 'registry'], edges: ['e_hwtest_registry'],
+          text: 'Per-device results are collected into <code>test-results.json</code> and attached to the image as <strong>OCI referrers</strong>, so the image and its evidence can be fetched together later with <code>nix run .#ghaf-fetch</code>.' },
+        { badge: 'status', title: 'Report back to the PR',
+          nodes: ['hwtest', 'gate', 'status'], edges: ['e_hwtest_gate', 'e_gate_status'],
+          text: 'If every target built and passed its tests, <strong>jenkins-pre-merge</strong> turns to success on the PR, otherwise failure, with a link to the run. Nothing is archived.',
+          files: ['modules/jenkins/pipeline-library/vars/pipelineExecution.groovy'] }
+      ]
+    },
+    m: {
+      title: 'ci-prod · main',
+      intro: 'Every merge to tiiuae/ghaf main: build the new main on the shared prod builders, sign it, publish it and run the BAT tests on real devices. Nothing reports back to GitHub; what main leaves behind is tested images and a cache full of its build results.',
+      steps: [
+        { badge: 'b5', title: 'The same long-lived ci-prod host',
+          nodes: BAND_NODES, edges: BAND_EDGES, focus: ['b3', 'b4', 'b5'],
+          text: 'Main builds run on <strong>hetzci-prod</strong>, a long-lived host that admins deploy with <code>deploy .#hetzci-prod</code>; nothing deploys automatically. The same Jenkins also runs the pre-merge builds; main uses the <code>ghaf-main</code> pipeline.',
+          ci: 'Jenkins, every plugin, the pipelines and JCasC are part of the host\'s system closure. Changing the CI is a reviewed ghaf-infra PR plus a deploy, never clicks in the Jenkins UI, and the previous system generation stays available to roll back to.',
+          files: ['hosts/hetzci/prod/configuration.nix', 'modules/jenkins/pipelines/ghaf-main.groovy'] },
+        { badge: 'p1', title: 'Merge a PR to main',
+          nodes: ['p1', 'gh'], edges: ['e_dev_gh'],
+          text: 'Merging a PR pushes new commits to <strong>main</strong> on tiiuae/ghaf.' },
+        { badge: 'job', title: 'Push webhook triggers ghaf-main',
+          nodes: ['gh', 'job'], edges: ['e_webhook'],
+          text: 'GitHub sends the push event to <strong>ci-prod.vedenemo.dev</strong> and the <code>githubPush</code> trigger starts <code>ghaf-main</code>. Only one main build runs at a time: a newer push aborts the one in progress.',
+          files: ['modules/jenkins/pipelines/ghaf-main.groovy', 'modules/jenkins/casc/githubWebhook.yaml'] },
+        { badge: 'checkout', title: 'Check out the tip of main',
+          nodes: ['job', 'checkout', 'gh', 'ghcr'], edges: ['e_job_checkout', 'e_gh_checkout', 'e_ghcr_checkout'],
+          text: 'Jenkins checks out the current tip of <code>main</code> and fetches its Source VSA if there is one; a missing VSA does not fail the run. Then the flake is evaluated.',
+          ci: 'Ghaf\'s flake lockfile means the commit decides every input of the build.',
+          files: ['modules/jenkins/pipeline-library/vars/checkoutUtils.groovy'] },
+        { badge: 'build', title: 'Build on the shared prod builders',
+          nodes: ['checkout', 'build', 'builders', 'cache'], edges: ['e_checkout_build', 'e_build_builders', 'e_cache_builders', 'e_builders_cache'],
+          text: 'Each target (the laptop image, Orin AGX and NX images built natively and cross-built from x86_64, and the docs) runs <code>nix build --store ssh-ng://hetz86-1</code> (<strong>hetzarm</strong> for aarch64). The builder downloads what <strong>Cachix ghaf-dev</strong> already has, builds the rest and pushes new paths back with cachix-push; the result is copied back to the controller.',
+          files: ['modules/jenkins/pipelines/ghaf-main.groovy', 'hosts/hetzci/remote-builders.nix'] },
+        { badge: 'attest', title: 'Provenance and signatures',
+          nodes: ['build', 'attest', 'gw', 'hsm'], edges: ['e_build_attest', 'e_attest_gw', 'e_gw_hsm'],
+          text: 'Each target gets <strong>SLSA provenance</strong> from sbomnix, and provenance and image are signed with the <strong>prod keys</strong> through the HSM gateways. SBOMs, UEFI signing and the OTA pin are left to releases.',
+          files: ['hosts/hetzci/signing.nix'] },
+        { badge: 'publish', title: 'Publish the new main',
+          nodes: ['attest', 'publish', 'registry'], edges: ['e_attest_publish', 'e_publish_registry'],
+          text: 'Each image goes to <strong>registry.vedenemo.dev</strong> as <code>ghaf/main/&lt;target&gt;:prod-&lt;stamp&gt;-&lt;sha&gt;</code>, and <code>prod-latest</code> moves to it. The tag moves at publish time, before the hardware tests, so check the attached test results before relying on it.',
+          files: ['pkgs/oci-publish/'] },
+        { badge: 'agent', title: 'Test on real hardware',
+          nodes: ['publish', 'hwtest', 'agent', 'dut', 'registry'], edges: ['e_publish_hwtest', 'e_hwtest_agent', 'e_registry_agent', 'e_agent_dut'],
+          text: 'For each device (Lenovo X1, Darter Pro, Orin AGX, Orin NX) the run triggers <code>ghaf-hw-test</code> on <strong>testagent-prod / testagent2-prod</strong>. The agent pulls the image, verifies its provenance and signature, flashes it with Ghaf\'s own flash-script and runs the Robot Framework <code>_relayboot_bat_</code> test set.',
+          files: ['modules/jenkins/pipelines/ghaf-hw-test.groovy', 'hosts/testagent/prod/'] },
+        { badge: 'registry', title: 'Attach test results to the image',
+          nodes: ['hwtest', 'registry'], edges: ['e_hwtest_registry'],
+          text: 'Results are attached to the main image as OCI referrers, so <code>nix run .#ghaf-fetch</code> on a <code>ghaf/main</code> image also brings its test evidence.' },
+        { badge: 'gate', title: 'What main leaves behind',
+          nodes: ['hwtest', 'gate', 'cache'], edges: ['e_hwtest_gate', 'e_builders_cache'],
+          text: '<code>ghaf-main</code> posts no commit status and archives nothing. It leaves three results: the Jenkins build result, the tested images under <code>ghaf/main</code>, and, just as important, the store paths it built in <strong>Cachix ghaf-dev</strong> (everything except the disk images).',
+          ci: 'Store paths are keyed by their inputs, so a developer building main right after a merge mostly downloads instead of rebuilding.',
+          files: ['modules/jenkins/pipelines/ghaf-main.groovy', 'hosts/builders/cachix-push.sh'] }
+      ]
+    }
+  };
+
+  var GLOSSARY = [
+    { t: 'Flake and flake.lock', d: 'A repository with a <code>flake.nix</code> that declares inputs (other flakes, nixpkgs) and outputs (packages, NixOS hosts, dev shells). <code>flake.lock</code> pins each input by revision and hash.', ci: 'A lockfile for the whole toolchain and OS.' },
+    { t: 'Derivation and store path', d: 'A derivation is a build recipe. Its output lands in <code>/nix/store/&lt;hash&gt;-name</code>, where the hash covers every input. Same inputs, same path, so a result built anywhere can be reused anywhere.', ci: 'A content-addressed build artifact.' },
+    { t: 'Evaluation vs. build', d: 'Evaluation turns Nix code into derivations (cheap, single-threaded, no compiling). Building realises them. Jenkins evaluates on the controller and builds on remote builders.', ci: '"Plan" vs. "apply".' },
+    { t: 'Remote builder', d: '<code>nix build --store ssh-ng://host</code> sends the derivations to another machine over SSH and builds there. Hosts list theirs in <code>nix.buildMachines</code>.', ci: 'A build agent, but Nix does the scheduling.' },
+    { t: 'Binary cache (substituter)', d: 'Before building a path, Nix asks its caches whether it already exists and downloads it instead. ghaf-infra uses Cachix caches <code>ghaf-dev</code>, <code>ghaf-release</code> and <code>ghaf-dbg</code>.', ci: 'A remote build cache keyed by input hash.' },
+    { t: 'Closure', d: 'A store path plus everything it references, recursively. Copying, deploying or pinning always moves a whole closure, so nothing is ever missing at runtime.', ci: 'An artifact bundled with all its dependencies.' },
+    { t: 'NixOS configuration', doc: 'docs/adding-a-host.md', d: 'A machine\'s entire OS (packages, services, users, firewall, Jenkins) written as Nix: <code>nixosConfigurations.&lt;host&gt;</code>. Building it yields one "toplevel" store path.', ci: 'Configuration management and golden image in one.' },
+    { t: 'deploy-rs and inv tasks', doc: 'docs/deploy-rs.md', d: '<code>deploy .#host</code> copies the closure to the host and activates it, with automatic rollback. <code>inv install</code> provisions a new host (nixos-anywhere + disko); <code>inv install-release</code> refreshes ci-release.', ci: 'The deployment tool, per host.' },
+    { t: 'Baseline reset', doc: 'docs/baseline-reset.md', d: 'On ci-release and ci-dbg, root and <code>/nix</code> writes are discarded on every boot and the host returns to its deployed baseline. Test agents are not reset.', ci: 'Ephemeral runners, applied to the controller too.' },
+    { t: 'Nebula', doc: 'docs/nebula.md', d: 'An encrypted overlay network joining the Hetzner servers, the Tampere office and the UAE site. <code>ghaf-lighthouse</code> introduces hosts and answers DNS under <code>sumu.vedenemo.dev</code>; traffic then flows directly between hosts.', ci: 'A mesh VPN, defined in Nix like everything else.' },
+    { t: 'sops-nix', doc: 'docs/architecture.md', d: 'Secrets live encrypted in each host\'s <code>secrets.yaml</code> and are decrypted on that host at activation, never into the world-readable Nix store.', ci: 'Encrypted secrets in Git, scoped per host.' },
+    { t: 'JCasC', doc: 'docs/jenkins-authentication.md', d: 'Jenkins Configuration as Code: YAML that Jenkins applies at startup. ghaf-infra generates it with Nix and deletes Jenkins\' own XML config before every start, so the repo is the only source of truth.', ci: 'Jenkins settings as reviewed code.' },
+    { t: 'Provenance, VSA, OCI referrers', d: 'SLSA provenance says how an artifact was built; a Source VSA says a source commit passed policy. Both are signed; ghaf-infra writes provenance and SBOMs with sbomnix. OCI referrers attach such evidence to an image in the registry without changing its digest.', ci: 'Signed build metadata that travels with the artifact.' },
+    { t: 'Prometheus and Grafana', doc: 'docs/monitoring.md', d: '<code>ghaf-monitoring</code> runs Prometheus, which collects metrics from hosts that opt in with <code>services.monitoring.metrics.enable</code> (node-exporter), plus the registry, the NetHSM and the test agents\' relay boards, and keeps them for 90 days. Grafana (monitoring.vedenemo.dev) shows the dashboards and sends alerts to Slack. Both are provisioned by Nix, so UI edits do not stick.', ci: 'Metrics, dashboards and alerting for the CI machines.' },
+    { t: 'Loki and Alloy', doc: 'docs/monitoring.md', d: 'Grafana Alloy runs on hosts with <code>services.monitoring.logs.enable</code> and ships their systemd journal to Loki on <code>ghaf-monitoring</code>, searchable in the same Grafana. Logs from Ghaf devices go to a separate Loki and Grafana on <code>ghaf-log</code> (ghaflogs.vedenemo.dev).', ci: 'Central log search, kept apart for the infrastructure and for devices.' }
+  ];
+
+  // Every Jenkins controller ghaf-infra defines. Only ci-release and
+  // ci-prod have a route on the map.
+  var ENVS = [
+    { env: 'ci-prod', url: 'ci-prod.vedenemo.dev', host: 'hetzci-prod', config: 'hosts/hetzci/prod/', routes: ['p', 'm'],
+      purpose: 'Production CI for every push and PR to Ghaf, plus nightly builds.',
+      pipelines: 'ghaf-pre-merge, ghaf-main, ghaf-nightly, ghaf-nightly-perftest, ghaf-manual, ghaf-pre-merge-manual, ghaf-hw-test, ghaf-hw-test-manual',
+      builders: 'hetz86-1, hetzarm (shared with ci-dev)', cache: 'ghaf-dev',
+      agents: 'testagent-prod, testagent2-prod', life: 'Long-lived, deploy-rs' },
+    { env: 'ci-release', url: 'ci-release.vedenemo.dev', host: 'hetzci-release', config: 'hosts/hetzci/release/', routes: ['r'],
+      purpose: 'Ghaf releases, started by hand. The only environment that pushes to ghaf-release.',
+      pipelines: 'ghaf-release-candidate, ghaf-release-publish, ghaf-hw-test',
+      builders: 'hetz86-rel-2, hetzarm-rel-1', cache: 'ghaf-release',
+      agents: 'testagent-release', life: 'Baseline reset, inv install-release per release' },
+    { env: 'ci-dev', url: 'ci-dev.vedenemo.dev', host: 'hetzci-dev', config: 'hosts/hetzci/dev/',
+      purpose: 'Mirrors prod for CI and hardware-test development.',
+      pipelines: 'same as ci-prod, plus ghaf-nightly-poweroff',
+      builders: 'hetz86-1, hetzarm (shared with ci-prod)', cache: 'ghaf-dev',
+      agents: 'testagent-dev', life: 'Long-lived, deploy-rs' },
+    { env: 'ci-dbg', url: 'ci-dbg.vedenemo.dev', host: 'hetzci-dbg', config: 'hosts/hetzci/dbg/',
+      purpose: 'Isolated controller and builders for troubleshooting, for example reproducing a release build.',
+      pipelines: 'ghaf-release-candidate, ghaf-manual, ghaf-hw-test, ghaf-hw-test-manual',
+      builders: 'hetz86-dbg-1, hetzarm-dbg-1', cache: 'ghaf-dbg (builders also read ghaf-dev)',
+      agents: 'testagent-dbg', life: 'Baseline reset, deploy + reboot' },
+    { env: 'UAE ci-prod', url: 'ci-prod.uaenorth.cloudapp.azure.com', host: 'uae-azureci-prod', config: 'hosts/uae/azureci/prod/',
+      purpose: 'UAE controller with its own registry (<code>uae-azureci-registry</code>, registry.uaenorth.cloudapp.azure.com). Signs through the UAE gateway first, Tampere as fallback.',
+      pipelines: 'ghaf-main, ghaf-nightly, ghaf-manual, ghaf-hw-test, ghaf-hw-test-manual',
+      builders: 'uae-azureci-az86-1, uae-azureci-hetzarm-1', cache: 'reads ghaf-dev',
+      agents: 'uae-testagent-prod, uae-testagent2-prod', life: 'Long-lived, deploy-rs' },
+    { env: 'GitHub Actions', url: 'tiiuae/ghaf and ghaf-infra', host: 'GitHub runners', config: '.github/workflows/build.yml', repo: 'https://github.com/tiiuae/ghaf',
+      purpose: 'tiiuae/ghaf builds its targets for PRs and pushes to main on ci-prod\'s builders, without signing or hardware tests. Both repositories also run a nightly <code>flakevuln</code> vulnerability scan.',
+      pipelines: 'build.yml, flakevuln.yml',
+      builders: 'hetz86-1, hetzarm (shared with ci-prod)', cache: 'ghaf-dev',
+      agents: 'none', life: 'GitHub-hosted runners' },
+    { env: 'hetzci-vm', url: 'localhost:8080', host: 'hetzci-vm', config: 'hosts/hetzci/vm/',
+      purpose: 'Local QEMU VM for developing pipeline changes: <code>nix run .#run-hetzci-vm</code>. Not a deploy target, and it cannot sign. The <code>hetzci-vm-no-host-nix-store</code> variant runs without mounting the host\'s Nix store.',
+      pipelines: 'all pipelines',
+      builders: 'hetz86-1, hetzarm', cache: 'ghaf-dev',
+      agents: 'none', life: 'Throwaway, on your machine' }
+  ];
+
+  // Hosts that are not on a walk, listed below the map.
+  var SUPPORT = [
+    { host: 'ghaf-lighthouse', url: 'sumu.vedenemo.dev', config: 'hosts/ghaf-lighthouse/',
+      what: 'Nebula lighthouse: introduces hosts that join the encrypted overlay linking Hetzner, the Tampere office and the UAE, and answers DNS for <code>*.sumu.vedenemo.dev</code>. No traffic flows through it.',
+      walks: 'The signing path in lane 03 runs over Nebula: controllers find <code>nethsm-gateway.sumu.vedenemo.dev</code> through the lighthouse, then talk to the gateway directly.' },
+    { host: 'ghaf-monitoring', url: 'monitoring.vedenemo.dev', config: 'hosts/ghaf-monitoring/',
+      what: 'Prometheus, Grafana and Loki for the infrastructure, with alerts to Slack. Hosts opt in with <code>services.monitoring</code>; dashboards and alerts are provisioned by Nix.',
+      walks: 'Watches the hosts on the map, including the registry, the signing gateways, the test agents and their relay boards, but takes no part in a run.' },
+    { host: 'ghaf-log', url: 'ghaflogs.vedenemo.dev', config: 'hosts/ghaf-log/',
+      what: 'A separate Grafana and Loki for logs from Ghaf devices, with a Loki API for external log producers.',
+      walks: 'Not part of a run.' },
+    { host: 'ghaf-fleetdm', url: 'fleetdm.vedenemo.dev', config: 'hosts/ghaf-fleetdm/',
+      what: 'Fleet device management server for Ghaf end devices.',
+      walks: 'Test agents carry Fleet enrollment credentials, so Ghaf images flashed during hardware tests can register with it.' },
+    { host: 'ghaf-webserver', url: 'vedenemo.dev', config: 'hosts/ghaf-webserver/',
+      what: 'Nginx serving static web content.',
+      walks: 'Not part of a run.' }
+  ];
+
+  var KIND_LABEL = {
+    config: 'ghaf-infra code', pipeline: 'Jenkins pipeline', build: 'Nix build', store: 'Storage + cache',
+    trust: 'Trust + signing', event: 'Trigger + report', external: 'External / hardware', flow: 'Flow'
+  };
+  var LANE_NAME = { L1: 'Source, people & sign-in', L2: 'Nix builders + cache', L3: 'Signing', L4: 'Jenkins controller', L5: 'Registry & archive', L6: 'Test lab' };
+
+  // ------------------------------------------------------------------
+  // Helpers
+  // ------------------------------------------------------------------
+  var NS = 'http://www.w3.org/2000/svg';
+  var svg = document.getElementById('map');
+  var REPO_URL = 'https://github.com/tiiuae/ghaf-infra';
+  var NODE_BY_ID = {}; NODES.forEach(function (n) { NODE_BY_ID[n.id] = n; });
+  var EDGE_BY_ID = {}; EDGES.forEach(function (e) { EDGE_BY_ID[e.id] = e; });
+
+  function el(name, attrs, parent) {
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) if (attrs[k] !== undefined && attrs[k] !== null) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function txt(parent, x, y, s, attrs) {
+    var t = el('text', Object.assign({ x: x, y: y }, attrs || {}), parent);
+    t.textContent = s;
+    return t;
+  }
+  // ci-prod main shares the ci-prod host with pre-merge, so its texts fall
+  // back to the pre-merge (p) variants before the overview (o) ones.
+  var ROUTE_NAME = { p: 'pre-merge', m: 'main', r: 'release' };
+  var ROUTE_NOTE = { p: 'On ci-prod pre-merge', m: 'On ci-prod main', r: 'On ci-release' };
+  function variant(map, r) {
+    if (!map) return undefined;
+    if (map[r] !== undefined) return map[r];
+    return r === 'm' && map.p !== undefined ? map.p : map.o;
+  }
+  function pick(map, r) { return variant(map, r); }
+  function nodeText(n, r) { return Object.assign({}, n.t.o, r === 'm' ? n.t.p : null, n.t[r] || {}); }
+  function nodeKind(n, r) { return (n.kindBy && variant(n.kindBy, r)) || n.kind; }
+  function nodeBox(n) { return BOX[n.id]; }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  var SIGILS = {
+    config: ['M4 1.5h5.5L13 5v9.5H4z', 'M9.5 1.5V5H13', 'M6 8.5h5', 'M6 11h5'],
+    pipeline: ['M6 3 3 8l3 5', 'M10 3l3 5-3 5'],
+    build: ['M8 1.8 14 5v6.2L8 14.4 2 11.2V5z', 'M2 5l6 3.2L14 5', 'M8 8.2v6.2'],
+    store: ['M3 4c0-1.1 2.2-2 5-2s5 .9 5 2-2.2 2-5 2-5-.9-5-2z', 'M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4', 'M3 8c0 1.1 2.2 2 5 2s5-.9 5-2'],
+    trust: ['M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z', 'm5.8 8 1.5 1.5 3-3'],
+    event: ['M9 1.5 3.5 9H8l-1 5.5L12.5 7H8z'],
+    external: ['M2.5 5h8.5v8.5H2.5z', 'M8 2.5h5.5V8', 'M13.5 2.5 7.5 8.5'],
+    person: ['M8 7.4a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z', 'M3 14c.6-3 2.6-4.6 5-4.6s4.4 1.6 5 4.6'],
+    chip: ['M5 5h6v6H5z', 'M6.5 2v3M9.5 2v3M6.5 11v3M9.5 11v3M2 6.5h3M2 9.5h3M11 6.5h3M11 9.5h3']
+  };
+
+  // ------------------------------------------------------------------
+  // State
+  // ------------------------------------------------------------------
+  var state = { route: 'o', step: null, node: null, query: '', legend: null };
+  var findIdx = -1; // position when stepping through search matches with Enter
+
+  // Search covers every text a node can show plus its details and files.
+  var SEARCH = {};
+  NODES.forEach(function (n) {
+    var parts = [KIND_LABEL[n.kind], n.lane ? LANE_NAME[n.lane] : 'ghaf-infra flake'].concat(n.info.files || []);
+    ['o', 'p', 'm', 'r'].forEach(function (k) { var t = n.t[k]; if (t) parts.push(t.n, t.s, t.a); });
+    ['what', 'p', 'm', 'r', 'ci'].forEach(function (k) {
+      if (n.info[k]) { var d = document.createElement('div'); d.innerHTML = n.info[k]; parts.push(d.textContent); }
+    });
+    SEARCH[n.id] = parts.filter(Boolean).join(' ').toLowerCase();
+  });
+  function searchTerms() { return state.query.toLowerCase().split(/\s+/).filter(Boolean); }
+  function searchHits() {
+    var terms = searchTerms();
+    if (!terms.length) return null;
+    return NODES.filter(function (n) {
+      return terms.every(function (t) { return SEARCH[n.id].indexOf(t) >= 0; });
+    }).map(function (n) { return n.id; });
+  }
+  // Table rows and glossary cards below the map that match.
+  function rowHits() {
+    var terms = searchTerms();
+    if (!terms.length) return null;
+    return Array.prototype.filter.call(document.querySelectorAll('[data-row]'), function (tr) {
+      var text = tr.textContent.toLowerCase();
+      return terms.every(function (t) { return text.indexOf(t) >= 0; });
+    });
+  }
+
+  function routeSets(r) {
+    var nodes = {}, edges = {};
+    if (r === 'o') return null;
+    ROUTES[r].steps.forEach(function (s) {
+      s.nodes.forEach(function (id) { nodes[id] = true; });
+      s.edges.forEach(function (id) { edges[id] = true; });
+    });
+    return { nodes: nodes, edges: edges };
+  }
+
+  // ------------------------------------------------------------------
+  // Render the SVG for the current route (texts and badges vary by route)
+  // ------------------------------------------------------------------
+  function render() {
+    var r = state.route;
+    svg.classList.add('no-trans');
+    while (svg.lastChild && svg.lastChild.nodeName !== 'desc') svg.removeChild(svg.lastChild);
+
+    var defs = el('defs', {}, svg);
+    Object.keys(KIND_LABEL).forEach(function (k) {
+      var m = el('marker', { id: 'ah-' + k, markerWidth: 10, markerHeight: 7, refX: 9, refY: 3.5, orient: 'auto-start-reverse', markerUnits: 'userSpaceOnUse', 'class': 'k-' + k }, defs);
+      el('polygon', { points: '0 0, 10 3.5, 0 7', 'class': 'arrowhead' }, m);
+    });
+
+
+    // Band 00
+    el('rect', { x: BAND.x, y: BAND.y, width: BAND.w, height: BAND.h, rx: 10, 'class': 'c-band', 'stroke-width': 1 }, svg);
+    txt(svg, BAND.x + 14, BAND.y + 23, '00 / ghaf-infra flake · how the CI itself is built, before any job runs', { 'class': 'band-label' });
+    txt(svg, BAND.x + BAND.w - 14, BAND.y + 23, 'every box or lane tagged NIXOS below is a host built from this repo', { 'class': 'lane-note', 'text-anchor': 'end' });
+
+    // Phase header
+    PHASES.forEach(function (p, i) {
+      var cx = C(i + 1), y = PHASE_Y;
+      el('line', { x1: cx - NW / 2, y1: y, x2: cx + NW / 2, y2: y, 'class': 'phase-line' }, svg);
+      var label = (i + 1) + ' · ' + p.toUpperCase();
+      var w = label.length * 11.5 * 0.72 + 16;
+      el('rect', { x: cx - w / 2, y: y - 10, width: w, height: 20, rx: 2, 'class': 'mask-panel' }, svg);
+      txt(svg, cx, y + 4, label, { 'class': 'phase-text', 'text-anchor': 'middle' });
+    });
+
+    // Lanes
+    LANES.forEach(function (l) {
+      el('rect', { x: LANE_X, y: l.y, width: LANE_W, height: LANE_H, rx: 8, 'class': 'c-lane', 'stroke-width': 1 }, svg);
+    });
+
+    // Provisioning rail label
+    var railMid = (BOX.b5.cy + MID('L6')) / 2;
+    txt(svg, RAIL_X + 17, railMid, 'DEPLOYS NIXOS HOSTS', { 'class': 'rail-text', 'text-anchor': 'middle', transform: 'rotate(90 ' + (RAIL_X + 17) + ' ' + railMid + ')' });
+
+    // Edges first, then labels, then nodes on top
+    var edgeLayer = el('g', { id: 'edges' }, svg);
+    var labelLayer = el('g', { id: 'labels' }, svg);
+    var laneLabelLayer = el('g', { id: 'lane-labels' }, svg);
+    var nodeLayer = el('g', { id: 'nodes' }, svg);
+    var badgeLayer = el('g', { id: 'badges' }, svg);
+
+    // Lane labels sit above the edges on a mask, so lines pass under them.
+    LANES.forEach(function (l) {
+      var label = pick(l.label, r);
+      var lw = label.length * 13 * 0.62 + 12;
+      el('rect', { x: LANE_X + 8, y: l.y + 6, width: lw, height: 19, rx: 2, 'class': 'mask' }, laneLabelLayer);
+      txt(laneLabelLayer, LANE_X + 14, l.y + 20, label, { 'class': 'lane-label' });
+      if (l.nixos) {
+        var lt = el('g', { 'class': 'nixos-tag lane-nixos', 'aria-hidden': 'true' }, laneLabelLayer);
+        el('rect', { x: LANE_X + 14 + lw, y: l.y + 7.5, width: 46, height: 16, rx: 2 }, lt);
+        txt(lt, LANE_X + 37 + lw, l.y + 18.8, 'NIXOS', { 'text-anchor': 'middle' });
+      }
+      if (l.note) txt(laneLabelLayer, LANE_X + LANE_W - 14, l.y + 20, pick(l.note, r), { 'class': 'lane-note', 'text-anchor': 'end' });
+    });
+
+    EDGES.forEach(function (e) {
+      var g = el('g', { 'class': 'edge k-' + e.kind + (e.dashed ? ' dashed' : ''), 'data-edge': e.id }, edgeLayer);
+      var d = e.pts.map(function (p, i) { return (i ? 'L ' : 'M ') + p[0] + ' ' + p[1]; }).join(' ');
+      if (e.bridge) el('path', { d: d, 'class': 'under' }, g);
+      el('path', {
+        d: d, 'class': 'line',
+        'marker-end': e.noArrow ? null : 'url(#ah-' + e.kind + ')',
+        'marker-start': e.both ? 'url(#ah-' + e.kind + ')' : null
+      }, g);
+      var label = pick(typeof e.label === 'string' ? { o: e.label } : e.label, r);
+      if (label && e.lp) {
+        var lg = el('g', { 'class': 'elabel', 'data-edge': e.id }, labelLayer);
+        var w = label.length * 11.5 * 0.6 + 10;
+        el('rect', { x: e.lp[0] - w / 2, y: e.lp[1] - 8.5, width: w, height: 17, rx: 2 }, lg);
+        txt(lg, e.lp[0], e.lp[1] + 4, label, { 'text-anchor': 'middle' });
+      }
+    });
+
+    var badged = {};
+    if (r !== 'o') ROUTES[r].steps.forEach(function (s) { badged[s.badge] = true; });
+    NODES.forEach(function (n) {
+      var b = nodeBox(n), t = nodeText(n, r), kind = nodeKind(n, r);
+      var label = t.n + ', ' + t.s + (n.lane ? ', ' + LANE_NAME[n.lane] : ', ghaf-infra flake');
+      var g = el('g', { 'class': 'node k-' + kind, 'data-node': n.id, tabindex: 0, role: 'button', 'aria-label': label }, nodeLayer);
+      el('title', {}, g).textContent = t.n + ' · ' + t.s + ' · ' + t.a;
+      el('rect', { x: b.x, y: b.y, width: b.w, height: b.h, rx: 5, 'class': 'mask' }, g);
+      el('rect', { x: b.x, y: b.y, width: b.w, height: b.h, rx: 5, 'class': 'box' }, g);
+      // Kind icon sits on the top border, where a route shows the step badge instead.
+      if (!badged[n.id]) {
+        el('rect', { x: b.x + 8, y: b.y - 9, width: 21, height: 18, rx: 2, 'class': 'chip', 'aria-hidden': 'true' }, g);
+        var sg = el('g', { 'class': 'sigil', transform: 'translate(' + (b.x + 12.4) + ' ' + (b.y - 6) + ') scale(0.76)', 'aria-hidden': 'true' }, g);
+        (SIGILS[n.sigil || kind] || []).forEach(function (d) { el('path', { d: d }, sg); });
+      }
+      var name = txt(g, n.cx, b.y + 31, t.n, { 'class': 'name', 'text-anchor': 'middle' });
+      var sub = txt(g, n.cx, b.y + 51, t.s, { 'class': 'sub', 'text-anchor': 'middle' });
+      var acc = txt(g, n.cx, b.y + 68, t.a, { 'class': 'acc', 'text-anchor': 'middle' });
+      [[name, NW - 16], [sub, NW - 12], [acc, NW - 12]].forEach(function (p) { p[0].dataset.max = p[1]; });
+      if (n.nixos) {
+        var tg = el('g', { 'class': 'nixos-tag', 'aria-hidden': 'true' }, g);
+        el('rect', { x: b.x + b.w - 54, y: b.y - 8, width: 46, height: 16, rx: 2 }, tg);
+        txt(tg, b.x + b.w - 31, b.y + 3.2, 'NIXOS', { 'text-anchor': 'middle' });
+      }
+    });
+
+    if (r !== 'o') {
+      ROUTES[r].steps.forEach(function (s, i) {
+        var n = NODE_BY_ID[s.badge], b = nodeBox(n);
+        var cx = b.x + 18, cy = b.y;
+        var g = el('g', { 'class': 'badge-step', 'data-step': i, role: 'button', tabindex: -1, 'aria-label': 'Step ' + i + ': ' + s.title }, badgeLayer);
+        el('polygon', { points: [cx, cy - 12, cx + 12, cy, cx, cy + 12, cx - 12, cy].join(' ') }, g);
+        txt(g, cx, cy + 3.7, String(i), { 'text-anchor': 'middle', style: i > 9 ? 'font-size:9px' : null });
+      });
+    }
+
+    // Legend
+    var lg = el('g', { 'class': 'legend' }, svg);
+    var x = 54, y = LEGEND_Y;
+    var legendItem = function (k, label, w) {
+      var g = el('g', { 'class': 'legend-item k-' + k, 'data-legend': k, role: 'button', tabindex: 0,
+        title: null, 'aria-label': 'Light up only: ' + label }, lg);
+      el('title', {}, g).textContent = 'Light up only: ' + label + ' (click again or Esc to clear)';
+      el('rect', { x: x - 5, y: y - 16, width: w + 10, height: 24, rx: 3, 'class': 'legend-hit' }, g);
+      return g;
+    };
+    ['config', 'pipeline', 'build', 'store', 'trust', 'event', 'external'].forEach(function (k) {
+      var w = 22 + KIND_LABEL[k].length * 11.5 * 0.6;
+      var g = legendItem(k, KIND_LABEL[k], w);
+      el('rect', { x: x, y: y - 11, width: 16, height: 14, rx: 2, 'class': 'swatch-box' }, g);
+      txt(g, x + 22, y + 1, KIND_LABEL[k], { 'class': 'legend-text' });
+      x += w + 18;
+    });
+    var ng = legendItem('nixos', 'hosts defined in ghaf-infra', 54 + 'host defined in ghaf-infra'.length * 11.5 * 0.6);
+    var nt = el('g', { 'class': 'nixos-tag' }, ng);
+    el('rect', { x: x, y: y - 12, width: 46, height: 16, rx: 2 }, nt);
+    txt(nt, x + 23, y - 0.8, 'NIXOS', { 'text-anchor': 'middle' });
+    txt(ng, x + 54, y + 1, 'host defined in ghaf-infra', { 'class': 'legend-text' });
+    x += 54 + 'host defined in ghaf-infra'.length * 11.5 * 0.6 + 38;
+    var lf = el('g', { 'class': 'edge k-flow' }, lg);
+    el('path', { d: 'M ' + x + ' ' + (y - 3) + ' L ' + (x + 30) + ' ' + (y - 3), 'class': 'line', 'marker-end': 'url(#ah-flow)' }, lf);
+    txt(lg, x + 38, y + 1, 'flow', { 'class': 'lane-note', style: 'fill:var(--text-muted)' });
+    x += 88;
+    var ld = el('g', { 'class': 'edge dashed k-config' }, lg);
+    el('path', { d: 'M ' + x + ' ' + (y - 3) + ' L ' + (x + 30) + ' ' + (y - 3), 'class': 'line', 'marker-end': 'url(#ah-config)' }, ld);
+    txt(lg, x + 38, y + 1, 'cache read / later / provisioning', { 'class': 'lane-note', style: 'fill:var(--text-muted)' });
+    x += 38 + 'cache read / later / provisioning'.length * 11.5 * 0.6 + 34;
+    var bt = el('g', { 'class': 'badge-step' }, lg);
+    el('polygon', { points: [x, y - 13, x + 10, y - 3, x, y + 7, x - 10, y - 3].join(' ') }, bt);
+    txt(bt, x, y + 0.5, 'n', { 'text-anchor': 'middle' });
+    txt(lg, x + 16, y + 1, 'route step', { 'class': 'lane-note', style: 'fill:var(--text-muted)' });
+    x += 16 + 'route step'.length * 11.5 * 0.6 + 30;
+
+    fitText();
+    bindSvg();
+    applyClasses();
+    requestAnimationFrame(function () { requestAnimationFrame(function () { svg.classList.remove('no-trans'); }); });
+  }
+
+  // Squeeze any label that would overflow its box (font fallback safety net).
+  function fitText() {
+    svg.querySelectorAll('[data-max]').forEach(function (t) {
+      var max = +t.dataset.max;
+      try {
+        if (t.getComputedTextLength() > max) {
+          t.setAttribute('textLength', max);
+          t.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+        }
+      } catch (_) {}
+    });
+  }
+
+  function applyClasses() {
+    var r = state.route, sets = routeSets(r);
+    var step = (r !== 'o' && state.step !== null) ? ROUTES[r].steps[state.step] : null;
+    if (r === 'o') svg.removeAttribute('data-route'); else svg.setAttribute('data-route', r);
+    if (step) svg.setAttribute('data-step', state.step); else svg.removeAttribute('data-step');
+
+    svg.querySelectorAll('[data-node]').forEach(function (g) {
+      var id = g.getAttribute('data-node');
+      g.classList.toggle('on-route', !!(sets && sets.nodes[id]));
+      g.classList.toggle('in-step', !!(step && step.nodes.indexOf(id) >= 0));
+      g.classList.toggle('selected', state.node === id);
+      g.setAttribute('aria-pressed', state.node === id ? 'true' : 'false');
+    });
+    svg.querySelectorAll('[data-edge]').forEach(function (g) {
+      var id = g.getAttribute('data-edge');
+      g.classList.toggle('on-route', !!(sets && sets.edges[id]));
+      g.classList.toggle('in-step', !!(step && step.edges.indexOf(id) >= 0));
+    });
+    svg.querySelectorAll('.badge-step[data-step]').forEach(function (g) {
+      g.classList.toggle('current', state.step !== null && +g.getAttribute('data-step') === state.step);
+    });
+    var hits = searchHits();
+    if (hits) svg.setAttribute('data-search', ''); else svg.removeAttribute('data-search');
+    svg.querySelectorAll('[data-node]').forEach(function (g) {
+      g.classList.toggle('hit', !!(hits && hits.indexOf(g.getAttribute('data-node')) >= 0));
+    });
+    var rows = rowHits();
+    document.body.classList.toggle('searching', !!rows);
+    document.querySelectorAll('[data-row]').forEach(function (tr) {
+      tr.classList.toggle('hit', !!(rows && rows.indexOf(tr) >= 0));
+    });
+    var total = hits ? hits.length + rows.length : 0, status = '';
+    if (hits) {
+      status = !total ? 'no match' : findIdx >= 0 ? (findIdx + 1) + '/' + total : total + (total === 1 ? ' match' : ' matches');
+      if (rows.length) status += ' (' + rows.length + ' below)';
+    }
+    document.getElementById('find-status').textContent = status;
+
+    document.querySelectorAll('.seg button').forEach(function (b) {
+      b.setAttribute('aria-pressed', b.dataset.route === r ? 'true' : 'false');
+    });
+    // Legend highlight: boxes and arrows of one kind, or every NixOS host
+    // (with the controller lane's tag and the deploy rail).
+    var lk = state.legend;
+    if (lk) svg.setAttribute('data-legend', lk); else svg.removeAttribute('data-legend');
+    svg.querySelectorAll('[data-node]').forEach(function (g) {
+      var n = NODE_BY_ID[g.getAttribute('data-node')];
+      g.classList.toggle('lit', !!lk && (lk === 'nixos' ? !!n.nixos : nodeKind(n, r) === lk));
+    });
+    svg.querySelectorAll('.edge[data-edge], .elabel[data-edge]').forEach(function (g) {
+      var id = g.getAttribute('data-edge');
+      g.classList.toggle('lit', !!lk && (lk === 'nixos' ? id === 'rail' || id.indexOf('br_') === 0 : EDGE_BY_ID[id].kind === lk));
+    });
+    svg.querySelectorAll('.lane-nixos').forEach(function (t) { t.classList.toggle('lit', lk === 'nixos'); });
+    svg.querySelectorAll('.legend-item').forEach(function (g) {
+      var on = g.getAttribute('data-legend') === lk;
+      g.classList.toggle('on', on);
+      g.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+
+    renderSide();
+    writeHash();
+  }
+
+  // ------------------------------------------------------------------
+  // Side panel: overview, route step list, current step, or a clicked box
+  // ------------------------------------------------------------------
+  var side = document.getElementById('side'), sideKey = '';
+
+  // A repository path becomes a link to it on GitHub; anything else (such as
+  // a command) stays plain code.
+  function repoLink(path, repo) {
+    if (!/^[\w.\/-]+$/.test(path)) return '<code>' + esc(path) + '</code>';
+    var url = (repo || REPO_URL) + (path.slice(-1) === '/' ? '/tree/main/' : '/blob/main/') + path;
+    return '<a href="' + esc(url) + '" target="_blank" rel="noopener"><code>' + esc(path) + '</code></a>';
+  }
+  // Host names that are websites people can open (Jenkins, Grafana, Fleet).
+  var WEB_HOSTS = ['ci-prod.vedenemo.dev', 'ci-release.vedenemo.dev', 'ci-dev.vedenemo.dev', 'ci-dbg.vedenemo.dev',
+    'ci-prod.uaenorth.cloudapp.azure.com', 'monitoring.vedenemo.dev', 'ghaflogs.vedenemo.dev', 'fleetdm.vedenemo.dev', 'vedenemo.dev'];
+  function hostLink(host) {
+    return '<a class="hostlink" href="https://' + host + '/" target="_blank" rel="noopener">' + host + '</a>';
+  }
+  // Link web host names inside a panel's text (bare vedenemo.dev only in tables).
+  var HOST_RE = new RegExp('(?<![\\w.-])(' + WEB_HOSTS.slice(0, -1).map(function (h) { return h.replace(/\./g, '\\.'); }).join('|') + ')(?![\\w-])', 'g');
+  function linkHosts(html) { return html.replace(HOST_RE, function (h) { return hostLink(h); }); }
+  function filesHtml(files) {
+    if (!files || !files.length) return '';
+    return '<div class="files"><span class="lbl">Where in ghaf-infra</span><ul>' +
+      files.map(function (f) { return '<li>' + repoLink(f) + '</li>'; }).join('') + '</ul></div>';
+  }
+  function callout(label, html, extra) {
+    return '<div class="callout ' + (extra || '') + '"><span class="lbl">' + label + '</span><p>' + html + '</p></div>';
+  }
+  function stepWhere(s) {
+    var lanes = {};
+    s.nodes.forEach(function (id) { var n = NODE_BY_ID[id]; lanes[n.lane ? LANE_NAME[n.lane] : 'ghaf-infra flake'] = true; });
+    return Object.keys(lanes).join(' · ');
+  }
+
+  function renderSide() {
+    var r = state.route, route = ROUTES[r], body, nav;
+    if (state.node) {
+      var n = NODE_BY_ID[state.node], t = nodeText(n, r), info = n.info, kind = nodeKind(n, r), steps = [];
+      if (route) route.steps.forEach(function (s, i) { if (s.nodes.indexOf(n.id) >= 0) steps.push(i); });
+      body = '<h2>Component</h2>' +
+        '<div class="kicker">' + esc(KIND_LABEL[kind]) + ' · ' + esc(n.lane ? LANE_NAME[n.lane] : 'ghaf-infra flake') + (n.nixos ? ' · NixOS host' : '') + '</div>' +
+        '<h3>' + esc(t.n) + '</h3><div class="mono-sub">' + esc(t.s) + '</div><p>' + info.what + '</p>';
+      if (route && variant({ o: '', p: info.p, m: info.m, r: info.r }, r)) {
+        body += callout(ROUTE_NOTE[r], variant({ o: '', p: info.p, m: info.m, r: info.r }, r), 'route-note');
+      }
+      if (!route) ['p', 'm', 'r'].forEach(function (k) { if (info[k]) body += callout(ROUTE_NOTE[k], info[k], 'route-note'); });
+      if (info.ci) body += callout('In CI terms', info.ci);
+      body += filesHtml(info.files);
+      if (steps.length) body += '<p style="margin-top:.7rem">Appears in step ' + steps.join(', ') + ' of this route.</p>';
+      nav = '<button type="button" class="btn" data-close>' + (state.step !== null ? '◀ Back to step ' + state.step : 'Close') + '</button>';
+    } else if (route && state.step !== null) {
+      var s = route.steps[state.step], last = route.steps.length - 1;
+      body = '<div class="kicker">' + esc(route.title) + ' · step ' + state.step + ' / ' + last + '</div>' +
+        '<div class="pager">' + route.steps.map(function (x, i) {
+          return '<button type="button" class="dia' + (i === state.step ? ' on' : i < state.step ? ' done' : '') + '" data-step="' + i + '" aria-label="Step ' + i + ': ' + esc(x.title) + '" title="' + esc(x.title) + '"><span>' + i + '</span></button>';
+        }).join('') + '</div>' +
+        '<h3>' + esc(s.title) + '</h3><div class="mono-sub">' + esc(stepWhere(s)) + '</div><p>' + s.text + '</p>';
+      if (s.ci) body += callout('Why this matters', s.ci);
+      body += filesHtml(s.files);
+      nav = '<button type="button" class="btn" data-step="' + (state.step - 1) + '"' + (state.step === 0 ? ' disabled' : '') + ' title="Previous step (←)">◀ Prev</button>' +
+        (state.step < last
+          ? '<button type="button" class="btn primary" data-step="' + (state.step + 1) + '" title="Next step (→)">Next ▶</button>'
+          : '<button type="button" class="btn primary" data-step="all">Finish ▶</button>');
+    } else if (route) {
+      body = '<h2>' + esc(route.title) + '</h2><p>' + route.intro + '</p><div class="steps">' +
+        route.steps.map(function (x, i) {
+          return '<button type="button" class="step-item" data-step="' + i + '"><span class="dia"><span>' + i + '</span></span>' +
+            '<span><span class="t">' + esc(x.title) + '</span><span class="where">' + esc(stepWhere(x)) + '</span></span></button>';
+        }).join('') + '</div>';
+      nav = '<span></span><button type="button" class="btn primary" data-step="0" title="Start (→)">Start walk ▶</button>';
+    } else {
+      body = '<h2>How to read this map</h2>' +
+        '<p>From a Ghaf commit to built, signed, hardware-tested and archived images.</p>' +
+        '<ul class="read-list">' +
+        '<li><b>Columns</b> are the phases of one Jenkins run, left to right.</li>' +
+        '<li><b>Lanes 01 to 06</b> are where things happen: GitHub and sign-in, the Nix builders, the HSM signing gateways, the Jenkins controller, the registry and archive, and the hardware lab.</li>' +
+        '<li><b>Band 00</b> is ghaf-infra itself. Every box or lane tagged <span style="color:var(--config)">NIXOS</span> is a machine whose whole OS, Jenkins included, is built from this repo and deployed along the dashed rail on the right.</li>' +
+        '<li><b>Colours</b>: <span class="k-config"><span class="swatch"></span></span>ghaf-infra code <span class="k-pipeline"><span class="swatch"></span></span>Jenkins <span class="k-build"><span class="swatch"></span></span>Nix build <span class="k-store"><span class="swatch"></span></span>storage <span class="k-trust"><span class="swatch"></span></span>trust <span class="k-event"><span class="swatch"></span></span>trigger/report <span class="k-external"><span class="swatch"></span></span>external. Click a colour or NIXOS in the legend under the map to light up only those.</li>' +
+        '<li><b>Click any box</b> for what it is, the CI analogy, and the files that define it.</li>' +
+        '<li><b>Environments</b>: the walks run on ci-prod (pre-merge and main) and ci-release. ci-dev, ci-dbg, the UAE controller and a local VM run the same Jenkins module; see the table below the map.</li>' +
+        '<li><b>Not drawn</b>: the Nebula lighthouse, monitoring, device logs, Fleet and the web server are listed under Supporting services below the map.</li>' +
+        '</ul>';
+      nav = ['p', 'm', 'r'].map(function (k) { return '<button type="button" class="btn primary" data-route="' + k + '">Walk ' + ROUTE_NAME[k] + ' ▶</button>'; }).join('');
+    }
+    side.innerHTML = '<div class="body">' + linkHosts(body) + '</div><div class="nav">' + nav + '</div>';
+    var key = r + '|' + state.step + '|' + state.node;
+    if (key !== sideKey) { side.scrollTop = 0; sideKey = key; }
+  }
+
+  side.addEventListener('click', function (ev) {
+    var b = ev.target.closest('button');
+    if (!b || b.disabled) return;
+    if (b.hasAttribute('data-close')) { state.node = null; applyClasses(); }
+    else if (b.dataset.route) setRoute(b.dataset.route, 0);
+    else if (b.dataset.step === 'all') setStep(null);
+    else if (b.dataset.step !== undefined) setStep(+b.dataset.step);
+  });
+
+  // ------------------------------------------------------------------
+  // Interaction
+  // ------------------------------------------------------------------
+  function toggleLegend(k) {
+    state.legend = state.legend === k ? null : k;
+    if (state.legend) { state.query = find.value = ''; findIdx = -1; }
+    applyClasses();
+  }
+
+  function bindSvg() {
+    svg.querySelectorAll('.legend-item').forEach(function (g) {
+      var go = function () { toggleLegend(g.getAttribute('data-legend')); };
+      g.addEventListener('click', function () { if (!dragMoved) go(); });
+      g.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); go(); } });
+    });
+    svg.querySelectorAll('.node[data-node]').forEach(function (g) {
+      var go = function () {
+        var id = g.getAttribute('data-node');
+        state.node = state.node === id ? null : id;
+        applyClasses();
+      };
+      g.addEventListener('click', function () { if (!dragMoved) go(); });
+      g.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); go(); } });
+    });
+    svg.querySelectorAll('.badge-step[data-step]').forEach(function (g) {
+      g.addEventListener('click', function (ev) { ev.stopPropagation(); if (!dragMoved) setStep(+g.getAttribute('data-step')); });
+    });
+  }
+
+  function setRoute(r, step) {
+    state.legend = null;
+    state.route = r;
+    state.step = (r === 'o' || step === undefined) ? null : step;
+    state.node = null;
+    render();
+    frameState(true);
+  }
+  function setStep(i) {
+    if (state.route === 'o') return;
+    var n = ROUTES[state.route].steps.length;
+    state.step = i === null ? null : Math.max(0, Math.min(n - 1, i));
+    state.node = null;
+    state.legend = null;
+    applyClasses();
+    frameState(true);
+  }
+  function move(delta) {
+    if (state.route === 'o') return;
+    var n = ROUTES[state.route].steps.length;
+    if (state.step === null) setStep(delta > 0 ? 0 : n - 1);
+    else setStep(state.step + delta);
+  }
+  function toggleTheme() {
+    var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('ghaf-ci-map-theme', next); } catch (_) {}
+  }
+
+  // ------------------------------------------------------------------
+  // Camera: the SVG viewBox, kept at the aspect ratio of the map's box on
+  // screen. A walk step animates it to frame that step's boxes.
+  // ------------------------------------------------------------------
+  var FRAME_MAX = 1.3, ZOOM_MAX = 3; // screen px per map unit
+  var cam = { x: 0, y: 0, w: W, h: H }, aspect = W / H, anim = null, animEnd = null;
+  var drag = null, dragMoved = false;
+  var toolbar = document.getElementById('toolbar');
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function clampCam(c) {
+    var widest = Math.max(W, H * aspect);
+    if (c.w > widest) { c.x += (c.w - widest) / 2; c.w = widest; }
+    c.h = c.w / aspect;
+    c.x = c.w >= W ? (W - c.w) / 2 : Math.max(0, Math.min(W - c.w, c.x));
+    c.y = c.h >= H ? (H - c.h) / 2 : Math.max(0, Math.min(H - c.h, c.y));
+    return c;
+  }
+  // Smallest camera showing box b with some padding, no closer than maxScale.
+  function around(b, pad, maxScale) {
+    var w = Math.max(b.w + 2 * pad, (b.h + 2 * pad) * aspect);
+    if (maxScale) w = Math.max(w, svg.clientWidth / maxScale);
+    return clampCam({ x: b.x + b.w / 2 - w / 2, y: b.y + b.h / 2 - w / aspect / 2, w: w, h: w / aspect });
+  }
+  function wholeMap() { return around({ x: 0, y: 0, w: W, h: H }, 0); }
+  function setCam() {
+    svg.setAttribute('viewBox', [cam.x, cam.y, cam.w, cam.h].map(function (v) { return Math.round(v * 10) / 10; }).join(' '));
+    var zoomed = cam.w < Math.max(W, H * aspect) - 1;
+    svg.classList.toggle('zoomed', zoomed);
+    document.getElementById('zoom-out').disabled = !zoomed;
+    document.getElementById('zoom-reset').disabled = !zoomed;
+    document.getElementById('zoom-in').disabled = svg.clientWidth / cam.w >= ZOOM_MAX - 0.01;
+  }
+  function moveTo(target, animate) {
+    if (anim) cancelAnimationFrame(anim);
+    clearTimeout(animEnd);
+    anim = null;
+    if (!animate || reduceMotion) { cam = target; setCam(); return; }
+    // Land on the target even when frames are throttled (background tab).
+    animEnd = setTimeout(function () { if (anim) moveTo(target, false); }, 480);
+    var from = Object.assign({}, cam), t0 = performance.now();
+    var tick = function () {
+      var t = Math.max(0, Math.min(1, (performance.now() - t0) / 420)), e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      ['x', 'y', 'w', 'h'].forEach(function (k) { cam[k] = from[k] + (target[k] - from[k]) * e; });
+      setCam();
+      anim = t < 1 ? requestAnimationFrame(tick) : null;
+    };
+    anim = requestAnimationFrame(tick);
+  }
+  // The view the current state calls for: the step's boxes, or the whole map.
+  function frameState(animate) {
+    var step = state.route !== 'o' && state.step !== null ? ROUTES[state.route].steps[state.step] : null;
+    if (!step) { moveTo(wholeMap(), animate); return; }
+    var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    (step.focus || step.nodes).forEach(function (id) {
+      var b = BOX[id];
+      x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h);
+    });
+    moveTo(around({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, 48, FRAME_MAX), animate);
+  }
+  // Zoom by factor f keeping map point (px, py) fixed on screen.
+  function zoomBy(f, px, py) {
+    if (px === undefined) { px = cam.x + cam.w / 2; py = cam.y + cam.h / 2; }
+    var w = Math.max(svg.clientWidth / ZOOM_MAX, cam.w / f);
+    var fx = (px - cam.x) / cam.w, fy = (py - cam.y) / cam.h;
+    moveTo(clampCam({ x: px - fx * w, y: py - fy * w / aspect, w: w, h: w / aspect }), false);
+  }
+  // Size the stage, then return true when the map's box changed shape.
+  // The stage is no taller than the whole map needs at its width (no empty
+  // bands above and below it), but keeps at least 640px for walks, and never
+  // grows past the window.
+  function measure() {
+    var root = document.documentElement.style, tb = toolbar.offsetHeight;
+    root.setProperty('--tb-h', tb + 'px');
+    if (svg.clientWidth) {
+      var need = Math.round(svg.clientWidth * H / W + 16);
+      root.setProperty('--stage-h', Math.max(440, Math.min(window.innerHeight - tb - 22, Math.max(need, 640))) + 'px');
+      root.setProperty('--map-h', Math.max(300, Math.min(need, window.innerHeight * 0.7)) + 'px');
+    }
+    if (!svg.clientWidth || !svg.clientHeight) return false;
+    var a = svg.clientWidth / svg.clientHeight, changed = Math.abs(a - aspect) > 0.001;
+    aspect = a;
+    return changed;
+  }
+
+  svg.addEventListener('wheel', function (e) {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    e.preventDefault();
+    var p = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.getScreenCTM().inverse());
+    zoomBy(Math.exp(-e.deltaY * 0.0025), p.x, p.y);
+  }, { passive: false });
+  svg.addEventListener('pointerdown', function (e) {
+    dragMoved = false;
+    if (!svg.classList.contains('zoomed') || e.button !== 0) return;
+    var k = svg.clientWidth / cam.w;
+    drag = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, k: k, id: e.pointerId, active: false };
+  });
+  svg.addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.active && Math.abs(dx) + Math.abs(dy) > 4) {
+      drag.active = dragMoved = true;
+      if (anim) { cancelAnimationFrame(anim); anim = null; }
+      svg.setPointerCapture(drag.id);
+      svg.classList.add('dragging');
+    }
+    if (drag.active) { cam.x = drag.cx - dx / drag.k; cam.y = drag.cy - dy / drag.k; clampCam(cam); setCam(); }
+  });
+  ['pointerup', 'pointercancel'].forEach(function (t) {
+    svg.addEventListener(t, function () { drag = null; svg.classList.remove('dragging'); });
+  });
+  document.getElementById('zoom-in').addEventListener('click', function () { zoomBy(1.25); });
+  document.getElementById('zoom-out').addEventListener('click', function () { zoomBy(0.8); });
+  document.getElementById('zoom-reset').addEventListener('click', function () { moveTo(wholeMap(), true); });
+  document.getElementById('theme').addEventListener('click', toggleTheme);
+  document.querySelectorAll('.seg button').forEach(function (b) {
+    b.addEventListener('click', function () { setRoute(b.dataset.route); });
+  });
+
+  // ------------------------------------------------------------------
+  // Search
+  // ------------------------------------------------------------------
+  var find = document.getElementById('find');
+  find.addEventListener('input', function () { state.query = find.value; state.legend = null; findIdx = -1; applyClasses(); });
+  find.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Enter') {
+      var hits = searchHits(), rows = rowHits(), all = hits ? hits.concat(rows) : [];
+      if (!all.length) return;
+      findIdx = (findIdx + 1) % all.length;
+      var match = all[findIdx];
+      document.querySelectorAll('[data-row].current').forEach(function (tr) { tr.classList.remove('current'); });
+      if (typeof match === 'string') {
+        state.node = match;
+        applyClasses();
+        if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: 'smooth' });
+        moveTo(around(BOX[state.node], 220, FRAME_MAX), true);
+      } else {
+        match.classList.add('current');
+        applyClasses();
+        match.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+    } else if (ev.key === 'Escape') {
+      find.value = ''; state.query = ''; findIdx = -1; applyClasses(); find.blur();
+    }
+  });
+
+  document.addEventListener('keydown', function (ev) {
+    if (ev.target && /input|textarea|select/i.test(ev.target.tagName)) return;
+    if (ev.altKey || ev.ctrlKey || ev.metaKey) return;
+    var k = ev.key;
+    if (k === 'ArrowRight') { move(1); ev.preventDefault(); }
+    else if (k === 'ArrowLeft') { move(-1); ev.preventDefault(); }
+    else if (k === 'Escape') { state.node = null; state.step = null; state.legend = null; state.query = find.value = ''; findIdx = -1; applyClasses(); frameState(true); }
+    else if (k === '/') { find.focus(); find.select(); ev.preventDefault(); }
+    else if (k === '+' || k === '=') zoomBy(1.25);
+    else if (k === '-' || k === '_') zoomBy(0.8);
+    else if (k === '0') moveTo(wholeMap(), true);
+    else if (k === 'o' || k === 'O') setRoute('o');
+    else if (k === 'r' || k === 'R') setRoute('r');
+    else if (k === 'p' || k === 'P') setRoute('p');
+    else if (k === 'm' || k === 'M') setRoute('m');
+    else if (k === 't' || k === 'T') toggleTheme();
+  });
+
+  // #r, #r/3, #p/0 for linking a presenter straight to a step.
+  function writeHash() {
+    var h = state.route === 'o' ? '' : state.route + (state.step === null ? '' : '/' + state.step);
+    try { history.replaceState(null, '', h ? '#' + h : location.pathname + location.search); } catch (_) {}
+  }
+  function readHash() {
+    var m = /^#(p|m|r)(?:\/(\d+))?$/.exec(location.hash || '');
+    if (!m) return;
+    state.route = m[1];
+    state.step = m[2] !== undefined ? Math.min(+m[2], ROUTES[m[1]].steps.length - 1) : null;
+  }
+
+  document.getElementById('gloss').innerHTML = GLOSSARY.map(function (g) {
+    return '<div class="gloss-item" data-row><dt>' + esc(g.t) + '</dt><dd>' + g.d + '<span class="ci">≈ ' + esc(g.ci) + '</span>' +
+      (g.doc ? '<span class="more">More: ' + repoLink(g.doc) + '</span>' : '') + '</dd></div>';
+  }).join('');
+
+  // Wrap only at spaces, never at the hyphens inside host or pipeline names.
+  var items = function (s) { return s.split(' ').map(function (x) { return '<span class="nw">' + esc(x) + '</span>'; }).join(' '); };
+  document.getElementById('env-table').innerHTML =
+    '<thead><tr><th>Environment</th><th>What it is for</th><th>Pipelines</th><th>Builders</th><th>Cache</th><th>Test agents</th><th>Lifecycle</th></tr></thead><tbody>' +
+    ENVS.map(function (e) {
+      return '<tr data-row' + (e.routes ? ' class="on-map"' : '') + '>' +
+        '<td><span class="env-name">' + esc(e.env) + '</span><span class="url">' + (WEB_HOSTS.indexOf(e.url) >= 0 ? hostLink(e.url) : esc(e.url)) + '</span>' +
+        '<code>' + esc(e.host) + '</code><span class="url">' + repoLink(e.config, e.repo) + '</span>' +
+        (e.routes || []).map(function (r) { return '<button type="button" class="btn" data-go="' + r + '">Walk ' + ROUTE_NAME[r] + ' ▶</button>'; }).join(' ') + '</td>' +
+        '<td class="purpose">' + e.purpose + '</td><td>' + items(e.pipelines) + '</td><td>' + items(e.builders) + '</td>' +
+        '<td>' + items(e.cache) + '</td><td>' + items(e.agents) + '</td><td>' + items(e.life) + '</td></tr>';
+    }).join('') + '</tbody>';
+  document.getElementById('support-table').innerHTML =
+    '<thead><tr><th>Host</th><th>What it does</th><th>Relation to the walks</th></tr></thead><tbody>' +
+    SUPPORT.map(function (h) {
+      return '<tr data-row><td><code>' + esc(h.host) + '</code><span class="url">' + (WEB_HOSTS.indexOf(h.url) >= 0 ? hostLink(h.url) : esc(h.url)) + '</span><span class="url">' + repoLink(h.config) + '</span></td>' +
+        '<td class="purpose">' + h.what + '</td><td class="purpose">' + h.walks + '</td></tr>';
+    }).join('') + '</tbody>';
+  document.querySelectorAll('#env-table [data-go]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      setRoute(b.dataset.go, 0);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+
+  readHash();
+  render();
+  measure();
+  frameState(false);
+  // Keep the camera's aspect ratio in step with the map's box on screen.
+  if (window.ResizeObserver) {
+    new ResizeObserver(function () { if (measure()) frameState(false); }).observe(svg);
+    window.addEventListener('resize', function () { if (measure()) frameState(false); });
+    new ResizeObserver(measure).observe(toolbar);
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { render(); });
+})();
+</script>
+</body>
+</html>
