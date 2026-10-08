@@ -252,6 +252,16 @@ in
       description = "Path to the plugins.json";
       default = ./plugins.json;
     };
+    provenanceTrustPolicyFile = lib.mkOption {
+      type = lib.types.path;
+      default = "${self.outPath}/slsa/provenance-trust-policy.yaml";
+      description = "Policy file used to validate build provenance";
+    };
+    releasePolicyFile = lib.mkOption {
+      type = lib.types.path;
+      default = "${self.outPath}/slsa/release-policy.yaml";
+      description = "Policy file used to validate release attestations";
+    };
     integrations = {
       github = {
         enable = lib.mkEnableOption "the GitHub integration";
@@ -577,8 +587,8 @@ in
       {
         "jenkins/nix-fast-build.sh".source = "${self.outPath}/scripts/nix-fast-build.sh";
         "jenkins/remote-stores.json".text = builtins.toJSON remoteStoresFromBuildMachines;
-        "jenkins/provenance-trust-policy.yaml".source = "${self.outPath}/slsa/provenance-trust-policy.yaml";
-        "jenkins/release-policy.yaml".source = "${self.outPath}/slsa/release-policy.yaml";
+        "jenkins/provenance-trust-policy.yaml".source = cfg.provenanceTrustPolicyFile;
+        "jenkins/release-policy.yaml".source = cfg.releasePolicyFile;
         "jenkins/pipelines".source = filteredPipelines;
         "jenkins/pipeline-library".source = pipelineSharedLibrary;
         "jenkins/casc/common.yaml".source = ./casc/common.yaml;
