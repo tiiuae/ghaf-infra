@@ -17,6 +17,8 @@ The infrastructure includes:
 - **Supporting services**: monitoring, logging, authentication, [Nebula](./docs/nebula.md) overlay network, [NetHSM](./docs/nethsm.md) hardware signing, and an OCI container registry
 - **Secrets management** via [sops-nix](https://github.com/Mic92/sops-nix) (see [architecture overview](./docs/architecture.md#secrets-management))
 
+For an interactive map of how these pieces work together, with step-by-step walk-throughs of a PR, a merge to main and a release, see the [CI map](https://tiiuae.github.io/ghaf-infra/).
+
 ## Getting Started
 
 This document assumes you have [`nix`](https://nixos.org/download.html) with flakes support.
@@ -88,6 +90,7 @@ ghaf-infra
 
 ## Documentation
 
+- [CI map](https://tiiuae.github.io/ghaf-infra/): interactive overview of the CI hosts, environments and services
 - [Architecture overview](./docs/architecture.md): how all the pieces fit together
 - [Adding a new host](./docs/adding-a-host.md): host configuration and first install
 - [Deployment tasks](./docs/tasks.md): install, reboot, and other operational tasks
