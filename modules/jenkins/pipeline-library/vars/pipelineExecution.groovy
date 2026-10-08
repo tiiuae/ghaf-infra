@@ -66,7 +66,7 @@ def create_pipeline(
   def artifacts_href = "<a href=\"/${artifacts}\">📦 Artifacts</a>"
   def ci_env = env.CI_ENV
   def immutable_tag = "${ci_env}-${stamp}-${target_commit}"
-  def signing_possible = ci_env != 'vm'
+  def signing_possible = env.JENKINS_SIGNING_ENABLED == 'true'
   def ghaf_checkout = pwd()
   def parallel_tests = options.get('parallel_tests', true)
   def sendResultsToZephyr = options.get('send_results_to_zephyr', false)

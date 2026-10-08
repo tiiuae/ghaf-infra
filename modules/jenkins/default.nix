@@ -415,6 +415,7 @@ in
       environment = lib.optionalAttrs signing.enable signingEnvironment // {
         CI_ENV = cfg.envType;
         OCI_REGISTRY = cfg.registry.url;
+        JENKINS_SIGNING_ENABLED = lib.boolToString signing.enable;
         JIRA_TOKEN_AVAILABLE = lib.boolToString cfg.integrations.jira.enable;
       };
 
