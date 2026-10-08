@@ -155,6 +155,16 @@ Single-secret integrations use the same explicit structure under
 under `archive`, with credentials in `archive.s3Credentials`. Consumers provide
 the paths from their chosen secret manager; the HetzCI hosts use SOPS.
 
+The pipelines use the bundled Ghaf provenance and release policies by default.
+To supply project-specific policies:
+
+```nix
+services.ghaf-jenkins = {
+  provenanceTrustPolicyFile = ./provenance-trust-policy.yaml;
+  releasePolicyFile = ./release-policy.yaml;
+};
+```
+
 ## Usage
 
 The following sections describe the intended workflow for hetzci development.
