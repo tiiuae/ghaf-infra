@@ -10,6 +10,23 @@
 let
   cfg = config.services.ghaf-jenkins;
   signing = cfg.signing;
+  signingPackages =
+    (with pkgs; [
+      opensc
+      openssl
+    ])
+    ++ (with inputs.ci-yubi.packages.${pkgs.stdenv.hostPlatform.system}; [
+      uefisign
+      uefisigniso
+      uefisign-simple
+      uefi-sign-sysupdate
+    ])
+    ++ (with self.packages.${pkgs.stdenv.hostPlatform.system}; [
+      verify-signature
+      select-pkcs11-node
+      run-cosign
+      systemd-sbsign
+    ]);
   proxyEndpoints = signing.proxy.endpoints;
   proxyEndpointsFile = toString (
     pkgs.writeText "jenkins-pkcs11-endpoints.json" (builtins.toJSON proxyEndpoints)
@@ -356,13 +373,7 @@ in
       }
     ];
     environment.variables = lib.mkIf signing.enable signingEnvironment;
-    environment.systemPackages = lib.optionals signing.enable (
-      with pkgs;
-      [
-        opensc
-        openssl
-      ]
-    );
+    environment.systemPackages = lib.optionals signing.enable signingPackages;
     services.jenkins = {
       enable = true;
       listenAddress = "localhost";
@@ -399,13 +410,7 @@ in
           pkgs.tree
           self.packages.${pkgs.stdenv.hostPlatform.system}.archive-ghaf-release
         ]
-        ++ lib.optionals signing.enable (
-          with pkgs;
-          [
-            opensc
-            openssl
-          ]
-        );
+        ++ lib.optionals signing.enable signingPackages;
 
       environment = lib.optionalAttrs signing.enable signingEnvironment // {
         CI_ENV = cfg.envType;
