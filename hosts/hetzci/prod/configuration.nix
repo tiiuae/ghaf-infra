@@ -31,6 +31,7 @@ in
   };
 
   services.ghaf-jenkins = {
+    signing.enable = true;
     envType = "prod";
     url = "https://ci-prod.vedenemo.dev";
     auth = {
@@ -65,8 +66,6 @@ in
   };
 
   services.jenkins.environment.SECUREBOOT_TESTS_REQUIRED = "true";
-
-  services.ghaf-jenkins.signing.enable = true;
 
   nix.settings.max-jobs = lib.mkForce 0;
   nix.settings.min-free = lib.mkOverride 40 controllerDisk.minFreeBytes;

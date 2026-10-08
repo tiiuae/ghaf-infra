@@ -31,6 +31,7 @@ in
   };
 
   services.ghaf-jenkins = {
+    signing.enable = true;
     envType = "dev";
     url = "https://ci-dev.vedenemo.dev";
     auth = {
@@ -64,8 +65,6 @@ in
       "ghaf-pre-merge"
     ];
   };
-
-  services.ghaf-jenkins.signing.enable = true;
 
   nix.settings.max-jobs = lib.mkForce 0;
   nix.settings.min-free = lib.mkOverride 40 controllerDisk.minFreeBytes;

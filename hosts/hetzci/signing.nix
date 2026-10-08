@@ -8,11 +8,10 @@
   ...
 }:
 let
-  signing = config.services.ghaf-jenkins.signing;
   keySourceUefi = inputs.ghaf-infra-pki.packages.${pkgs.stdenv.hostPlatform.system}.yubi-uefi-pki;
 in
 {
-  config = lib.mkIf signing.enable {
+  config = lib.mkIf config.services.ghaf-jenkins.signing.enable {
     sops.secrets = {
       tls-pks-file = {
         owner = "jenkins";
