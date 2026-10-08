@@ -1217,11 +1217,11 @@ printf '%s\\n' "$revision"
 
 # Pin the next boot profile so both probes read the same staged generation.
 next_system="$(readlink -f /nix/var/nix/profiles/system 2>/dev/null || true)"
-if [ -n "$next_system" ] && booted="$(readlink \
+if [ -n "$next_system" ] && booted="$(readlink -f \
   /run/booted-system/initrd \
   /run/booted-system/kernel \
   /run/booted-system/kernel-modules 2>/dev/null)" &&
-next_boot="$(readlink \
+next_boot="$(readlink -f \
   "$next_system/initrd" \
   "$next_system/kernel" \
   "$next_system/kernel-modules" 2>/dev/null)"; then

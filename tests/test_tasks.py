@@ -113,7 +113,10 @@ def test_read_deployed_revision_reports_reboot_state_and_kernels(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def fake_run(**kwargs: object) -> SimpleNamespace:
-        assert "/nix/var/nix/profiles/system" in str(kwargs["cmd"])
+        command = str(kwargs["cmd"])
+        assert "/nix/var/nix/profiles/system" in command
+        assert 'booted="$(readlink -f ' in command
+        assert 'next_boot="$(readlink -f ' in command
         return SimpleNamespace(stdout="abc123\nyes\n6.12.78\n6.12.79\n")
 
     monkeypatch.setattr(
