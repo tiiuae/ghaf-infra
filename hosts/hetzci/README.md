@@ -34,7 +34,7 @@ hosts/hetzci/
 ```
 
 The environment-independent Jenkins service implementation, CasC fragments,
-plugins, pipelines, and shared library live in [`modules/jenkins/`](../../modules/jenkins/).
+plugins, pipelines, shared library, and Jenkins-specific scripts live in [`modules/jenkins/`](../../modules/jenkins/).
 It is exported as `nixosModules.jenkins`. Test-agent services and tooling live in
 [`modules/testagent/`](../../modules/testagent/) and are exported as
 `nixosModules.testagent`.

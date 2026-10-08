@@ -690,7 +690,7 @@ in
         coreutils
         nix
       ];
-      script = builtins.readFile ./purge-jenkins-artifacts.sh;
+      script = builtins.readFile ./scripts/purge-jenkins-artifacts.sh;
     };
 
     systemd.timers.jenkins-purge-artifacts = {

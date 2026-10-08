@@ -5,6 +5,8 @@
   ...
 }:
 {
+  imports = [ ../modules/jenkins/packages.nix ];
+
   perSystem =
     { pkgs, self', ... }:
     {
