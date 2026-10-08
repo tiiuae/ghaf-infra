@@ -60,6 +60,7 @@ in
   };
 
   services.ghaf-jenkins = {
+    signing.enable = true;
     envType = "release";
     url = "https://ci-release.vedenemo.dev";
     auth = {
@@ -88,8 +89,6 @@ in
       "ghaf-release-publish"
     ];
   };
-
-  services.ghaf-jenkins.signing.enable = true;
 
   services.baseline-reset = {
     enable = true;

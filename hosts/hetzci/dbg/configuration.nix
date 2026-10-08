@@ -35,6 +35,7 @@ in
   ];
 
   services.ghaf-jenkins = {
+    signing.enable = true;
     envType = "dbg";
     url = "https://ci-dbg.vedenemo.dev";
     auth = {
@@ -58,8 +59,6 @@ in
       "ghaf-release-candidate"
     ];
   };
-
-  services.ghaf-jenkins.signing.enable = true;
 
   sops = {
     defaultSopsFile = ./secrets.yaml;

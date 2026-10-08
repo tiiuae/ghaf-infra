@@ -36,6 +36,17 @@
   networking.hostName = "uae-azureci-prod";
 
   services.ghaf-jenkins = {
+    signing.enable = true;
+    signing.proxy.endpoints = lib.mkForce [
+      {
+        name = "uae";
+        socket = "tls://uae-nethsm-gateway.sumu.vedenemo.dev:2345";
+      }
+      {
+        name = "tampere";
+        socket = "tls://nethsm-gateway.sumu.vedenemo.dev:2345";
+      }
+    ];
     envType = "prod";
     url = "https://ci-prod.uaenorth.cloudapp.azure.com";
     registry = {
@@ -62,16 +73,4 @@
       "ghaf-nightly"
     ];
   };
-
-  services.ghaf-jenkins.signing.enable = true;
-  services.ghaf-jenkins.signing.proxy.endpoints = lib.mkForce [
-    {
-      name = "uae";
-      socket = "tls://uae-nethsm-gateway.sumu.vedenemo.dev:2345";
-    }
-    {
-      name = "tampere";
-      socket = "tls://nethsm-gateway.sumu.vedenemo.dev:2345";
-    }
-  ];
 }
