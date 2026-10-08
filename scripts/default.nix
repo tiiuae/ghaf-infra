@@ -35,23 +35,6 @@
           ];
         text = builtins.readFile ./archive-ghaf-release.sh;
       };
-      select-pkcs11-node = pkgs.writeShellApplication {
-        name = "select-pkcs11-node";
-        runtimeInputs = with pkgs; [
-          coreutils
-          jq
-          gnutls
-        ];
-        text = builtins.readFile ./select-pkcs11-node.sh;
-      };
-
-      run-cosign = pkgs.writeShellApplication {
-        name = "run-cosign";
-        runtimeInputs = with pkgs; [
-          cosign
-        ];
-        text = builtins.readFile ./run-cosign.sh;
-      };
       ghaf-fetch = pkgs.writeShellApplication {
         name = "ghaf-fetch";
         runtimeInputs = with pkgs; [
@@ -67,8 +50,6 @@
         inherit
           verify-signature
           archive-ghaf-release
-          select-pkcs11-node
-          run-cosign
           ghaf-fetch
           ;
       };
