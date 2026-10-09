@@ -145,7 +145,6 @@ def create_pipeline(
     def is_sysupdate_target = target_config.sysupdate
     def normalized_test_runs = target_config.test_runs
     def output = "${artifacts_local_dir}/${build_target_name}"
-    def local_target_ref = "${ghaf_checkout}#${build_target_name}"
 
     def manifest = [
       ci_env: ci_env,
@@ -357,7 +356,7 @@ def create_pipeline(
           def outdir = "${output}/attestations"
           sh """
             mkdir -v -p ${outdir}
-            sbomnix '${local_target_ref}' \
+            sbomnix '${output}/unsigned-output' \
               --csv ${outdir}/sbom.csv \
               --cdx ${outdir}/sbom.cdx.json \
               --spdx ${outdir}/sbom.spdx.json
