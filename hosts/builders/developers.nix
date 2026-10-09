@@ -7,13 +7,6 @@ let
   # add new developers here
   developers = [
     {
-      desc = "Aleksi Sitomaniemi";
-      name = "aleksi";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMse5t/NY8NTs8TUwCWMtlZNU/6HD/p/qDPpmJxXA+uN root@aleksi-ThinkPad-T14-Gen-1"
-      ];
-    }
-    {
       desc = "Alexander Nikolaev";
       name = "avnik";
       keys = [
@@ -59,31 +52,10 @@ let
       ];
     }
     {
-      desc = "Eugeny Popko";
-      name = "eugeny";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP3EUPo+XgxgbgnG8ocGiKwI+FME5HgLYXdCwxETDC92 eugeny.popko@tii.ae"
-      ];
-    }
-    {
       desc = "Fouzia Hussain";
       name = "fouzia";
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICaNgsqHtgLhIRb7HlLHKhO1upnULaENOC4Kgp5wPuBE fouzia.hussain@tii.ae"
-      ];
-    }
-    {
-      desc = "Gayathri Deepa";
-      name = "gayathri";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGJSuGlmQ/iMu7JGL7L4jVT3d+o4MiOsuh0e1ZVkBUKq gayathri.deepa@tii.ae"
-      ];
-    }
-    {
-      desc = "Hai To";
-      name = "haito";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILjkuCarVGSwSY/DqTpCwIHo/mjEz1DSMK/YHrkAHGWG hai.to@unikie.com"
       ];
     }
     {
@@ -92,13 +64,6 @@ let
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/iv9RWMN6D9zmEU85XkaU8fAWJreWkv3znan87uqTW"
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDUlaLlxVlm1KZtoG3R/nHl/KJzmKaIyckDVE2rDJYH+"
-      ];
-    }
-    {
-      desc = "Ivan Nikolaenko";
-      name = "ivann";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEa7sgJ6XQ58B5bHAc8dahWhCRVOFZ2z5pOCk4g+RLfw ivan.nikolaenko@unikie.com"
       ];
     }
     {
@@ -146,24 +111,10 @@ let
       ];
     }
     {
-      desc = "Malavika Balakrishnan";
-      name = "malavika";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFupULSDNZFi+5AtdkAMmVgFj3EaBGks+QSAIcbb9UgS malavika.balakrishnan@tii.ae"
-      ];
-    }
-    {
       desc = "Milla Valio";
       name = "milval";
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGll9sWYdGc2xi9oQ25TEcI1D3T4n8MMXoMT+lJdE/KC root@nixos"
-      ];
-    }
-    {
-      desc = "Matti Paasto";
-      name = "mtpaasto";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDvu5b+k0eKoNE8QiocGaWqKq+E7apIHIie1Va5TM6yE mtpaasto"
       ];
     }
     {
@@ -193,27 +144,6 @@ let
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINS5sjFgJ+OKjQQrxdlxsdG5lodd5Zei7BXCaWc/E8R9 rodrigo.pino@tii.ae"
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHu4r7nCQ6A26HsE4+wIupvXAfVQHgBGXv0+epCho2/m build-server-key"
-      ];
-    }
-    {
-      desc = "Ola Rinta-Koski";
-      name = "rockola";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOarfl/tww9HCteqvhB6UzbUJU1eC1n+YQUHY+M7l7V4 ola@sorvi"
-      ];
-    }
-    {
-      desc = "Omais Pandith";
-      name = "omais";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKU0fEolhcsUoUpTNn/sPoN1FYrwPbAyapahTneBkRfG omais.shafi@tii.ae"
-      ];
-    }
-    {
-      desc = "Sakari Nousiainen";
-      name = "sakarin";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG4f1SPr1KZZXzEyUh7ui8AjDzCA6ESSlvs5xQ/Zne8a skr@LAPTOP-GOL8EQAD"
       ];
     }
     {
