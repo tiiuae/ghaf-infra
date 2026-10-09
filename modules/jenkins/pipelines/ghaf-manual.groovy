@@ -10,6 +10,7 @@ properties([
   parameters([
     booleanParam(name: 'UEFISIGN', defaultValue: false, description: 'Enable secure boot signing (for supported targets)'),
     booleanParam(name: 'SECUREBOOT', defaultValue: false, description: 'Run tests also on secureboot enabled hardware, if available'),
+    booleanParam(name: 'SBOM', defaultValue: false, description: 'Generate SBOMs for all selected build targets'),
     string(name: 'REPO_URL', defaultValue: DEFAULT_REPO_URL, description: 'Git repository URL'),
     string(name: 'GITREF', defaultValue: 'main', description: 'Ghaf git reference (Commit/Branch/Tag)'),
     string(name: 'TESTSET', defaultValue: null, description: 'By default tests are skipped. To run hw-tests, define the target testset here; e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.)'),
@@ -210,6 +211,7 @@ pipeline {
               }
             }
 
+            TARGETS.each { it.sbom = params.SBOM }
             PIPELINE = pipelineExecution.create_pipeline(TARGETS)
           }
         }
