@@ -47,8 +47,8 @@ Prod and dev share builders; release and debug use separate builder sets.
 
 | Host | Arch | Used by |
 |---|---|---|
-| `hetz86-1` | x86_64 | `hetzci-prod`, `hetzci-dev` |
-| `hetz86-builder` | x86_64 | GitHub Actions, developer remote builds (builder.vedenemo.dev) |
+| `hetz86-1` | x86_64 | `hetzci-prod`, `hetzci-dev`, GitHub Actions |
+| `hetz86-builder` | x86_64 | Developer remote builds (builder.vedenemo.dev) |
 | `hetzarm` | aarch64 | `hetzci-prod`, `hetzci-dev`, GitHub Actions, developer remote builds |
 | `hetz86-rel-2` | x86_64 | `hetzci-release` |
 | `hetzarm-rel-1` | aarch64 | `hetzci-release` |
@@ -212,9 +212,10 @@ infrastructure.
 Pushes and PRs to Ghaf `main` also trigger a
 [GitHub Actions workflow](https://github.com/tiiuae/ghaf/blob/main/.github/workflows/build.yml)
 that compiles a matrix of build targets across x86_64 and aarch64. The workflow
-uses `nix-fast-build --remote` over SSH to offload compilation to
-`hetz86-builder` and `hetzarm`, the shared builders available for developer
-remote builds. This workflow checks builds without running hardware tests.
+uses `nix-fast-build --remote` over SSH to offload compilation to `hetz86-1`
+and `hetzarm`, the same builders the prod and dev Jenkins controllers use. The
+`BUILDER_X86` and `BUILDER_AARCH` variables in the Ghaf repository select these
+builders. This workflow checks builds without running hardware tests.
 Build status appears directly on PRs and commits in GitHub without requiring
 access to Jenkins.
 
