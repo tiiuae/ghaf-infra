@@ -10,6 +10,7 @@ properties([
   parameters([
     booleanParam(name: 'UEFISIGN', defaultValue: false, description: 'Enable secure boot signing (for supported targets)'),
     booleanParam(name: 'SECUREBOOT', defaultValue: false, description: 'Run tests also on secureboot enabled hardware, if available'),
+    booleanParam(name: 'SBOM', defaultValue: false, description: 'Generate SBOMs for all selected build targets'),
     string(name: 'REPO_URL', defaultValue: DEFAULT_REPO_URL, description: 'Git repository URL'),
     string(name: 'GITREF', defaultValue: 'main', description: 'Ghaf git reference (Commit/Branch/Tag)'),
     string(name: 'TESTSET', defaultValue: null, description: 'By default tests are skipped. To run hw-tests, define the target testset here; e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.)'),
@@ -32,6 +33,8 @@ properties([
     booleanParam(name: 'intel_laptop_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug (generic Intel laptop image replacing Lenovo X1 and Darter Pro debug targets)'),
     booleanParam(name: 'intel_laptop_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug-installer (generic Intel laptop installer replacing Lenovo X1 and Darter Pro installer targets)'),
     booleanParam(name: 'intel_laptop_debug_sysupdate', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug-sysupdate (generic Intel laptop A/B update image replacing the Lenovo X1 sysupdate target)'),
+    booleanParam(name: 'intel_laptop_debug_secure_ab', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug-secure-ab'),
+    booleanParam(name: 'intel_laptop_debug_secure_ab_sysupdate', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug-secure-ab-sysupdate'),
     booleanParam(name: 'intel_laptop_storeDisk_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-storeDisk-debug (generic Intel laptop storeDisk image replacing the Darter Pro storeDisk debug target)'),
     booleanParam(name: 'intel_laptop_storeDisk_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-storeDisk-debug-installer (generic Intel laptop storeDisk installer replacing the Darter Pro storeDisk installer target)'),
     booleanParam(name: 'intel_laptop_low_mem_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-low-mem-debug (generic Intel laptop low-memory image replacing the Dell Latitude 7330 debug target)'),
@@ -160,6 +163,14 @@ pipeline {
               TARGETS.push(
                 [ target: "packages.x86_64-linux.intel-laptop-debug-sysupdate", sysupdate: true, uefisign: params.UEFISIGN, testset: null ])
             }
+            if (params.intel_laptop_debug_secure_ab) {
+              TARGETS.push(
+                [ target: "packages.x86_64-linux.intel-laptop-debug-secure-ab", secure_ab: true, uefisign: params.UEFISIGN, testset: null ])
+            }
+            if (params.intel_laptop_debug_secure_ab_sysupdate) {
+              TARGETS.push(
+                [ target: "packages.x86_64-linux.intel-laptop-debug-secure-ab-sysupdate", secure_ab: true, sysupdate: true, uefisign: params.UEFISIGN, testset: null ])
+            }
             if (params.intel_laptop_storeDisk_debug) {
               TARGETS.push(addExplicitTests(
                 [ target: "packages.x86_64-linux.intel-laptop-storeDisk-debug", uefisign: params.UEFISIGN ],
@@ -200,6 +211,7 @@ pipeline {
               }
             }
 
+            TARGETS.each { it.sbom = params.SBOM }
             PIPELINE = pipelineExecution.create_pipeline(TARGETS)
           }
         }

@@ -105,6 +105,32 @@ def create_pipeline(
       sh 'bash -o pipefail -c "nix flake show --all-systems | ansi2txt"'
     }
   }
+  def secure_ab_override = ''
+  if (targets.any { it.get('secure_ab', false) }) {
+    stage('Secure A/B config') {
+      if (!env.JENKINS_SECURE_AB_TRUST_DIR) {
+        error('Secure A/B builds require JENKINS_SECURE_AB_TRUST_DIR')
+      }
+      def config_dir = "${artifacts_local_dir}/secure-ab-build-config"
+      sh """
+        mkdir -p ${artifactSupport.shell_quote(config_dir)}
+        for file in PK.crt KEK.crt db.crt update.pub; do
+          cp ${artifactSupport.shell_quote(env.JENKINS_SECURE_AB_TRUST_DIR)}/"\$file" ${artifactSupport.shell_quote(config_dir)}/
+        done
+      """
+      writeFile(
+        file: "${config_dir}/config.json",
+        text: JsonOutput.prettyPrint(JsonOutput.toJson([
+          schema_version: 1,
+          trust: 'external',
+          generation: 1,
+          inject_boot_health_failure: false,
+        ]))
+      )
+      secure_ab_override = "--override-input secure-ab-build-config " +
+        artifactSupport.shell_quote("path:${config_dir}")
+    }
+  }
   targets.each { raw_target_config ->
     def target_config = pipeline_model_call {
       pipelineModel.normalize_build_config(
@@ -119,7 +145,6 @@ def create_pipeline(
     def is_sysupdate_target = target_config.sysupdate
     def normalized_test_runs = target_config.test_runs
     def output = "${artifacts_local_dir}/${build_target_name}"
-    def local_target_ref = "${ghaf_checkout}#${build_target_name}"
 
     def manifest = [
       ci_env: ci_env,
@@ -237,6 +262,7 @@ def create_pipeline(
                   --eval-store auto \
                   --json \
                   --no-link \
+                  ${target_config.get('secure_ab', false) ? secure_ab_override : ''} \
                   .#${build_target_name}
               """,
               returnStdout: true
@@ -330,7 +356,7 @@ def create_pipeline(
           def outdir = "${output}/attestations"
           sh """
             mkdir -v -p ${outdir}
-            sbomnix '${local_target_ref}' \
+            sbomnix '${output}/unsigned-output' \
               --csv ${outdir}/sbom.csv \
               --cdx ${outdir}/sbom.cdx.json \
               --spdx ${outdir}/sbom.spdx.json
