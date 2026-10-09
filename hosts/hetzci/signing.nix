@@ -8,7 +8,8 @@
   ...
 }:
 let
-  keySourceUefi = inputs.ghaf-infra-pki.packages.${pkgs.stdenv.hostPlatform.system}.yubi-uefi-pki;
+  yubi-uefi-pki = inputs.ghaf-infra-pki.packages.${pkgs.stdenv.hostPlatform.system}.yubi-uefi-pki;
+  slsa-pki = inputs.ghaf-infra-pki.packages.${pkgs.stdenv.hostPlatform.system}.slsa-pki;
 in
 {
   config = lib.mkIf config.services.ghaf-jenkins.signing.enable {
@@ -27,7 +28,14 @@ in
 
     services.ghaf-jenkins.signing = {
       pinFile = config.sops.secrets.yubihsm-pin.path;
-      uefi.certificateFile = "${keySourceUefi}/share/ghaf-infra-pki/uefi/DB.pem";
+      certificates = {
+        uefi = {
+          db = "${yubi-uefi-pki}/share/ghaf-infra-pki/uefi/DB.pem";
+          pk = "${yubi-uefi-pki}/share/ghaf-infra-pki/uefi/PK.pem";
+          kek = "${yubi-uefi-pki}/share/ghaf-infra-pki/uefi/KEK.pem";
+        };
+        ota = "${slsa-pki}/share/ghaf-infra-pki/slsa/nethsm-tampere-mca/GhafInfraSignOta-${config.services.ghaf-jenkins.envType}.pem";
+      };
       proxy = {
         enable = true;
         endpoints = [

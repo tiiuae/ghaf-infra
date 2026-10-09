@@ -9,6 +9,20 @@
 }:
 let
   cfg = config.services.ghaf-jenkins;
+  secureAbPublicTrust =
+    pkgs.runCommand "secure-ab-public-trust" { nativeBuildInputs = [ pkgs.openssl ]; }
+      ''
+        mkdir -p "$out"
+        openssl x509 -in ${lib.escapeShellArg cfg.signing.certificates.uefi.pk} -out "$out/PK.crt"
+        openssl x509 -in ${lib.escapeShellArg cfg.signing.certificates.uefi.kek} -out "$out/KEK.crt"
+        openssl x509 -in ${lib.escapeShellArg cfg.signing.certificates.uefi.db} -out "$out/db.crt"
+        openssl x509 -in ${lib.escapeShellArg cfg.signing.certificates.ota} -pubkey -noout > update.pem
+        openssl pkey -pubin -in update.pem -outform DER -out update.der
+        # Ed25519 SubjectPublicKeyInfo: fixed 12-byte header followed by the raw key.
+        test "$(od -An -tx1 -N12 update.der | tr -d ' \n')" = 302a300506032b6570032100
+        test "$(wc -c < update.der)" -eq 44
+        tail -c 32 update.der > "$out/update.pub"
+      '';
   signingPackages =
     (with pkgs; [
       opensc
@@ -67,8 +81,11 @@ let
     // lib.optionalAttrs (cfg.signing.pinFile != null) {
       JENKINS_SIGNING_PIN_FILE = cfg.signing.pinFile;
     }
-    // lib.optionalAttrs (cfg.signing.uefi.certificateFile != null) {
-      JENKINS_UEFI_CERTIFICATE_FILE = cfg.signing.uefi.certificateFile;
+    // lib.optionalAttrs (cfg.signing.certificates.uefi.db != null) {
+      JENKINS_UEFI_CERTIFICATE_FILE = cfg.signing.certificates.uefi.db;
+    }
+    // lib.optionalAttrs (cfg.signing.certificates.ota != null) {
+      JENKINS_SECURE_AB_TRUST_DIR = toString secureAbPublicTrust;
     }
     // lib.optionalAttrs cfg.signing.proxy.enable {
       JENKINS_PKCS11_ENDPOINTS_FILE = toString (
@@ -329,10 +346,29 @@ in
         default = { };
         description = "Ordered PKCS#11 key URI candidates by signing purpose";
       };
-      uefi.certificateFile = lib.mkOption {
-        type = lib.types.nullOr lib.types.str;
-        default = null;
-        description = "Path to the public certificate used when signing UEFI images";
+      certificates = {
+        uefi = {
+          db = lib.mkOption {
+            type = lib.types.nullOr lib.types.str;
+            default = null;
+            description = "Path to the public db certificate used when signing UEFI images";
+          };
+          pk = lib.mkOption {
+            type = lib.types.nullOr lib.types.str;
+            default = null;
+            description = "Path to the public UEFI PK certificate included in secure A/B build trust";
+          };
+          kek = lib.mkOption {
+            type = lib.types.nullOr lib.types.str;
+            default = null;
+            description = "Path to the public UEFI KEK certificate included in secure A/B build trust";
+          };
+        };
+        ota = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          description = "Path to the public Ed25519 OTA certificate; setting it generates secure A/B build trust from this and the UEFI certificates";
+        };
       };
       proxy = {
         enable = lib.mkEnableOption "the PKCS#11 signing proxy client";
@@ -381,8 +417,18 @@ in
         message = "services.ghaf-jenkins.signing.proxy.endpoints must contain at least one endpoint";
       }
       {
-        assertion = !(cfg.signing.keys ? uefi) || cfg.signing.uefi.certificateFile != null;
-        message = "services.ghaf-jenkins.signing.uefi.certificateFile is required for a UEFI signing key";
+        assertion = !(cfg.signing.keys ? uefi) || cfg.signing.certificates.uefi.db != null;
+        message = "services.ghaf-jenkins.signing.certificates.uefi.db is required for a UEFI signing key";
+      }
+      {
+        assertion =
+          cfg.signing.certificates.ota == null
+          || (
+            cfg.signing.certificates.uefi.pk != null
+            && cfg.signing.certificates.uefi.kek != null
+            && cfg.signing.certificates.uefi.db != null
+          );
+        message = "services.ghaf-jenkins.signing.certificates.ota requires certificates.uefi.pk, certificates.uefi.kek and certificates.uefi.db";
       }
     ];
     environment.variables = lib.mkIf cfg.signing.enable signingEnvironment;

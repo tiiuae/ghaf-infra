@@ -32,6 +32,8 @@ properties([
     booleanParam(name: 'intel_laptop_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug (generic Intel laptop image replacing Lenovo X1 and Darter Pro debug targets)'),
     booleanParam(name: 'intel_laptop_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug-installer (generic Intel laptop installer replacing Lenovo X1 and Darter Pro installer targets)'),
     booleanParam(name: 'intel_laptop_debug_sysupdate', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug-sysupdate (generic Intel laptop A/B update image replacing the Lenovo X1 sysupdate target)'),
+    booleanParam(name: 'intel_laptop_debug_secure_ab', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug-secure-ab'),
+    booleanParam(name: 'intel_laptop_debug_secure_ab_sysupdate', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug-secure-ab-sysupdate'),
     booleanParam(name: 'intel_laptop_storeDisk_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-storeDisk-debug (generic Intel laptop storeDisk image replacing the Darter Pro storeDisk debug target)'),
     booleanParam(name: 'intel_laptop_storeDisk_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-storeDisk-debug-installer (generic Intel laptop storeDisk installer replacing the Darter Pro storeDisk installer target)'),
     booleanParam(name: 'intel_laptop_low_mem_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-low-mem-debug (generic Intel laptop low-memory image replacing the Dell Latitude 7330 debug target)'),
@@ -159,6 +161,14 @@ pipeline {
             if (params.intel_laptop_debug_sysupdate) {
               TARGETS.push(
                 [ target: "packages.x86_64-linux.intel-laptop-debug-sysupdate", sysupdate: true, uefisign: params.UEFISIGN, testset: null ])
+            }
+            if (params.intel_laptop_debug_secure_ab) {
+              TARGETS.push(
+                [ target: "packages.x86_64-linux.intel-laptop-debug-secure-ab", secure_ab: true, uefisign: params.UEFISIGN, testset: null ])
+            }
+            if (params.intel_laptop_debug_secure_ab_sysupdate) {
+              TARGETS.push(
+                [ target: "packages.x86_64-linux.intel-laptop-debug-secure-ab-sysupdate", secure_ab: true, sysupdate: true, uefisign: params.UEFISIGN, testset: null ])
             }
             if (params.intel_laptop_storeDisk_debug) {
               TARGETS.push(addExplicitTests(
