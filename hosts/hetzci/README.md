@@ -79,7 +79,7 @@ services.ghaf-jenkins.signing = {
     # identity defaults to networking.hostName
   };
   keys.provenance = [ "pkcs11:token=ci;object=provenance" ];
-  # Set signing.uefi.certificateFile when keys.uefi is configured.
+  # Set signing.certificates.uefi.db when keys.uefi is configured.
 };
 ```
 
@@ -95,8 +95,14 @@ the next key. With a direct PKCS#11 library, it probes each key once without
 proxy endpoints. It returns the first working URI, socket, and region as JSON.
 The selector is executed, not sourced; token and region overrides are no longer
 supported. The first configured endpoint is also the default proxy socket.
-Set `signing.uefi.certificateFile` to the public certificate
+Set `signing.certificates.uefi.db` to the public certificate
 matching the UEFI key; Jenkins receives it as `JENKINS_UEFI_CERTIFICATE_FILE`.
+For secure A/B builds, also set `signing.certificates.uefi.pk`,
+`signing.certificates.uefi.kek`, and `signing.certificates.ota` (Ed25519).
+These public certificates must be available at Nix build time. The Jenkins
+module creates the public trust directory and exports it as
+`JENKINS_SECURE_AB_TRUST_DIR`.
+Jenkins supplies the generation in a per-run `config.json`.
 The existing pipelines still disable signing when `CI_ENV=vm`. Signature
 verification configuration is separate. HetzCI's Ghaf-specific signing tools,
 certificates, and SOPS declarations remain in [`signing.nix`](./signing.nix).
