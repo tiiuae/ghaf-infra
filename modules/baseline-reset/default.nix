@@ -242,7 +242,6 @@ in
       "dm-crypt"
     ]
     ++ lib.optionals pkgs.stdenv.hostPlatform.isx86_64 [
-      "aes_ti"
       "aesni_intel"
       "cbc"
       "xts"
