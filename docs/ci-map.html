@@ -160,7 +160,8 @@ should fit next to the map without scrolling, in both light and dark mode.
   }
   #map.zoomed { cursor: grab; touch-action: none; }
   #map.dragging { cursor: grabbing; }
-  .side { overflow-y: auto; display: flex; flex-direction: column; min-height: 0; padding-bottom: 0; }
+  .side { overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
+  .card.side { padding-bottom: 0; } /* outranks .card, so the sticky nav sits at the very bottom */
   .side .nav {
     position: sticky; bottom: 0; margin: auto -1.15rem 0; padding: 0.7rem 1.15rem 0.9rem;
     display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: space-between;
@@ -411,7 +412,7 @@ should fit next to the map without scrolling, in both light and dark mode.
   </section>
 
   <footer>
-    Drawn from <a href="https://github.com/tiiuae/ghaf-infra" target="_blank" rel="noopener">tiiuae/ghaf-infra</a> at <a href="https://github.com/tiiuae/ghaf-infra/commit/d09fe7cc" target="_blank" rel="noopener"><code>d09fe7cc</code></a> (2026-10-08).
+    Drawn from <a href="https://github.com/tiiuae/ghaf-infra" target="_blank" rel="noopener">tiiuae/ghaf-infra</a> at <a href="https://github.com/tiiuae/ghaf-infra/commit/edb65a2c" target="_blank" rel="noopener"><code>edb65a2c</code></a> (2026-10-12).
     Source: <a href="https://github.com/tiiuae/ghaf-infra/blob/main/docs/ci-map.html" target="_blank" rel="noopener"><code>docs/ci-map.html</code></a>; the comment at its top explains how to edit it.
   </footer>
 </main>
@@ -589,7 +590,7 @@ should fit next to the map without scrolling, in both light and dark mode.
       t: { o: { n: 'PKCS#11 gateways', s: 'Tampere + UAE, failover', a: 'pkcs11-proxy over Nebula' } },
       info: {
         what: 'Signing keys live on HSMs that are physically isolated from the CI network. A gateway host sits next to each HSM and exposes it as a PKCS#11 service (pkcs11-proxy with TLS-PSK) on the Nebula overlay network (hosts find each other through <code>ghaf-lighthouse</code>). Jenkins signs through <code>nethsm-gateway</code> (Tampere) and <code>uae-nethsm-gateway</code> (UAE): for every signing step, <code>select-pkcs11-node</code> picks the first healthy gateway and token, so signing keeps working if one site or HSM is down. A third gateway, <code>nethsm-gateway-dev</code> in Tampere, is not part of that selection.',
-        files: ['hosts/nethsm-gateway/', 'hosts/hetzci/signing.nix', 'scripts/select-pkcs11-node.sh', 'docs/nethsm.md', 'docs/nebula.md', 'modules/nebula/']
+        files: ['hosts/nethsm-gateway/', 'hosts/hetzci/signing.nix', 'modules/jenkins/scripts/select-pkcs11-node.sh', 'docs/nethsm.md', 'docs/nebula.md', 'modules/nebula/']
       } },
     { id: 'hsm', lane: 'L3', cx: C(6) + 30, kind: 'trust',
       t: { o: { n: 'NetHSM / YubiHSM', s: 'keys never leave the HSM', a: 'one key set per env' } },
@@ -643,7 +644,7 @@ should fit next to the map without scrolling, in both light and dark mode.
       t: { o: { n: 'Publish', s: 'oci-publish target', a: '+ local artifacts dir' } },
       info: {
         what: 'Writes images, signatures, attestations and a per-target <code>manifest.json</code> under <code>/var/lib/jenkins/artifacts/&lt;job&gt;/&lt;stamp&gt;-commit_&lt;sha&gt;/</code> (linked from the run page), then <code>oci-publish</code> pushes the image to the registry with its provenance and signatures attached. Tags: an immutable <code>&lt;env&gt;-&lt;stamp&gt;-&lt;sha&gt;</code> and a moving <code>&lt;env&gt;-latest</code>.',
-        files: ['pkgs/oci-publish/', 'modules/jenkins/pipeline-library/vars/pipelineExecution.groovy', 'modules/jenkins/purge-jenkins-artifacts.sh']
+        files: ['pkgs/oci-publish/', 'modules/jenkins/pipeline-library/vars/pipelineExecution.groovy', 'modules/jenkins/scripts/purge-jenkins-artifacts.sh']
       } },
     { id: 'hwtest', lane: 'L4', cx: C(6), kind: 'pipeline',
       t: { o: { n: 'Hardware tests', s: 'triggers ghaf-hw-test', a: 'per device, waits' },
@@ -821,7 +822,7 @@ should fit next to the map without scrolling, in both light and dark mode.
         { badge: 'attest', title: 'Attest and sign through the HSMs',
           nodes: ['build', 'attest', 'gw', 'hsm'], edges: ['e_build_attest', 'e_attest_gw', 'e_gw_hsm'],
           text: 'The controller writes <strong>SLSA provenance</strong> and <strong>SBOMs</strong> with sbomnix, builds the OTA pin for the laptop image, then signs: UEFI Secure Boot signatures for laptop images and installers, SLSA signatures for provenance and images. Signing goes through a PKCS#11 gateway (Tampere or UAE) to keys that never leave the HSM. The provenance is checked against the trust policy immediately.',
-          files: ['hosts/hetzci/signing.nix', 'scripts/select-pkcs11-node.sh', 'slsa/provenance-trust-policy.yaml', 'docs/nethsm.md'] },
+          files: ['hosts/hetzci/signing.nix', 'modules/jenkins/scripts/select-pkcs11-node.sh', 'slsa/provenance-trust-policy.yaml', 'docs/nethsm.md'] },
         { badge: 'publish', title: 'Publish the candidate',
           nodes: ['attest', 'publish', 'registry'], edges: ['e_attest_publish', 'e_publish_registry'],
           text: 'Artifacts land in <code>/var/lib/jenkins/artifacts/ghaf-release-candidate/&lt;stamp&gt;-commit_&lt;sha&gt;/</code> on the controller, and <code>oci-publish</code> pushes each image to <strong>registry.vedenemo.dev</strong> as <code>ghaf/release-candidate/&lt;target&gt;</code>, tagged <code>release-&lt;stamp&gt;-&lt;sha&gt;</code> and <code>release-latest</code>.',
