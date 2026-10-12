@@ -150,3 +150,11 @@ Jenkins controllers have the following UEFI signing tools available
 These tools use the same PKCS#11 proxy connection as SLSA signing to access
 the HSM keys. Jenkins signs with the DB key `uefi-ghaf-db`, selected through
 `select-pkcs11-node` like the SLSA keys.
+
+For sysupdate targets marked `secure_ab`, Jenkins signs the finalized manifest with the dedicated
+`GhafInfraSignOta-${CI_ENV}` Ed25519 key through the `ota` PKCS#11 router. It
+requires a 64-byte signature and verifies it against the raw `update.pub` from
+the public configuration passed to the build. A mismatch fails the pipeline
+before publication. The verified signature is recorded in the manifest image's
+existing signature metadata and published as `<manifest>.sig`. Generic image
+signing skips this manifest and still signs the root, verity and UKI payloads.

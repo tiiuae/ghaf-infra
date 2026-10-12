@@ -629,6 +629,10 @@ def normalize_build_config(
   normalized.no_image = normalized.get('no_image', false)
   normalized.sysupdate = normalized.get('sysupdate', false)
   def uefiSignRequested = normalized.get('uefisign', false) || normalized.get('uefisigniso', false)
+  if (normalized.sysupdate &&
+      (!normalized.get('secure_ab', false) || normalized.no_image || !signingPossible || !uefiSignRequested)) {
+    fail("Sysupdate builds require secure_ab and UEFI/OTA signing")
+  }
   normalized.uefi_sign_requested = uefiSignRequested
   normalized.provenance_requested = normalized.get('provenance', true)
   normalized.build_otapin_requested = normalized.get('build_otapin', false)

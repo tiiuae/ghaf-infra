@@ -82,9 +82,6 @@ def TARGETS = [
   [ target: "packages.x86_64-linux.intel-laptop-storeDisk-debug",
     testset: null, sbom: true,
   ],
-  [ target: "packages.x86_64-linux.intel-laptop-debug-sysupdate",
-    sysupdate: true, uefisign: true, sbom: true,
-  ],
 ]
 
 pipeline {
