@@ -39,9 +39,13 @@ let
       inherit specialArgs;
       modules = [
         hostInventory.${systemName}.module
-        {
-          nixpkgs.hostPlatform = hostInventory.${systemName}.system;
-        }
+        (
+          { pkgs, ... }:
+          {
+            nixpkgs.hostPlatform = hostInventory.${systemName}.system;
+            boot.kernelPackages = pkgs.linuxPackages_latest;
+          }
+        )
       ]
       ++ lib.optional (extraConfig != null) extraConfig;
     };
@@ -60,22 +64,26 @@ let
           mount_host_nix_store = mountHostNixStore;
         })
         hostInventory.hetzci-vm.module
-        {
-          nixpkgs.hostPlatform = hostInventory.hetzci-vm.system;
-          # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/virtualisation/qemu-vm.nix
-          virtualisation.vmVariant.virtualisation.forwardPorts = [
-            {
-              from = "host";
-              host.port = 8080;
-              guest.port = 80;
-            }
-            {
-              from = "host";
-              host.port = 2222;
-              guest.port = 22;
-            }
-          ];
-        }
+        (
+          { pkgs, ... }:
+          {
+            nixpkgs.hostPlatform = hostInventory.hetzci-vm.system;
+            boot.kernelPackages = pkgs.linuxPackages_latest;
+            # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/virtualisation/qemu-vm.nix
+            virtualisation.vmVariant.virtualisation.forwardPorts = [
+              {
+                from = "host";
+                host.port = 8080;
+                guest.port = 80;
+              }
+              {
+                from = "host";
+                host.port = 2222;
+                guest.port = 22;
+              }
+            ];
+          }
+        )
       ];
     };
 
