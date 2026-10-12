@@ -19,7 +19,7 @@ edit it. To change the content, edit the data tables at the top of the script:
                 between lanes (G); labels are placed at lp.
   ROUTES        the walks: each step lists the boxes and arrows it lights up.
   ENVS, SUPPORT the Environments and Supporting services tables.
-  GLOSSARY      the Terms section.
+  GLOSSARY      the Glossary section.
   Paths in `files` and `config` become links to this repository.
 
 Check the result in a browser at about 1280x800: every walk step's text
@@ -265,6 +265,7 @@ should fit next to the map without scrolling, in both light and dark mode.
   svg[data-legend] .edge[data-edge].lit, svg[data-legend] .elabel[data-edge].lit { opacity: 1 !important; }
   svg[data-legend] .badge-step { opacity: 0.3; }
   .lane-nixos.lit rect { stroke-width: 1.6; filter: drop-shadow(0 0 4px var(--config)); }
+  .c-lane.lit { stroke: var(--config); stroke-width: 1.6; }
   @media (prefers-reduced-motion: reduce) {
     svg[data-step] .edge.in-step .line { animation: none; }
   }
@@ -395,7 +396,7 @@ should fit next to the map without scrolling, in both light and dark mode.
 
   <section class="card envs">
     <h2>Environments</h2>
-    <p>The map walks two environments: ci-prod (pre-merge and main) and ci-release. The same Jenkins module (<code>modules/jenkins</code>) runs on four more controllers; only the host config differs: which pipelines, builders, cache, test agents and signing keys it uses. The GitHub Actions row is what runs outside Jenkins.</p>
+    <p>The map walks two environments: ci-prod (pre-merge and main) and ci-release. The same Jenkins module (<code>modules/jenkins</code>) runs on four more controllers; only the host config differs: which pipelines, builders, cache, test agents and signing keys it uses. GitHub Actions, which runs outside Jenkins, is in the Glossary.</p>
     <div class="table-scroll"><table id="env-table"></table></div>
   </section>
 
@@ -406,8 +407,8 @@ should fit next to the map without scrolling, in both light and dark mode.
   </section>
 
   <section class="card gloss">
-    <h2>Terms</h2>
-    <p>Nix and infrastructure terms used on this page. The line marked ≈ gives the closest general CI equivalent.</p>
+    <h2>Glossary</h2>
+    <p>Nix, CI and infrastructure terms used on this page. The line marked ≈ gives the closest general CI equivalent.</p>
     <dl class="gloss-grid" id="gloss"></dl>
   </section>
 
@@ -566,7 +567,7 @@ should fit next to the map without scrolling, in both light and dark mode.
            r: { s: 'hetz86-rel-2, hetzarm-rel-1' },
            p: { s: 'hetz86-1, hetzarm' } },
       info: {
-        what: 'Large Hetzner machines that do the actual compiling. The controller never builds itself (<code>max-jobs = 0</code>); it hands each target to the builder for its CPU architecture over SSH. The builders have other users too: GitHub Actions in tiiuae/ghaf currently builds on <code>hetz86-1</code> and <code>hetzarm</code>, and developers build remotely on <code>hetz86-builder</code> (builder.vedenemo.dev) and <code>hetzarm</code> (see Environments).',
+        what: 'Large Hetzner machines that do the actual compiling. The controller never builds itself (<code>max-jobs = 0</code>); it hands each target to the builder for its CPU architecture over SSH. The builders have other users too: GitHub Actions in tiiuae/ghaf currently builds on <code>hetz86-1</code> and <code>hetzarm</code>, and developers build remotely on <code>hetz86-builder</code> (builder.vedenemo.dev) and <code>hetzarm</code>.',
         r: 'hetz86-rel-2 (x86_64, 96 vCPU) and hetzarm-rel-1 (aarch64), used only by ci-release. They also run baseline reset, and their SSH credentials only live for one release epoch.',
         p: 'hetz86-1 (x86_64) and hetzarm (aarch64), shared by ci-prod and ci-dev. hetzarm also serves GitHub Actions and developer remote builds.',
         ci: '<code>nix build --store ssh-ng://builder --eval-store auto</code>: evaluate on the controller, build on the builder. Like a build agent, except Nix does the scheduling and only builds what no cache already has.',
@@ -868,7 +869,6 @@ should fit next to the map without scrolling, in both light and dark mode.
         { badge: 'checkout', title: 'Check out the merge commit',
           nodes: ['job', 'checkout', 'gh', 'ghcr', 'status'], focus: ['job', 'checkout', 'gh', 'ghcr'], edges: ['e_job_checkout', 'e_gh_checkout', 'e_ghcr_checkout'],
           text: 'Jenkins checks out GitHub\'s merge commit <code>refs/pull/N/merge</code> (main as it would look after merging) and sets <strong>jenkins-pre-merge: pending</strong> on the PR. A Source VSA is fetched if one exists; its absence does not fail the run. Then the flake is evaluated.',
-          ci: 'Ghaf\'s flake lockfile means the commit decides every input of the build, so testing the merge commit tests exactly what main would build.',
           files: ['modules/jenkins/pipeline-library/vars/checkoutUtils.groovy'] },
         { badge: 'build', title: 'Build on the shared prod builders',
           nodes: ['checkout', 'build', 'builders', 'cache'], edges: ['e_checkout_build', 'e_build_builders', 'e_cache_builders', 'e_builders_cache'],
@@ -914,7 +914,6 @@ should fit next to the map without scrolling, in both light and dark mode.
         { badge: 'checkout', title: 'Check out the tip of main',
           nodes: ['job', 'checkout', 'gh', 'ghcr'], edges: ['e_job_checkout', 'e_gh_checkout', 'e_ghcr_checkout'],
           text: 'Jenkins checks out the current tip of <code>main</code> and fetches its Source VSA if there is one; a missing VSA does not fail the run. Then the flake is evaluated.',
-          ci: 'Ghaf\'s flake lockfile means the commit decides every input of the build.',
           files: ['modules/jenkins/pipeline-library/vars/checkoutUtils.groovy'] },
         { badge: 'build', title: 'Build on the shared prod builders',
           nodes: ['checkout', 'build', 'builders', 'cache'], edges: ['e_checkout_build', 'e_build_builders', 'e_cache_builders', 'e_builders_cache'],
@@ -957,6 +956,7 @@ should fit next to the map without scrolling, in both light and dark mode.
     { t: 'Nebula', doc: 'docs/nebula.md', d: 'An encrypted overlay network joining the Hetzner servers, the Tampere office and the UAE site. <code>ghaf-lighthouse</code> introduces hosts and answers DNS under <code>sumu.vedenemo.dev</code>; traffic then flows directly between hosts.', ci: 'A mesh VPN, defined in Nix like everything else.' },
     { t: 'sops-nix', doc: 'docs/architecture.md', d: 'Secrets live encrypted in each host\'s <code>secrets.yaml</code> and are decrypted on that host at activation, never into the world-readable Nix store.', ci: 'Encrypted secrets in Git, scoped per host.' },
     { t: 'JCasC', doc: 'docs/jenkins-authentication.md', d: 'Jenkins Configuration as Code: YAML that Jenkins applies at startup. ghaf-infra generates it with Nix and deletes Jenkins\' own XML config before every start, so the repo is the only source of truth.', ci: 'Jenkins settings as reviewed code.' },
+    { t: 'GitHub Actions', doc: 'docs/architecture.md', d: 'Runs outside Jenkins, on GitHub-hosted runners. For PRs and pushes to main, tiiuae/ghaf\'s <code>build.yml</code> builds its targets on <code>hetz86-1</code> and <code>hetzarm</code>, the builders ci-prod uses, without signing or hardware tests. ghaf-infra builds its own host configurations for every PR, and both repositories run a nightly <code>flakevuln</code> vulnerability scan.', ci: 'A lighter, build-only CI next to Jenkins.' },
     { t: 'Provenance, VSA, OCI referrers', d: 'SLSA provenance says how an artifact was built; a Source VSA says a source commit passed policy. Both are signed; ghaf-infra writes provenance and SBOMs with sbomnix. OCI referrers attach such evidence to an image in the registry without changing its digest.', ci: 'Signed build metadata that travels with the artifact.' },
     { t: 'Prometheus and Grafana', doc: 'docs/monitoring.md', d: '<code>ghaf-monitoring</code> runs Prometheus, which collects metrics from hosts that opt in with <code>services.monitoring.metrics.enable</code> (node-exporter), plus the registry, the NetHSM and the test agents\' relay boards, and keeps them for 90 days. Grafana (monitoring.vedenemo.dev) shows the dashboards and sends alerts to Slack. Both are provisioned by Nix, so UI edits do not stick.', ci: 'Metrics, dashboards and alerting for the CI machines.' },
     { t: 'Loki and Alloy', doc: 'docs/monitoring.md', d: 'Grafana Alloy runs on hosts with <code>services.monitoring.logs.enable</code> and ships their systemd journal to Loki on <code>ghaf-monitoring</code>, searchable in the same Grafana. Logs from Ghaf devices go to a separate Loki and Grafana on <code>ghaf-log</code> (ghaflogs.vedenemo.dev).', ci: 'Central log search, kept apart for the infrastructure and for devices.' }
@@ -990,13 +990,8 @@ should fit next to the map without scrolling, in both light and dark mode.
       pipelines: 'ghaf-main, ghaf-nightly, ghaf-manual, ghaf-hw-test, ghaf-hw-test-manual',
       builders: 'uae-azureci-az86-1, uae-azureci-hetzarm-1', cache: 'reads ghaf-dev',
       agents: 'uae-testagent-prod, uae-testagent2-prod', life: 'Long-lived, deploy-rs' },
-    { env: 'GitHub Actions', url: 'tiiuae/ghaf and ghaf-infra', host: 'GitHub runners', config: '.github/workflows/build.yml', repo: 'https://github.com/tiiuae/ghaf',
-      purpose: 'tiiuae/ghaf builds its targets for PRs and pushes to main on ci-prod\'s builders, without signing or hardware tests. Both repositories also run a nightly <code>flakevuln</code> vulnerability scan.',
-      pipelines: 'build.yml, flakevuln.yml',
-      builders: 'hetz86-1, hetzarm (shared with ci-prod)', cache: 'ghaf-dev',
-      agents: 'none', life: 'GitHub-hosted runners' },
     { env: 'hetzci-vm', url: 'localhost:8080', host: 'hetzci-vm', config: 'hosts/hetzci/vm/',
-      purpose: 'Local QEMU VM for developing pipeline changes: <code>nix run .#run-hetzci-vm</code>. Not a deploy target, and it cannot sign. The <code>hetzci-vm-no-host-nix-store</code> variant runs without mounting the host\'s Nix store.',
+      purpose: 'Local QEMU VM for developing pipeline changes: <code>nix run .#run-hetzci-vm</code>. Not a deploy target, and it cannot sign.',
       pipelines: 'all pipelines',
       builders: 'hetz86-1, hetzarm', cache: 'ghaf-dev',
       agents: 'none', life: 'Throwaway, on your machine' }
@@ -1150,7 +1145,7 @@ should fit next to the map without scrolling, in both light and dark mode.
 
     // Lanes
     LANES.forEach(function (l) {
-      el('rect', { x: LANE_X, y: l.y, width: LANE_W, height: LANE_H, rx: 8, 'class': 'c-lane', 'stroke-width': 1 }, svg);
+      el('rect', { x: LANE_X, y: l.y, width: LANE_W, height: LANE_H, rx: 8, 'class': 'c-lane' + (l.nixos ? ' lane-nixos' : ''), 'stroke-width': 1 }, svg);
     });
 
     // Provisioning rail label
@@ -1330,16 +1325,20 @@ should fit next to the map without scrolling, in both light and dark mode.
       b.setAttribute('aria-pressed', b.dataset.route === r ? 'true' : 'false');
     });
     // Legend highlight: boxes and arrows of one kind, or every NixOS host
-    // (with the controller lane's tag and the deploy rail).
+    // (the tagged boxes, everything in the controller lane, and the deploy rail).
     var lk = state.legend;
+    var inNixosLane = function (y) {
+      return LANES.some(function (l) { return l.nixos && y >= l.y && y <= l.y + LANE_H; });
+    };
     if (lk) svg.setAttribute('data-legend', lk); else svg.removeAttribute('data-legend');
     svg.querySelectorAll('[data-node]').forEach(function (g) {
       var n = NODE_BY_ID[g.getAttribute('data-node')];
-      g.classList.toggle('lit', !!lk && (lk === 'nixos' ? !!n.nixos : nodeKind(n, r) === lk));
+      g.classList.toggle('lit', !!lk && (lk === 'nixos' ? !!n.nixos || inNixosLane(BOX[n.id].cy) : nodeKind(n, r) === lk));
     });
     svg.querySelectorAll('.edge[data-edge], .elabel[data-edge]').forEach(function (g) {
-      var id = g.getAttribute('data-edge');
-      g.classList.toggle('lit', !!lk && (lk === 'nixos' ? id === 'rail' || id.indexOf('br_') === 0 : EDGE_BY_ID[id].kind === lk));
+      var e = EDGE_BY_ID[g.getAttribute('data-edge')];
+      var nixos = e.id === 'rail' || e.id.indexOf('br_') === 0 || e.pts.every(function (p) { return inNixosLane(p[1]); });
+      g.classList.toggle('lit', !!lk && (lk === 'nixos' ? nixos : e.kind === lk));
     });
     svg.querySelectorAll('.lane-nixos').forEach(function (t) { t.classList.toggle('lit', lk === 'nixos'); });
     svg.querySelectorAll('.legend-item').forEach(function (g) {
@@ -1359,9 +1358,9 @@ should fit next to the map without scrolling, in both light and dark mode.
 
   // A repository path becomes a link to it on GitHub; anything else (such as
   // a command) stays plain code.
-  function repoLink(path, repo) {
+  function repoLink(path) {
     if (!/^[\w.\/-]+$/.test(path)) return '<code>' + esc(path) + '</code>';
-    var url = (repo || REPO_URL) + (path.slice(-1) === '/' ? '/tree/main/' : '/blob/main/') + path;
+    var url = REPO_URL + (path.slice(-1) === '/' ? '/tree/main/' : '/blob/main/') + path;
     return '<a href="' + esc(url) + '" target="_blank" rel="noopener"><code>' + esc(path) + '</code></a>';
   }
   // Host names that are websites people can open (Jenkins, Grafana, Fleet).
@@ -1697,7 +1696,7 @@ should fit next to the map without scrolling, in both light and dark mode.
     ENVS.map(function (e) {
       return '<tr data-row' + (e.routes ? ' class="on-map"' : '') + '>' +
         '<td><span class="env-name">' + esc(e.env) + '</span><span class="url">' + (WEB_HOSTS.indexOf(e.url) >= 0 ? hostLink(e.url) : esc(e.url)) + '</span>' +
-        '<code>' + esc(e.host) + '</code><span class="url">' + repoLink(e.config, e.repo) + '</span>' +
+        '<code>' + esc(e.host) + '</code><span class="url">' + repoLink(e.config) + '</span>' +
         (e.routes || []).map(function (r) { return '<button type="button" class="btn" data-go="' + r + '">Walk ' + ROUTE_NAME[r] + ' ▶</button>'; }).join(' ') + '</td>' +
         '<td class="purpose">' + e.purpose + '</td><td>' + items(e.pipelines) + '</td><td>' + items(e.builders) + '</td>' +
         '<td>' + items(e.cache) + '</td><td>' + items(e.agents) + '</td><td>' + items(e.life) + '</td></tr>';
