@@ -52,13 +52,6 @@ let
       ];
     }
     {
-      desc = "Fouzia Hussain";
-      name = "fouzia";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICaNgsqHtgLhIRb7HlLHKhO1upnULaENOC4Kgp5wPuBE fouzia.hussain@tii.ae"
-      ];
-    }
-    {
       desc = "Humaid Alqasimi";
       name = "humaid";
       keys = [
@@ -118,27 +111,6 @@ let
       ];
     }
     {
-      desc = "Rajkumar Ramasamy";
-      name = "rajkumar";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAmYFfUPwKkBybdsmjDi4irJMO//2A+sRPZSLOkDvDQN rajkumar.ramasamy@tii.ae"
-      ];
-    }
-    {
-      desc = "Renzo Bruzzone";
-      name = "renzo";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ/e7vfzx0Sma0BtchhpQAlmAuIUiC11eWi7hOQiItZR renzo.bruzzone@tii.ae"
-      ];
-    }
-    {
-      desc = "Roman Borusiak";
-      name = "roman";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIEQPRBkpitGD4BEMDTtWqlExAYh+plIJuG4LOkLiZZu"
-      ];
-    }
-    {
       desc = "Rodrigo Pino";
       name = "rodrigo";
       keys = [
@@ -158,13 +130,6 @@ let
       name = "shamma";
       keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM3w7NzqMuF+OAiIcYWyP9+J3kwvYMKQ+QeY9J8QjAXm shamma-alblooshi@tii.ae"
-      ];
-    }
-    {
-      desc = "Srikar Nayanara";
-      name = "Srikar";
-      keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE5wkbghZvvAps3jejIx4eKTzKx2cC/GjDMOoVvH3V2r root@nixos"
       ];
     }
     {
