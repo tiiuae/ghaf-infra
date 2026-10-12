@@ -467,30 +467,25 @@ def create_pipeline(
               if (sysupdate_manifest_image == null) {
                 error("sysupdate manifest not found")
               }
-              def sysupdate_manifest_name = artifactSupport.path_basename(sysupdate_manifest_image.path)
-
               withRedundancyRouter('uefi') { ctx ->
                 sh """
                   uefi-sign-sysupdate "${env.JENKINS_UEFI_CERTIFICATE_FILE}" \
                     "${ctx.uri}" \
-                    '${output}/${uefi_image.path}' \
-                    '${tmpdir}/${img_name}'
+                    ${artifactSupport.shell_quote("${output}/${sysupdate_manifest_image.path}")} \
+                    '${tmpdir}'
                 """
                 record_signature(manifest.uefi, ctx)
               }
 
-              sh """
-                uefi-sign-sysupdate rehash \
-                  '${tmpdir}/${img_name}' \
-                  '${output}/${sysupdate_manifest_image.path}' \
-                  '${tmpdir}/${sysupdate_manifest_name}'
-              """
-              sh """
-                mkdir -p '${output}/images'
-                mv '${tmpdir}/${img_name}' '${output}/images/${img_name}'
-                mv '${tmpdir}/${sysupdate_manifest_name}' '${output}/images/${sysupdate_manifest_name}'
-              """
-              sysupdate_manifest_image.path = "images/${sysupdate_manifest_name}"
+              sh "mkdir -p '${output}/images'"
+              manifest.images.each { image ->
+                def name = artifactSupport.path_basename(image.path)
+                sh """
+                  mv ${artifactSupport.shell_quote("${tmpdir}/${name}")} \
+                    ${artifactSupport.shell_quote("${output}/images/${name}")}
+                """
+                image.path = "images/${name}"
+              }
             } else {
               def signer = build_target_name.contains("nvidia-jetson-orin") ? "uefisign-simple" : "uefisign"
               withRedundancyRouter('uefi') { ctx ->

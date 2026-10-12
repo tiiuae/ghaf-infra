@@ -144,8 +144,7 @@ Jenkins controllers have the following UEFI signing tools available
 - `uefisign`: sign individual EFI binaries
 - `uefisigniso`: sign EFI binaries within ISO images
 - `uefisign-simple`: simplified wrapper for common signing operations
-- `uefi-sign-sysupdate`: sign the EFI image of sysupdate (OTA) targets and
-  update the sysupdate manifest hashes
+- `uefi-sign-sysupdate`: Ghaf manifest-v2 A/B sysupdate signer
 - `systemd-sbsign`: systemd's built-in sbsign tool for PE binary signing
 
 These tools use the same PKCS#11 proxy connection as SLSA signing to access
