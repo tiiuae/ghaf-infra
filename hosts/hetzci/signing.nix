@@ -51,6 +51,9 @@ in
         tlsPskFile = config.sops.secrets.tls-pks-file.path;
       };
       keys = {
+        ota = [
+          "pkcs11:token=NetHSM;object=GhafInfraSignOta-${config.services.ghaf-jenkins.envType}"
+        ];
         provenance = [
           "pkcs11:token=NetHSM;object=GhafInfraSignProv-${config.services.ghaf-jenkins.envType}"
           "pkcs11:token=YubiHSM;object=GhafInfraSignProv-${config.services.ghaf-jenkins.envType}"

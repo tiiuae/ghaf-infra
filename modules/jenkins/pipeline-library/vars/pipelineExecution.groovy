@@ -106,20 +106,20 @@ def create_pipeline(
     }
   }
   def secure_ab_override = ''
+  def secure_ab_config_dir = "${artifacts_local_dir}/secure-ab-build-config"
   if (targets.any { it.get('secure_ab', false) }) {
     stage('Secure A/B config') {
       if (!env.JENKINS_SECURE_AB_TRUST_DIR) {
         error('Secure A/B builds require JENKINS_SECURE_AB_TRUST_DIR')
       }
-      def config_dir = "${artifacts_local_dir}/secure-ab-build-config"
       sh """
-        mkdir -p ${artifactSupport.shell_quote(config_dir)}
+        mkdir -p ${artifactSupport.shell_quote(secure_ab_config_dir)}
         for file in PK.crt KEK.crt db.crt update.pub; do
-          cp ${artifactSupport.shell_quote(env.JENKINS_SECURE_AB_TRUST_DIR)}/"\$file" ${artifactSupport.shell_quote(config_dir)}/
+          cp ${artifactSupport.shell_quote(env.JENKINS_SECURE_AB_TRUST_DIR)}/"\$file" ${artifactSupport.shell_quote(secure_ab_config_dir)}/
         done
       """
       writeFile(
-        file: "${config_dir}/config.json",
+        file: "${secure_ab_config_dir}/config.json",
         text: JsonOutput.prettyPrint(JsonOutput.toJson([
           schema_version: 1,
           trust: 'external',
@@ -128,7 +128,7 @@ def create_pipeline(
         ]))
       )
       secure_ab_override = "--override-input secure-ab-build-config " +
-        artifactSupport.shell_quote("path:${config_dir}")
+        artifactSupport.shell_quote("path:${secure_ab_config_dir}")
     }
   }
   targets.each { raw_target_config ->
@@ -486,6 +486,44 @@ def create_pipeline(
                 """
                 image.path = "images/${name}"
               }
+
+              def ota_signature_path = "${sysupdate_manifest_image.path}.sig"
+              sh(label: 'Prepare OTA verification key', script: """
+                # Ed25519's fixed raw public-key length, in bytes.
+                ed25519_public_key_size=32
+                # DER SubjectPublicKeyInfo header followed by a BIT STRING containing the 32-byte public key.
+                # Hex: 30 2a 30 05 06 03 2b 65 70 03 21 00; encoded as octal for printf.
+                ed25519_spki_header='\\060\\052\\060\\005\\006\\003\\053\\145\\160\\003\\041\\000'
+                test "\$(wc -c < ${artifactSupport.shell_quote("${secure_ab_config_dir}/update.pub")})" -eq "\$ed25519_public_key_size"
+                printf '%b' "\$ed25519_spki_header" > '${tmpdir}/update-key.der'
+                cat ${artifactSupport.shell_quote("${secure_ab_config_dir}/update.pub")} >> '${tmpdir}/update-key.der'
+              """)
+
+              def ota_signing_ctx = null
+              withRedundancyRouter('ota') { ctx ->
+                sh(label: 'Sign finalized OTA manifest', script: """
+                  openssl pkeyutl -sign -rawin \
+                    -inkey "${ctx.uri}" \
+                    -in ${artifactSupport.shell_quote("${output}/${sysupdate_manifest_image.path}")} \
+                    -out '${tmpdir}/manifest.sig'
+                """)
+                ota_signing_ctx = ctx
+              }
+
+              sh(label: 'Verify OTA manifest signature', script: """
+                # Ed25519's fixed signature length, in bytes.
+                ed25519_signature_size=64
+                test "\$(wc -c < '${tmpdir}/manifest.sig')" -eq "\$ed25519_signature_size"
+                openssl pkeyutl -verify -rawin -pubin -keyform DER \
+                  -inkey '${tmpdir}/update-key.der' \
+                  -in ${artifactSupport.shell_quote("${output}/${sysupdate_manifest_image.path}")} \
+                  -sigfile '${tmpdir}/manifest.sig'
+              """)
+
+              sh(label: 'Publish verified OTA signature', script: """
+                mv '${tmpdir}/manifest.sig' ${artifactSupport.shell_quote("${output}/${ota_signature_path}")}
+              """)
+              record_signature(sysupdate_manifest_image.signature, ota_signing_ctx, ota_signature_path)
             } else {
               def signer = build_target_name.contains("nvidia-jetson-orin") ? "uefisign-simple" : "uefisign"
               withRedundancyRouter('uefi') { ctx ->
@@ -517,7 +555,7 @@ def create_pipeline(
         ) {
           withRedundancyRouter('image') { ctx ->
             sh "mkdir -p ${output}/images"
-            manifest.images.each { image ->
+            manifest.images.findAll { it.role != 'sysupdate-manifest' }.each { image ->
               def img_name = artifactSupport.path_basename(image.path)
               record_signature(image.signature, ctx, "images/${img_name}.sig")
               sh """
