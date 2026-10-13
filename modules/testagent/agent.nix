@@ -24,6 +24,7 @@ let
       after = [ "start-agents.service" ];
 
       path = [
+        inputs.jetpack.legacyPackages.${pkgs.stdenv.hostPlatform.system}.nvidia-jetpack6.board-automation
         brainstem
         inputs.robot-framework.packages.${pkgs.stdenv.hostPlatform.system}.ghaf-robot
         self.packages.${pkgs.stdenv.hostPlatform.system}.policy-checker
