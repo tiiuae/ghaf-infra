@@ -75,6 +75,11 @@
       };
     };
 
+    jetpack = {
+      url = "github:anduril/jetpack-nixos";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     sbomnix = {
       url = "github:tiiuae/sbomnix?ref=main";
       inputs = {

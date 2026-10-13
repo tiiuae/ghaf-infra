@@ -105,6 +105,7 @@ in
     environment.systemPackages = [
       connect-script
       disconnect-script
+      inputs.jetpack.legacyPackages.${pkgs.stdenv.hostPlatform.system}.nvidia-jetpack6.board-automation
     ]
     ++ lib.optional cfg.relayBoard.enable relay-board-exporter
     ++ (with self.packages.${pkgs.stdenv.hostPlatform.system}; [

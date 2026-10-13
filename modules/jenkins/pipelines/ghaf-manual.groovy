@@ -291,9 +291,7 @@ pipeline {
               def boardctlOutput = sh(
                 script: '''
                   set +e
-                  /run/wrappers/bin/sudo \
-                    /var/lib/nvidia/Linux_for_Tegra/tools/board_automation/boardctl \
-                    -t topo recovery 2>&1
+                  /run/wrappers/bin/sudo boardctl -t topo recovery 2>&1
                   echo "BOARDCTL_RC=$?"
                 ''',
                 returnStdout: true
