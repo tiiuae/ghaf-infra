@@ -28,6 +28,9 @@ TEST_RESULTS_ARTIFACT_TYPE = "application/vnd.ghaf.test-results.v1"
 TEST_RESULTS_MEDIA_TYPE = "application/x-tar"
 RELEASE_ATTESTATION_ARTIFACT_TYPE = "application/vnd.ghaf.release-attestation.v1+json"
 SYSUPDATE_MANIFEST_MEDIA_TYPE = "application/vnd.ghaf.ota.manifest.v1+json"
+SYSUPDATE_MANIFEST_SIGNATURE_MEDIA_TYPE = (
+    "application/vnd.ghaf.ota.manifest-signature.v1+ed25519"
+)
 SYSUPDATE_KERNEL_MEDIA_TYPE = "application/vnd.ghaf.ota.uki.v1+efi"
 SYSUPDATE_ROOT_MEDIA_TYPE = "application/vnd.ghaf.ota.root.v1+raw"
 SYSUPDATE_VERITY_MEDIA_TYPE = "application/vnd.ghaf.ota.verity.v1+raw"
@@ -437,7 +440,7 @@ def publish_sysupdate_artifacts(
     push_files = []
     if sysupdate_manifest_signature_path:
         push_files.append(
-            f"{sysupdate_manifest_signature_path}:{DETACHED_SIGNATURE_MEDIA_TYPE}"
+            f"{sysupdate_manifest_signature_path}:{SYSUPDATE_MANIFEST_SIGNATURE_MEDIA_TYPE}"
         )
     for file in files:
         push_files.append(f"{file['path']}:{file['media_type']}")
