@@ -83,6 +83,7 @@
     in
     builtins.toJSON {
       addresses = {
+        test_server_ip = "172.18.16.12";
         relay_serial_port = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A10KZMAN-if00-port0";
         bluetooth_serial_port = "/dev/ttyBTboard";
         bluetooth_name = "Ghaf Test BT Board Release";

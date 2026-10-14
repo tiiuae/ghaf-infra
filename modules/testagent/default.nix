@@ -92,6 +92,8 @@ in
         wifi-password = credential;
         pi-login = credential;
         pi-pass = credential;
+        test-server-login = credential;
+        test-server-pass = credential;
         # used for ssh connections
         ssh_host_ed25519_key.owner = "jenkins";
       };
