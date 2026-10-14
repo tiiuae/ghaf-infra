@@ -168,6 +168,7 @@ def ghaf_robot_test(String testname='relayboot') {
             -v DEVICE_TYPE:$DEVICE_TAG \
             -v BUILD_ID:${BUILD_NUMBER} \
             -v COMMIT_HASH:$COMMIT_HASH \
+            -v TEST_TARGET:$TEST_TARGET \
             -v FLASHED:${FLASHED} \
             ${EXTRA_ROBOT_ARGS} \
             -i $INCLUDE_TEST_TAGS .
