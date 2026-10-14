@@ -231,6 +231,13 @@ in
           };
         })
         (dashboard {
+          name = "deployment-drift";
+          src = ./provision/dashboards/deployment-drift.json;
+          replacements = {
+            "\${DS_PROMETHEUS}" = "prometheus";
+          };
+        })
+        (dashboard {
           name = "Relay status";
           src = ./provision/dashboards/relay-status.json;
           replacements = {

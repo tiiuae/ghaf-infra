@@ -1,0 +1,147 @@
+{
+  "uid": "ghaf-deployment-drift",
+  "title": "Deployment drift",
+  "description": "Running and next-boot revisions and kernels for monitored hosts, shown like inv print-revision. Revision date is the commit date of the running revision; dirty or unknown revisions have no date.",
+  "schemaVersion": 41,
+  "version": 1,
+  "refresh": "1m",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "table",
+      "title": "Host deployments",
+      "gridPos": { "h": 20, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "ghaf_deployment_info",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "refId": "B",
+          "expr": "ghaf_deployment_revision_timestamp_seconds * 1000",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "refId": "C",
+          "expr": "ghaf_deployment_reboot_pending",
+          "format": "table",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": { "byField": "machine_name", "mode": "outerTabular" }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "includeByName": {
+              "machine_name": true,
+              "Value #C": true,
+              "running_kernel": true,
+              "next_boot_kernel": true,
+              "running_revision": true,
+              "Value #B": true,
+              "next_boot_revision": true
+            },
+            "indexByName": {
+              "machine_name": 0,
+              "Value #C": 1,
+              "running_kernel": 2,
+              "next_boot_kernel": 3,
+              "running_revision": 4,
+              "Value #B": 5,
+              "next_boot_revision": 6
+            },
+            "renameByName": {
+              "machine_name": "Host",
+              "Value #C": "Needs reboot",
+              "running_kernel": "Kernel",
+              "next_boot_kernel": "Next-boot kernel",
+              "running_revision": "Revision",
+              "Value #B": "Revision date",
+              "next_boot_revision": "Next-boot revision"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "left" },
+          "noValue": "(unknown)"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Host" },
+            "properties": [{ "id": "custom.width", "value": 200 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Needs reboot" },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": { "text": "no" },
+                      "1": { "text": "yes" }
+                    }
+                  },
+                  { "type": "special", "options": { "match": "nan", "result": { "text": "(unknown)" } } }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byRegexp", "options": "^(Revision|Next-boot revision)$" },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "regex", "options": { "pattern": "^([0-9a-f]{12})[0-9a-f]{28}$", "result": { "text": "$1" } } },
+                  { "type": "regex", "options": { "pattern": "^([0-9a-f]{8})[0-9a-f]{32}-dirty$", "result": { "text": "$1-dirty" } } }
+                ]
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Commit on GitHub",
+                    "url": "https://github.com/tiiuae/ghaf-infra/commit/${__value.raw}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Revision date" },
+            "properties": [
+              { "id": "unit", "value": "time:YYYY-MM-DD" },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "special", "options": { "match": "nan", "result": { "text": "(unknown)" } } }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "displayName": "Host", "desc": false }]
+      }
+    }
+  ]
+}
