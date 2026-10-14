@@ -67,6 +67,7 @@
     in
     builtins.toJSON {
       addresses = {
+        test_server_ip = "172.18.16.12";
         relay_serial_port = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A10KZ5VO-if00-port0";
         OrinAGX64 = {
           inherit location;

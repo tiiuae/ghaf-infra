@@ -52,6 +52,7 @@
     in
     builtins.toJSON {
       addresses = {
+        test_server_ip = "172.18.16.12";
         relay_serial_port = "NONE";
         OrinNX1 = {
           inherit location;
