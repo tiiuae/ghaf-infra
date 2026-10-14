@@ -3,10 +3,79 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 let
   cfg = config.services.monitoring;
+
+  driftMetrics = pkgs.writeShellApplication {
+    name = "ghaf-deployment-metrics";
+    runtimeInputs = [ pkgs.coreutils ];
+    text = ''
+      output_dir="''${1:-/run/ghaf-deployment-metrics}"
+      mkdir -p "$output_dir"
+      tmp="$(mktemp "$output_dir/.deployment.prom.XXXXXX")"
+      trap 'rm -f "$tmp"' EXIT
+
+      # Pin both profiles so revisions and timestamps refer to the same systems.
+      running_system="$(readlink -e /run/current-system 2>/dev/null || true)"
+      next_system="$(readlink -e /nix/var/nix/profiles/system 2>/dev/null || true)"
+
+      revision_label() {
+        local revision
+        revision="$("$1/sw/bin/nixos-version" --configuration-revision 2>/dev/null || true)"
+        printf '%s' "''${revision:-(unknown)}"
+      }
+
+      running_revision="$(revision_label "$running_system")"
+      next_boot_revision="$(revision_label "$next_system")"
+
+      # Dirty trees have a modification time, not a reliable commit time.
+      revision_timestamp="$(cat "$running_system/etc/configuration-revision-timestamp" 2>/dev/null || true)"
+      if [[ ! "$running_revision" =~ ^[0-9a-f]{40}$ || ! "$revision_timestamp" =~ ^[1-9][0-9]*$ ]]; then
+        revision_timestamp=NaN
+      fi
+
+      # Same kernel versions as tasks.py: uname, and the next-boot kernel modules directory.
+      running_kernel="$(uname -r)"
+      next_boot_kernel="(unknown)"
+      next_modules=("$next_system"/kernel-modules/lib/modules/*)
+      if [ -n "$next_system" ] && [ "''${#next_modules[@]}" -eq 1 ] && [ -d "''${next_modules[0]}" ]; then
+        next_boot_kernel="''${next_modules[0]##*/}"
+      fi
+
+      reboot_pending=NaN
+      # Same kernel/initrd/modules comparison as tasks.py; missing artifacts are unknown.
+      if [ -n "$next_system" ] && booted="$(readlink -e \
+        /run/booted-system/initrd \
+        /run/booted-system/kernel \
+        /run/booted-system/kernel-modules 2>/dev/null)" &&
+        next_boot="$(readlink -e \
+          "$next_system/initrd" \
+          "$next_system/kernel" \
+          "$next_system/kernel-modules" 2>/dev/null)"; then
+        reboot_pending=0
+        if [ "$booted" != "$next_boot" ]; then
+          reboot_pending=1
+        fi
+      fi
+
+      cat > "$tmp" <<EOF
+      # HELP ghaf_deployment_info Running and next-boot configuration revisions and kernels.
+      # TYPE ghaf_deployment_info gauge
+      ghaf_deployment_info{running_revision="$running_revision",next_boot_revision="$next_boot_revision",running_kernel="$running_kernel",next_boot_kernel="$next_boot_kernel"} 1
+      # HELP ghaf_deployment_revision_timestamp_seconds Running revision commit time in Unix seconds (NaN if unknown or dirty).
+      # TYPE ghaf_deployment_revision_timestamp_seconds gauge
+      ghaf_deployment_revision_timestamp_seconds $revision_timestamp
+      # HELP ghaf_deployment_reboot_pending Booted kernel, initrd or modules differ from next boot (NaN if unknown).
+      # TYPE ghaf_deployment_reboot_pending gauge
+      ghaf_deployment_reboot_pending $reboot_pending
+      EOF
+      chmod 0644 "$tmp"
+      mv -fT "$tmp" "$output_dir/deployment.prom"
+    '';
+  };
 
   alloyConfigs = {
     base = # hcl
@@ -98,7 +167,11 @@ in
       services.prometheus.exporters = {
         node = {
           enable = true;
-          enabledCollectors = [ "systemd" ];
+          enabledCollectors = [
+            "systemd"
+            "textfile"
+          ];
+          extraFlags = [ "--collector.textfile.directory=/run/ghaf-deployment-metrics" ];
           port = 9100;
         };
       };
@@ -106,6 +179,30 @@ in
       # with ProtectHome=true, the exporter will report incorrect filesystem bytes for /home
       systemd.services.prometheus-node-exporter.serviceConfig = {
         ProtectHome = lib.mkForce "read-only";
+      };
+
+      systemd.services.ghaf-deployment-metrics = {
+        description = "Export deployment drift metrics";
+        wantedBy = [ "multi-user.target" ];
+        before = [ "prometheus-node-exporter.service" ];
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = lib.getExe driftMetrics;
+          RuntimeDirectory = "ghaf-deployment-metrics";
+          RuntimeDirectoryPreserve = "yes";
+          RuntimeDirectoryMode = "0755";
+          ProtectSystem = "strict";
+          ProtectHome = true;
+          PrivateTmp = true;
+        };
+      };
+
+      systemd.timers.ghaf-deployment-metrics = {
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnBootSec = "5min";
+          OnUnitActiveSec = "5min";
+        };
       };
 
       networking.firewall = lib.mkIf cfg.metrics.openFirewall {

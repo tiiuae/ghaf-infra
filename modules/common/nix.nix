@@ -18,6 +18,9 @@ in
     self.rev or self.dirtyRev or self.lastModified or "unknown"
   );
 
+  # commit time of the revision above, read by the drift metrics in modules/monitoring.nix
+  environment.etc."configuration-revision-timestamp".text = "${toString (self.lastModified or 0)}\n";
+
   nixpkgs.config.allowUnfree = true;
 
   nix = {
