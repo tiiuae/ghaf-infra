@@ -29,6 +29,11 @@
   system.stateVersion = lib.mkForce "26.05";
   networking.hostName = "ghaf-webserver";
 
+  services.monitoring = {
+    metrics.enable = true;
+    logs.enable = true;
+  };
+
   services.nginx.virtualHosts."vedenemo.dev" = {
     enableACME = true;
     forceSSL = true;

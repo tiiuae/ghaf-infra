@@ -24,4 +24,9 @@
   networking.hostName = "ghaf-fleetdm";
   system.stateVersion = lib.mkForce "25.05";
   sops.defaultSopsFile = ./secrets.yaml;
+
+  services.monitoring = {
+    metrics.enable = true;
+    logs.enable = true;
+  };
 }

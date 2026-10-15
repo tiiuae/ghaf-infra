@@ -32,6 +32,8 @@ let
       ghaf-monitoring
       ghaf-lighthouse
       ghaf-registry
+      ghaf-webserver
+      ghaf-fleetdm
       hetzci-dev
       hetzci-prod
       hetzci-release
@@ -494,6 +496,7 @@ in
                 testagent2-prod
                 testagent-release
                 nethsm-gateway
+                nethsm-gateway-dev
                 ;
             };
       }

@@ -383,7 +383,7 @@ The target lists are defined in
 |---|---|---|
 | `hetzner-cloud` | Hetzner internal network (direct) | Configured Hetzner Cloud VMs, node-exporter on port 9100 |
 | `hetzner-robot` | SSH proxy (`sshified`) | Configured dedicated servers, node-exporter on port 9100 |
-| `office` | Nebula overlay | Tampere test agents and `nethsm-gateway`, node-exporter on port 9100 |
+| `office` | Nebula overlay | Tampere test agents, `nethsm-gateway`, and `nethsm-gateway-dev`, node-exporter on port 9100 |
 | `relay-board` | Nebula overlay | `testagent-dev`, `testagent2-prod`, `testagent-release`, port 8000 |
 | `nethsm` | Nebula overlay | `nethsm-gateway`, `uae-nethsm-gateway`, port 8000 |
 | `zot` | HTTPS with basic auth over the Hetzner internal network | `ghaf-registry`, port 443 |
