@@ -15,14 +15,19 @@ properties([
     string(name: 'GITREF', defaultValue: 'main', description: 'Ghaf git reference (Commit/Branch/Tag)'),
     string(name: 'TESTSET', defaultValue: null, description: 'By default tests are skipped. To run hw-tests, define the target testset here; e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.)'),
     string(
+      name: 'CUSTOM_ORIN_FLASH_SCRIPT',
+      defaultValue: '',
+      description: 'Custom Orin AGX flash script target ending with -flash-script or -flash-qspi. TESTSET is not supported for custom targets.'
+    ),
+    string(
       name: 'CUSTOM_GHAF_TARGET',
       defaultValue: '',
-      description: 'Additional Ghaf flake target to build.'
+      description: 'Custom ghaf image target. Required for -flash-script and secure-boot flashes. TESTSET is not supported for custom targets.'
     ),
     booleanParam(
       name: 'EXECUTE_ORIN_AGX_FLASH',
       defaultValue: false,
-      description: 'Execute a custom Ghaf target ending with -flash-script or -flash-qspi after Build.'
+      description: 'Execute the custom Orin AGX flash script after Build.'
     ),
     booleanParam(name: 'doc', defaultValue: false, description: 'Build target packages.x86_64-linux.doc'),
     booleanParam(name: 'nvidia_jetson_orin_agx_debug_from_x86_64', defaultValue: false, description: 'Build target packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64'),
@@ -192,18 +197,29 @@ pipeline {
               TARGETS.push(
                 [ target: "packages.x86_64-linux.intel-laptop-low-mem-debug-installer", uefisigniso: params.UEFISIGN, testset: null ])
             }
-            def customTarget = params.CUSTOM_GHAF_TARGET?.trim()
-            if (customTarget) {
-              if (customTarget.endsWith('-flash-script') || customTarget.endsWith('-flash-qspi')) {
-                TARGETS.push([ target: customTarget, no_image: true, testset: null, provenance: false ])
-              } else {
-                TARGETS.push([
-                  target: customTarget,
-                  uefisign: params.UEFISIGN,
-                  testset: null,
-                  provenance: false,
-                ])
+            [
+              CUSTOM_ORIN_FLASH_SCRIPT: params.CUSTOM_ORIN_FLASH_SCRIPT,
+              CUSTOM_GHAF_TARGET: params.CUSTOM_GHAF_TARGET,
+            ].each { parameter, target ->
+              if (target && !(target ==~ /[A-Za-z0-9._-]+/)) {
+                error("${parameter} may contain only letters, digits, dots, underscores, and hyphens")
               }
+            }
+            def customOrinFlashScript = params.CUSTOM_ORIN_FLASH_SCRIPT
+            def customGhafTarget = params.CUSTOM_GHAF_TARGET
+            if (customOrinFlashScript) {
+              if (!(customOrinFlashScript.endsWith('-flash-script') || customOrinFlashScript.endsWith('-flash-qspi'))) {
+                error("CUSTOM_ORIN_FLASH_SCRIPT must end with '-flash-script' or '-flash-qspi'")
+              }
+              TARGETS.push([ target: customOrinFlashScript, no_image: true, testset: null, provenance: false ])
+            }
+            if (customGhafTarget) {
+              TARGETS.push([
+                target: customGhafTarget,
+                uefisign: params.UEFISIGN,
+                testset: null,
+                provenance: false,
+              ])
             }
 
             TARGETS.each { it.sbom = params.SBOM }
@@ -224,30 +240,49 @@ pipeline {
       when { expression { params && params.EXECUTE_ORIN_AGX_FLASH } }
       steps {
         script {
-          def flashTarget = params.CUSTOM_GHAF_TARGET?.trim()
+          def flashTarget = params.CUSTOM_ORIN_FLASH_SCRIPT
           if (!(flashTarget?.endsWith('-flash-script') || flashTarget?.endsWith('-flash-qspi'))) {
-            error("EXECUTE_ORIN_AGX_FLASH requires CUSTOM_GHAF_TARGET to end with '-flash-script' or '-flash-qspi'")
+            error("EXECUTE_ORIN_AGX_FLASH requires CUSTOM_ORIN_FLASH_SCRIPT to end with '-flash-script' or '-flash-qspi'")
+          }
+          def customGhafTarget = params.CUSTOM_GHAF_TARGET
+          def needsGhafImage = flashTarget.endsWith('-flash-script') || params.UEFISIGN
+          if (needsGhafImage && !customGhafTarget) {
+            error("CUSTOM_GHAF_TARGET is required to execute '${flashTarget}'${params.UEFISIGN ? ' with secure boot' : ''}")
           }
           def flashScriptPath
+          def customGhafPath = ''
           artifactSupport.with_controller_workspace(artifactSupport.controller_workdir()) {
             flashScriptPath = artifactSupport.run_cmd("nix path-info .#${flashTarget}")
+            if (customGhafTarget) {
+              customGhafPath = artifactSupport.run_cmd("nix path-info .#${customGhafTarget}")
+            }
           }
+          def secureBootFlash = customGhafPath && params.UEFISIGN
+          def testAgentStorePaths = customGhafPath ? "${flashScriptPath} ${customGhafPath}" : flashScriptPath
           def deviceInfo = pipelineModel.device_info(flashTarget, false)
             ?: pipelineModel.device_info(null, false, 'orin-agx')
-          if (!deviceInfo || !['orin-agx', 'orin-agx-64'].contains(deviceInfo.tag)) {
-            error("Unable to resolve Orin AGX device config for flash target '${flashTarget}'")
+          if (!deviceInfo || !['orin-agx', 'orin-agx-64', 'orin-nx'].contains(deviceInfo.tag)) {
+            error("Unable to resolve Orin device config for flash target '${flashTarget}'")
           }
-          // The script is run without --secure-boot below, so do not fall back
-          // to a Secure Boot device when the ordinary AGX64 is unavailable.
-          def onlineTestagents = nodesByLabel(label: deviceInfo.tag, offline: false)
-          if (onlineTestagents.isEmpty()) {
-            error("No '${deviceInfo.tag}' test agent is online for '${flashTarget}'")
+          def secureBootDeviceTag = "${deviceInfo.tag - 'orin-'}-sec-boot"
+          // Dev orin devices support both secure-boot and non-secure-boot flash modes; other environments require the label to match the mode.
+          def deviceTags = env.CI_ENV == 'dev' ?
+            (secureBootFlash ? [secureBootDeviceTag, deviceInfo.tag] : [deviceInfo.tag, secureBootDeviceTag]) :
+            [secureBootFlash ? secureBootDeviceTag : deviceInfo.tag]
+          def availableDeviceTag = deviceTags.find { deviceTag ->
+            !nodesByLabel(label: deviceTag, offline: false).isEmpty()
           }
-          node(deviceInfo.tag) {
+          if (availableDeviceTag == null) {
+            error("No online test agent found with any of these labels: ${deviceTags.join(', ')}")
+          }
+          node(availableDeviceTag) {
             env.ORIN_AGX_FLASH_SCRIPT_PATH = flashScriptPath
+            env.ORIN_AGX_GHAF_IMAGE_PATH = customGhafPath
+            env.ORIN_AGX_SECURE_BOOT_FLASH = secureBootFlash.toString()
             def flashGcRootTag = (env.BUILD_TAG ?: "build-${env.BUILD_NUMBER}")
               .replaceAll(/[^A-Za-z0-9_.-]/, '_')
             env.ORIN_AGX_FLASH_GCROOT = "/var/lib/jenkins/gcroots/orin-agx-flash-script-${flashGcRootTag}"
+            env.ORIN_AGX_GHAF_IMAGE_GCROOT = "/var/lib/jenkins/gcroots/orin-agx-ghaf-image-${flashGcRootTag}"
             env.ORIN_AGX_RELAY_NAME = "relay-${deviceInfo.name}"
             def testAgentHost = sh(
               script: 'IFS= read -r host < /proc/sys/kernel/hostname; printf %s "$host"',
@@ -275,9 +310,13 @@ pipeline {
                   nix copy \
                     --from ssh://${testAgentHost}@\$controller_host \
                     --no-check-sigs \
-                    ${flashScriptPath}
+                    ${testAgentStorePaths}
                 nix-store --add-root "\$ORIN_AGX_FLASH_GCROOT" \
                   --realise "\$ORIN_AGX_FLASH_SCRIPT_PATH"
+                if [ -n "\${ORIN_AGX_GHAF_IMAGE_PATH:-}" ]; then
+                  nix-store --add-root "\$ORIN_AGX_GHAF_IMAGE_GCROOT" \
+                    --realise "\$ORIN_AGX_GHAF_IMAGE_PATH"
+                fi
               """
               sh """
                 set -eu
@@ -319,7 +358,14 @@ pipeline {
                     exit 1
                   fi
                   flash_script="$(printf '%s\n' "$flash_scripts")"
-                  /run/wrappers/bin/sudo "$flash_script"
+                  flash_args=""
+                  if [ -n "${ORIN_AGX_GHAF_IMAGE_PATH:-}" ]; then
+                    flash_args="-s ${ORIN_AGX_GHAF_IMAGE_PATH}"
+                    if [ "${ORIN_AGX_SECURE_BOOT_FLASH}" = "true" ]; then
+                      flash_args="--secure-boot $flash_args"
+                    fi
+                  fi
+                  /run/wrappers/bin/sudo "$flash_script" $flash_args
                 '''
               }
             } finally {
@@ -331,6 +377,7 @@ pipeline {
                   http://127.0.0.1:8000/api/set_state || \
                   echo "Warning: failed to turn off relay $ORIN_AGX_RELAY_NAME"
                 rm -f "$ORIN_AGX_FLASH_GCROOT" || true
+                rm -f "$ORIN_AGX_GHAF_IMAGE_GCROOT" || true
               '''
             }
           }
