@@ -45,9 +45,9 @@ proxy to hosts listed in `hetznerRobotHosts`, on port 9100.
 
 ### On-prem
 
-The `office` job scrapes the five Tampere test agents and `nethsm-gateway`
-at their `nebula_ip` addresses on port 9100. These hosts must join Nebula
-and allow access from the monitoring server.
+The `office` job scrapes the five Tampere test agents, `nethsm-gateway`, and
+`nethsm-gateway-dev` at their `nebula_ip` addresses on port 9100. These hosts
+must join Nebula and allow access from the monitoring server.
 
 #### relay-board
 
@@ -60,7 +60,7 @@ These agents run `relay_board_exporter.py` to expose relay board status.
 The `nethsm` job scrapes `nethsm-gateway` and `uae-nethsm-gateway` on port
 8000 using their `sumu.vedenemo.dev` names. Each runs `nethsm-exporter`,
 which collects metrics from the NetHSM REST API. `nethsm-gateway-dev` also
-enables the exporters, but is absent from the `office` and `nethsm` jobs.
+enables the exporters, but is absent from the `nethsm` job.
 
 The gateways also send NetHSM logs in addition to systemd logs to Loki.
 
