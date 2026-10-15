@@ -140,7 +140,12 @@ let
           echo "error: --ram-gb must be greater than zero" >&2
           exit 2
         fi
-        append_qemu_opt "-m $((ram_gb * 1024))"
+        ram_mb=$((ram_gb * 1024))
+        # The VM's RAM comes from a shared memory backend (virtiofs needs one)
+        # whose size is fixed at build time, so replace it with one of the
+        # requested size: '-m' alone makes QEMU refuse to start.
+        append_qemu_opt "-object memory-backend-memfd,id=mem-ram-gb,size=''${ram_mb}M,share=on"
+        append_qemu_opt "-machine memory-backend=mem-ram-gb -m $ram_mb"
       fi
 
       if [ -n "$cpus" ]; then
