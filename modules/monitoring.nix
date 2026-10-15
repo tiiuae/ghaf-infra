@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
@@ -221,6 +222,8 @@ in
     (lib.mkIf cfg.logs.enable {
       services.alloy = {
         enable = true;
+        # See the nixpkgs-alloy input in flake.nix.
+        package = inputs.nixpkgs-alloy.legacyPackages.${pkgs.stdenv.hostPlatform.system}.grafana-alloy;
         configPath = "/etc/alloy";
         extraFlags = [
           "--server.http.listen-addr=127.0.0.1:9999"

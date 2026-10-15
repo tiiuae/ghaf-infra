@@ -323,6 +323,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-alloy": {
+      "locked": {
+        "lastModified": 1790323409,
+        "narHash": "sha256-VVTPf+Hyd5ebpjBMHmrLMSBIeW6ls48Bqtosj7CNKLA=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "e94cb152ed51bd6e24eb4a41f1460252beb52cd2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "e94cb152ed51bd6e24eb4a41f1460252beb52cd2",
+        "type": "github"
+      }
+    },
     "nixpkgs-lib": {
       "locked": {
         "lastModified": 1790477367,
@@ -420,6 +436,7 @@
         "git-hooks-nix": "git-hooks-nix",
         "jetpack": "jetpack",
         "nixpkgs": "nixpkgs_3",
+        "nixpkgs-alloy": "nixpkgs-alloy",
         "robot-framework": "robot-framework",
         "sbomnix": "sbomnix",
         "sops-nix": "sops-nix"

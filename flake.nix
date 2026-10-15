@@ -22,6 +22,10 @@
     # Nixpkgs
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
+    # Alloy linked against systemd 261.3 reads nothing from the journal, so take
+    # Alloy from the last nixpkgs with systemd 261.2 until that is fixed.
+    nixpkgs-alloy.url = "github:nixos/nixpkgs/e94cb152ed51bd6e24eb4a41f1460252beb52cd2";
+
     # Allows us to structure the flake with the NixOS module system
     flake-parts.url = "github:hercules-ci/flake-parts";
 
