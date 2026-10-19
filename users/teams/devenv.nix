@@ -8,5 +8,7 @@
     ../hrosten.nix
     ../jrautiola.nix
     ../alextserepov.nix
+    ../lasse.nix
+    ../kiran.nix
   ];
 }
