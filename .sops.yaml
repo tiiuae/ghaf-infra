@@ -9,6 +9,8 @@ keys:
   - &fayad age18t3gss4l6l629rd8s93eh3ctycu9vjnsftehy38c8tstu2gqycxs64t4sw
   - &ktu age1w0ymdztkr043a9gnxrx95k77ek5h58zza5q7jz9gqm63gz2chgcskkfwzt
   - &pavelf age1ndka4hh9dadckkk7y35zz98p2e0ykxpaewaw5eukezxl8sus7dsqcu0ydk
+  - &lasse age1uyx0n8e84987arvsrm9c2r02k64slstnv32y2j0duuj47elh3v7qnhweh4
+  - &kiran age1q5z5ng8qe4ya7c5mc8gqrj2w6k5frk7ad04pjx9csaeya7r6cdls3s47h3
 
   # hosts
   - &testagent-prod age12nrv5a9rk9vqvx2tqvghn4kt9ps6gdszmmynhjegl2ewefkh03fsexuy9y
@@ -84,6 +86,8 @@ creation_rules:
       - *jrautiola
       - *hrosten
       - *fayad
+      - *lasse
+      - *kiran
   - path_regex: hosts/builders/hetzarm-dbg-1/secrets.yaml$
     key_groups:
     - age:
@@ -93,6 +97,8 @@ creation_rules:
       - *fayad
       - *cazfi
       - *ktu
+      - *lasse
+      - *kiran
   - path_regex: hosts/builders/hetzarm-rel-1/secrets.yaml$
     key_groups:
     - age:
@@ -109,6 +115,8 @@ creation_rules:
       - *jrautiola
       - *hrosten
       - *fayad
+      - *lasse
+      - *kiran
   - path_regex: hosts/builders/hetz86-builder/secrets.yaml$
     key_groups:
     - age:
@@ -116,6 +124,8 @@ creation_rules:
       - *jrautiola
       - *hrosten
       - *fayad
+      - *lasse
+      - *kiran
   - path_regex: hosts/builders/hetz86-dbg-1/secrets.yaml$
     key_groups:
     - age:
@@ -125,6 +135,8 @@ creation_rules:
       - *fayad
       - *cazfi
       - *ktu
+      - *lasse
+      - *kiran
   - path_regex: hosts/builders/hetz86-rel-2/secrets.yaml$
     key_groups:
     - age:
@@ -149,6 +161,8 @@ creation_rules:
       - *fayad
       - *hrosten
       - *cazfi
+      - *lasse
+      - *kiran
   - path_regex: hosts/ghaf-webserver/secrets.yaml$
     key_groups:
     - age:
@@ -163,6 +177,8 @@ creation_rules:
       - *jrautiola
       - *hrosten
       - *fayad
+      - *lasse
+      - *kiran
   - path_regex: hosts/ghaf-lighthouse/secrets.yaml$
     key_groups:
     - age:
@@ -177,6 +193,8 @@ creation_rules:
       - *jrautiola
       - *hrosten
       - *fayad
+      - *lasse
+      - *kiran
   - path_regex: hosts/ghaf-registry/secrets.yaml$
     key_groups:
     - age:
@@ -185,6 +203,8 @@ creation_rules:
       - *hrosten
       - *fayad
       - *cazfi
+      - *lasse
+      - *kiran
   - path_regex: hosts/hetzci/release/secrets.yaml$
     key_groups:
     - age:
@@ -210,6 +230,8 @@ creation_rules:
       - *hrosten
       - *cazfi
       - *ktu
+      - *lasse
+      - *kiran
   - path_regex: hosts/hetzci/dev/secrets.yaml$
     key_groups:
     - age:
@@ -227,6 +249,8 @@ creation_rules:
       - *cazfi
       - *ktu
       - *pavelf
+      - *lasse
+      - *kiran
   - path_regex: hosts/testagent/credentials.yaml$
     key_groups:
     - age:
@@ -238,6 +262,8 @@ creation_rules:
       - *jrautiola
       - *fayad
       - *hrosten
+      - *kiran
+      - *lasse
   - path_regex: hosts/nethsm-gateway/prod/secrets.yaml$
     key_groups:
     - age:
@@ -246,6 +272,8 @@ creation_rules:
       - *hrosten
       - *cazfi
       - *fayad
+      - *lasse
+      - *kiran
   - path_regex: hosts/nethsm-gateway/dev/secrets.yaml$
     key_groups:
     - age:
@@ -254,6 +282,8 @@ creation_rules:
       - *hrosten
       - *cazfi
       - *fayad
+      - *lasse
+      - *kiran
   - path_regex: modules/nebula/ca\.key(\.crypt)?$
     key_groups:
     - age:
@@ -261,6 +291,8 @@ creation_rules:
       - *jrautiola
       - *hrosten
       - *cazfi
+      - *lasse
+      - *kiran
   - path_regex: modules/nebula/ca\.crt(\.crypt)?$
     key_groups:
     - age:
@@ -268,6 +300,8 @@ creation_rules:
       - *jrautiola
       - *hrosten
       - *cazfi
+      - *lasse
+      - *kiran
       - *ghaf-lighthouse
       - *ghaf-monitoring
       - *testagent-dev
@@ -289,6 +323,8 @@ creation_rules:
     - age:
       - *fayad
       - *jrautiola
+      - *lasse
+      - *kiran
       - *uae-lab-node1
   - path_regex: hosts/uae/nethsm-gateway/secrets.yaml$
     key_groups:
@@ -297,6 +333,8 @@ creation_rules:
       - *jrautiola
       - *hrosten
       - *cazfi
+      - *lasse
+      - *kiran
       - *uae-nethsm-gateway
   - path_regex: hosts/uae/azureci/prod/secrets.yaml$
     key_groups:
@@ -304,6 +342,8 @@ creation_rules:
       - *fayad
       - *jrautiola
       - *hrosten
+      - *lasse
+      - *kiran
       - *uae-azureci-prod
   - path_regex: hosts/uae/azureci/builders/az86-1/secrets.yaml$
     key_groups:
@@ -311,6 +351,8 @@ creation_rules:
       - *fayad
       - *jrautiola
       - *hrosten
+      - *lasse
+      - *kiran
       - *uae-azureci-az86-1
   - path_regex: hosts/uae/testagent/prod/secrets.yaml$
     key_groups:
@@ -318,6 +360,8 @@ creation_rules:
       - *fayad
       - *jrautiola
       - *hrosten
+      - *lasse
+      - *kiran
       - *uae-testagent-prod
   - path_regex: hosts/uae/testagent/credentials.yaml$
     key_groups:
@@ -327,6 +371,8 @@ creation_rules:
       - *jrautiola
       - *fayad
       - *hrosten
+      - *lasse
+      - *kiran
   - path_regex: hosts/uae/azureci/builders/hetzarm-1/secrets.yaml$
     key_groups:
     - age:
@@ -334,6 +380,8 @@ creation_rules:
       - *jrautiola
       - *fayad
       - *hrosten
+      - *lasse
+      - *kiran
   - path_regex: hosts/uae/testagent/prod2/secrets.yaml$
     key_groups:
     - age:
@@ -341,6 +389,8 @@ creation_rules:
       - *jrautiola
       - *fayad
       - *hrosten
+      - *lasse
+      - *kiran
   - path_regex: hosts/uae/azureci/registry/secrets.yaml$
     key_groups:
     - age:
@@ -348,3 +398,5 @@ creation_rules:
       - *jrautiola
       - *fayad
       - *hrosten
+      - *lasse
+      - *kiran
