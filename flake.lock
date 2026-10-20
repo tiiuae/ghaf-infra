@@ -410,11 +410,11 @@
         "nixpkgs": "nixpkgs_4"
       },
       "locked": {
-        "lastModified": 1791550552,
-        "narHash": "sha256-VrS4L5eJSR49Any9FxywHqsft/PNZGz95Wi2HKNSnhE=",
+        "lastModified": 1792410528,
+        "narHash": "sha256-TBRmNa7ujj0vG2fx72vTwNbEPFwr6SznsOMo0xabeEQ=",
         "owner": "tiiuae",
         "repo": "ci-test-automation",
-        "rev": "0650aecf285158d6b6c0ac8ee1c2184e50f0acff",
+        "rev": "260ad5d0bad7ab0dc4fc432dea1b0360f3ad1bf2",
         "type": "github"
       },
       "original": {
