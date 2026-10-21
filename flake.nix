@@ -132,5 +132,11 @@
           ./users
           ./scripts
         ];
+
+        # Deliberately outside checks/packages: evaluated only when requested.
+        # nix build -L .#tests.scheduled-deployment
+        flake.tests.scheduled-deployment = import ./tests/scheduled-deployment.nix {
+          inherit nixpkgs;
+        };
       };
 }
