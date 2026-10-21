@@ -26,6 +26,10 @@ def TARGETS = [
       ],
     ],
   ],
+  [ target: "packages.x86_64-linux.intel-laptop-debug-secure-ab-sysupdate",
+    secure_ab: true, sysupdate: true, uefisign: true,
+    testset: null, sbom: true,
+  ],
   [ target: "packages.x86_64-linux.intel-laptop-debug-installer",
     uefisigniso: true, sbom: true,
     tests: [[
