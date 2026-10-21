@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   self,
+  pkgs,
   lib,
   config,
   inputs,
@@ -18,6 +19,7 @@
     common
     openssh
     nginx
+    scheduled-deployment
     team-devenv
     user-bmg
   ]);
@@ -40,6 +42,17 @@
   services.monitoring = {
     metrics.enable = true;
     logs.enable = true;
+  };
+
+  services.scheduled-deployment = {
+    enable = true;
+    # Retry while the services restarted by a switch start up. Grafana is
+    # checked through nginx, because it redirects requests for other domains,
+    # and by its response, because curl -f also accepts a redirect.
+    postDeployChecks = ''
+      ${lib.getExe pkgs.curl} -fsS --retry 10 --retry-delay 6 --retry-all-errors http://${config.services.loki.configuration.server.http_listen_address}:${toString config.services.loki.configuration.server.http_listen_port}/ready
+      ${lib.getExe pkgs.curl} -fsS --retry 10 --retry-delay 6 --retry-all-errors https://${config.services.grafana.settings.server.domain}/api/health | ${lib.getExe pkgs.gnugrep} -F '"database": "ok"'
+    '';
   };
 
   # Grafana
