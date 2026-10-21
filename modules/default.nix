@@ -16,5 +16,6 @@
     openssh = ./openssh.nix;
     nebula = ./nebula;
     baseline-reset = ./baseline-reset;
+    scheduled-deployment = ./scheduled-deployment;
   };
 }
