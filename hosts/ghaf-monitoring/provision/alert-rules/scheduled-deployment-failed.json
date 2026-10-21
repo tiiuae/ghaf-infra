@@ -1,0 +1,75 @@
+{
+  "uid": "scheduled-deployment-failed",
+  "title": "scheduled deployment failed",
+  "condition": "C",
+  "data": [
+    {
+      "refId": "A",
+      "relativeTimeRange": {
+        "from": 600,
+        "to": 0
+      },
+      "datasourceUid": "prometheus",
+      "model": {
+        "editorMode": "code",
+        "expr": "max by (machine_name, target) (max_over_time(ghaf_scheduled_deployment_result_timestamp_seconds{result=\"failed\"}[15d]) or max_over_time(ghaf_scheduled_deployment_result_timestamp_seconds{reason=\"rejected_target\"}[15d])) > on (machine_name) group_left max by (machine_name) (max_over_time(ghaf_scheduled_deployment_last_success_timestamp_seconds[15d]))",
+        "instant": true,
+        "intervalMs": 1000,
+        "legendFormat": "__auto",
+        "maxDataPoints": 43200,
+        "range": false,
+        "refId": "A"
+      }
+    },
+    {
+      "refId": "C",
+      "relativeTimeRange": {
+        "from": 0,
+        "to": 0
+      },
+      "datasourceUid": "__expr__",
+      "model": {
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [
+                0
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "C"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "last"
+            },
+            "type": "query"
+          }
+        ],
+        "datasource": {
+          "type": "__expr__",
+          "uid": "__expr__"
+        },
+        "expression": "A",
+        "intervalMs": 1000,
+        "maxDataPoints": 43200,
+        "refId": "C",
+        "type": "threshold"
+      }
+    }
+  ],
+  "dashboardUid": "",
+  "panelId": 0,
+  "noDataState": "OK",
+  "execErrState": "Error",
+  "annotations": {
+    "summary": "{{ $labels.machine_name }}: scheduled deployment of {{ $labels.target }} failed"
+  },
+  "isPaused": false
+}
