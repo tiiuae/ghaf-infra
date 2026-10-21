@@ -1,0 +1,75 @@
+{
+  "uid": "scheduled-deployment-stalled",
+  "title": "scheduled deployment stalled",
+  "condition": "C",
+  "data": [
+    {
+      "refId": "A",
+      "relativeTimeRange": {
+        "from": 600,
+        "to": 0
+      },
+      "datasourceUid": "prometheus",
+      "model": {
+        "editorMode": "code",
+        "expr": "(time() - max_over_time(ghaf_scheduled_deployment_last_success_timestamp_seconds[1h])) / 86400",
+        "instant": true,
+        "intervalMs": 1000,
+        "legendFormat": "__auto",
+        "maxDataPoints": 43200,
+        "range": false,
+        "refId": "A"
+      }
+    },
+    {
+      "refId": "C",
+      "relativeTimeRange": {
+        "from": 0,
+        "to": 0
+      },
+      "datasourceUid": "__expr__",
+      "model": {
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [
+                15
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "C"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "last"
+            },
+            "type": "query"
+          }
+        ],
+        "datasource": {
+          "type": "__expr__",
+          "uid": "__expr__"
+        },
+        "expression": "A",
+        "intervalMs": 1000,
+        "maxDataPoints": 43200,
+        "refId": "C",
+        "type": "threshold"
+      }
+    }
+  ],
+  "dashboardUid": "",
+  "panelId": 0,
+  "noDataState": "OK",
+  "execErrState": "Error",
+  "annotations": {
+    "summary": "{{ $labels.machine_name }} has not deployed or been up to date in two scheduled windows"
+  },
+  "isPaused": false
+}

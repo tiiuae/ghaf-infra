@@ -340,6 +340,15 @@ in
             (builtins.fromJSON (builtins.readFile ./provision/alert-rules/nebula_hostmap.json))
           ];
         }
+        {
+          name = "Scheduled deployment";
+          folder = "Alerts";
+          interval = "60s";
+          rules = [
+            (builtins.fromJSON (builtins.readFile ./provision/alert-rules/scheduled-deployment-failed.json))
+            (builtins.fromJSON (builtins.readFile ./provision/alert-rules/scheduled-deployment-stalled.json))
+          ];
+        }
       ];
     };
   };

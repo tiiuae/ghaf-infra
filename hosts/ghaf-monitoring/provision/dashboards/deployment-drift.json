@@ -1,7 +1,7 @@
 {
   "uid": "ghaf-deployment-drift",
   "title": "Deployment drift",
-  "description": "Running and next-boot revisions and kernels for monitored hosts, shown like inv print-revision. Revision date is the commit date of the running revision; dirty or unknown revisions have no date.",
+  "description": "Running and next-boot revisions and kernels for monitored hosts, shown like inv print-revision, and the last scheduled deployment run of hosts that deploy themselves. Revision date is the commit date of the running revision; dirty or unknown revisions have no date.",
   "schemaVersion": 41,
   "version": 1,
   "refresh": "1m",
@@ -133,6 +133,110 @@
                 "value": [
                   { "type": "special", "options": { "match": "nan", "result": { "text": "(unknown)" } } }
                 ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "displayName": "Host", "desc": false }]
+      }
+    },
+    {
+      "id": 2,
+      "type": "table",
+      "title": "Scheduled deployments",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "ghaf_scheduled_deployment_result_timestamp_seconds * 1000",
+          "format": "table",
+          "instant": true,
+          "range": false
+        },
+        {
+          "refId": "B",
+          "expr": "ghaf_scheduled_deployment_last_success_timestamp_seconds * 1000",
+          "format": "table",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": { "byField": "machine_name", "mode": "outerTabular" }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "includeByName": {
+              "machine_name": true,
+              "result": true,
+              "reason": true,
+              "target": true,
+              "Value #A": true,
+              "Value #B": true
+            },
+            "indexByName": {
+              "machine_name": 0,
+              "result": 1,
+              "reason": 2,
+              "target": 3,
+              "Value #A": 4,
+              "Value #B": 5
+            },
+            "renameByName": {
+              "machine_name": "Host",
+              "result": "Last result",
+              "reason": "Reason",
+              "target": "Target",
+              "Value #A": "Last run",
+              "Value #B": "Last success"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "left" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Host" },
+            "properties": [{ "id": "custom.width", "value": 200 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Target" },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "regex", "options": { "pattern": "^([0-9a-f]{12})[0-9a-f]{28}$", "result": { "text": "$1" } } }
+                ]
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Commit on GitHub",
+                    "url": "https://github.com/tiiuae/ghaf-infra/commit/${__value.raw}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byRegexp", "options": "^Last (run|success)$" },
+            "properties": [
+              { "id": "unit", "value": "time:YYYY-MM-DD HH:mm" },
+              {
+                "id": "mappings",
+                "value": [{ "type": "value", "options": { "0": { "text": "never" } } }]
               }
             ]
           }
