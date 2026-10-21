@@ -63,7 +63,7 @@
             openssl
             openssh
             gnutls
-            minio-client
+            rclone
             tree
             oras
             hcloud

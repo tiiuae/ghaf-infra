@@ -674,7 +674,7 @@ should fit next to the map without scrolling, in both light and dark mode.
     { id: 'archive', lane: 'L4', cx: C(8), kind: 'pipeline',
       t: { o: { n: 'Release publish', s: 'ghaf-release-publish', a: 'verifies every signature' } },
       info: {
-        what: 'Pushes the OTA pin closures to Cachix <code>ghaf-release</code> and pins them (keeping two revisions), then runs <code>archive-ghaf-release</code>. That script verifies every image and provenance signature and the signed release-policy attestation (with the keys of the environment it runs in, so artifacts archived from ci-release must have been built there), packs tarballs and uploads them with minio-client.',
+        what: 'Pushes the OTA pin closures to Cachix <code>ghaf-release</code> and pins them (keeping two revisions), then runs <code>archive-ghaf-release</code>. That script verifies every image and provenance signature and the signed release-policy attestation (with the keys of the environment it runs in, so artifacts archived from ci-release must have been built there), packs tarballs and uploads them with rclone.',
         files: ['modules/jenkins/pipelines/ghaf-release-publish.groovy', 'scripts/archive-ghaf-release.sh']
       } },
 
