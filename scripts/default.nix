@@ -24,7 +24,7 @@
         name = "archive-ghaf-release";
         runtimeInputs =
           (with pkgs; [
-            minio-client
+            rclone
             oras
             tree
             jq

@@ -19,6 +19,7 @@ RED='' NONE=''
 # Expected arguments and their defaults if not passed in environment
 # variables. We intentionally don't want these variables to be command-line
 # options.
+STORAGE_REGION="${STORAGE_REGION:-hel1}"
 STORAGE_URL="${STORAGE_URL:=https://hel1.your-objectstorage.com}"
 BUCKET="${BUCKET:=ghaf-artifacts-dev}"
 ACCESS_KEY="${ACCESS_KEY:=}"
@@ -46,6 +47,7 @@ Usage: $MYNAME [-h] [-v] (-a ARTIFACTS | -o OCI_TAG) -t GHAF_VERSION
 
 Archive Ghaf release to a permanent storage.
 Assumes storage credentials are exported in environment variables ACCESS_KEY and SECRET_KEY.
+STORAGE_URL and STORAGE_REGION may be overridden for another Hetzner region.
 
 
 Options:
@@ -492,7 +494,7 @@ main() {
   esac
   if [[ $DEBUG == "true" ]]; then set -x; fi
   trap on_exit EXIT
-  exit_unless_command_exists mc
+  exit_unless_command_exists rclone
   exit_unless_command_exists tar
   exit_unless_command_exists realpath
   exit_unless_command_exists tree
@@ -521,8 +523,13 @@ main() {
 
   # Upoload the archive to Hetzner
   echo "[+] Uploading release tar archives to Hetzner"
-  mc alias set hetzner "$STORAGE_URL" "$ACCESS_KEY" "$SECRET_KEY" >/dev/null
-  mc mirror "$TMPDIR/archived" "hetzner/$BUCKET/$GHAF_VERSION"
+  RCLONE_S3_ACCESS_KEY_ID="$ACCESS_KEY" \
+    RCLONE_S3_SECRET_ACCESS_KEY="$SECRET_KEY" \
+    rclone copy "$TMPDIR/archived" \
+    -v --ignore-existing --s3-no-check-bucket \
+    ":s3:$BUCKET/$GHAF_VERSION" \
+    --s3-provider Hetzner --s3-region "$STORAGE_REGION" \
+    --s3-endpoint "$STORAGE_URL"
 
   if [[ -n $OCI_TAG ]]; then
     tag_oci_release_artifacts
