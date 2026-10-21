@@ -241,7 +241,7 @@ signatures and requires the signing keys of the environment it runs in, so
 artifacts archived from ci-release must also have been built there. The
 artifacts are then packaged into tarballs and uploaded to Hetzner Object
 Storage (an S3-compatible service, bucket `ghaf-artifacts`) using
-minio-client. The [ghaf-archive](https://github.com/tiiuae/ghaf-archive) web
+rclone. The [ghaf-archive](https://github.com/tiiuae/ghaf-archive) web
 application provides a browsable frontend to the archived releases.
 
 Release image artifacts also get a signed release-policy attestation after
