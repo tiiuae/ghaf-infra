@@ -268,6 +268,9 @@ The ghaf-infra repository has its own GitHub Actions workflows
   with `--option allow-import-from-derivation false --no-build` (evaluation only).
 - `test-ghaf-infra.yml`: builds all NixOS configurations for x86_64 and
   aarch64 using remote builders, and runs the pre-commit checks on x86_64.
+- `vm-tests.yml`: runs the NixOS VM tests (flake outputs `tests.<name>`) on
+  GitHub-hosted runners, for PRs that change a test, the code it covers or the
+  flake inputs, and on manual runs.
 - `authorize.yml`: reusable authorization workflow. PRs from `tiiuae` org
   members are auto-approved; external PRs require manual approval before
   CI runs.

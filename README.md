@@ -64,6 +64,17 @@ To run the full check suite including builds:
 nix flake check
 ```
 
+NixOS VM tests are separate flake outputs under `tests`, outside the hooks and
+`nix flake check`. For example, to run the
+[scheduled deployment test](./tests/scheduled-deployment.nix):
+
+```bash
+nix build -L .#tests.scheduled-deployment
+```
+
+The [VM tests workflow](./.github/workflows/vm-tests.yml) runs them on PRs that
+change a test, the code it covers or the flake inputs.
+
 ## Directory Structure
 
 ```
