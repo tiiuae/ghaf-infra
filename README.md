@@ -107,6 +107,7 @@ ghaf-infra
 - [Deployment tasks](./docs/tasks.md): install, reboot, and other operational tasks
 - [Deploying with deploy-rs](./docs/deploy-rs.md): how to deploy configuration changes
 - [Baseline reset](./docs/baseline-reset.md): disposable CI host storage and update procedure
+- [Scheduled deployment](./docs/scheduled-deployment.md): weekly self-deployment, alerts and holds
 - [Monitoring](./docs/monitoring.md): Grafana and Prometheus setup
 - [Nebula overlay network](./docs/nebula.md): network connectivity between hosts
 - [NetHSM hardware signing](./docs/nethsm.md): hardware-backed signing

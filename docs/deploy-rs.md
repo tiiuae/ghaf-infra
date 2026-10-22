@@ -41,6 +41,9 @@ deploy -si --ssh-user myuser .#ghaf-monitoring
 
 Running just `deploy` without any arguments will deploy every host defined in the configuration, even if they have no changes. This is usually not something you want to do.
 
+Hosts with [scheduled deployment](./scheduled-deployment.md#manual-deployments) also deploy `main` to themselves weekly.
+Deploy them from a clean checkout of `main`; a revision that is not on `main` makes them hold.
+
 ## Release upgrades
 
 Do not use a normal deploy with immediate activation ('switch') when the target host is still running a different NixOS release than the configuration being deployed, for example `25.11 -> 26.05`.

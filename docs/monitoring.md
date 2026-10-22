@@ -93,6 +93,9 @@ alert; if the query returns nothing, the rule stays OK. No rule checks whether
 a host has stopped sending journal entries. Entries that haven't reached Loki
 are lost when a [baseline reset](baseline-reset.md) host reboots.
 
+The scheduled deployment alerts are described in
+[scheduled deployment](scheduled-deployment.md#alerts).
+
 ## ghaf-log (separate instance)
 
 A second, independent Grafana + Loki instance runs on `ghaf-log`
