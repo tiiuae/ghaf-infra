@@ -492,7 +492,7 @@ main() {
   esac
   if [[ $DEBUG == "true" ]]; then set -x; fi
   trap on_exit EXIT
-  exit_unless_command_exists mc
+  exit_unless_command_exists rclone
   exit_unless_command_exists tar
   exit_unless_command_exists realpath
   exit_unless_command_exists tree
@@ -521,8 +521,12 @@ main() {
 
   # Upoload the archive to Hetzner
   echo "[+] Uploading release tar archives to Hetzner"
-  mc alias set hetzner "$STORAGE_URL" "$ACCESS_KEY" "$SECRET_KEY" >/dev/null
-  mc mirror "$TMPDIR/archived" "hetzner/$BUCKET/$GHAF_VERSION"
+  rclone copy "$TMPDIR/archived" \
+    ":s3:$BUCKET/$GHAF_VERSION" \
+    --s3-provider Other \
+    --s3-endpoint "$STORAGE_URL" \
+    --s3-access-key-id "$ACCESS_KEY" \
+    --s3-secret-access-key "$SECRET_KEY"
 
   if [[ -n $OCI_TAG ]]; then
     tag_oci_release_artifacts
