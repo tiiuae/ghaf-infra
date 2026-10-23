@@ -8,17 +8,19 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 Hosts that enable `services.scheduled-deployment`
 ([module](../modules/scheduled-deployment/)) deploy the head of `main` to
 themselves once a week. Each host fetches the public repository and builds its
-own configuration, so no deployer or deploy credential is involved. Role
-drains (Jenkins controllers, builders, test agents) and
+own configuration, so no deployer or deploy credential is involved.
+[Test agents](#test-agents) take their Jenkins nodes offline during a
+deployment. Jenkins controllers, builders and
 [baseline reset](./baseline-reset.md) hosts are not supported yet.
 
 ## How a run works
 
-The timer starts a run every 30 minutes in the host's window, by default
-Tuesday 05:00 to 08:30 UTC. A run that deploys or finds the host up to date
-ends the window: runs in the next 24 hours exit without doing anything. A
-skipped or failed run leaves the window open, so a fix or revert merged on
-`main` during the window is picked up.
+A run is one start of the `scheduled-deployment` service, by its timer or
+[by hand](#running-a-deployment-by-hand). The timer starts a run every 30
+minutes in the host's window, by default Tuesday 05:00 to 08:30 UTC. A run
+that deploys or finds the host up to date ends the window: runs in the next 24
+hours exit without doing anything. A skipped or failed run leaves the window
+open, so a fix or revert merged on `main` during the window is picked up.
 
 Each run:
 
@@ -28,10 +30,12 @@ Each run:
    is neither the running system nor the target. Skips if the target was
    rejected on this host before, or if less than 10 GiB is free for the build.
 3. Builds the target on the host.
-4. Skips if a unit has failed, then switches to the target. If the kernel,
+4. On a [test agent](#test-agents), takes the agent's nodes offline and waits
+   up to an hour until no test runs on them.
+5. Skips if a unit has failed, then switches to the target. If the kernel,
    initrd or kernel modules change, or a switch inhibitor refuses the switch,
    it makes the target the boot default and reboots instead.
-5. Checks that the running revision is the target, no unit has failed, `sshd`
+6. Checks that the running revision is the target, no unit has failed, `sshd`
    and Nebula are running, and the host's `postDeployChecks` pass. After a
    reboot, `scheduled-deployment-verify` runs the checks two minutes after
    boot.
@@ -60,6 +64,8 @@ dashboard.
 | `skipped` | `network_error` | Fetching `main` failed. The next run retries. |
 | `skipped` | `build_failed` | The build failed, also when inputs or caches are unavailable. The next run retries. If it keeps failing, build the host locally to see the error. |
 | `skipped` | `low_disk_space` | Less than 10 GiB is free in `/nix/store`. Free space on the host. |
+| `skipped` | `drain_failed` | Taking a test agent's nodes offline failed. The nodes are back online, and the next run retries. |
+| `skipped` | `drain_timeout` | Tests kept running on a test agent's nodes for an hour. The nodes are back online, and the next run retries. |
 | `skipped` | `failed_units` | A unit had failed before activation. Fix the unit, or clear it with `systemctl reset-failed`. |
 | `skipped` | `rejected_target` | The head of `main` failed on this host before. A new commit on `main` gets a new attempt; to retry the same commit, [clear the rejected target](#retrying-a-rejected-target). |
 | `held` | `operator_hold` | Someone [paused the host](#pausing-a-host). |
@@ -71,6 +77,7 @@ dashboard.
 | `failed` | `activation_failed`, `post_switch_checks` | Activation or the checks after a switch failed. The host switched back to the previous system and rejected the target. Find the cause in the journal. |
 | `failed` | `post_boot_checks` | The checks failed after the reboot, or the host did not boot the target. Nothing was rolled back, and the target is rejected. Check what the host runs, then fix it or deploy a working revision manually. |
 | `failed` | `rollback_failed`, `unverified_activation` | Switching back failed, or an activation in the current boot was interrupted. Later runs report `unverified_activation` until an administrator checks what the host runs, fixes it and deletes `/var/lib/scheduled-deployment/pending`. The target, the first field in `pending`, is not rejected; to keep it from being retried, add it to `rejected` first. |
+| `failed` | `drain_not_ended` | Bringing the test agent's nodes back online failed, for example because the controller is unreachable. If the run got as far as activation, the target is deployed and verified. [Bring the nodes online](#test-agents) in Jenkins. |
 
 ## Alerts
 
@@ -112,9 +119,10 @@ sudo scheduled-deployment release
 ```
 
 The hold records the user, the time and the reason in
-`/var/lib/scheduled-deployment/hold`. A run that has not started activation
-stops before it; if activation has started, the command waits for the run to
-finish. Releasing does not start a run. A held host reports
+`/var/lib/scheduled-deployment/hold`. A run in progress stops before it
+activates the target. A run that is waiting for a test agent's nodes stops
+within 30 seconds. If activation has already started, the hold command waits
+until the run finishes. Releasing does not start a run. A held host reports
 `held operator_hold`, and `scheduled deployment stalled` fires after 15 days
 without a success, so a forgotten hold is noticed.
 
@@ -141,6 +149,23 @@ Rejected targets are listed, one revision per line, in
 `/var/lib/scheduled-deployment/rejected`. Delete the line, or the file, and
 [start a run](#running-a-deployment-by-hand) to retry.
 
+## Test agents
+
+On a [test agent](./jenkins-testagents.md), a run takes the agent's nodes
+temporarily offline on its controller, with the message "Scheduled deployment
+of <host>", and waits until they are idle. Nodes that are already offline for
+another reason are left as they are. While the nodes are offline, HW test runs
+that already wait for a node keep waiting, and a new run fails with "No test
+agents online" if no other node for its device is online. An agent that is not
+connected to a controller is deployed without taking nodes offline.
+
+If the run stops before activation, for example on a hold, it brings the
+nodes back online right away. After activation, they come back online once the target is verified, after the
+switch or after the reboot; the agents reconnect after a reboot. After a
+`failed` result, the nodes stay offline until a later run ends its own drain,
+or until someone brings them back online in Jenkins: once the host is fixed,
+open the node's page and select "Bring this node back online".
+
 ## Enrolling a host
 
 1. The host must expose metrics (`services.monitoring.metrics.enable`) and be
@@ -160,7 +185,10 @@ Rejected targets are listed, one revision per line, in
    };
    ```
 
-   `window` sets a different systemd `OnCalendar` window.
+   `window` sets a different systemd `OnCalendar` window. A test agent takes
+   its nodes offline without further configuration, but its controller must
+   run a revision of `main` that gives test agents the `Agent/Disconnect`
+   permission.
 3. After merging, deploy `main` to the host from a clean checkout, and
    optionally [run it by hand](#running-a-deployment-by-hand) to see
    `up_to_date`.
