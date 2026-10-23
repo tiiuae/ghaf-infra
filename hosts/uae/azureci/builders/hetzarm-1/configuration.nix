@@ -11,7 +11,6 @@
 {
   imports = [
     ./disk-config.nix
-    ../../../../builders/builders-common.nix
     (modulesPath + "/profiles/qemu-guest.nix")
     inputs.disko.nixosModules.disko
   ]
@@ -19,9 +18,9 @@
     hetzner-robot
     common
     openssh
+    remote-builder
     team-devenv
     user-github
-    user-uae-remote-build
   ]);
 
   # this server has been initialized with 25.05 with nixos-anywhere
@@ -29,12 +28,20 @@
 
   networking.hostName = "uae-azureci-hetzarm-1";
 
-  # Current host sizing: 16 vCPU, 32 GiB RAM, ~1024 GiB /nix disk.
-  builder.tuning = {
+  builder = {
     enable = true;
-    cpus = 16;
-    ramGiB = 32;
-    diskGiB = 1024;
+    sshUser = "uae-remote-build";
+    sshPublicKeys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG23fArR5mkx9eCHVKZ2EN/fqxR5LcXKkz4e8DSwLwG+"
+    ];
+
+    # Current host sizing: 16 vCPU, 32 GiB RAM, ~1024 GiB /nix disk.
+    tuning = {
+      enable = true;
+      cpus = 16;
+      ramGiB = 32;
+      diskGiB = 1024;
+    };
   };
 
   sops.defaultSopsFile = ./secrets.yaml;

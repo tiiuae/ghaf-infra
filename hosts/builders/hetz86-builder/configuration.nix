@@ -20,18 +20,16 @@ in
 {
   imports = [
     ./disk-config.nix
-    ../developers.nix
-    ../builders-common.nix
-    ../cross-compilation.nix
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
     hetzner-robot
     common
     openssh
+    remote-builder
     team-devenv
+    team-developers
     user-github
-    user-remote-build
   ]);
 
   sops = {
@@ -44,6 +42,16 @@ in
   system.stateVersion = "23.11";
   networking.hostName = "hetz86-builder";
   boot.kernelModules = [ "kvm-amd" ];
+
+  builder = {
+    enable = true;
+    sshPublicKeys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM2rhqSdifRmTwyrc3rvXWyDMznrIAAkVwhEsufLYiTp"
+    ];
+    crossCompilation.enable = true;
+    # Tuning is disabled on this builder
+    tuning.enable = false;
+  };
 
   services.monitoring = {
     metrics = {

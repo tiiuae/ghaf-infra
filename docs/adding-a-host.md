@@ -76,6 +76,79 @@ nix eval --raw .#nixosConfigurations.ghaf-webserver.config.system.nixos.release
 subsequent upgrades; it records the release used for the initial installation.
 Adapt the boot and network settings to the target hardware before installing.
 
+#### Configure a remote builder
+
+For a builder host, import `common`, `openssh`, and `remote-builder`, and supply
+the authorized SSH public keys:
+
+```nix
+{ config, self, ... }:
+{
+  imports = with self.nixosModules; [
+    common
+    openssh
+    remote-builder
+    team-developers
+  ];
+
+  sops.secrets.cachix-auth-token.owner = "root";
+
+  builder = {
+    enable = true;
+    sshPublicKeys = [ "ssh-ed25519 <client-public-key>" ];
+    crossCompilation.enable = true;
+    cachixPush = {
+      enable = true;
+      cacheName = "ghaf-dev";
+      authTokenFile = config.sops.secrets.cachix-auth-token.path;
+    };
+    tuning = {
+      enable = true;
+      cpus = 16;
+      ramGiB = 32;
+      diskGiB = 256;
+    };
+  };
+
+  services.monitoring = {
+    metrics.enable = true;
+    metrics.ssh = true;
+    logs.enable = true;
+  };
+}
+```
+
+The host's `openssh` profile enables SSH. The builder module creates
+`builder.sshUser` (default `remote-build`), grants it Nix trust, and configures
+connection and open-file limits for builds. Hosts using another account name set
+`builder.sshUser` explicitly. Supply public keys
+through `builder.sshPublicKeys`, which defaults to an empty list. For certificate
+authentication, set `builder.sshTrustedCAFile` to the runtime CA public-key path.
+It defaults to `null`; the host provisions and persists the CA file.
+Enable `builder.tuning` explicitly to derive Nix job/core limits from the host's
+CPU and RAM sizes using the shared tuning library. `diskGiB` is optional; when
+set, it determines Nix garbage-collection watermarks. Disk layout, boot settings,
+and other hardware choices remain in the host configuration. Without tuning,
+the host keeps its existing Nix limits.
+Import `team-developers` separately when the host should also provide access to
+Ghaf developers.
+
+The other builder features are opt-in:
+
+- `crossCompilation.enable`: enables AArch64 emulation and i686 builds on x86 hosts.
+- `cachixPush.enable`: publishes filtered build results to `cachixPush.cacheName`, using
+  the runtime token path in `cachixPush.authTokenFile`. The host provisions the token
+  through SOPS or another secret provider.
+
+The release hosts configure their caches, SSH CA policy, SSH account names, and
+baseline-reset devices and persistence directly.
+
+Configure clients with `nix.distributedBuilds` and `nix.buildMachines`, including
+`sshUser` and the runtime `sshKey` path from SOPS. Pin the builder host key in
+`programs.ssh.knownHosts`. The shared tuning library also calculates client
+`maxJobs` values. See
+[`hosts/hetzci/remote-builders.nix`](../hosts/hetzci/remote-builders.nix).
+
 ### 2. Create the disk configuration
 
 Create `hosts/<name>/disk-config.nix` with [disko](https://github.com/nix-community/disko)

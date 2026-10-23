@@ -3,23 +3,22 @@
 {
   self,
   inputs,
+  config,
   ...
 }:
 {
   imports = [
     ./disk-config.nix
-    ../developers.nix
-    ../builders-common.nix
-    ../cachix-push.nix
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
     hetzner-robot
     common
     openssh
+    remote-builder
     team-devenv
+    team-developers
     user-github
-    user-remote-build
   ]);
 
   sops = {
@@ -32,16 +31,25 @@
   system.stateVersion = "23.11";
   networking.hostName = "hetzarm";
 
-  # Current host sizing: 80 vCPU, 250 GiB RAM, ~3520 GiB /nix disk.
-  builder.tuning = {
+  builder = {
     enable = true;
-    cpus = 80;
-    ramGiB = 250;
-    diskGiB = 3520;
-  };
+    sshPublicKeys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM2rhqSdifRmTwyrc3rvXWyDMznrIAAkVwhEsufLYiTp"
+    ];
 
-  cachix-push = {
-    cacheName = "ghaf-dev";
+    # Current host sizing: 80 vCPU, 250 GiB RAM, ~3520 GiB /nix disk.
+    tuning = {
+      enable = true;
+      cpus = 80;
+      ramGiB = 250;
+      diskGiB = 3520;
+    };
+
+    cachixPush = {
+      enable = true;
+      cacheName = "ghaf-dev";
+      authTokenFile = config.sops.secrets.cachix-auth-token.path;
+    };
   };
 
   services.monitoring = {
