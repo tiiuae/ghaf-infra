@@ -12,16 +12,15 @@
     user-bmg = import ./bmg.nix;
     user-fayad = import ./fayad.nix;
     user-github = import ./github.nix;
-    user-remote-build = import ./remote-build.nix;
     user-alextserepov = import ./alextserepov.nix;
     user-milval = import ./milval.nix;
     user-vadikas = import ./vadikas.nix;
-    user-uae-remote-build = import ./uae-remote-build.nix;
     user-ctsopokis = import ./ctsopokis.nix;
     user-pavelf = import ./pavelf.nix;
     user-xzr = import ./xzr.nix;
 
     team-devenv = import ./teams/devenv.nix;
+    team-developers = import ./teams/developers.nix;
     team-testers = import ./teams/testers.nix;
   };
 }

@@ -3,15 +3,12 @@
 {
   self,
   inputs,
+  config,
   ...
 }:
 {
   imports = [
     ./disk-config.nix
-    ../builders-common.nix
-    ../cross-compilation.nix
-    ../cachix-push.nix
-    ../release-common.nix
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
@@ -20,6 +17,7 @@
     hetzner-robot
     common
     openssh
+    remote-builder
     team-devenv
   ]);
 
@@ -35,22 +33,37 @@
   networking.hostName = "hetz86-rel-2";
   boot.kernelModules = [ "kvm-amd" ];
 
-  # Current host sizing: 96 vCPU, 251 GiB RAM, ~1696 GiB writable Nix partition.
-  builder.tuning = {
+  builder = {
     enable = true;
-    cpus = 96;
-    ramGiB = 251;
-    diskGiB = 1696;
+    sshUser = "${config.networking.hostName}-builder";
+    sshTrustedCAFile = "/var/lib/baseline-reset/release-builder-ca.pub";
+    crossCompilation.enable = true;
+
+    # Current host sizing: 96 vCPU, 251 GiB RAM, ~1696 GiB writable Nix partition.
+    tuning = {
+      enable = true;
+      cpus = 96;
+      ramGiB = 251;
+      diskGiB = 1696;
+    };
+
+    cachixPush = {
+      enable = true;
+      cacheName = "ghaf-release";
+      authTokenFile = config.sops.secrets.cachix-auth-token.path;
+    };
   };
 
-  cachix-push = {
-    cacheName = "ghaf-release";
-  };
+  nix.caches = [
+    "nixos-org"
+    "ghaf-release"
+  ];
 
   services.baseline-reset = {
     enable = true;
     rootDevice = "/dev/disk/by-partlabel/disk-nvme0-baseline";
     nixDevice = "/dev/disk/by-partlabel/disk-nvme1-baseline";
+    persistentFiles = [ "release-builder-ca.pub" ];
   };
 
   services.monitoring = {
@@ -60,11 +73,4 @@
     };
     logs.enable = true;
   };
-
-  users.users.hetz86-rel-2-builder = {
-    isNormalUser = true;
-  };
-  nix.settings.trusted-users = [
-    "hetz86-rel-2-builder"
-  ];
 }

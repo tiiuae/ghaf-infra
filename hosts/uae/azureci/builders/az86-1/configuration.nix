@@ -12,18 +12,16 @@
   imports = [
     ./disk-config.nix
     ../../azure-common.nix
-    ../../../../builders/developers.nix
-    ../../../../builders/builders-common.nix
-    ../../../../builders/cross-compilation.nix
     (modulesPath + "/profiles/qemu-guest.nix")
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
     common
     openssh
+    remote-builder
     team-devenv
+    team-developers
     user-github
-    user-uae-remote-build
   ]);
 
   sops.defaultSopsFile = ./secrets.yaml;
@@ -38,11 +36,20 @@
     hostName = "uae-azureci-az86-1";
   };
 
-  # Current host sizing: 32 vCPU, 128 GiB RAM.
-  builder.tuning = {
+  builder = {
     enable = true;
-    cpus = 32;
-    ramGiB = 128;
+    sshUser = "uae-remote-build";
+    sshPublicKeys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG23fArR5mkx9eCHVKZ2EN/fqxR5LcXKkz4e8DSwLwG+"
+    ];
+    crossCompilation.enable = true;
+
+    # Current host sizing: 32 vCPU, 128 GiB RAM.
+    tuning = {
+      enable = true;
+      cpus = 32;
+      ramGiB = 128;
+    };
   };
 
   boot = {
