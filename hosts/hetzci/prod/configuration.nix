@@ -16,6 +16,9 @@ in
     ../signing.nix
   ];
 
+  # Leave room on the 256 MiB /boot to copy a new kernel before GRUB prunes old ones.
+  boot.loader.grub.configurationLimit = lib.mkForce 2;
+
   system.stateVersion = lib.mkForce "24.11";
   networking.hostName = "hetzci-prod";
   sops = {
