@@ -3,14 +3,13 @@
 {
   self,
   inputs,
+  config,
   lib,
   ...
 }:
 {
   imports = [
     ./disk-config.nix
-    ../builders-common.nix
-    ../cachix-push.nix
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
@@ -19,8 +18,8 @@
     zramSwap
     common
     openssh
+    remote-builder
     team-devenv
-    user-remote-build
   ]);
 
   sops = {
@@ -33,16 +32,25 @@
   networking.hostName = "hetzarm-dbg-1";
   virtualisation.hetzner.withEfiSupport = true;
 
-  # Current host sizing: 16 vCPU, 30 GiB RAM, ~235 GiB writable root (including Nix).
-  builder.tuning = {
+  builder = {
     enable = true;
-    cpus = 16;
-    ramGiB = 30;
-    diskGiB = 235;
-  };
+    sshPublicKeys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM2rhqSdifRmTwyrc3rvXWyDMznrIAAkVwhEsufLYiTp"
+    ];
 
-  cachix-push = {
-    cacheName = "ghaf-dbg";
+    # Current host sizing: 16 vCPU, 30 GiB RAM, ~235 GiB writable root (including Nix).
+    tuning = {
+      enable = true;
+      cpus = 16;
+      ramGiB = 30;
+      diskGiB = 235;
+    };
+
+    cachixPush = {
+      enable = true;
+      cacheName = "ghaf-dbg";
+      authTokenFile = config.sops.secrets.cachix-auth-token.path;
+    };
   };
 
   services.baseline-reset = {

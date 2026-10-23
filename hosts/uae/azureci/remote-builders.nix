@@ -37,6 +37,8 @@ in
       let
         commonOptions = {
           protocol = "ssh-ng";
+          sshUser = "uae-remote-build";
+          sshKey = config.sops.secrets.azureci_builder_ssh_key.path;
           speedFactor = 10;
           supportedFeatures = [
             "kvm"
@@ -72,18 +74,5 @@ in
       "10.51.16.5".publicKey = machines.uae-azureci-az86-1.publicKey;
       "91.98.90.243".publicKey = machines.uae-azureci-hetzarm-1.publicKey;
     };
-
-    # Custom options to /etc/ssh/ssh_config
-    extraConfig = lib.mkAfter ''
-      Host 10.51.16.5
-      Hostname 10.51.16.5
-      User uae-remote-build
-      IdentityFile ${config.sops.secrets.azureci_builder_ssh_key.path}
-
-      Host 91.98.90.243
-      Hostname 91.98.90.243
-      User uae-remote-build
-      IdentityFile ${config.sops.secrets.azureci_builder_ssh_key.path}
-    '';
   };
 }

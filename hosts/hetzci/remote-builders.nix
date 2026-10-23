@@ -38,6 +38,8 @@ in
       let
         commonOptions = {
           protocol = "ssh-ng";
+          sshUser = "remote-build";
+          sshKey = config.sops.secrets.vedenemo_builder_ssh_key.path;
           speedFactor = 10;
           supportedFeatures = [
             "kvm"
@@ -73,18 +75,5 @@ in
       "hetz86-1.vedenemo.dev".publicKey = machines.hetz86-1.publicKey;
       "hetzarm.vedenemo.dev".publicKey = machines.hetzarm.publicKey;
     };
-
-    # Custom options to /etc/ssh/ssh_config
-    extraConfig = lib.mkAfter ''
-      Host hetz86-1.vedenemo.dev
-      Hostname hetz86-1.vedenemo.dev
-      User remote-build
-      IdentityFile ${config.sops.secrets.vedenemo_builder_ssh_key.path}
-
-      Host hetzarm.vedenemo.dev
-      Hostname hetzarm.vedenemo.dev
-      User remote-build
-      IdentityFile ${config.sops.secrets.vedenemo_builder_ssh_key.path}
-    '';
   };
 }

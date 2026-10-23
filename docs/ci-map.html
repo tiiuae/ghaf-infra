@@ -583,7 +583,7 @@ should fit next to the map without scrolling, in both light and dark mode.
         p: '<code>ghaf-dev</code> is the main development cache. Developers and other CI runs substitute from it too.',
         m: 'Main builds keep <code>ghaf-dev</code> warm: everything built for the newest main, except the disk images, is pushed here, so developers building on top of main mostly download.',
         ci: 'A remote build cache keyed by a hash of all inputs, like Bazel or Gradle remote caching. Same inputs, same path, safe to reuse.',
-        files: ['hosts/builders/cachix-push.nix', 'hosts/builders/cachix-push.sh', 'hosts/builders/release-common.nix', 'modules/common/nix-caches.nix']
+        files: ['modules/remote-builder/cachix-push.nix', 'modules/remote-builder/cachix-push.sh', 'hosts/builders/hetz86-rel-2/configuration.nix', 'hosts/builders/hetzarm-rel-1/configuration.nix', 'modules/common/nix-caches.nix']
       } },
 
     // 03 / Signing
