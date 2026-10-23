@@ -457,6 +457,7 @@ in
       {
         # scrape nebula metrics if host has nebula ip address defined
         # use internal hetzner network only for hetzner cloud hosts, otherwise scrape via nebula
+        # The dev NetHSM gateway is used by AiC and excluded from Prometheus scraping.
         job_name = "nebula";
         static_configs = lib.mapAttrsToList (name: value: {
           targets = [
@@ -471,7 +472,7 @@ in
           labels = {
             machine_name = name;
           };
-        }) (lib.filterAttrs (_: host: host ? nebula_ip) machines);
+        }) (lib.filterAttrs (name: host: host ? nebula_ip && name != "nethsm-gateway-dev") machines);
       }
       {
         # this job proxies the requests through an ssh tunnel
@@ -505,7 +506,6 @@ in
                 testagent2-prod
                 testagent-release
                 nethsm-gateway
-                nethsm-gateway-dev
                 ;
             };
       }
