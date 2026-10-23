@@ -75,6 +75,15 @@ in
       default = "https://github.com/tiiuae/ghaf-infra";
       description = "Public Git repository with the main branch (no credentials).";
     };
+    drain = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = ''
+        Command run as root to drain the host for its role before activation:
+        `start` stops new work, `idle` exits 0 once no work runs, and `end`
+        resumes work. Each call must be safe to repeat.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -85,8 +94,11 @@ in
       }
     ];
     environment.systemPackages = [ command ];
-    # Read checks from the activated system, including after a reboot.
+    # Read checks and drain from the activated system, including after a reboot.
     environment.etc."scheduled-deployment/checks".source = checks;
+    environment.etc."scheduled-deployment/drain" = lib.mkIf (cfg.drain != null) {
+      source = cfg.drain;
+    };
     systemd.tmpfiles.rules = [
       "d /var/lib/scheduled-deployment 0700 root root -"
       "d /run/ghaf-deployment-metrics 0755 root root -"

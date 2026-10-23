@@ -6,6 +6,7 @@ umask 077
 
 state=/var/lib/scheduled-deployment
 metrics_dir=/run/ghaf-deployment-metrics
+drain=/run/current-system/etc/scheduled-deployment/drain
 exec 9>"$state/run.lock"
 flock 9
 target=
@@ -59,6 +60,14 @@ verify() {
   timeout 300 /run/current-system/etc/scheduled-deployment/checks
 }
 
+# A drain lasts until the target is verified, so a failed deployment leaves the
+# host drained.
+end_drain() {
+  if [[ -x $drain ]] && ! "$drain" end; then
+    finish failed drain_not_ended
+  fi
+}
+
 # The pending file is written before an activation, and removed once the target
 # is verified or rejected. A boot activation leaves it for verification after the
 # reboot; one left in the same boot was interrupted or failed to roll back.
@@ -75,6 +84,7 @@ if [[ $1 == verify ]]; then
       reject_target post_boot_checks
     fi
     rm "$state/pending"
+    end_drain
     finish deployed reboot_verified
   fi
   if [[ -f $state/scheduled.prom ]]; then
@@ -152,6 +162,25 @@ if [[ ! -x $new/etc/scheduled-deployment/checks ]]; then
   finish held module_disabled
 fi
 
+# Until activation starts, every exit ends the drain.
+if [[ -x $drain ]]; then
+  trap end_drain EXIT
+  echo 'Draining'
+  if ! "$drain" start; then
+    finish skipped drain_failed
+  fi
+  drain_started=$(date +%s)
+  until "$drain" idle; do
+    if [[ -f $state/hold ]]; then
+      finish held operator_hold
+    fi
+    if (($(date +%s) - drain_started > 3600)); then
+      finish skipped drain_timeout
+    fi
+    sleep 30
+  done
+fi
+
 # The hold command takes this lock: a hold set from here on waits until this run ends.
 exec 8>"$state/activation.lock"
 flock 8
@@ -179,6 +208,7 @@ elif ! "$new/bin/switch-to-configuration" check; then
 fi
 
 echo "Activating $target with $action"
+trap - EXIT
 echo "$target $boot_id" >"$state/pending"
 reason=activation_failed
 if nix-env --profile /nix/var/nix/profiles/system --set "$new" &&
@@ -191,6 +221,7 @@ if nix-env --profile /nix/var/nix/profiles/system --set "$new" &&
   reason=post_switch_checks
   if verify; then
     rm "$state/pending"
+    end_drain
     finish deployed switch_verified
   fi
 fi

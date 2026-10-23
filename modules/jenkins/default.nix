@@ -679,7 +679,12 @@ in
                 {
                   group = {
                     name = "testagents";
-                    permissions = [ "Agent/Connect" ];
+                    # Agent/Disconnect lets scheduled deployment take an
+                    # agent's nodes temporarily offline.
+                    permissions = [
+                      "Agent/Connect"
+                      "Agent/Disconnect"
+                    ];
                   };
                 }
               ]

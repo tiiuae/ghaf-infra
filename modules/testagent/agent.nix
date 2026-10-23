@@ -57,7 +57,7 @@ let
       serviceConfig = {
         Type = "simple";
         User = "jenkins";
-        EnvironmentFile = "/var/lib/jenkins/jenkins.env";
+        EnvironmentFile = "-/var/lib/jenkins/jenkins.env";
         WorkingDirectory = "/var/lib/jenkins";
         Restart = "no";
         SuccessExitStatus = [ 6 ];
@@ -122,13 +122,19 @@ in
       # map hardware to services
       builtins.listToAttrs (map (hw: lib.nameValuePair "agent-${hw}" (mkAgent hw)) cfg.hardware) // {
         start-agents = {
+          # Reconnect after a reboot. Without a controller (never connected, or
+          # after `disconnect`) the service and the agents exit with 6.
+          wantedBy = [ "multi-user.target" ];
+          wants = [ "network-online.target" ];
+          after = [ "network-online.target" ];
           path = with pkgs; [ wget ];
           serviceConfig = {
             Type = "oneshot";
             User = "jenkins";
-            EnvironmentFile = "/var/lib/jenkins/jenkins.env";
+            EnvironmentFile = "-/var/lib/jenkins/jenkins.env";
             WorkingDirectory = "/var/lib/jenkins";
             RemainAfterExit = "yes";
+            SuccessExitStatus = [ 6 ];
             ExecStart = toString (
               pkgs.writeShellScript "start-agents.sh" # sh
                 ''
