@@ -48,6 +48,27 @@ let
       '';
   };
 
+  # Scheduled deployment drains the agent by taking its nodes temporarily
+  # offline on the controller, see ./drain.sh.
+  drain = pkgs.writeShellApplication {
+    name = "testagent-drain";
+    runtimeInputs = with pkgs; [
+      gnused
+      openssh
+      util-linux
+    ];
+    text = ''
+      controller=$(sed -n 's/^CONTROLLER=//p' /var/lib/jenkins/jenkins.env 2>/dev/null || true)
+      # A disconnected agent runs no jobs.
+      [[ -n $controller ]] || exit 0
+      runuser -u jenkins -- ssh -o BatchMode=yes -i ${config.sops.secrets.ssh_host_ed25519_key.path} \
+        "${config.networking.hostName}@''${controller#*//}" \
+        bash -s -- "$1" ${
+          lib.escapeShellArgs (map (device: "${cfg.variant}-${device}") cfg.hardware)
+        } <${./drain.sh}
+    '';
+  };
+
   relayPython = pkgs.python3.withPackages (
     ps: with ps; [
       fastapi
@@ -72,6 +93,7 @@ in
 
   imports = [
     (import ./agent.nix { inherit self inputs; })
+    ../scheduled-deployment
   ];
 
   config = lib.mkIf cfg.enable {
@@ -97,6 +119,8 @@ in
         # used for ssh connections
         ssh_host_ed25519_key.owner = "jenkins";
       };
+
+    services.scheduled-deployment.drain = lib.getExe drain;
 
     services.udev.packages = [
       self.packages.${pkgs.stdenv.hostPlatform.system}.brainstem
