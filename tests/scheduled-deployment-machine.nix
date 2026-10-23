@@ -31,7 +31,23 @@
   services.scheduled-deployment = {
     enable = true;
     repository = "file:///repo";
-    postDeployChecks = if testVariant == "bad" then "exit 1" else "test -e /etc/test-generation";
+    postDeployChecks =
+      if testVariant == "bad" then
+        "exit 1"
+      else
+        ''
+          test -e /etc/test-generation
+          # The drain lasts through the checks.
+          test -e /var/lib/drained
+        '';
+    # /var/lib/drained marks the drain; /var/lib/busy keeps the host from idling.
+    drain = pkgs.writeShellScript "drain" ''
+      case $1 in
+      start) touch /var/lib/drained ;;
+      idle) test ! -e /var/lib/busy ;;
+      end) rm -f /var/lib/drained ;;
+      esac
+    '';
   };
   environment.etc."test-generation".text = testVariant;
   environment.systemPackages = [ pkgs.gitMinimal ];

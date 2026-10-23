@@ -117,6 +117,7 @@ pkgs.testers.runNixOSTest {
         boot_id = machine.succeed("cat /proc/sys/kernel/random/boot_id")
         assert run() == ("deployed", "switch_verified", "${revisions.good}")
         assert revision() == "${revisions.good}"
+        machine.succeed("test ! -e /var/lib/drained")
         assert machine.succeed("cat /proc/sys/kernel/random/boot_id") == boot_id
         machine.succeed("git -C /repo update-ref refs/heads/main ${revisions.bad}")
         assert run() == ("deployed", "switch_verified", "${revisions.good}")
@@ -140,9 +141,23 @@ pkgs.testers.runNixOSTest {
         assert run() == ("failed", "post_switch_checks", "${revisions.bad}")
         assert revision() == "${revisions.good}"
         machine.succeed(f"grep -Fx ${revisions.bad} {state}/rejected; test ! -e {state}/pending")
+        machine.succeed("test -e /var/lib/drained")
         # A failed attempt leaves the window open.
         assert run()[:2] == ("skipped", "rejected_target")
         assert revision() == "${revisions.good}"
+        # An administrator ends the drain after a failure.
+        machine.succeed("rm /var/lib/drained")
+
+    with subtest("hold during the drain ends it"):
+        machine.succeed("git -C /repo update-ref refs/heads/main ${revisions.reboot}")
+        machine.succeed("touch /var/lib/busy; systemctl start --no-block scheduled-deployment.service")
+        machine.wait_until_succeeds("test -e /var/lib/drained")
+        machine.succeed("scheduled-deployment hold testing")
+        machine.wait_until_succeeds("test $(systemctl show -P ActiveState scheduled-deployment.service) = inactive")
+        machine.succeed("test ! -e /var/lib/drained")
+        assert result()[:2] == ("held", "operator_hold")
+        assert revision() == "${revisions.good}"
+        machine.succeed("scheduled-deployment release; rm /var/lib/busy")
 
     with subtest("initrd change reboots and verifies"):
         machine.succeed("git -C /repo update-ref refs/heads/main ${revisions.reboot}")
@@ -153,6 +168,7 @@ pkgs.testers.runNixOSTest {
         machine.wait_until_succeeds(f"test ! -e {state}/pending")
         assert result() == ("deployed", "reboot_verified", "${revisions.reboot}")
         assert revision() == "${revisions.reboot}"
+        machine.succeed("test ! -e /var/lib/drained")
         assert machine.succeed("cat /proc/sys/kernel/random/boot_id") != boot_id
   '';
 }
