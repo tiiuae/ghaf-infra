@@ -6,17 +6,19 @@
   config,
   ...
 }:
-let
-  cfg = config.cachix-push;
-in
 {
-  options.cachix-push = {
+  options.builder.cachixPush = {
+    enable = lib.mkEnableOption "publishing filtered build results to Cachix";
     cacheName = lib.mkOption {
       type = lib.types.str;
       description = "Cachix cache name";
     };
+    authTokenFile = lib.mkOption {
+      type = lib.types.str;
+      description = "Runtime path to the Cachix authentication token file.";
+    };
   };
-  config = {
+  config = lib.mkIf (config.builder.enable && config.builder.cachixPush.enable) {
     systemd.services.cachix-push = {
       wants = [ "network-online.target" ];
       after = [
@@ -49,8 +51,8 @@ in
       unitConfig.StartLimitBurst = 0;
       script = builtins.readFile ./cachix-push.sh;
       environment = {
-        CACHIX_AUTH_TOKEN_FILE = "${config.sops.secrets.cachix-auth-token.path}";
-        CACHIX_CACHE_NAME = cfg.cacheName;
+        CACHIX_AUTH_TOKEN_FILE = config.builder.cachixPush.authTokenFile;
+        CACHIX_CACHE_NAME = config.builder.cachixPush.cacheName;
         CACHIX_STATE_DIR = "/var/lib/cachix-push";
       };
     };

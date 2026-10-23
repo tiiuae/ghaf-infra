@@ -14,6 +14,7 @@
     jenkins = import ./jenkins { inherit self inputs; };
     testagent = import ./testagent { inherit self inputs; };
     openssh = ./openssh.nix;
+    remote-builder = ./remote-builder;
     nebula = ./nebula;
     baseline-reset = ./baseline-reset;
     scheduled-deployment = ./scheduled-deployment;

@@ -120,7 +120,7 @@ ghaf-infra
 - **Deploy configuration changes**: [deploy-rs](./docs/deploy-rs.md)
 - **Add a new host**: [adding a host](./docs/adding-a-host.md)
 - **Add a remote builder user**: add their SSH key to
-  [developers.nix](./hosts/builders/developers.nix), then deploy
+  [developers.nix](./users/teams/developers.nix), then deploy
 - **Onboard a new admin**: add their user to [users/](./users/),
   optionally add their age key to [.sops.yaml](.sops.yaml) and run
   [`inv update-sops-files`](./docs/tasks.md#update-sops-files), then deploy

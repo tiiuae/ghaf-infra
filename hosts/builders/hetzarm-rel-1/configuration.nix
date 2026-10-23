@@ -3,14 +3,12 @@
 {
   self,
   inputs,
+  config,
   ...
 }:
 {
   imports = [
     ./disk-config.nix
-    ../builders-common.nix
-    ../cachix-push.nix
-    ../release-common.nix
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
@@ -19,6 +17,7 @@
     zramSwap
     common
     openssh
+    remote-builder
     team-devenv
   ]);
 
@@ -35,32 +34,39 @@
   networking.hostName = "hetzarm-rel-1";
   virtualisation.hetzner.withEfiSupport = true;
 
-  # Current host sizing: 16 vCPU, 30 GiB RAM, ~235 GiB writable root (including Nix).
-  builder.tuning = {
+  builder = {
     enable = true;
-    cpus = 16;
-    ramGiB = 30;
-    diskGiB = 235;
+    sshUser = "${config.networking.hostName}-builder";
+    sshTrustedCAFile = "/var/lib/baseline-reset/release-builder-ca.pub";
+
+    # Current host sizing: 16 vCPU, 30 GiB RAM, ~235 GiB writable root (including Nix).
+    tuning = {
+      enable = true;
+      cpus = 16;
+      ramGiB = 30;
+      diskGiB = 235;
+    };
+
+    cachixPush = {
+      enable = true;
+      cacheName = "ghaf-release";
+      authTokenFile = config.sops.secrets.cachix-auth-token.path;
+    };
   };
 
-  cachix-push = {
-    cacheName = "ghaf-release";
-  };
+  nix.caches = [
+    "nixos-org"
+    "ghaf-release"
+  ];
 
   services.baseline-reset = {
     enable = true;
     rootDevice = "/dev/disk/by-partlabel/disk-os-baseline";
+    persistentFiles = [ "release-builder-ca.pub" ];
   };
 
   services.monitoring = {
     metrics.enable = true;
     logs.enable = true;
   };
-
-  users.users.hetzarm-rel-1-builder = {
-    isNormalUser = true;
-  };
-  nix.settings.trusted-users = [
-    "hetzarm-rel-1-builder"
-  ];
 }

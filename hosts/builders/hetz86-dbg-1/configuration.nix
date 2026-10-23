@@ -3,15 +3,13 @@
 {
   self,
   inputs,
+  config,
   lib,
   ...
 }:
 {
   imports = [
     ./disk-config.nix
-    ../builders-common.nix
-    ../cross-compilation.nix
-    ../cachix-push.nix
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
@@ -20,8 +18,8 @@
     zramSwap
     common
     openssh
+    remote-builder
     team-devenv
-    user-remote-build
   ]);
 
   sops = {
@@ -34,16 +32,26 @@
   networking.hostName = "hetz86-dbg-1";
   boot.kernelModules = [ "kvm-amd" ];
 
-  # Current host sizing: 16 vCPU, 30 GiB RAM, ~272 GiB writable root (including Nix).
-  builder.tuning = {
+  builder = {
     enable = true;
-    cpus = 16;
-    ramGiB = 30;
-    diskGiB = 272;
-  };
+    sshPublicKeys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM2rhqSdifRmTwyrc3rvXWyDMznrIAAkVwhEsufLYiTp"
+    ];
+    crossCompilation.enable = true;
 
-  cachix-push = {
-    cacheName = "ghaf-dbg";
+    # Current host sizing: 16 vCPU, 30 GiB RAM, ~272 GiB writable root (including Nix).
+    tuning = {
+      enable = true;
+      cpus = 16;
+      ramGiB = 30;
+      diskGiB = 272;
+    };
+
+    cachixPush = {
+      enable = true;
+      cacheName = "ghaf-dbg";
+      authTokenFile = config.sops.secrets.cachix-auth-token.path;
+    };
   };
 
   services.baseline-reset = {

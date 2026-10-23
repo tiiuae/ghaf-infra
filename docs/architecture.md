@@ -60,7 +60,7 @@ Build results are pushed to three Cachix binary caches:
 - **[`ghaf-dev`](https://app.cachix.org/organization/tiiuae/cache/ghaf-dev)**:
   the main development cache. The `cachix-push` service on `hetz86-1` and
   `hetzarm` uploads new store paths, subject to the image and referrer filters
-  in `hosts/builders/cachix-push.sh`. Since `hetzarm` also serves GitHub
+  in `modules/remote-builder/cachix-push.sh`. Since `hetzarm` also serves GitHub
   Actions and developer builds, the cache can contain their outputs too.
   The push service does not check PR authorship.
 - **[`ghaf-dbg`](https://app.cachix.org/organization/tiiuae/cache/ghaf-dbg)**: populated by the debug controller/builders and consumed by those

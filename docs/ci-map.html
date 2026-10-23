@@ -583,7 +583,7 @@ should fit next to the map without scrolling, in both light and dark mode.
         p: '<code>ghaf-dev</code> is the main development cache. Developers and other CI runs substitute from it too.',
         m: 'Main builds keep <code>ghaf-dev</code> warm: everything built for the newest main, except the disk images, is pushed here, so developers building on top of main mostly download.',
         ci: 'A remote build cache keyed by a hash of all inputs, like Bazel or Gradle remote caching. Same inputs, same path, safe to reuse.',
-        files: ['hosts/builders/cachix-push.nix', 'hosts/builders/cachix-push.sh', 'hosts/builders/release-common.nix', 'modules/common/nix-caches.nix']
+        files: ['modules/remote-builder/cachix-push.nix', 'modules/remote-builder/cachix-push.sh', 'hosts/builders/hetz86-rel-2/configuration.nix', 'hosts/builders/hetzarm-rel-1/configuration.nix', 'modules/common/nix-caches.nix']
       } },
 
     // 03 / Signing
@@ -819,7 +819,7 @@ should fit next to the map without scrolling, in both light and dark mode.
           nodes: ['checkout', 'build', 'builders', 'cache'], edges: ['e_checkout_build', 'e_build_builders', 'e_cache_builders', 'e_builders_cache'],
           text: 'Each target, such as <code>packages.x86_64-linux.intel-laptop-debug</code>, runs <code>nix build --store ssh-ng://hetz86-rel-2</code> (hetzarm-rel-1 for aarch64). The builder downloads what <strong>Cachix ghaf-release</strong> already has, builds the rest and uploads new paths with cachix-push; the result is copied back to the controller.',
           ci: 'The release cache survives baseline resets, so each release only rebuilds what changed.',
-          files: ['hosts/hetzci/release/configuration.nix', 'hosts/builders/cachix-push.nix'] },
+          files: ['hosts/hetzci/release/configuration.nix', 'modules/remote-builder/cachix-push.nix'] },
         { badge: 'attest', title: 'Attest and sign through the HSMs',
           nodes: ['build', 'attest', 'gw', 'hsm'], edges: ['e_build_attest', 'e_attest_gw', 'e_gw_hsm'],
           text: 'The controller writes <strong>SLSA provenance</strong> and <strong>SBOMs</strong> with sbomnix, builds the OTA pin for the laptop image, then signs: UEFI Secure Boot signatures for laptop images and installers, SLSA signatures for provenance and images. Signing goes through a PKCS#11 gateway (Tampere or UAE) to keys that never leave the HSM. The provenance is checked against the trust policy immediately.',
@@ -873,7 +873,7 @@ should fit next to the map without scrolling, in both light and dark mode.
         { badge: 'build', title: 'Build on the shared prod builders',
           nodes: ['checkout', 'build', 'builders', 'cache'], edges: ['e_checkout_build', 'e_build_builders', 'e_cache_builders', 'e_builders_cache'],
           text: 'Each target, such as <code>packages.x86_64-linux.intel-laptop-debug</code>, runs <code>nix build --store ssh-ng://hetz86-1</code> (<strong>hetzarm</strong> for aarch64); ci-dev shares these builders. The builder downloads what <strong>Cachix ghaf-dev</strong> already has, builds the rest and pushes new paths back with cachix-push; the result is copied back to the controller.',
-          files: ['hosts/hetzci/remote-builders.nix', 'hosts/builders/hetz86-1/', 'hosts/builders/cachix-push.sh'] },
+          files: ['hosts/hetzci/remote-builders.nix', 'hosts/builders/hetz86-1/', 'modules/remote-builder/cachix-push.sh'] },
         { badge: 'attest', title: 'Provenance and signatures',
           nodes: ['build', 'attest', 'gw', 'hsm'], edges: ['e_build_attest', 'e_attest_gw', 'e_gw_hsm'],
           text: 'Each target gets <strong>SLSA provenance</strong> from sbomnix, and provenance and image are signed with the <strong>prod keys</strong> through the HSM gateways. SBOMs, UEFI signing and the OTA pin are left to releases.',
@@ -938,7 +938,7 @@ should fit next to the map without scrolling, in both light and dark mode.
           nodes: ['hwtest', 'gate', 'cache'], edges: ['e_hwtest_gate', 'e_builders_cache'],
           text: '<code>ghaf-main</code> posts no commit status and archives nothing. It leaves three results: the Jenkins build result, the tested images under <code>ghaf/main</code>, and, just as important, the store paths it built in <strong>Cachix ghaf-dev</strong> (everything except the disk images).',
           ci: 'Store paths are keyed by their inputs, so a developer building main right after a merge mostly downloads instead of rebuilding.',
-          files: ['modules/jenkins/pipelines/ghaf-main.groovy', 'hosts/builders/cachix-push.sh'] }
+          files: ['modules/jenkins/pipelines/ghaf-main.groovy', 'modules/remote-builder/cachix-push.sh'] }
       ]
     }
   };
