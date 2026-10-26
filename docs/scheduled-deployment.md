@@ -161,7 +161,8 @@ connected to a controller is deployed without taking nodes offline.
 
 If the run stops before activation, for example on a hold, it brings the
 nodes back online right away. After activation, they come back online once the target is verified, after the
-switch or after the reboot; the agents reconnect after a reboot. After a
+switch or after the reboot; the agents reconnect after a reboot. The checks
+wait up to two minutes for each agent to connect to the controller. After a
 `failed` result, the nodes stay offline until a later run ends its own drain,
 or until someone brings them back online in Jenkins: once the host is fixed,
 open the node's page and select "Bring this node back online".
@@ -185,10 +186,10 @@ open the node's page and select "Bring this node back online".
    };
    ```
 
-   `window` sets a different systemd `OnCalendar` window. A test agent takes
-   its nodes offline without further configuration, but its controller must
-   run a revision of `main` that gives test agents the `Agent/Disconnect`
-   permission.
+   `window` sets a different systemd `OnCalendar` window. On a test agent,
+   enabling the module is enough: the test agent configuration adds the
+   [drain and the checks](#test-agents). Its controller must run a revision of
+   `main` that gives test agents the `Agent/Disconnect` permission.
 3. After merging, deploy `main` to the host from a clean checkout, and
    optionally [run it by hand](#running-a-deployment-by-hand) to see
    `up_to_date`.
