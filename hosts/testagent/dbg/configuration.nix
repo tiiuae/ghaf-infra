@@ -22,6 +22,8 @@
     variant = "dbg";
     hardware = [ "orin-nx" ];
   };
+  # The testagent module adds the drain and the post-deploy checks.
+  services.scheduled-deployment.enable = true;
 
   boot = {
     kernelModules = [
