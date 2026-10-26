@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Runs on the Jenkins controller as the test agent's user, sent over SSH by the
-# agent's scheduled deployment drain. Usage: drain.sh start|idle|end <node>...
+# agent's scheduled deployment drain, and by start-agents to disconnect.
+# Usage: drain.sh start|idle|end|disconnect <node>...
 set -euo pipefail
 
 action=$1
@@ -43,6 +44,11 @@ for node in "$@"; do
     if [[ $status == *"$message"* ]]; then
       post "$jenkins/computer/$node/toggleOffline"
     fi
+    ;;
+  disconnect)
+    # Closes a connection the controller still holds, for example from before
+    # a reboot. Jenkins rejects a new agent process until the old one is gone.
+    post "$jenkins/computer/$node/doDisconnect"
     ;;
   esac
 done

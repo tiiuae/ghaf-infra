@@ -127,7 +127,10 @@ in
           wantedBy = [ "multi-user.target" ];
           wants = [ "network-online.target" ];
           after = [ "network-online.target" ];
-          path = with pkgs; [ wget ];
+          path = with pkgs; [
+            openssh
+            wget
+          ];
           serviceConfig = {
             Type = "oneshot";
             User = "jenkins";
@@ -142,6 +145,14 @@ in
                     echo "ERROR: Variable CONTROLLER not configured in /var/lib/jenkins/jenkins.env"
                     exit 6
                   fi
+
+                  # After a reboot, the controller can hold the old connections
+                  # for minutes. Without the Agent/Disconnect permission, the
+                  # agents retry until the controller drops them.
+                  ssh -i ${config.sops.secrets.ssh_host_ed25519_key.path} ${config.networking.hostName}@''${CONTROLLER#*//} \
+                    bash -s -- disconnect ${
+                      lib.escapeShellArgs (map (device: "${cfg.variant}-${device}") cfg.hardware)
+                    } <${./drain.sh} || echo "Could not disconnect earlier connections"
 
                   echo "Downloading agent.jar from $CONTROLLER"
                   wget "$CONTROLLER/jnlpJars/agent.jar" -O agent.jar
