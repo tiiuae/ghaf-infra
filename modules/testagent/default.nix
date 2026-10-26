@@ -120,7 +120,22 @@ in
         ssh_host_ed25519_key.owner = "jenkins";
       };
 
-    services.scheduled-deployment.drain = lib.getExe drain;
+    services.scheduled-deployment = {
+      drain = lib.getExe drain;
+      # Without a controller, the agents exit and nothing is drained. Remoting
+      # logs the open WebSocket once the controller accepts the agent's secret.
+      postDeployChecks = ''
+        if grep -q '^CONTROLLER=.' /var/lib/jenkins/jenkins.env; then
+          for unit in ${lib.concatMapStringsSep " " (device: "agent-${device}") cfg.hardware}; do
+            tries=24
+            until journalctl -q -u "$unit" -I -g 'WebSocket connection open'; do
+              ((--tries > 0)) || { echo "$unit did not connect to the controller"; exit 1; }
+              sleep 5
+            done
+          done
+        fi
+      '';
+    };
 
     services.udev.packages = [
       self.packages.${pkgs.stdenv.hostPlatform.system}.brainstem
