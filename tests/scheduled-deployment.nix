@@ -32,6 +32,7 @@ let
         cp ${fixtureFlake} flake.nix
         cp ${./scheduled-deployment-machine.nix} tests/scheduled-deployment-machine.nix
         cp -r ${../modules/scheduled-deployment} modules/scheduled-deployment
+        cp -r ${../modules/baseline-reset} modules/baseline-reset
         cp ${../modules/monitoring.nix} modules/monitoring.nix
         git init -b main
         git config user.name Test

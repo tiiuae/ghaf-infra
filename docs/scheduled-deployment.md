@@ -10,8 +10,9 @@ Hosts that enable `services.scheduled-deployment`
 themselves once a week. Each host fetches the public repository and builds its
 own configuration, so no deployer or deploy credential is involved.
 [Test agents](#test-agents) take their Jenkins nodes offline during a
-deployment. Jenkins controllers, builders and
-[baseline reset](./baseline-reset.md) hosts are not supported yet.
+deployment. On [baseline reset](./baseline-reset.md) hosts, every deployment
+[reboots](#how-a-run-works). Jenkins controllers and builders are not supported
+yet.
 
 ## How a run works
 
@@ -34,7 +35,8 @@ Each run:
    up to an hour until no test runs on them.
 5. Skips if a unit has failed, then switches to the target. If the kernel,
    initrd or kernel modules change, or a switch inhibitor refuses the switch,
-   it makes the target the boot default and reboots instead.
+   it makes the target the boot default and reboots instead. Baseline-reset
+   hosts always take this reboot path, while still drained.
 6. Checks that the running revision is the target, no unit has failed, `sshd`
    and Nebula are running, and the host's `postDeployChecks` pass. After a
    reboot, `scheduled-deployment-verify` runs the checks two minutes after
@@ -44,6 +46,13 @@ If the checks fail after a switch, the host switches back to the previous
 system and rejects the target. If they fail after a reboot, nothing is rolled
 back, the target is rejected, and an administrator decides what to do. A
 rejected target is not deployed on that host again.
+
+On baseline-reset hosts, `/var/lib/scheduled-deployment` is a symlink to
+`/var/lib/baseline-reset/scheduled-deployment`. The module keeps `pending`,
+`succeeded` (including its last-success mtime), `rejected`, `hold` and
+`scheduled.prom` across resets through `services.baseline-reset.persistentFiles`.
+The verification service republishes the metrics in `/run` after boot. The Git
+repository, build result and lock files are discarded at reset.
 
 Logs are in the journal:
 

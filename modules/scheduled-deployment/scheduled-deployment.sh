@@ -199,7 +199,10 @@ if [[ -n $failed_units ]]; then
 fi
 
 action=switch
-if [[ $(readlink -e /run/booted-system/{kernel,initrd,kernel-modules}) != "$(readlink -e "$new"/{kernel,initrd,kernel-modules})" ]]; then
+if [[ $DEPLOY_REQUIRE_REBOOT == 1 ]]; then
+  echo 'Baseline reset requires a reboot; activating at boot'
+  action=boot
+elif [[ $(readlink -e /run/booted-system/{kernel,initrd,kernel-modules}) != "$(readlink -e "$new"/{kernel,initrd,kernel-modules})" ]]; then
   echo 'Booted kernel, initrd or kernel modules differ; activating at boot'
   action=boot
 elif ! "$new/bin/switch-to-configuration" check; then

@@ -8,6 +8,7 @@
 }:
 let
   cfg = config.services.scheduled-deployment;
+  baselineReset = config.services.baseline-reset.enable;
   runner = pkgs.writeShellApplication {
     name = "scheduled-deployment-runner";
     runtimeInputs = with pkgs; [
@@ -22,6 +23,7 @@ let
     text = ''
       export DEPLOY_REPOSITORY=${lib.escapeShellArg cfg.repository}
       export DEPLOY_HOST=${lib.escapeShellArg config.networking.hostName}
+      export DEPLOY_REQUIRE_REBOOT=${if baselineReset then "1" else "0"}
     ''
     + builtins.readFile ./scheduled-deployment.sh;
   };
@@ -58,6 +60,8 @@ let
   '';
 in
 {
+  imports = [ ../baseline-reset ];
+
   options.services.scheduled-deployment = {
     enable = lib.mkEnableOption "weekly self-deployment from main";
     window = lib.mkOption {
@@ -87,22 +91,34 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    assertions = [
-      {
-        assertion = !(config.services.baseline-reset.enable or false);
-        message = "scheduled-deployment does not support baseline-reset hosts.";
-      }
-    ];
+    services.baseline-reset.persistentFiles = lib.mkIf baselineReset (
+      map (name: "scheduled-deployment/${name}") [
+        "pending"
+        "succeeded"
+        "rejected"
+        "hold"
+        "scheduled.prom"
+      ]
+    );
     environment.systemPackages = [ command ];
     # Read checks and drain from the activated system, including after a reboot.
     environment.etc."scheduled-deployment/checks".source = checks;
     environment.etc."scheduled-deployment/drain" = lib.mkIf (cfg.drain != null) {
       source = cfg.drain;
     };
-    systemd.tmpfiles.rules = [
-      "d /var/lib/scheduled-deployment 0700 root root -"
-      "d /run/ghaf-deployment-metrics 0755 root root -"
-    ];
+    systemd.tmpfiles.rules =
+      (
+        if baselineReset then
+          [
+            "d /var/lib/baseline-reset/scheduled-deployment 0700 root root -"
+            "L /var/lib/scheduled-deployment - - - - /var/lib/baseline-reset/scheduled-deployment"
+          ]
+        else
+          [
+            "d /var/lib/scheduled-deployment 0700 root root -"
+          ]
+      )
+      ++ [ "d /run/ghaf-deployment-metrics 0755 root root -" ];
     systemd.services.scheduled-deployment = {
       description = "Deploy this host from a pinned main commit";
       wants = [ "network-online.target" ];

@@ -169,7 +169,7 @@ flowchart TD
 | Property | baseline-reset |
 |---|---|
 | Reset on every boot | Root and writable Nix state are recreated with fresh LUKS2 keys, and `/nix` overlays the selected read-only baseline. Once the old keys are gone, discarded writes cannot be recovered from the local disks |
-| Preserved state | The machine ID and SSH host key under `/var/lib/baseline-reset` (`@persist`), plus the release builders' public CA on those hosts. Other entries are removed by the initrd on reset |
+| Preserved state | The machine ID and SSH host key under `/var/lib/baseline-reset` (`@persist`), plus files listed in `services.baseline-reset.persistentFiles`, such as the release builders' public CA or [scheduled-deployment state](./scheduled-deployment.md#how-a-run-works) when enabled. Other entries are removed by the initrd on reset |
 | Outside the reset | `/boot` (bootloader, generation menu, kernel and initrd) and separately mounted service volumes, such as the controller's `/var/lib/caddy` |
 | Build and Jenkins state | Discarded. Push required artifacts off-host before rebooting, for example to Cachix or the OCI registry |
 | Boot chain | No Secure Boot, measured boot or attestation, so root can replace the kernel or initrd that performs the reset. The release task checks boot IDs and system paths over SSH, but a compromised host can report whatever it wants. See [Hetzner limitations](#hetzner-limitations) |
