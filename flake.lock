@@ -323,6 +323,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-reuse": {
+      "locked": {
+        "lastModified": 1792094642,
+        "narHash": "sha256-zp8ToDMnqZcu4o4IH9pdwXFXGp7yLm/M0dEnNWnyd7I=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "fe13242281a67641c0102cdb1087f0ebe586c7df",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "fe13242281a67641c0102cdb1087f0ebe586c7df",
+        "type": "github"
+      }
+    },
     "nixpkgs-lib": {
       "locked": {
         "lastModified": 1790477367,
@@ -420,6 +436,7 @@
         "git-hooks-nix": "git-hooks-nix",
         "jetpack": "jetpack",
         "nixpkgs": "nixpkgs_3",
+        "nixpkgs-reuse": "nixpkgs-reuse",
         "robot-framework": "robot-framework",
         "sbomnix": "sbomnix",
         "sops-nix": "sops-nix"

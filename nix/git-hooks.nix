@@ -6,8 +6,14 @@
     git-hooks-nix.flakeModule
   ];
   perSystem =
-    { pkgs, ... }:
+    {
+      pkgs,
+      inputs',
+      ...
+    }:
     let
+      reusePkgs = inputs'.nixpkgs-reuse.legacyPackages;
+
       # Stubbed Jenkins specific classes so they don't prevent groovy from compiling
       # Add more classes here if they block compilation
       jenkins-groovy-stubs = pkgs.symlinkJoin {
@@ -119,7 +125,10 @@
             };
           };
           # check reuse compliance
-          reuse.enable = true;
+          reuse = {
+            enable = true;
+            package = reusePkgs.reuse;
+          };
           # nix formatter
           nixfmt.enable = true;
           # removes dead nix code
