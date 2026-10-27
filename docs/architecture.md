@@ -280,9 +280,14 @@ The ghaf-infra repository has its own GitHub Actions workflows
 
 **Security scanning and attestations:**
 
-- `source-vsa.yml`: issues Source Verification Summary Attestations (VSAs)
-  on pushes to main using `slsa/source-vsa-policy.yaml`. It uses GitHub OIDC
-  (`id-token: write`) for signing and publishes the attestations to GHCR.
+- `source-vsa.yml`: issues ghaf-infra's Source Verification Summary Attestations
+  (VSAs) on pushes to main using the issuer at `@main`, exercising the current
+  issuer implementation. Certificates identify its resolved commit SHA.
+- `issue-source-vsa.yml`: reusable issuer called by source repositories with
+  their trusted branch in `source-ref`. It uses GitHub OIDC (`id-token: write`)
+  for signing and publishes to the caller's GHCR namespace. Issuer code and
+  Nix inputs come from the called workflow's revision; the source checkout
+  contains only caller workflows as policy data.
 - `actions-security-analysis.yml`: runs [zizmor](https://woodruffw.github.io/zizmor/)
   to audit workflow files for security issues.
 - `dependency-review.yml`: blocks PRs that introduce known-vulnerable
@@ -292,6 +297,35 @@ The ghaf-infra repository has its own GitHub Actions workflows
   `hetzarm` (aarch64) remote builders, and `ghaf-auth`.
 - `scorecards.yml`: [OSSF Scorecard](https://securityscorecards.dev/)
   supply chain security analysis.
+
+The VSA's policy URI and digest identify the caller workflow at the source
+commit, including its issuer reference and `source-ref` input, in
+`.github/workflows/source-vsa.yml`.
+The issuer requires the push ref to match the caller's input and obtains its
+own revision from GitHub's OIDC endpoint. The verifier checks the workflow
+path and immutable issuer digest against the configured commit pin.
+
+`source-vsa fetch` and `source-vsa verify` authenticate the signature,
+certificate identity, OIDC issuer, and transparency evidence using Cosign.
+They also check the certificate's Fulcio extensions for the signer URI and
+digest, source repository and commit, configured source branch, caller
+workflow path and revision, `push` trigger, and GitHub-hosted runner
+environment. Payload claims cannot substitute for these certificate fields.
+See the [Fulcio claim mappings](https://github.com/sigstore/fulcio/blob/main/docs/oid-info.md).
+
+Jenkins's `services.ghaf-jenkins.sourceVsa.trustedWorkflowSha` and
+`services.ghaf-jenkins.sourceVsa.trustedBranch` configure the consumer's expected
+issuer commit and source branch through `SOURCE_VSA_ISSUER_SHA` and
+`SOURCE_VSA_SOURCE_REF`. The branch defaults to `refs/heads/main`; an unset
+issuer pin causes verification to fail closed. Standalone consumers use the
+same environment variables or the overriding `--issuer-sha` and `--source-ref`
+flags. Trust settings are independent of the verifier's build revision.
+
+The VSA contains the subject digest, policy URI and digest, verification
+result and level, SLSA version, and schema-required verifier identity and
+resource URI. Optional source-ref annotations, subject commit URL, action
+version, and verification timestamp are omitted. The certificate supplies
+execution context and signing-time evidence. Commit tags in GHCR are immutable.
 
 **Automation:**
 

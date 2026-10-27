@@ -14,7 +14,7 @@ python3Packages.buildPythonApplication {
 
   src = ./src;
 
-  propagatedBuildInputs = [ python3Packages.pyyaml ];
+  propagatedBuildInputs = [ python3Packages.cryptography ];
   nativeBuildInputs = [ makeWrapper ];
 
   installPhase = ''
