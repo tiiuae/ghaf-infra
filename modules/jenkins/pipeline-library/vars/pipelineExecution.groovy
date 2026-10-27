@@ -79,15 +79,31 @@ def create_pipeline(
     def quoted_target_repository = artifactSupport.shell_quote(target_repository)
     def quoted_target_commit = artifactSupport.shell_quote(target_commit)
     sh "mkdir -v -p '${artifacts_local_dir}'"
-    def source_vsa_status = sh(
-      script: """
-        source-vsa fetch \
-          --repository ${quoted_target_repository} \
-          --commit ${quoted_target_commit} \
-          --bundle '${artifacts_local_dir}/source-vsa.sigstore.json'
-      """,
+    def source_vsa_status = 1
+    // Recent commits on main may still be waiting for the VSA workflow to publish.
+    def source_vsa_attempts = sh(
+      script: '''
+        git merge-base --is-ancestor HEAD origin/main &&
+          test "$(date +%s)" -lt "$(( $(git show -s --format=%ct HEAD) + 3600 ))"
+      ''',
       returnStatus: true
-    )
+    ) == 0 ? 3 : 1
+    for (int attempt = 1; attempt <= source_vsa_attempts; attempt++) {
+      if (attempt > 1) {
+        echo "Retrying Source VSA fetch (attempt ${attempt}/${source_vsa_attempts}) after 30 seconds"
+        sleep(time: 30, unit: 'SECONDS')
+      }
+      source_vsa_status = sh(
+        script: """
+          source-vsa fetch \
+            --repository ${quoted_target_repository} \
+            --commit ${quoted_target_commit} \
+            --bundle '${artifacts_local_dir}/source-vsa.sigstore.json'
+        """,
+        returnStatus: true
+      )
+      if (source_vsa_status == 0) break
+    }
     if (source_vsa_status == 0) {
       source_vsa_path = "attestations/source-vsa.sigstore.json"
     } else if (source_vsa_required) {
