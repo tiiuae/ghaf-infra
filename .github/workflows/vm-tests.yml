@@ -20,6 +20,7 @@ on:
       - flake.lock
       - flake.nix
       # scheduled-deployment
+      - modules/baseline-reset/**
       - modules/monitoring.nix
       - modules/scheduled-deployment/**
       - tests/scheduled-deployment*.nix
