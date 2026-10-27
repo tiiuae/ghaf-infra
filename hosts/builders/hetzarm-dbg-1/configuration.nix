@@ -58,6 +58,11 @@
     rootDevice = "/dev/disk/by-partlabel/disk-os-baseline";
   };
 
+  services.monitoring = {
+    metrics.enable = true;
+    logs.enable = true;
+  };
+
   nix.caches = [
     "nixos-org"
     "ghaf-dev"

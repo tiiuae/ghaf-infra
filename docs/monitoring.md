@@ -82,10 +82,10 @@ It scrapes Nebula metrics on port 9101, using `internal_ip` for hosts in
 Grafana sends alerts to Slack. The
 [`up? (Nebula)`](../hosts/ghaf-monitoring/provision/alert-rules/nebula_up.json)
 alert fires when Prometheus has failed to scrape a host's Nebula metrics for
-two minutes. For ci-release, that only covers the controller: the builders have
-no Nebula scrape target, and the general
+two minutes. For ci-release and ci-dbg, that only covers the controllers:
+their builders have no Nebula scrape target, and the general
 [`up?`](../hosts/ghaf-monitoring/provision/alert-rules/up.json) alert excludes
-all three release hosts.
+all three hosts in each environment.
 
 The only Loki-based alert,
 [`earlyoom SIGTERM`](../hosts/ghaf-monitoring/provision/alert-rules/earlyoom.json),

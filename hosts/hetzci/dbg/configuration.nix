@@ -73,11 +73,6 @@ in
     };
   };
 
-  services.monitoring = {
-    metrics.enable = lib.mkForce false;
-    logs.enable = lib.mkForce false;
-  };
-
   services.baseline-reset = {
     enable = true;
     rootDevice = "/dev/disk/by-partlabel/disk-os-baseline";
