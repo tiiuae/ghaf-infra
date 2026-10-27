@@ -4,6 +4,7 @@
   self,
   inputs,
   lib,
+  pkgs,
   ...
 }:
 {
@@ -17,6 +18,7 @@
     common
     openssh
     nginx
+    scheduled-deployment
     team-devenv
     user-vadikas
   ]);
@@ -28,5 +30,14 @@
   services.monitoring = {
     metrics.enable = true;
     logs.enable = true;
+  };
+
+  services.scheduled-deployment = {
+    enable = true;
+    # Retry while the services restarted by a switch start up. Fleet's health
+    # check, through nginx, also covers MySQL and Redis.
+    postDeployChecks = ''
+      ${lib.getExe pkgs.curl} -fsS --retry 10 --retry-delay 6 --retry-all-errors -o /dev/null https://fleetdm.vedenemo.dev/healthz
+    '';
   };
 }
