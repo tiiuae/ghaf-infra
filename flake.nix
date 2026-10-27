@@ -22,6 +22,10 @@
     # Nixpkgs
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
+    # Keep the REUSE hook on a known-good nixpkgs revision while the main
+    # nixpkgs input can move independently.
+    nixpkgs-reuse.url = "github:nixos/nixpkgs/fe13242281a67641c0102cdb1087f0ebe586c7df";
+
     # Allows us to structure the flake with the NixOS module system
     flake-parts.url = "github:hercules-ci/flake-parts";
 
