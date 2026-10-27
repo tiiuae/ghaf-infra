@@ -34,9 +34,12 @@ let
       ghaf-registry
       ghaf-webserver
       ghaf-fleetdm
+      hetzci-dbg
       hetzci-dev
       hetzci-prod
       hetzci-release
+      hetz86-dbg-1
+      hetzarm-dbg-1
       hetzarm-rel-1
       ;
   };

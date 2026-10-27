@@ -20,7 +20,7 @@
     system = "aarch64-linux";
     machine = {
       ip = "46.62.194.107";
-      internal_ip = "10.0.0.14";
+      internal_ip = "10.0.0.15";
       publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB3y9z/2FWQdM9nnUJSc8bdsXApC0ug/ttdOGM/r2Zoq";
     };
   };
