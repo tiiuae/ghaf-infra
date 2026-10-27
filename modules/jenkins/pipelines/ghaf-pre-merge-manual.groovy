@@ -97,7 +97,9 @@ pipeline {
             // The downstream hw-test job needs the PR merge ref as well as the
             // merge SHA, otherwise it cannot refetch GitHub's synthetic merge commit.
             def merge_flake_ref = "git+${normalizedRepoUrl}?ref=refs/pull/${params.GITHUB_PR_NUMBER}/merge&rev=${merge_commit}"
-            PIPELINE = pipelineExecution.create_pipeline(TARGETS, null, merge_flake_ref)
+            PIPELINE = pipelineExecution.create_pipeline(
+              TARGETS, null, merge_flake_ref, [source_vsa: false]
+            )
           }
         }
       }

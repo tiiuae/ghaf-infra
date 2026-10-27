@@ -135,7 +135,9 @@ pipeline {
             // merge SHA, otherwise it cannot refetch GitHub's synthetic merge commit.
             def normalizedRepoUrl = REPO_URL.replaceAll('/+$', '')
             def merge_flake_ref = "git+${normalizedRepoUrl}?ref=refs/pull/${GITHUB_PR_NUMBER}/merge&rev=${merge_commit}"
-            PIPELINE = pipelineExecution.create_pipeline(TARGETS, null, merge_flake_ref)
+            PIPELINE = pipelineExecution.create_pipeline(
+              TARGETS, null, merge_flake_ref, [source_vsa: false]
+            )
           }
         }
       }
