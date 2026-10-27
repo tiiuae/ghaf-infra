@@ -1,0 +1,74 @@
+# SPDX-FileCopyrightText: 2026 TII (SSRC) and the Ghaf contributors
+# SPDX-License-Identifier: Apache-2.0
+
+name: Issue Source VSA
+
+on:
+  workflow_call:
+    inputs:
+      source-ref:
+        description: Trusted source branch ref (for example refs/heads/main)
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  source-vsa:
+    name: Issue Source VSA
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    concurrency:
+      group: source-vsa-${{ github.repository }}-${{ github.sha }}
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+
+      - name: Resolve pinned issuer revision
+        id: issuer
+        shell: bash
+        run: |
+          # Read claims directly from GitHub's authenticated runner endpoint.
+          claims=$(curl --fail --silent --show-error --get \
+            --data-urlencode 'audience=sigstore' \
+            --header "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -er '
+              .value | split(".")[1] | gsub("-"; "+") | gsub("_"; "/") | @base64d | fromjson
+            ')
+          sha=$(jq -er '.job_workflow_sha' <<< "$claims")
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Check out trusted issuer
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: tiiuae/ghaf-infra
+          ref: ${{ steps.issuer.outputs.sha }}
+          path: issuer
+          persist-credentials: false
+
+      - name: Check out caller workflow policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: source
+          sparse-checkout: .github/workflows/source-vsa.yml
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+
+      - name: Issue Source VSA
+        working-directory: issuer
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SOURCE_VSA_SOURCE_DIR: ${{ github.workspace }}/source
+          SOURCE_VSA_ISSUER_SHA: ${{ steps.issuer.outputs.sha }}
+          SOURCE_VSA_SOURCE_REF: ${{ inputs.source-ref }}
+        run: nix run .#source-vsa -- issue

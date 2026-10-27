@@ -535,11 +535,11 @@ should fit next to the map without scrolling, in both light and dark mode.
            r: { a: 'required' },
            p: { a: 'best effort' } },
       info: {
-        what: 'A Source Verification Summary Attestation (SLSA Source level 1), stored in GHCR. <code>source-vsa fetch</code> checks its Sigstore signature: it must come from the repository\'s own <code>source-vsa.yml</code> workflow, run by a push of this exact commit to <code>main</code>. The verified attestation is saved next to the build outputs, so it travels with the artifacts.',
+        what: 'A Source Verification Summary Attestation (SLSA Source level 1), stored in GHCR. <code>source-vsa fetch</code> checks its Sigstore signature: the certificate must identify the approved, commit-pinned <code>ghaf-infra</code> issuer workflow and the repository\'s <code>source-vsa.yml</code> caller, run by a push of this exact commit to <code>main</code>. The verified attestation is saved next to the build outputs, so it travels with the artifacts.',
         r: 'Required: <code>ghaf-release-candidate</code> fails if the commit has no valid VSA.',
         p: 'Best effort: a PR merge commit normally has none. The stage turns unstable and the run continues.',
         m: 'Best effort: fetched and kept if the commit has one; a missing VSA does not fail the run.',
-        files: ['pkgs/source-vsa/', 'modules/jenkins/pipeline-library/vars/pipelineExecution.groovy', 'slsa/source-vsa-policy.yaml']
+        files: ['pkgs/source-vsa/', 'modules/jenkins/pipeline-library/vars/pipelineExecution.groovy', '.github/workflows/source-vsa.yml', '.github/workflows/issue-source-vsa.yml']
       } },
     { id: 'auth', lane: 'L1', cx: C(4), kind: 'trust', nixos: true,
       t: { o: { n: 'ghaf-auth', s: 'Dex OIDC, GitHub login', a: 'SSO: Jenkins + registry' } },
@@ -813,7 +813,7 @@ should fit next to the map without scrolling, in both light and dark mode.
         { badge: 'checkout', title: 'Check out ghaf and verify where it came from',
           nodes: ['job', 'checkout', 'gh', 'ghcr'], edges: ['e_job_checkout', 'e_gh_checkout', 'e_ghcr_checkout'],
           text: 'The controller checks out tiiuae/ghaf at <code>GITREF</code>, fetches the commit\'s <strong>Source VSA</strong> from GHCR (no valid VSA stops the run), then evaluates the flake with <code>nix flake show</code>.',
-          ci: 'Ghaf\'s flake lockfile means the commit decides every input of the build. The VSA proves that commit landed on main: tiiuae/ghaf\'s own source-vsa workflow signed it on a push of that exact commit to main, so a branch, PR or fork commit cannot be released.',
+          ci: 'Ghaf\'s flake lockfile means the commit decides every input of the build. The VSA proves that commit landed on main: the certificate binds an approved, pinned ghaf-infra issuer to tiiuae/ghaf\'s source-vsa workflow running on a push of that exact commit to main, so a branch, PR or fork commit cannot be released.',
           files: ['pkgs/source-vsa/'] },
         { badge: 'build', title: 'Build every target on the release builders',
           nodes: ['checkout', 'build', 'builders', 'cache'], edges: ['e_checkout_build', 'e_build_builders', 'e_cache_builders', 'e_builders_cache'],

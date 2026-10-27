@@ -86,6 +86,7 @@
       python-env = pkgs.python3.withPackages (
         pp: with pp; [
           aiohttp
+          cryptography
           deploykit
           invoke
           loguru

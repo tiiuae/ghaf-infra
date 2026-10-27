@@ -180,6 +180,24 @@ in
 {
   options.services.ghaf-jenkins = {
     enable = lib.mkEnableOption "the Ghaf Jenkins controller";
+    sourceVsa = {
+      trustedBranch = lib.mkOption {
+        type = lib.types.str;
+        default = "refs/heads/main";
+        description = ''
+          Trusted source branch ref for Source VSA verification. Must match
+          the source-ref input in the Ghaf caller workflow.
+        '';
+      };
+      trustedWorkflowSha = lib.mkOption {
+        type = lib.types.str;
+        default = "";
+        description = ''
+          Approved ghaf-infra commit for the Source VSA reusable workflow.
+          Must match the Ghaf caller's workflow pin.
+        '';
+      };
+    };
     envType = lib.mkOption {
       type = lib.types.enum [
         "dbg"
@@ -476,6 +494,8 @@ in
         OCI_REGISTRY = cfg.registry.url;
         JENKINS_SIGNING_ENABLED = lib.boolToString cfg.signing.enable;
         JIRA_TOKEN_AVAILABLE = lib.boolToString cfg.integrations.jira.enable;
+        SOURCE_VSA_ISSUER_SHA = cfg.sourceVsa.trustedWorkflowSha;
+        SOURCE_VSA_SOURCE_REF = cfg.sourceVsa.trustedBranch;
       };
 
       extraJavaOptions = [
