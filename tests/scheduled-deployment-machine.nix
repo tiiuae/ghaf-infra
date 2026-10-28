@@ -66,7 +66,6 @@
     memorySize = 2048;
     diskSize = 20480;
   };
-  boot.initrd.systemd.enable = true;
   boot.growPartition = true;
   boot.initrd.systemd.contents."/test-reboot" = lib.mkIf (testVariant == "reboot") {
     text = "changed initrd";
