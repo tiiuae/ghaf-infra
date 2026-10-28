@@ -237,7 +237,6 @@ in
       "C /etc/ssh/ssh_host_ed25519_key 0600 root root - ${state}/ssh/ssh_host_ed25519_key"
     ];
 
-    boot.initrd.systemd.enable = true;
     boot.initrd.availableKernelModules = [
       "dm-crypt"
     ]
