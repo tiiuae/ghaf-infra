@@ -6,17 +6,17 @@ name: Source VSA
 on:
   push:
     branches:
-      - main
+      - vsa-test
 
 permissions: {}
 
 jobs:
   source-vsa:
     name: Issue Source VSA
-    uses: tiiuae/ghaf-infra/.github/workflows/issue-source-vsa.yml@main
+    uses: tiiuae/ghaf-infra/.github/workflows/issue-source-vsa.yml@84378b678eb8ab5127f4627693c358f6c3b79852
     permissions:
       contents: read
       id-token: write
       packages: write
     with:
-      source-ref: refs/heads/main
+      source-ref: refs/heads/vsa-test
