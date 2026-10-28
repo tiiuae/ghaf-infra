@@ -3,12 +3,32 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
+let
+  # Nothing stops new remote builds, so scheduled deployment only waits until
+  # no build has run for a minute: no session of the remote build account and
+  # no process of a Nix build user.
+  drain = pkgs.writeShellApplication {
+    name = "builder-drain";
+    runtimeInputs = [ pkgs.procps ];
+    text = ''
+      [[ $1 == idle ]] || exit 0
+      for _ in {1..12}; do
+        if pgrep -u ${lib.escapeShellArg config.builder.sshUser} >/dev/null || pgrep -G nixbld >/dev/null; then
+          exit 1
+        fi
+        sleep 5
+      done
+    '';
+  };
+in
 {
   imports = [
     ./tuning.nix
     ./cachix-push.nix
+    ../scheduled-deployment
   ];
 
   options.builder = {
@@ -39,6 +59,15 @@
           openssh.authorizedKeys.keys = config.builder.sshPublicKeys;
         };
         nix.settings.trusted-users = [ config.builder.sshUser ];
+
+        services.scheduled-deployment = {
+          drain = lib.getExe drain;
+          # Remote build clients log in as the remote build account, which the
+          # Nix daemon must trust.
+          postDeployChecks = ''
+            runuser -u ${lib.escapeShellArg config.builder.sshUser} -- nix store info --store daemon --json | ${lib.getExe pkgs.jq} -e .trusted >/dev/null
+          '';
+        };
 
         # Specifies the maximum number of concurrent unauthenticated connections to the SSH daemon.
         # The default of 10 is not enough when multiple clients are building

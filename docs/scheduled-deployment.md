@@ -10,9 +10,9 @@ Hosts that enable `services.scheduled-deployment`
 themselves once a week. Each host fetches the public repository and builds its
 own configuration, so no deployer or deploy credential is involved.
 [Test agents](#test-agents) take their Jenkins nodes offline during a
-deployment. On [baseline reset](./baseline-reset.md) hosts, every deployment
-[reboots](#how-a-run-works). Jenkins controllers and builders are not supported
-yet.
+deployment, and [builders](#builders) wait until no build runs. On
+[baseline reset](./baseline-reset.md) hosts, every deployment
+[reboots](#how-a-run-works). Jenkins controllers are not supported yet.
 
 ## How a run works
 
@@ -32,7 +32,8 @@ Each run:
    rejected on this host before, or if less than 10 GiB is free for the build.
 3. Builds the target on the host.
 4. On a [test agent](#test-agents), takes the agent's nodes offline and waits
-   up to an hour until no test runs on them.
+   up to an hour until no test runs on them. On a [builder](#builders), waits
+   up to an hour until no build has run for a minute.
 5. Skips if a unit has failed, then switches to the target. If the kernel,
    initrd or kernel modules change, or a switch inhibitor refuses the switch,
    it makes the target the boot default and reboots instead. Baseline-reset
@@ -74,7 +75,7 @@ dashboard.
 | `skipped` | `build_failed` | The build failed, also when inputs or caches are unavailable. The next run retries. If it keeps failing, build the host locally to see the error. |
 | `skipped` | `low_disk_space` | Less than 10 GiB is free in `/nix/store`. Free space on the host. |
 | `skipped` | `drain_failed` | Taking a test agent's nodes offline failed. The nodes are back online, and the next run retries. |
-| `skipped` | `drain_timeout` | Tests kept running on a test agent's nodes for an hour. The nodes are back online, and the next run retries. |
+| `skipped` | `drain_timeout` | Tests kept running on a test agent's nodes, or builds on a builder, for an hour. A test agent's nodes are back online, and the next run retries. |
 | `skipped` | `failed_units` | A unit had failed before activation. Fix the unit, or clear it with `systemctl reset-failed`. |
 | `skipped` | `rejected_target` | The head of `main` failed on this host before. A new commit on `main` gets a new attempt; to retry the same commit, [clear the rejected target](#retrying-a-rejected-target). |
 | `held` | `operator_hold` | Someone [paused the host](#pausing-a-host). |
@@ -129,9 +130,10 @@ sudo scheduled-deployment release
 
 The hold records the user, the time and the reason in
 `/var/lib/scheduled-deployment/hold`. A run in progress stops before it
-activates the target. A run that is waiting for a test agent's nodes stops
-within 30 seconds. If activation has already started, the hold command waits
-until the run finishes. Releasing does not start a run. A held host reports
+activates the target. A run that is waiting for a test agent's nodes or for
+a builder to become idle stops within two minutes. If activation has already
+started, the hold command waits until the run finishes. Releasing does not
+start a run. A held host reports
 `held operator_hold`, and `scheduled deployment stalled` fires after 15 days
 without a success, so a forgotten hold is noticed.
 
@@ -176,6 +178,15 @@ wait up to two minutes for each agent to connect to the controller. After a
 or until someone brings them back online in Jenkins: once the host is fixed,
 open the node's page and select "Bring this node back online".
 
+## Builders
+
+On a [remote builder](../modules/remote-builder/), a run waits until no build
+has run for a minute: no session of the remote build account and no process of
+a Nix build user. Nothing stops a new remote build from starting after that
+check. A switch does not interrupt running builds, but a reboot does, and the
+client has to retry the build. The checks also confirm that the Nix daemon
+trusts the remote build account.
+
 ## Enrolling a host
 
 1. The host must expose metrics (`services.monitoring.metrics.enable`) and be
@@ -195,10 +206,11 @@ open the node's page and select "Bring this node back online".
    };
    ```
 
-   `window` sets a different systemd `OnCalendar` window. On a test agent,
-   enabling the module is enough: the test agent configuration adds the
-   [drain and the checks](#test-agents). Its controller must run a revision of
-   `main` that gives test agents the `Agent/Disconnect` permission.
+   `window` sets a different systemd `OnCalendar` window. On a test agent or a
+   builder, enabling the module is enough: their configuration adds the drain
+   and the checks, see [test agents](#test-agents) and [builders](#builders).
+   A test agent's controller must run a revision of `main` that gives test
+   agents the `Agent/Disconnect` permission.
 3. After merging, deploy `main` to the host from a clean checkout, and
    optionally [run it by hand](#running-a-deployment-by-hand) to see
    `up_to_date`.
