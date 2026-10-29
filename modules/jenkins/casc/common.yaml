@@ -123,6 +123,36 @@ groovy:
         job.definition = new CpsFlowDefinition(file.text, true)
         job.save()
       }
+  # Drain the controller for scheduled deployment: while the marker exists,
+  # new builds wait in the queue. Running builds finish, including the builds
+  # they start and wait for, such as HW tests, which quiet-down mode would
+  # block. This runs before Jenkins loads the queue and starts executors.
+  - script: |
+      import hudson.ExtensionList
+      import hudson.model.Cause
+      import hudson.model.Job
+      import hudson.model.Queue
+      import hudson.model.queue.CauseOfBlockage
+      import hudson.model.queue.QueueTaskDispatcher
+      import jenkins.model.Jenkins
+      def marker = new File(Jenkins.get().rootDir, "scheduled-deployment-drain")
+      ExtensionList.lookup(QueueTaskDispatcher).add(new QueueTaskDispatcher() {
+        @Override
+        CauseOfBlockage canRun(Queue.Item item) {
+          // Pipeline steps of running builds are not jobs.
+          if (!marker.exists() || !(item.task instanceof Job) ||
+              item.causes.any { it instanceof Cause.UpstreamCause }) {
+            return null
+          }
+          return new CauseOfBlockage() {
+            @Override
+            String getShortDescription() {
+              "Waiting for the scheduled deployment of this controller"
+            }
+          }
+        }
+      })
+      println("Registered the scheduled deployment drain")
   # Trigger all pipelines on jenkins service (re)start:
   - script: |
       import jenkins.model.*
