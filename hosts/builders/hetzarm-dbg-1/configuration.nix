@@ -63,6 +63,8 @@
     logs.enable = true;
   };
 
+  services.scheduled-deployment.enable = true;
+
   nix.caches = [
     "nixos-org"
     "ghaf-dev"
