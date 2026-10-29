@@ -24,6 +24,11 @@ let
       export DEPLOY_REPOSITORY=${lib.escapeShellArg cfg.repository}
       export DEPLOY_HOST=${lib.escapeShellArg config.networking.hostName}
       export DEPLOY_REQUIRE_REBOOT=${if baselineReset then "1" else "0"}
+      # Hosts that build nothing locally, such as Jenkins controllers, still
+      # build their own generated configuration files.
+      export DEPLOY_MAX_JOBS=${
+        toString (if config.nix.settings.max-jobs == 0 then 2 else config.nix.settings.max-jobs)
+      }
     ''
     + builtins.readFile ./scheduled-deployment.sh;
   };
