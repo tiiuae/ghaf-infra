@@ -149,7 +149,7 @@ fi
 
 echo "Building $DEPLOY_HOST at $target"
 if ! nix build --option accept-flake-config false --option access-tokens '' \
-  --builders '' \
+  --builders '' --max-jobs "$DEPLOY_MAX_JOBS" \
   --out-link "$state/result" \
   "git+$DEPLOY_REPOSITORY?ref=main&rev=$target#nixosConfigurations.\"$DEPLOY_HOST\".config.system.build.toplevel"; then
   # Nix also fails this way when inputs or caches are unavailable; retry in the window.
