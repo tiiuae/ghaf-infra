@@ -51,7 +51,9 @@ An SSH connection from the agent to the controller will be opened, fetching the 
 This secret is then used to launch the jenkins slaves with a websocket connection.
 
 To disconnect the agent, simply run `disconnect` with no arguments.
-Until then, the agents reconnect to the same controller after a reboot.
+Until then, the agents reconnect to the same controller after a reboot, and
+after the controller restarts or is reset: an agent that cannot reconnect for
+five minutes restarts and fetches the secret again.
 
 ## Adding a new hardware device to an existing agent
 

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Runs on the Jenkins controller as the test agent's user, sent over SSH by the
-# agent's scheduled deployment drain, and by start-agents to disconnect.
+# agent's scheduled deployment drain, and by each agent to disconnect.
 # Usage: drain.sh start|idle|end|disconnect <node>...
 set -euo pipefail
 
