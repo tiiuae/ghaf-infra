@@ -88,6 +88,13 @@ in
     ];
   };
 
+  services.scheduled-deployment = {
+    enable = true;
+    # After the window of the test agents: a reset of this controller while
+    # an agent is drained would bring its nodes back online.
+    window = "Tue *-*-* 10..12:00,30:00 UTC";
+  };
+
   nix = {
     distributedBuilds = true;
     settings = {
