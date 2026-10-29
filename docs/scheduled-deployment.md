@@ -10,9 +10,10 @@ Hosts that enable `services.scheduled-deployment`
 themselves once a week. Each host fetches the public repository and builds its
 own configuration, so no deployer or deploy credential is involved.
 [Test agents](#test-agents) take their Jenkins nodes offline during a
-deployment, and [builders](#builders) wait until no build runs. On
+deployment, [builders](#builders) wait until no build runs, and
+[Jenkins controllers](#jenkins-controllers) hold new builds in the queue. On
 [baseline reset](./baseline-reset.md) hosts, every deployment
-[reboots](#how-a-run-works). Jenkins controllers are not supported yet.
+[reboots](#how-a-run-works).
 
 ## How a run works
 
@@ -33,7 +34,9 @@ Each run:
 3. Builds the target on the host.
 4. On a [test agent](#test-agents), takes the agent's nodes offline and waits
    up to an hour until no test runs on them. On a [builder](#builders), waits
-   up to an hour until no build has run for a minute.
+   up to an hour until no build has run for a minute. On a
+   [Jenkins controller](#jenkins-controllers), holds new builds in the queue
+   and waits up to an hour until running builds finish.
 5. Skips if a unit has failed, then switches to the target. If the kernel,
    initrd or kernel modules change, or a switch inhibitor refuses the switch,
    it makes the target the boot default and reboots instead. Baseline-reset
@@ -75,7 +78,7 @@ dashboard.
 | `skipped` | `build_failed` | The build failed, also when inputs or caches are unavailable. The next run retries. If it keeps failing, build the host locally to see the error. |
 | `skipped` | `low_disk_space` | Less than 10 GiB is free in `/nix/store`. Free space on the host. |
 | `skipped` | `drain_failed` | Taking a test agent's nodes offline failed. The nodes are back online, and the next run retries. |
-| `skipped` | `drain_timeout` | Tests kept running on a test agent's nodes, or builds on a builder, for an hour. A test agent's nodes are back online, and the next run retries. |
+| `skipped` | `drain_timeout` | Tests kept running on a test agent's nodes, or builds on a builder or a controller, for an hour. A test agent's nodes are back online, a controller's queued builds start, and the next run retries. |
 | `skipped` | `failed_units` | A unit had failed before activation. Fix the unit, or clear it with `systemctl reset-failed`. |
 | `skipped` | `rejected_target` | The head of `main` failed on this host before. A new commit on `main` gets a new attempt; to retry the same commit, [clear the rejected target](#retrying-a-rejected-target). |
 | `held` | `operator_hold` | Someone [paused the host](#pausing-a-host). |
@@ -187,6 +190,27 @@ check. A switch does not interrupt running builds, but a reboot does, and the
 client has to retry the build. The checks also confirm that the Nix daemon
 trusts the remote build account.
 
+## Jenkins controllers
+
+On a [Jenkins controller](../modules/jenkins/), a run holds new builds in the
+queue, with the reason "Waiting for the scheduled deployment of this
+controller", and waits until running builds finish. Builds that a running
+build starts and waits for, such as HW tests, still run; Jenkins quiet-down
+mode would block them. The drain is the marker file
+`/var/lib/scheduled-deployment/jenkins-drain`, which is copied to
+`/var/lib/jenkins/scheduled-deployment-drain` whenever Jenkins starts, so it
+holds across the Jenkins restart or reboot of the deployment. After a `failed`
+result, builds stay queued until a later run ends its own drain. Once the
+controller is fixed, remove both files to release them. If the deployment
+reboots the controller, the builds that waited in the queue are lost, because
+`jenkins-config-cleanup` removes the saved queue at boot; start them again.
+
+The checks wait up to about four minutes for Jenkins to answer, then confirm
+that the public URL redirects to the login and that the builders trust the
+controller. A controller's window should start after the windows of its test
+agents: a reset of the controller would bring the nodes of a drained agent
+back online.
+
 ## Enrolling a host
 
 1. The host must expose metrics (`services.monitoring.metrics.enable`) and be
@@ -206,9 +230,10 @@ trusts the remote build account.
    };
    ```
 
-   `window` sets a different systemd `OnCalendar` window. On a test agent or a
-   builder, enabling the module is enough: their configuration adds the drain
-   and the checks, see [test agents](#test-agents) and [builders](#builders).
+   `window` sets a different systemd `OnCalendar` window. On a test agent, a
+   builder or a Jenkins controller, enabling the module is enough: their
+   configuration adds the drain and the checks, see [test agents](#test-agents),
+   [builders](#builders) and [Jenkins controllers](#jenkins-controllers).
    A test agent's controller must run a revision of `main` that gives test
    agents the `Agent/Disconnect` permission.
 3. After merging, deploy `main` to the host from a clean checkout, and
