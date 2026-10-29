@@ -35,7 +35,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           egress-policy: audit
       - name: Checkout
@@ -44,6 +44,6 @@ jobs:
           persist-credentials: false
       # Enables KVM on the runner by default (input 'enable_kvm').
       - name: Install nix
-        uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+        uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702 # v31.11.2
       - name: Run the scheduled-deployment VM test
         run: nix build -L .#tests.scheduled-deployment

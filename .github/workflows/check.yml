@@ -19,7 +19,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Harden the runner (Audit all outbound calls)
-              uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+              uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
               with:
                   egress-policy: audit
             - name: Checkout
@@ -27,6 +27,6 @@ jobs:
               with:
                   persist-credentials: false
             - name: Install nix
-              uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+              uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702 # v31.11.2
             - name: Nix flake check with no build
               run: nix flake check --option allow-import-from-derivation false --no-build
