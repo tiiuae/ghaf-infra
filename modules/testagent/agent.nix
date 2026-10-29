@@ -59,7 +59,12 @@ let
         User = "jenkins";
         EnvironmentFile = "-/var/lib/jenkins/jenkins.env";
         WorkingDirectory = "/var/lib/jenkins";
-        Restart = "no";
+        # The agent reconnects by itself, so that running tests survive a short
+        # outage, but exits if that fails for five minutes. Each start fetches
+        # the secret again, which changes when the controller is reset.
+        Restart = "always";
+        RestartSec = 10;
+        RestartPreventExitStatus = 6;
         SuccessExitStatus = [ 6 ];
         ExecStart = toString (
           pkgs.writeShellScript "jenkins-connect.sh" # sh
@@ -71,11 +76,22 @@ let
 
               mkdir -p "/var/lib/jenkins/agents/${device}"
 
+              # After a reboot or a lost connection, the controller can hold
+              # the old connection for minutes, and rejects a new agent
+              # process until it is gone. Without the Agent/Disconnect
+              # permission, the agent restarts until the controller drops it.
+              ssh -i ${config.sops.secrets.ssh_host_ed25519_key.path} ${config.networking.hostName}@''${CONTROLLER#*//} \
+                bash -s -- disconnect ${name} <${./drain.sh} || echo "Could not disconnect an earlier connection"
+
               # connects to controller with ssh and parses the secret from the jnlp file
               JENKINS_SECRET="$(
                 ssh -i ${config.sops.secrets.ssh_host_ed25519_key.path} ${config.networking.hostName}@''${CONTROLLER#*//} \
-                "curl -H 'X-Forwarded-User: ${config.networking.hostName}' -H 'X-Forwarded-Groups: testagents' http://localhost:8081/computer/${name}/jenkins-agent.jnlp | sed 's/.*<application-desc><argument>\([a-z0-9]*\).*/\1\n/'"
+                "curl -f -H 'X-Forwarded-User: ${config.networking.hostName}' -H 'X-Forwarded-Groups: testagents' http://localhost:8081/computer/${name}/jenkins-agent.jnlp | sed 's/.*<application-desc><argument>\([a-z0-9]*\).*/\1\n/'"
               )"
+              if [[ -z "$JENKINS_SECRET" ]]; then
+                echo "ERROR: Could not fetch the agent secret from $CONTROLLER"
+                exit 1
+              fi
 
               # opens a websocket connection to the jenkins controller from this agent
               ${pkgs.jdk}/bin/java \
@@ -84,7 +100,8 @@ let
                 -name "${name}" \
                 -secret "$JENKINS_SECRET" \
                 -workDir "/var/lib/jenkins/agents/${device}" \
-                -webSocket
+                -webSocket \
+                -noReconnectAfter 5m
             ''
         );
       };
@@ -127,10 +144,7 @@ in
           wantedBy = [ "multi-user.target" ];
           wants = [ "network-online.target" ];
           after = [ "network-online.target" ];
-          path = with pkgs; [
-            openssh
-            wget
-          ];
+          path = [ pkgs.wget ];
           serviceConfig = {
             Type = "oneshot";
             User = "jenkins";
@@ -145,14 +159,6 @@ in
                     echo "ERROR: Variable CONTROLLER not configured in /var/lib/jenkins/jenkins.env"
                     exit 6
                   fi
-
-                  # After a reboot, the controller can hold the old connections
-                  # for minutes. Without the Agent/Disconnect permission, the
-                  # agents retry until the controller drops them.
-                  ssh -i ${config.sops.secrets.ssh_host_ed25519_key.path} ${config.networking.hostName}@''${CONTROLLER#*//} \
-                    bash -s -- disconnect ${
-                      lib.escapeShellArgs (map (device: "${cfg.variant}-${device}") cfg.hardware)
-                    } <${./drain.sh} || echo "Could not disconnect earlier connections"
 
                   echo "Downloading agent.jar from $CONTROLLER"
                   wget "$CONTROLLER/jnlpJars/agent.jar" -O agent.jar
