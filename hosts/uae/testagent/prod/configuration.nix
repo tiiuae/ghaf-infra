@@ -35,6 +35,7 @@
     hardware = [
       "lenovo-x1"
       "darter-pro"
+      "x1-sec-boot"
     ];
   };
 
@@ -58,6 +59,10 @@
     # SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="FTFMF0X0", SYMLINK+="ttyDARTER", MODE="0666", GROUP="dialout"
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B7283C09CCC", SYMLINK+="ssdDARTER", MODE="0666", GROUP="dialout"
+
+    # Lenovo X1 Secure Boot
+    # SSD-drive
+    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="Z84FTI67T", SYMLINK+="ssdSecBoot", MODE="0666", GROUP="dialout"
 
     # Bluetooth Board
     SUBSYSTEM=="tty", ATTRS{idVendor}=="1366", ATTRS{idProduct}=="1061", ATTRS{serial}=="001050290059", ENV{ID_USB_INTERFACE_NUM}=="00", SYMLINK+="ttyBTboard", MODE="0666", GROUP="dialout"
@@ -99,6 +104,19 @@
           usbhub_serial = "0x1674021B";
           ext_drive_by-id = "/dev/ssdDARTER";
           threads = 16;
+        };
+        X1-Secure-Boot = {
+          inherit location;
+          device_id = "00-5e-3c-a5-01";
+          netvm_hostname = "ghaf-0667018922";
+          serial_port = "/dev/ttyX1SB";
+          device_ip_address = "172.20.16.57";
+          socket_ip_address = "NONE";
+          plug_type = "NONE";
+          switch_bot = "UAE-LenovoX1-SecBoot";
+          usbhub_serial = "872C5A43";
+          ext_drive_by-id = "/dev/ssdSecBoot";
+          threads = 20;
         };
       };
     };
