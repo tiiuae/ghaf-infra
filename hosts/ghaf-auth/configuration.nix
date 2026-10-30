@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
+# SPDX-FileCopyrightText: 2022-2026 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 {
   self,
@@ -7,9 +7,6 @@
   inputs,
   ...
 }:
-let
-  domain = "auth.vedenemo.dev";
-in
 {
   imports = [
     ./disk-config.nix
@@ -20,6 +17,7 @@ in
     common
     openssh
     nginx
+    auth-server
     team-devenv
   ]);
 
@@ -38,60 +36,24 @@ in
     logs.enable = true;
   };
 
-  services.dex = {
+  services.auth-server = {
     enable = true;
+    domain = "auth.vedenemo.dev";
     environmentFile = config.sops.secrets.dex_env.path;
 
+    github.settings.orgs = [
+      {
+        name = "tiiuae";
+        teams = [
+          "devenv-fi"
+          "phone"
+          "ci-dev-admins"
+        ];
+      }
+    ];
+
     settings = {
-      issuer = "https://${domain}";
-      enablePasswordDB = false;
-
-      storage = {
-        type = "sqlite3";
-        config.file = "/var/lib/dex/dex.db";
-      };
-
-      web.http = "127.0.0.1:5556";
-
-      frontend = {
-        issuer = "Vedenemo Auth";
-        theme = "dark";
-      };
-
-      oauth2 = {
-        skipApprovalScreen = false;
-        alwaysShowLoginScreen = false;
-      };
-
-      connectors = [
-        {
-          type = "github";
-          id = "github";
-          name = "GitHub";
-          config = {
-            useLoginAsID = true;
-            clientID = "$GITHUB_CLIENT_ID";
-            clientSecret = "$GITHUB_CLIENT_SECRET";
-            redirectURI = "https://${domain}/callback";
-            orgs = [
-              {
-                name = "tiiuae";
-                teams = [
-                  "devenv-fi"
-                  "phone"
-                  "ci-dev-admins"
-                ];
-              }
-            ];
-            teamNameField = "slug";
-          };
-        }
-      ];
-
-      expiry = {
-        idTokens = "24h";
-        refreshTokens.absoluteLifetime = "168h"; # 7 days
-      };
+      frontend.issuer = "Vedenemo Auth";
 
       staticClients =
         let
@@ -172,27 +134,9 @@ in
     };
   };
 
-  systemd.services.dex.serviceConfig = {
-    StateDirectory = "dex";
-    User = "dex";
-    Group = "dex";
-  };
-
-  users.users.dex = {
-    isSystemUser = true;
-    group = "dex";
-  };
-
-  users.groups.dex = { };
-
-  services.nginx.virtualHosts = {
-    "auth.vedenemo.dev" = {
-      enableACME = true;
-      forceSSL = true;
-      default = true;
-      locations."/" = {
-        proxyPass = "http://${config.services.dex.settings.web.http}";
-      };
-    };
+  services.nginx.virtualHosts.${config.services.auth-server.domain} = {
+    enableACME = true;
+    forceSSL = true;
+    default = true;
   };
 }

@@ -4,6 +4,7 @@
 {
   flake.nixosModules = {
     common = ./common;
+    auth-server = ./auth-server;
     azure = ./environment/azure.nix;
     hetzner-cloud = ./environment/hetzner-cloud.nix;
     hetzner-robot = ./environment/hetzner-robot.nix;

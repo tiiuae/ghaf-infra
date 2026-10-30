@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
+SPDX-FileCopyrightText: 2022-2026 TII (SSRC) and the Ghaf contributors
 SPDX-License-Identifier: CC-BY-SA-4.0
 -->
 
@@ -25,6 +25,80 @@ The Jenkins authentication setup relies on a few pieces working together:
 - The Jenkins controller itself, accessible only through the proxy.
 
 ![diagram](./auth.png)
+
+## Reusing the authentication server
+
+Import `ghaf-infra.nixosModules.auth-server` into a NixOS configuration and enable
+`services.auth-server`. The module needs no flake-specific arguments or other
+ghaf-infra modules. For example, with `ghaf-infra` passed as a module argument:
+
+```nix
+{ ghaf-infra, ... }:
+{
+  imports = [ ghaf-infra.nixosModules.auth-server ];
+
+  services.auth-server = {
+    enable = true;
+    domain = "auth.example.org";
+    environmentFile = "/run/secrets/dex-env";
+    # Defaults to 127.0.0.1:5556; IPv6 listeners use e.g. [::1]:5556.
+    listenAddress = "127.0.0.1:5556";
+    github.settings.orgs = [
+      {
+        name = "example-org";
+        teams = [ "developers" ];
+      }
+    ];
+    settings = {
+      frontend.issuer = "Example Auth";
+      staticClients = [
+        {
+          id = "example-app";
+          name = "Example App";
+          redirectURIs = [ "https://app.example.org/oauth2/callback" ];
+          secretEnv = "APP_CLIENT_SECRET";
+        }
+      ];
+    };
+  };
+
+  services.nginx.virtualHosts."auth.example.org" = {
+    enableACME = true;
+    forceSSL = true;
+  };
+  security.acme = {
+    acceptTerms = true;
+    defaults.email = "admin@example.org";
+  };
+  networking.firewall.allowedTCPPorts = [ 80 443 ];
+}
+```
+
+Provision the environment file separately with `GITHUB_CLIENT_ID`,
+`GITHUB_CLIENT_SECRET`, and the client credentials. GitHub login and the nginx
+reverse proxy are enabled by default. `github.settings` recursively overrides the
+GitHub connector configuration, including credentials, callback URL, organization
+and team restrictions. Without `orgs`, GitHub login allows any GitHub user.
+The module enables nginx and configures the proxy through the standard NixOS
+`services.nginx` options, following the pattern used by nixpkgs service modules.
+Extend `services.nginx.virtualHosts.<domain>` to configure TLS, certificates,
+aliases, or additional locations. ACME account and firewall settings are configured
+separately. Our production host imports the [shared nginx profile](../modules/nginx.nix)
+for its site defaults.
+
+The issuer defaults to `https://` plus `domain`; override `issuer` for a different
+public URL or path prefix. `settings` accepts Dex configuration and recursively
+overrides the module defaults, including branding, token lifetimes, login behavior,
+and storage. Storage defaults to SQLite at `/var/lib/dex/dex.db`, managed by systemd
+for the `dex` service account. The Dex package can be changed with `package`.
+
+Set `github.enable = false` to configure other login methods with
+`settings.connectors`, or `nginx.enable = false` to use an external reverse proxy.
+Lists supplied through `settings`, including `connectors`, replace their defaults.
+The nginx proxy follows the effective Dex HTTP listener. System hostname,
+monitoring, hardware, and secret management are supplied by the consumer.
+The production host's proxy and access policy are in
+[`hosts/ghaf-auth/configuration.nix`](../hosts/ghaf-auth/configuration.nix).
 
 ## Authorization
 
