@@ -4,6 +4,7 @@
 { config, lib, ... }:
 {
   sops.secrets.metrics_password.owner = "alloy";
+  sops.secrets.ssh_host_ed25519_key.owner = "jenkins";
 
   networking.useDHCP = true;
 

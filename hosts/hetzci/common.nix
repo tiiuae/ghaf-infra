@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   self,
+  config,
   pkgs,
   inputs,
   lib,
@@ -63,7 +64,22 @@
 
   services.ghaf-jenkins = {
     enable = true;
+    remoteStores = builtins.listToAttrs (
+      map (builder: {
+        name = builder.system;
+        value =
+          "${builder.protocol}://"
+          + lib.optionalString (builder.sshUser != null) "${builder.sshUser}@"
+          + builder.hostName
+          +
+            lib.optionalString (builder.sshKey != null)
+              "${if lib.hasInfix "?" builder.hostName then "&" else "?"}ssh-key=${builder.sshKey}";
+      }) config.nix.buildMachines
+    );
+    registry.enable = true;
     registry.url = lib.mkDefault "registry.vedenemo.dev";
+    provenanceTrustPolicyFile = ../../slsa/provenance-trust-policy.yaml;
+    releasePolicyFile = ../../slsa/release-policy.yaml;
     auth = {
       oidcIssuerUrl = lib.mkDefault "https://auth.vedenemo.dev";
       groups = {
@@ -84,32 +100,22 @@
         ];
       };
     };
-    nodes = {
-      devices = [
-        "agx-64-sec-boot"
-        "darter-pro"
-        "lenovo-x1"
-        "orin-agx"
-        "orin-agx-64"
-        "orin-nx"
-        "x1-sec-boot"
-        "darter-sec-boot"
-      ];
-      testagentHosts = lib.mkDefault [
-        "dev"
-        "prod"
-        "release"
-      ];
-      authorizedKeys = {
-        testagent-dev = machines.testagent-dev.publicKey;
-        testagent-dbg = machines.testagent-dbg.publicKey;
-        testagent2-prod = machines.testagent2-prod.publicKey;
-        testagent-prod = machines.testagent-prod.publicKey;
-        testagent-release = machines.testagent-release.publicKey;
-        uae-testagent-prod = machines.uae-testagent-prod.publicKey;
-        uae-testagent2-prod = machines.uae-testagent2-prod.publicKey;
-      };
-    };
+    agents =
+      lib.genAttrs
+        [
+          "testagent-dev"
+          "testagent-dbg"
+          "testagent2-prod"
+          "testagent-prod"
+          "testagent-release"
+          "uae-testagent-prod"
+          "uae-testagent2-prod"
+        ]
+        (name: {
+          inherit (self.nixosConfigurations.${name}.config.services.testagent) variant devices nodeNamePrefix;
+          publicKey = machines.${name}.publicKey;
+          enable = lib.mkDefault false;
+        });
   };
 
   # Tell the Nix evaluator to garbage collect more aggressively

@@ -8,6 +8,7 @@
 }:
 {
   imports = [
+    self.nixosModules.scheduled-deployment
     self.nixosModules.testagent
     ../finland.nix
     ./disk-config.nix
@@ -20,9 +21,9 @@
   services.testagent = {
     enable = true;
     variant = "dbg";
-    hardware = [ "orin-nx" ];
+    devices = [ "orin-nx" ];
   };
-  # The testagent module adds the drain and the post-deploy checks.
+  # The testagent module adds hooks when scheduled deployment is enabled.
   services.scheduled-deployment.enable = true;
 
   boot = {
@@ -48,11 +49,11 @@
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S6WXNS0W300153T", SYMLINK+="ssdORINNX1", MODE="0666", GROUP="dialout"
   '';
 
-  environment.etc."jenkins/test_config.json".text =
+  services.testagent.testConfig =
     let
       location = config.networking.hostName;
     in
-    builtins.toJSON {
+    {
       addresses = {
         test_server_ip = "172.18.16.12";
         relay_serial_port = "NONE";

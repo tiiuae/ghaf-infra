@@ -67,6 +67,7 @@ def create_pipeline(
   def ci_env = env.CI_ENV
   def immutable_tag = "${ci_env}-${stamp}-${target_commit}"
   def signing_possible = env.JENKINS_SIGNING_ENABLED == 'true'
+  def registry_publish_enabled = env.OCI_PUBLISH_ENABLED == 'true'
   def ghaf_checkout = pwd()
   def parallel_tests = options.get('parallel_tests', true)
   def sendResultsToZephyr = options.get('send_results_to_zephyr', false)
@@ -160,6 +161,9 @@ def create_pipeline(
     def build_shortname = target_config.shortname
     def is_sysupdate_target = target_config.sysupdate
     def normalized_test_runs = target_config.test_runs
+    if (!registry_publish_enabled && normalized_test_runs.any { it.initial_status != 'SKIPPED' }) {
+      error('Hardware tests require services.ghaf-jenkins.registry.enable')
+    }
     def output = "${artifacts_local_dir}/${build_target_name}"
 
     def manifest = [
@@ -263,10 +267,8 @@ def create_pipeline(
             def system = build_target_name.tokenize('.')[1]
             def remote_stores = readJSON file: '/etc/jenkins/remote-stores.json'
             def remote_store = remote_stores[system]
-            if (!remote_store) {
-              error("No remote store configured for '${system}'")
-            }
-            def quoted_remote_store = artifactSupport.shell_quote(remote_store)
+            def store_args = remote_store ?
+              "--store ${artifactSupport.shell_quote(remote_store)} --eval-store auto" : ''
 
             manifest.build.ts_begin = artifactSupport.run_cmd('date +%s')
 
@@ -274,8 +276,7 @@ def create_pipeline(
               script: """
                 nix build \
                   --fallback \
-                  --store ${quoted_remote_store} \
-                  --eval-store auto \
+                  ${store_args} \
                   --json \
                   --no-link \
                   ${target_config.get('secure_ab', false) ? secure_ab_override : ''} \
@@ -286,27 +287,29 @@ def create_pipeline(
 
             manifest.build.ts_finished = artifactSupport.run_cmd('date +%s')
 
-            def remote_store_path = build_result[0]?.outputs?.out
-            if (!remote_store_path) {
+            def store_path = build_result[0]?.outputs?.out
+            if (!store_path) {
               error("Unable to read output path from nix build JSON output")
             }
 
             // The SSH builder is trusted, but its local build outputs are not binary-cache signed
             // so we need --no-check-sigs
-            sh """
-              nix copy \
-                --from ${quoted_remote_store} \
-                --no-check-sigs \
-                ${artifactSupport.shell_quote(remote_store_path)}
-            """
+            if (remote_store) {
+              sh """
+                nix copy \
+                  --from ${artifactSupport.shell_quote(remote_store)} \
+                  --no-check-sigs \
+                  ${artifactSupport.shell_quote(store_path)}
+              """
+            }
 
             sh """
               nix-store --add-root ${output}/unsigned-output \
-                --realise ${artifactSupport.shell_quote(remote_store_path)}
+                --realise ${artifactSupport.shell_quote(store_path)}
             """
 
             manifest.build.remote_store = remote_store
-            manifest.build.remote_output = remote_store_path
+            manifest.build.remote_output = remote_store ? store_path : null
           }
 
           run_optional_stage(
@@ -597,10 +600,12 @@ def create_pipeline(
           write_manifest()
 
           artifactSupport.append_to_build_description(artifacts_href, true)
-          artifactSupport.append_to_build_description("OCI Tag: ${pipelineModel.html_escape(immutable_tag)}", true)
+          if (registry_publish_enabled) {
+            artifactSupport.append_to_build_description("OCI Tag: ${pipelineModel.html_escape(immutable_tag)}", true)
+          }
         }
         run_optional_stage(
-          !target_config.no_image,
+          registry_publish_enabled && !target_config.no_image,
           "Publish OCI ${build_shortname}"
         ) {
           withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
@@ -725,7 +730,7 @@ def create_pipeline(
                 }
               }
               write_test_results(finalTestEntries)
-              if (ci_env != "vm" && tests_completed) {
+              if (registry_publish_enabled && ci_env != "vm" && tests_completed) {
                 if (sh(
                   script: "test -d '${output}/test-results'",
                   returnStatus: true
@@ -739,7 +744,7 @@ def create_pipeline(
                       --subject-reference '${oci_result.primary.reference}'
                   """
                 }
-              } else if (ci_env != "vm") {
+              } else if (registry_publish_enabled && ci_env != "vm") {
                 echo("Skipping OCI test result publish for failed ${build_shortname} tests")
               }
             }
@@ -747,7 +752,7 @@ def create_pipeline(
         }
       }
       run_optional_stage(
-        ci_env == "release" && !target_config.no_image && target_config.provenance_requested,
+        registry_publish_enabled && ci_env == "release" && !target_config.no_image && target_config.provenance_requested,
         "Release policy ${build_shortname}"
       ) {
         artifactSupport.with_controller_workspace(ghaf_checkout) {

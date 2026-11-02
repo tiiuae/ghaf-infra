@@ -9,6 +9,29 @@
 }:
 let
   cfg = config.services.ghaf-jenkins;
+  registeredAgents = lib.filterAttrs (_: agent: agent.enable) cfg.agents;
+  # Interchangeable agents may share a logical Jenkins node. Collapse identical
+  # definitions while the assertion below still rejects conflicting definitions.
+  registeredNodes = lib.unique (
+    lib.concatLists (
+      lib.mapAttrsToList (
+        _: agent:
+        map (device: {
+          permanent = {
+            name = "${agent.nodeNamePrefix}-${device}";
+            labelString = "${device} ${agent.variant}-${device}";
+            launcher = "inbound";
+            mode = "EXCLUSIVE";
+            remoteFS = "/var/lib/jenkins/agents/${device}";
+            retentionStrategy = "always";
+          };
+        }) agent.devices
+      ) registeredAgents
+    )
+  );
+  agentKeys = lib.mapAttrs' (
+    _: agent: lib.nameValuePair agent.hostName agent.publicKey
+  ) registeredAgents;
   secureAbPublicTrust =
     pkgs.runCommand "secure-ab-public-trust" { nativeBuildInputs = [ pkgs.openssl ]; }
       ''
@@ -101,35 +124,23 @@ let
       PKCS11_TLS_IDENTITY = cfg.signing.proxy.identity;
     };
 
-  remoteStoresFromBuildMachines = builtins.listToAttrs (
-    map (
-      builder:
-      let
-        sshKey = builder.sshKey or null;
-        sshUser = builder.sshUser or null;
-      in
-      {
-        name = builder.system;
-        value =
-          "${builder.protocol}://"
-          + (if sshUser == null then "" else "${sshUser}@")
-          + builder.hostName
-          + (
-            if sshKey == null then
-              ""
-            else
-              "${if lib.hasInfix "?" builder.hostName then "&" else "?"}ssh-key=${sshKey}"
-          );
+  artifactsHandler = ''
+    handle_path /artifacts* {
+      root * /var/lib/jenkins/artifacts
+      file_server {
+        browse
       }
-    ) config.nix.buildMachines
-  );
+    }
+  '';
 
-  # copies only pipelines declared in cfg.pipelines
+  # Copy the pipeline scripts declared in jobs.
   filteredPipelines = pkgs.runCommand "pipelines" { } ''
     mkdir -p $out
-    ${pkgs.lib.concatMapStringsSep "\n" (name: ''
-      cp ${./pipelines}/${name}.groovy "$out/"
-    '') cfg.pipelines}
+    ${lib.concatStringsSep "\n" (
+      lib.mapAttrsToList (name: job: ''
+        cp "${job.scriptFile}" "$out/${name}.groovy"
+      '') cfg.jobs
+    )}
   '';
 
   # Jenkins shared libraries expect a Git repository. Turn the repository-local
@@ -150,61 +161,33 @@ let
       commit -m "Provision Jenkins shared library"
   '';
 
-  # Scheduled deployment drains the controller with a marker that a script in
-  # ./casc/common.yaml reads. The marker is kept in the deployment state, which
-  # survives a baseline reset, and copied for Jenkins when Jenkins starts.
-  drainMarker = "/var/lib/scheduled-deployment/jenkins-drain";
-  jenkinsDrainMarker = "${config.services.jenkins.home}/scheduled-deployment-drain";
-  jenkinsApi = "${lib.getExe pkgs.curl} -sSf --globoff -H 'X-Forwarded-User: scheduled-deployment' -H 'X-Forwarded-Groups: scheduled-deployment' http://localhost:8081";
-  drain = pkgs.writeShellScript "jenkins-drain" ''
-    set -euo pipefail
-    case $1 in
-    start) ${pkgs.coreutils}/bin/touch ${drainMarker} ${jenkinsDrainMarker} ;;
-    idle)
-      # Every running build, and pipeline step, occupies an executor.
-      executors=$(${jenkinsApi}'/computer/api/json?tree=computer[executors[idle],oneOffExecutors[idle]]')
-      [[ $executors != *'"idle":false'* ]]
-      ;;
-    end) ${pkgs.coreutils}/bin/rm -f ${jenkinsDrainMarker} ${drainMarker} ;;
-    restore)
-      if [[ -e ${drainMarker} ]]; then
-        ${pkgs.coreutils}/bin/touch ${jenkinsDrainMarker}
-      else
-        ${pkgs.coreutils}/bin/rm -f ${jenkinsDrainMarker}
-      fi
-      ;;
-    esac
-  '';
-
-  cascConfig = pkgs.writeText "config.yaml" (
-    # YAML is a superset of JSON, ie. json is valid yaml
-    builtins.toJSON {
-      unclassified.location.url = "${cfg.url}";
-      jenkins.numExecutors = cfg.numExecutors;
-      jenkins.nodes = # all permutations of device and host lists
-        lib.mapCartesianProduct
-          (
-            { host, device }:
-            {
-              permanent = {
-                name = "${host}-${device}";
-                labelString = device;
-                launcher = "inbound";
-                mode = "EXCLUSIVE";
-                remoteFS = "/var/lib/jenkins/agents/${device}";
-                retentionStrategy = "always";
-              };
-            }
-          )
+  cascConfig = {
+    unclassified.location.url = "${cfg.url}";
+    jenkins.numExecutors = cfg.numExecutors;
+    jenkins.nodes = # all permutations of device and host lists
+      lib.mapCartesianProduct
+        (
+          { host, device }:
           {
-            host = cfg.nodes.testagentHosts;
-            device = cfg.nodes.devices;
-          };
-    }
-  );
+            permanent = {
+              name = "${host}-${device}";
+              labelString = device;
+              launcher = "inbound";
+              mode = "EXCLUSIVE";
+              remoteFS = "/var/lib/jenkins/agents/${device}";
+              retentionStrategy = "always";
+            };
+          }
+        )
+        {
+          host = cfg.nodes.testagentHosts;
+          device = cfg.nodes.devices;
+        }
+      ++ registeredNodes;
+  };
 in
 {
-  imports = [ ../scheduled-deployment ];
+  imports = [ ./scheduled-deployment.nix ];
 
   options.services.ghaf-jenkins = {
     enable = lib.mkEnableOption "the Ghaf Jenkins controller";
@@ -240,7 +223,19 @@ in
       type = lib.types.str;
       description = "Public URL of the jenkins instance";
     };
+    remoteStores = lib.mkOption {
+      type = lib.types.attrsOf lib.types.str;
+      default = { };
+      example = {
+        x86_64-linux = "ssh-ng://remote-build@builder.example.org?ssh-key=/run/secrets/builder-key";
+      };
+      description = ''
+        Nix build store URIs keyed by target system. Targets without an entry
+        use normal nix build behavior, including any nix.buildMachines.
+      '';
+    };
     registry = {
+      enable = lib.mkEnableOption "OCI registry publishing";
       url = lib.mkOption {
         type = lib.types.str;
         description = "OCI registry exposed to Jenkins jobs";
@@ -249,6 +244,11 @@ in
         type = lib.types.str;
         description = "Path to the OCI registry password file";
       };
+    };
+    artifacts.requireAuth = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Require OIDC authentication for artifact downloads and directory listings. Requires auth.enable.";
     };
     auth = {
       enable = lib.mkEnableOption "OIDC authentication and the HTTPS reverse proxy";
@@ -288,10 +288,65 @@ in
       description = "Extra configuration to be added into the jenkins casc";
       default = { };
     };
-    pipelines = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      description = "Jenkins pipelines to load from the pipelines directory";
-      default = [ ];
+    jobs = lib.mkOption {
+      default = { };
+      description = "Pipeline jobs keyed by flat Jenkins job name.";
+      type = lib.types.attrsOf (
+        lib.types.submodule (
+          { name, ... }: {
+            options = {
+              scriptFile = lib.mkOption {
+                type = lib.types.path;
+                default = ./pipelines + "/${name}.groovy";
+                description = "Pipeline script; defaults to the bundled pipeline with this job's name.";
+              };
+              description = lib.mkOption {
+                type = lib.types.str;
+                default = "";
+              };
+              reloadOnStartup = lib.mkOption {
+                type = lib.types.bool;
+                default = true;
+                description = "Invoke this job with RELOAD_ONLY=true after Jenkins starts. The script must handle this parameter without building.";
+              };
+            };
+          }
+        )
+      );
+    };
+    agents = lib.mkOption {
+      default = { };
+      description = "Agent registrations, each with its own devices and SSH identity.";
+      type = lib.types.attrsOf (
+        lib.types.submodule (
+          { name, config, ... }: {
+            options = {
+              enable = lib.mkOption {
+                type = lib.types.bool;
+                default = true;
+              };
+              hostName = lib.mkOption {
+                type = lib.types.strMatching "[a-z_][a-z0-9_-]*";
+                default = name;
+              };
+              publicKey = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
+              };
+              variant = lib.mkOption {
+                type = lib.types.strMatching "[A-Za-z0-9_.-]+";
+              };
+              devices = lib.mkOption {
+                type = lib.types.listOf (lib.types.strMatching "[A-Za-z0-9_.-]+");
+              };
+              nodeNamePrefix = lib.mkOption {
+                type = lib.types.strMatching "[A-Za-z0-9_.-]+";
+                default = config.variant;
+                description = "Match services.testagent.nodeNamePrefix. Use a unique prefix for agents sharing a variant and device label.";
+              };
+            };
+          }
+        )
+      );
     };
     nodes = {
       devices = lib.mkOption {
@@ -317,13 +372,11 @@ in
     };
     provenanceTrustPolicyFile = lib.mkOption {
       type = lib.types.path;
-      default = "${self.outPath}/slsa/provenance-trust-policy.yaml";
-      description = "Policy file used to validate build provenance";
+      description = "Consumer-supplied policy file used to validate build provenance";
     };
     releasePolicyFile = lib.mkOption {
       type = lib.types.path;
-      default = "${self.outPath}/slsa/release-policy.yaml";
-      description = "Policy file used to validate release attestations";
+      description = "Consumer-supplied policy file used to validate release attestations";
     };
     integrations = {
       github = {
@@ -448,8 +501,39 @@ in
       };
     };
   };
+
   config = lib.mkIf cfg.enable {
-    assertions = lib.optionals cfg.signing.enable [
+    assertions = [
+      {
+        assertion = lib.all (agent: agent.publicKey != null && agent.publicKey != "") (
+          lib.attrValues registeredAgents
+        );
+        message = "Enabled services.ghaf-jenkins.agents require a publicKey.";
+      }
+      {
+        assertion =
+          lib.length (lib.attrNames registeredAgents)
+          == lib.length (lib.unique (map (a: a.hostName) (lib.attrValues registeredAgents)));
+        message = "Jenkins agent SSH hostName values must be unique.";
+      }
+      {
+        assertion =
+          let
+            names =
+              map (node: node.permanent.name) registeredNodes
+              ++ lib.concatMap (
+                host: map (device: "${host}-${device}") cfg.nodes.devices
+              ) cfg.nodes.testagentHosts;
+          in
+          lib.length names == lib.length (lib.unique names);
+        message = "Jenkins node names must be unique; set matching unique nodeNamePrefix values on overlapping agents and their registrations.";
+      }
+      {
+        assertion = !cfg.artifacts.requireAuth || cfg.auth.enable;
+        message = "services.ghaf-jenkins.artifacts.requireAuth requires auth.enable";
+      }
+    ]
+    ++ lib.optionals cfg.signing.enable [
       {
         assertion = cfg.signing.proxy.enable || cfg.signing.modulePath != null;
         message = "services.ghaf-jenkins.signing.modulePath is required without the proxy";
@@ -478,7 +562,7 @@ in
       }
     ];
     environment.variables = lib.mkIf cfg.signing.enable signingEnvironment;
-    environment.systemPackages = lib.optionals cfg.signing.enable signingPackages;
+    environment.systemPackages = [ pkgs.curl ] ++ lib.optionals cfg.signing.enable signingPackages;
     services.jenkins = {
       enable = true;
       listenAddress = "localhost";
@@ -517,14 +601,19 @@ in
         ]
         ++ lib.optionals cfg.signing.enable signingPackages;
 
-      environment = lib.optionalAttrs cfg.signing.enable signingEnvironment // {
-        CI_ENV = cfg.envType;
-        OCI_REGISTRY = cfg.registry.url;
-        JENKINS_SIGNING_ENABLED = lib.boolToString cfg.signing.enable;
-        JIRA_TOKEN_AVAILABLE = lib.boolToString cfg.integrations.jira.enable;
-        SOURCE_VSA_ISSUER_SHA = cfg.sourceVsa.trustedWorkflowSha;
-        SOURCE_VSA_SOURCE_REF = cfg.sourceVsa.trustedBranch;
-      };
+      environment =
+        lib.optionalAttrs cfg.signing.enable signingEnvironment
+        // {
+          CI_ENV = cfg.envType;
+          OCI_PUBLISH_ENABLED = lib.boolToString cfg.registry.enable;
+          JENKINS_SIGNING_ENABLED = lib.boolToString cfg.signing.enable;
+          JIRA_TOKEN_AVAILABLE = lib.boolToString cfg.integrations.jira.enable;
+          SOURCE_VSA_ISSUER_SHA = cfg.sourceVsa.trustedWorkflowSha;
+          SOURCE_VSA_SOURCE_REF = cfg.sourceVsa.trustedBranch;
+        }
+        // lib.optionalAttrs cfg.registry.enable {
+          OCI_REGISTRY = cfg.registry.url;
+        };
 
       extraJavaOptions = [
         # Useful when the 'sh' step fails:
@@ -605,12 +694,7 @@ in
             redir * /
           }
 
-          handle_path /artifacts* {
-            root * /var/lib/jenkins/artifacts
-            file_server {
-              browse
-            }
-          }
+          ${lib.optionalString (!cfg.artifacts.requireAuth) artifactsHandler}
 
           @unauthenticated {
             path /github-webhook /github-webhook/*
@@ -630,23 +714,26 @@ in
           }
 
           handle {
-            forward_auth localhost:4180 {
-              uri /oauth2/auth
-              header_up X-Real-IP {remote_host}
+            route {
+              forward_auth localhost:4180 {
+                uri /oauth2/auth
+                header_up X-Real-IP {remote_host}
 
-              copy_headers {
-                X-Auth-Request-User>X-Forwarded-User
-                X-Auth-Request-Groups>X-Forwarded-Groups
-                X-Auth-Request-Email>X-Forwarded-Mail
-                X-Auth-Request-Preferred-Username>X-Forwarded-DisplayName
-              }
+                copy_headers {
+                  X-Auth-Request-User>X-Forwarded-User
+                  X-Auth-Request-Groups>X-Forwarded-Groups
+                  X-Auth-Request-Email>X-Forwarded-Mail
+                  X-Auth-Request-Preferred-Username>X-Forwarded-DisplayName
+                }
 
-              @error status 401
-              handle_response @error {
-                redir * /oauth2/sign_in?rd={scheme}://{host}{uri}
+                @error status 401
+                handle_response @error {
+                  redir * /oauth2/sign_in?rd={scheme}://{host}{uri}
+                }
               }
+              ${lib.optionalString cfg.artifacts.requireAuth artifactsHandler}
+              reverse_proxy localhost:8081
             }
-            reverse_proxy localhost:8081
           }
         }
       '';
@@ -668,7 +755,7 @@ in
       (lib.mapAttrs (_: publicKey: {
         isNormalUser = true;
         openssh.authorizedKeys.keys = [ publicKey ];
-      }) cfg.nodes.authorizedKeys)
+      }) (cfg.nodes.authorizedKeys // agentKeys))
       (lib.mkIf config.services.caddy.enable {
         jenkins.homeMode = "710";
       })
@@ -680,13 +767,14 @@ in
     environment.etc = lib.mkMerge [
       {
         "jenkins/nix-fast-build.sh".source = "${self.outPath}/scripts/nix-fast-build.sh";
-        "jenkins/remote-stores.json".text = builtins.toJSON remoteStoresFromBuildMachines;
+        "jenkins/remote-stores.json".text = builtins.toJSON cfg.remoteStores;
+        "jenkins/jobs.json".text = builtins.toJSON cfg.jobs;
         "jenkins/provenance-trust-policy.yaml".source = cfg.provenanceTrustPolicyFile;
         "jenkins/release-policy.yaml".source = cfg.releasePolicyFile;
         "jenkins/pipelines".source = filteredPipelines;
         "jenkins/pipeline-library".source = pipelineSharedLibrary;
         "jenkins/casc/common.yaml".source = ./casc/common.yaml;
-        "jenkins/casc/config.yaml".source = cascConfig;
+        "jenkins/casc/config.yaml".text = builtins.toJSON cascConfig;
         "jenkins/casc/extraConfig.yaml".source = pkgs.writeText "extraConfig.yaml" (
           builtins.toJSON cfg.extraCasc
         );
@@ -709,11 +797,11 @@ in
           inherit (cfg.archive.s3Credentials) accessKeyFile secretKeyFile;
         };
       })
-      {
+      (lib.mkIf cfg.registry.enable {
         "jenkins/casc/registryPublish.yaml".source = pkgs.replaceVars ./casc/registryPublish.yaml {
           secretFile = cfg.registry.passwordFile;
         };
-      }
+      })
       (lib.mkIf cfg.integrations.jira.enable {
         "jenkins/casc/jiraToken.yaml".source = pkgs.replaceVars ./casc/jiraToken.yaml {
           secretFile = cfg.integrations.jira.tokenFile;
@@ -732,16 +820,6 @@ in
                     permissions = [
                       "Agent/Connect"
                       "Agent/Disconnect"
-                    ];
-                  };
-                }
-                {
-                  group = {
-                    name = "scheduled-deployment";
-                    # Lets the scheduled deployment drain see running builds.
-                    permissions = [
-                      "Overall/Read"
-                      "Job/Read"
                     ];
                   };
                 }
@@ -779,28 +857,7 @@ in
       '';
       serviceConfig = {
         Restart = "on-failure";
-        ExecStartPre = [ "+${drain} restore" ];
       };
-    };
-
-    services.baseline-reset.persistentFiles = lib.mkIf config.services.scheduled-deployment.enable [
-      "scheduled-deployment/jenkins-drain"
-    ];
-    services.scheduled-deployment = {
-      inherit drain;
-      # Jenkins may still be starting. The public URL asks for a login, and
-      # the builders that pipelines use trust this controller.
-      postDeployChecks = ''
-        ${jenkinsApi}/api/json --retry 25 --retry-delay 10 --retry-all-errors -o /dev/null
-      ''
-      + lib.optionalString cfg.auth.enable ''
-        redirect=$(${lib.getExe pkgs.curl} -sS -o /dev/null -w '%{redirect_url}' https://${cfg.auth.domain}/)
-        [[ $redirect == https://${cfg.auth.domain}/oauth2/sign_in* ]] || { echo "Unexpected redirect: $redirect"; exit 1; }
-      ''
-      + lib.concatMapStrings (store: ''
-        PATH=${pkgs.openssh}/bin:$PATH nix store info --json --store ${lib.escapeShellArg store} |
-          ${lib.getExe pkgs.jq} -e .trusted >/dev/null
-      '') (lib.attrValues remoteStoresFromBuildMachines);
     };
 
     # Remove all config files from jenkins home before loading the casc.

@@ -50,20 +50,20 @@
       };
     };
     registry.passwordFile = config.sops.secrets.oci_registry_password.path;
-    nodes.testagentHosts = [ ];
-    pipelines = [
-      "ghaf-hw-test-manual"
-      "ghaf-hw-test"
-      "ghaf-main"
-      "ghaf-manual"
-      "ghaf-nightly-perftest"
-      "ghaf-nightly-poweroff"
-      "ghaf-nightly"
-      "ghaf-pre-merge-manual"
-      "ghaf-pre-merge"
-      "ghaf-release-candidate"
-      "ghaf-release-publish"
-    ];
+    agents = lib.mkForce { };
+    jobs = {
+      ghaf-hw-test-manual = { };
+      ghaf-hw-test = { };
+      ghaf-main = { };
+      ghaf-manual = { };
+      ghaf-nightly-perftest = { };
+      ghaf-nightly-poweroff = { };
+      ghaf-nightly = { };
+      ghaf-pre-merge-manual = { };
+      ghaf-pre-merge = { };
+      ghaf-release-candidate = { };
+      ghaf-release-publish = { };
+    };
     extraCasc = {
       jenkins.authorizationStrategy = "unsecured";
     };

@@ -82,12 +82,12 @@ in
       };
     };
     registry.passwordFile = config.sops.secrets.oci_registry_password.path;
-    nodes.testagentHosts = [ "release" ];
-    pipelines = [
-      "ghaf-hw-test"
-      "ghaf-release-candidate"
-      "ghaf-release-publish"
-    ];
+    agents.testagent-release.enable = true;
+    jobs = {
+      ghaf-hw-test = { };
+      ghaf-release-candidate = { };
+      ghaf-release-publish = { };
+    };
   };
 
   services.baseline-reset = {

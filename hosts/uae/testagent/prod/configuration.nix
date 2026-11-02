@@ -32,7 +32,7 @@
   services.testagent = {
     enable = true;
     variant = "prod";
-    hardware = [
+    devices = [
       "lenovo-x1"
       "darter-pro"
     ];
@@ -65,11 +65,11 @@
 
   # Details of the hardware devices connected to this host
   # placeholder configs from finland. configs in progress based on new uae targets
-  environment.etc."jenkins/test_config.json".text =
+  services.testagent.testConfig =
     let
       location = config.networking.hostName;
     in
-    builtins.toJSON {
+    {
       addresses = {
         relay_serial_port = "NONE";
         bluetooth_serial_port = "/dev/ttyBTboard";

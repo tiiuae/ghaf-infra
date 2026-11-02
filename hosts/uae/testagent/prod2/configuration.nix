@@ -44,9 +44,9 @@
   networking.hostName = "uae-testagent2-prod";
   services.testagent = {
     enable = true;
-    relayBoard.enable = true;
+    tooling.relayboard = true;
     variant = "prod";
-    hardware = [
+    devices = [
       "orin-agx"
       "orin-nx"
       "orin-agx-64"
@@ -75,11 +75,11 @@
   '';
 
   # Details of the hardware devices connected to this host
-  environment.etc."jenkins/test_config.json".text =
+  services.testagent.testConfig =
     let
       location = config.networking.hostName;
     in
-    builtins.toJSON {
+    {
       addresses = {
         relay_serial_port = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_B0013I2U-if00-port0";
         OrinAGX1 = {

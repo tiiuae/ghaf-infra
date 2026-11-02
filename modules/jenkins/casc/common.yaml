@@ -108,6 +108,8 @@ groovy:
       import org.jenkinsci.plugins.workflow.job.WorkflowJob
       import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition
       import groovy.io.FileType
+      import groovy.json.JsonSlurper
+      def jobSettings = new JsonSlurper().parse(new File("/etc/jenkins/jobs.json"))
       println("Loading pipelines")
       def pipelines = new File("/etc/jenkins/pipelines/")
       pipelines.eachFile(FileType.FILES) { file ->
@@ -121,44 +123,22 @@ groovy:
           job = Jenkins.getInstance().createProject(WorkflowJob, pipelineName)
         }
         job.definition = new CpsFlowDefinition(file.text, true)
+        job.description = jobSettings[pipelineName].description
         job.save()
       }
-  # Drain the controller for scheduled deployment: while the marker exists,
-  # new builds wait in the queue. Running builds finish, including the builds
-  # they start and wait for, such as HW tests, which quiet-down mode would
-  # block. This runs before Jenkins loads the queue and starts executors.
-  - script: |
-      import hudson.ExtensionList
-      import hudson.model.Cause
-      import hudson.model.Job
-      import hudson.model.Queue
-      import hudson.model.queue.CauseOfBlockage
-      import hudson.model.queue.QueueTaskDispatcher
-      import jenkins.model.Jenkins
-      def marker = new File(Jenkins.get().rootDir, "scheduled-deployment-drain")
-      ExtensionList.lookup(QueueTaskDispatcher).add(new QueueTaskDispatcher() {
-        @Override
-        CauseOfBlockage canRun(Queue.Item item) {
-          // Pipeline steps of running builds are not jobs.
-          if (!marker.exists() || !(item.task instanceof Job) ||
-              item.causes.any { it instanceof Cause.UpstreamCause }) {
-            return null
-          }
-          return new CauseOfBlockage() {
-            @Override
-            String getShortDescription() {
-              "Waiting for the scheduled deployment of this controller"
-            }
-          }
-        }
-      })
-      println("Registered the scheduled deployment drain")
-  # Trigger all pipelines on jenkins service (re)start:
+  # Reload only explicitly selected managed jobs on Jenkins startup:
   - script: |
       import jenkins.model.*
       import hudson.model.*
       import hudson.security.ACL
       import hudson.security.ACLContext
+      import groovy.json.JsonSlurper
+      def jobSettings = new JsonSlurper().parse(new File("/etc/jenkins/jobs.json"))
+      def reloadNames = jobSettings.findAll { name, settings -> settings.reloadOnStartup }.keySet()
+      if (reloadNames.isEmpty()) {
+        println("No jobs selected for startup reload")
+        return
+      }
       def reloadDelaySeconds = 10
       def params = new ParametersAction([ new StringParameterValue("RELOAD_ONLY", "true")])
       println("Scheduling pipeline reload in ${reloadDelaySeconds}s")
@@ -168,8 +148,8 @@ groovy:
         ACLContext aclContext = ACL.as2(ACL.SYSTEM2)
         try {
           sleep(reloadDelaySeconds * 1000L)
-          def jobs = Jenkins.getInstance().getAllItems(Job)
-          println("Found ${jobs.size()} jobs for startup reload")
+          def jobs = reloadNames.collect { Jenkins.getInstance().getItemByFullName(it, Job) }.findAll { it != null }
+          println("Found ${jobs.size()} selected jobs for startup reload")
           for (job in jobs) {
             println("Triggering job: " + job.getName())
             def queueItem = job.scheduleBuild2(0, params)

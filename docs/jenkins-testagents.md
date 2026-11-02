@@ -8,12 +8,21 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 Each machine is running one jenkins slave service for each test device, effectively acting as a lock.
 
 Each testagent sets its variant (`dbg`, `dev`, `prod` or `release`) in `services.testagent.variant`
-and lists its devices in `services.testagent.hardware`.
-The controller defines a Jenkins node named `<variant>-<device>` for each combination of
-`services.ghaf-jenkins.nodes.testagentHosts` and `services.ghaf-jenkins.nodes.devices`
-(see [`hosts/hetzci/common.nix`](../hosts/hetzci/common.nix)).
-One controller can use multiple agents as long as their `<variant>-<device>` names do not overlap.
-For example, `testagent-prod` and `testagent2-prod` are both `prod` agents with different devices.
+and lists its devices in `services.testagent.devices`.
+Controller registrations in `services.ghaf-jenkins.agents` read each agent's
+variant, devices and node prefix from its host configuration
+(see [`hosts/hetzci/common.nix`](../hosts/hetzci/common.nix)). Existing node names
+remain `<variant>-<device>`. Interchangeable physical agents can share these
+nodes when connected to different controllers or swapped between controllers.
+To run overlapping device labels simultaneously on one controller, configure
+distinct `nodeNamePrefix` values in the agent and its controller registration.
+
+## Standalone consumers
+
+Use the [consumer interface](./jenkins-consumers.md) for free-form test configuration,
+SOPS secrets, optional hardware tools, and controller registrations.
+Agents still use mutable `connect` / `disconnect` commands and can move between
+controllers without rebuilding their NixOS configuration.
 
 ## Agent tooling
 
@@ -60,12 +69,11 @@ five minutes restarts and fetches the secret again.
 To add a new test device to a testagent that is already running:
 
 1. In the testagent's `configuration.nix` (under `hosts/testagent/` or
-   `hosts/uae/testagent/`), add the device to `services.testagent.hardware`,
-   its udev rules, and its entry in `/etc/jenkins/test_config.json`. Each
+   `hosts/uae/testagent/`), add the device to `services.testagent.devices`,
+   its udev rules, and its entry in `services.testagent.testConfig`. Each
    device gets its own Jenkins agent service.
-2. If the device label is new, register it on the controller side and deploy
-   the controllers that use it:
-   - add it to `services.ghaf-jenkins.nodes.devices` in `hosts/hetzci/common.nix`
+2. Controller registrations automatically read the agent's device list. If
+   the device label is new, also:
    - add it to `device_catalog()` in
      `modules/jenkins/pipeline-library/vars/pipelineModel.groovy`; the entry's
      `name` must match the device's key in `test_config.json`
@@ -74,7 +82,8 @@ To add a new test device to a testagent that is already running:
 
    Otherwise the agent connects, but hardware tests fail with
    `Unknown DEVICE_TAG`.
-3. Deploy the updated configuration with `deploy .#<testagent-name>`.
+3. Deploy the controllers that use the agent and the updated agent configuration
+   with `deploy .#<testagent-name>`.
 4. Connect the agent to the controller (see above).
 
 ## Adding a new test agent

@@ -20,6 +20,7 @@ let
 in
 {
   imports = [
+    self.nixosModules.scheduled-deployment
     ./disk-config.nix
     ../common.nix
     ../cloud.nix
@@ -46,18 +47,21 @@ in
       domain = "ci-dbg.vedenemo.dev";
     };
     registry.passwordFile = config.sops.secrets.oci_registry_password.path;
-    nodes.testagentHosts = [
-      "dev"
-      "prod"
-      "release"
-      "dbg"
-    ];
-    pipelines = [
-      "ghaf-hw-test-manual"
-      "ghaf-hw-test"
-      "ghaf-manual"
-      "ghaf-release-candidate"
-    ];
+    agents = {
+      testagent-dev.enable = true;
+      testagent-dbg.enable = true;
+      testagent2-prod.enable = true;
+      testagent-prod.enable = true;
+      testagent-release.enable = true;
+      uae-testagent-prod.enable = true;
+      uae-testagent2-prod.enable = true;
+    };
+    jobs = {
+      ghaf-hw-test-manual = { };
+      ghaf-hw-test = { };
+      ghaf-manual = { };
+      ghaf-release-candidate = { };
+    };
   };
 
   sops = {

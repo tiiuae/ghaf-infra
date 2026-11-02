@@ -65,12 +65,20 @@
       tokenFile = config.sops.secrets.jenkins_github_commit_status_token.path;
       webhookSecretFile = config.sops.secrets.jenkins_github_webhook_secret.path;
     };
-    pipelines = [
-      "ghaf-hw-test-manual"
-      "ghaf-hw-test"
-      "ghaf-main"
-      "ghaf-manual"
-      "ghaf-nightly"
-    ];
+    agents = {
+      testagent-dev.enable = true;
+      testagent2-prod.enable = true;
+      testagent-prod.enable = true;
+      testagent-release.enable = true;
+      uae-testagent-prod.enable = true;
+      uae-testagent2-prod.enable = true;
+    };
+    jobs = {
+      ghaf-hw-test-manual = { };
+      ghaf-hw-test = { };
+      ghaf-main = { };
+      ghaf-manual = { };
+      ghaf-nightly = { };
+    };
   };
 }
