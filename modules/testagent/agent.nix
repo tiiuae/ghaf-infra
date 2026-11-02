@@ -161,7 +161,11 @@ in
                   fi
 
                   echo "Downloading agent.jar from $CONTROLLER"
-                  wget "$CONTROLLER/jnlpJars/agent.jar" -O agent.jar
+                  # network-online.target can be reached before the controller
+                  # resolves, because dhcpcd counts the Nebula address. Retry 30
+                  # times, waiting up to 10 seconds between tries.
+                  wget --retry-on-host-error --retry-connrefused --waitretry=10 --tries=30 \
+                    "$CONTROLLER/jnlpJars/agent.jar" -O agent.jar
                 ''
             );
           };
