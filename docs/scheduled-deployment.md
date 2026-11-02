@@ -9,6 +9,9 @@ Hosts that enable `services.scheduled-deployment`
 ([module](../modules/scheduled-deployment/)) deploy the head of `main` to
 themselves once a week. Each host fetches the public repository and builds its
 own configuration, so no deployer or deploy credential is involved.
+Import `nixosModules.scheduled-deployment` explicitly in the host; the Jenkins
+controller and test-agent modules do not import it. Those role modules activate
+their drain and verification hooks when scheduled deployment is enabled.
 [Test agents](#test-agents) take their Jenkins nodes offline during a
 deployment, [builders](#builders) wait until no build runs, and
 [Jenkins controllers](#jenkins-controllers) hold new builds in the queue. On

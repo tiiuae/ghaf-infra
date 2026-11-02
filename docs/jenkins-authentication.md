@@ -24,6 +24,12 @@ The Jenkins authentication setup relies on a few pieces working together:
   `services.ghaf-jenkins.auth` in the [Jenkins module](../modules/jenkins/).
 - The Jenkins controller itself, accessible only through the proxy.
 
+Artifact downloads and directory listings under `/artifacts` are public by
+default. Set `services.ghaf-jenkins.artifacts.requireAuth = true` to require the
+same OIDC login as the Jenkins UI. This requires `auth.enable = true` and does
+not apply Jenkins per-job permissions to the file server. Automated download
+clients need a valid session when protection is enabled.
+
 ![diagram](./auth.png)
 
 ## Reusing the authentication server

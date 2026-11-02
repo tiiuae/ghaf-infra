@@ -20,7 +20,7 @@
   services.testagent = {
     enable = true;
     variant = "prod";
-    hardware = [
+    devices = [
       "lenovo-x1"
       "darter-pro"
       "x1-sec-boot"
@@ -56,11 +56,11 @@
   '';
 
   # Details of the hardware devices connected to this host
-  environment.etc."jenkins/test_config.json".text =
+  services.testagent.testConfig =
     let
       location = config.networking.hostName;
     in
-    builtins.toJSON {
+    {
       addresses = {
         test_server_ip = "172.18.16.12";
         relay_serial_port = "NONE";

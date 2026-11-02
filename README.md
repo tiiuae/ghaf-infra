@@ -113,6 +113,7 @@ ghaf-infra
 - [NetHSM hardware signing](./docs/nethsm.md): hardware-backed signing
 - [Jenkins authentication](./docs/jenkins-authentication.md): Jenkins auth setup
 - [Jenkins test agents](./docs/jenkins-testagents.md): on-prem test agents
+- [Standalone Jenkins consumers](./docs/jenkins-consumers.md): controller and agent module interfaces
 - [Jenkins CI development](./hosts/hetzci/README.md): developing the CI environment
 
 ## Common Tasks

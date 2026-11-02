@@ -1,6 +1,11 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  self,
+  ...
+}:
 let
   tuning = import ../../lib/nix-tuning.nix { inherit lib; };
 
@@ -9,6 +14,7 @@ let
 in
 {
   imports = [
+    self.nixosModules.scheduled-deployment
     ./disk-config.nix
     ../common.nix
     ../remote-builders.nix
@@ -56,17 +62,25 @@ in
       };
     };
     registry.passwordFile = config.sops.secrets.oci_registry_password.path;
-    pipelines = [
-      "ghaf-hw-test-manual"
-      "ghaf-hw-test"
-      "ghaf-main"
-      "ghaf-manual"
-      "ghaf-nightly-perftest"
-      "ghaf-nightly-poweroff"
-      "ghaf-nightly"
-      "ghaf-pre-merge-manual"
-      "ghaf-pre-merge"
-    ];
+    agents = {
+      testagent-dev.enable = true;
+      testagent2-prod.enable = true;
+      testagent-prod.enable = true;
+      testagent-release.enable = true;
+      uae-testagent-prod.enable = true;
+      uae-testagent2-prod.enable = true;
+    };
+    jobs = {
+      ghaf-hw-test-manual = { };
+      ghaf-hw-test = { };
+      ghaf-main = { };
+      ghaf-manual = { };
+      ghaf-nightly-perftest = { };
+      ghaf-nightly-poweroff = { };
+      ghaf-nightly = { };
+      ghaf-pre-merge-manual = { };
+      ghaf-pre-merge = { };
+    };
   };
 
   services.scheduled-deployment = {

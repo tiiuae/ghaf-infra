@@ -3,12 +3,29 @@
 
 {
   pkgs,
+  config,
+  lib,
   inputs,
   self,
   ...
 }:
 let
   keySource = inputs.ghaf-infra-pki.packages.${pkgs.stdenv.hostPlatform.system}.yubi-slsa-pki;
+  robotSecrets = [
+    "dut-pass"
+    "plug-login"
+    "plug-pass"
+    "switch-token"
+    "switch-secret"
+    "wifi-ssid"
+    "wifi-password"
+    "pi-login"
+    "pi-pass"
+    "fleetdm_enroll_secret"
+    "fleetdm_api_token"
+    "test-server-login"
+    "test-server-pass"
+  ];
 in
 {
   imports = [
@@ -23,19 +40,14 @@ in
     team-testers
   ]);
 
-  services.testagent.credentialsFile = ./credentials.yaml;
+  services.testagent.testCredentialFiles = lib.genAttrs robotSecrets (
+    name: config.sops.secrets.${name}.path
+  );
 
-  sops.secrets =
-    let
-      credential = {
-        sopsFile = ./credentials.yaml;
-        owner = "jenkins";
-      };
-    in
-    {
-      fleetdm_enroll_secret = credential;
-      fleetdm_api_token = credential;
-    };
+  sops.secrets = lib.genAttrs robotSecrets (_: {
+    sopsFile = ./credentials.yaml;
+    owner = "jenkins";
+  });
 
   nebula.enable = true;
 

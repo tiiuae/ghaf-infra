@@ -43,8 +43,8 @@ HetzCI-specific defaults, authentication groups, test-agent nodes, and authorize
 keys remain in [`common.nix`](./common.nix). Each environment declares its own
 pipelines, integration enablement, and SOPS secrets in its `configuration.nix`.
 The Jenkins module accepts secret file paths and does not manage the secret
-provider. The test-agent module currently takes a SOPS credentials file through
-`services.testagent.credentialsFile`.
+provider. The test-agent module accepts runtime credential paths through
+`services.testagent.testCredentialFiles`; its host configuration manages SOPS secrets.
 
 ### Signing configuration
 
@@ -120,10 +120,11 @@ repository root and run through the `nix fmt` hooks.
 
 ### Jenkins configuration
 
-All Jenkins controllers configure `services.ghaf-jenkins`. The OCI registry is
-part of the build-to-hardware-test artifact flow, so its URL and password file
-are required. Authentication and the GitHub, Cachix, Jira, and archive features
-are disabled by default and enabled explicitly.
+All Jenkins controllers configure `services.ghaf-jenkins`. Registry publishing,
+authentication, and the GitHub, Cachix, Jira, and archive features are disabled
+by default and enabled explicitly. Registry URL and password are required only
+when `registry.enable` is true. Consumers must supply their provenance and
+release policy files; the module has no implicit trust policy.
 
 ```nix
 imports = [ inputs.ghaf-infra.nixosModules.jenkins ];
@@ -132,11 +133,20 @@ services.ghaf-jenkins = {
   enable = true;
   envType = "dev";
   url = "https://ci.example.com";
+  provenanceTrustPolicyFile = ./provenance-trust-policy.yaml;
+  releasePolicyFile = ./release-policy.yaml;
+
+  # Optional: omit an architecture to use normal nix build behavior for it.
+  remoteStores.x86_64-linux =
+    "ssh-ng://remote-build@builder.example.com?ssh-key=/run/secrets/builder-key";
 
   registry = {
+    enable = true;
     url = "registry.example.com";
     passwordFile = config.sops.secrets.oci_registry_password.path;
   };
+
+  artifacts.requireAuth = true;
 
   auth = {
     enable = true;
@@ -161,13 +171,33 @@ Single-secret integrations use the same explicit structure under
 under `archive`, with credentials in `archive.s3Credentials`. Consumers provide
 the paths from their chosen secret manager; the HetzCI hosts use SOPS.
 
-The pipelines use the bundled Ghaf provenance and release policies by default.
-To supply project-specific policies:
+`remoteStores` defaults to `{ }`. With no matching target-system entry, pipelines
+run `nix build` without `--store` and do not copy the output from another store.
+This still honors the normal Nix daemon configuration, including distributed
+builders in `nix.buildMachines`. Explicit remote stores must be reachable and
+trust the Jenkins account; configure SSH credentials and host keys separately.
+The repository's host profile in `common.nix` explicitly derives its remote
+store mapping from its build machines to preserve the existing setup.
+
+With registry publishing disabled, image builds retain their local artifacts
+but do not publish images, test results, or release attestations to OCI. The
+OCI-backed release policy stage runs only when publishing is enabled; provenance
+policy checks for release images still run. Hardware tests require published
+OCI images, so requesting an active hardware test without registry publishing
+fails before building. VM-skipped hardware tests do not require publishing.
+
+Artifacts are public by default. Set `artifacts.requireAuth = true` to put
+downloads and directory listings behind the configured OIDC authentication;
+this requires `auth.enable = true`. It authenticates users without applying
+Jenkins per-job authorization. Scripts that download artifacts must then supply
+a valid session or use OCI instead.
+
+For the Ghaf infrastructure's own policy, the host profile explicitly supplies:
 
 ```nix
 services.ghaf-jenkins = {
-  provenanceTrustPolicyFile = ./provenance-trust-policy.yaml;
-  releasePolicyFile = ./release-policy.yaml;
+  provenanceTrustPolicyFile = ../../slsa/provenance-trust-policy.yaml;
+  releasePolicyFile = ../../slsa/release-policy.yaml;
 };
 ```
 
