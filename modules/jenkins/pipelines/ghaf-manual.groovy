@@ -251,7 +251,9 @@ pipeline {
           }
           def flashScriptPath
           def customGhafPath = ''
+          def ciEnv
           artifactSupport.with_controller_workspace(artifactSupport.controller_workdir()) {
+            ciEnv = env.CI_ENV
             flashScriptPath = artifactSupport.run_cmd("nix path-info .#${flashTarget}")
             if (customGhafTarget) {
               customGhafPath = artifactSupport.run_cmd("nix path-info .#${customGhafTarget}")
@@ -266,11 +268,19 @@ pipeline {
           }
           def secureBootDeviceTag = "${deviceInfo.tag - 'orin-'}-sec-boot"
           // Dev orin devices support both secure-boot and non-secure-boot flash modes; other environments require the label to match the mode.
-          def deviceTags = env.CI_ENV == 'dev' ?
+          echo("Orin flash selection CI_ENV='${ciEnv}'")
+          def deviceTags = ciEnv == 'dev' ?
             (secureBootFlash ? [secureBootDeviceTag, deviceInfo.tag] : [deviceInfo.tag, secureBootDeviceTag]) :
             [secureBootFlash ? secureBootDeviceTag : deviceInfo.tag]
           def availableDeviceTag = deviceTags.find { deviceTag ->
-            !nodesByLabel(label: deviceTag, offline: false).isEmpty()
+            try {
+              !nodesByLabel(label: deviceTag, offline: false).isEmpty()
+            } catch (Exception e) {
+              if (e.message?.contains("Could not find any nodes with '${deviceTag}' label")) {
+                return false
+              }
+              throw e
+            }
           }
           if (availableDeviceTag == null) {
             error("No online test agent found with any of these labels: ${deviceTags.join(', ')}")
