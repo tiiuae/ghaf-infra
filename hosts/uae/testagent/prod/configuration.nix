@@ -107,7 +107,7 @@
         };
         X1-Secure-Boot = {
           inherit location;
-          device_id = "00-5e-3c-a5-01";
+          device_id = "00-27-c1-e6-aa";
           netvm_hostname = "ghaf-0667018922";
           serial_port = "/dev/ttyX1SB";
           device_ip_address = "172.20.16.57";
