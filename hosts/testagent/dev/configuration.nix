@@ -28,6 +28,8 @@
       "darter-pro"
     ];
   };
+  # The testagent module adds the drain and the post-deploy checks.
+  services.scheduled-deployment.enable = true;
 
   boot.initrd.availableKernelModules = [
     "vmd"
