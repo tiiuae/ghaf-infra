@@ -122,6 +122,12 @@ in
     dataDir = volumeMount + "/grafana";
 
     settings = {
+      # Reduce SQLite lock contention during concurrent alert evaluations.
+      database = {
+        wal = true;
+        query_retries = 3;
+      };
+
       server = {
         http_port = 3000;
         http_addr = "127.0.0.1";
@@ -296,12 +302,28 @@ in
         {
           name = "summary_only";
           template = ''
+            {{ define "summary_only" -}}
             {{- range .Alerts.Firing }}
-            🚨 {{ .Annotations.summary }}
+            🚨 {{ template "summary_only.alert" . }}
             {{ end }}
             {{- range .Alerts.Resolved }}
-            ✅ {{ .Annotations.summary }}
+            ✅ {{ template "summary_only.alert" . }}
             {{ end }}
+            {{ end }}
+
+            {{ define "summary_only.alert" -}}
+            {{- if or (eq .Labels.alertname "DatasourceError") (eq .Labels.alertname "DatasourceNoData") -}}
+              Grafana on ${config.networking.hostName}: {{ .Labels.alertname }} in rule "{{ .Labels.rulename }}"
+              {{- with .Labels.datasource_uid }} (datasource: {{ . }}){{ end }}
+              {{- if eq .Status "firing" }}
+                {{- with .Annotations.Error }}
+            {{ . }}
+                {{- end }}
+              {{- end }}
+            {{- else -}}
+              {{ .Annotations.summary }}
+            {{- end }}
+            {{- end }}
           '';
         }
       ];
