@@ -89,8 +89,8 @@
         bluetooth_name = "Ghaf Test BT Board Release";
         OrinAGX1 = {
           inherit location;
-          device_id = "00-fc-62-3e-dd";
-          netvm_hostname = "ghaf-4234297053";
+          device_id = "00-34-06-e3-0d";
+          netvm_hostname = "ghaf-0872866573";
           serial_port = "/dev/ttyAGX1";
           relay_number = 2;
           device_ip_address = "172.18.16.51";
@@ -116,8 +116,8 @@
         };
         OrinNX1 = {
           inherit location;
-          device_id = "00-bf-2e-64-84";
-          netvm_hostname = "ghaf-3207488644";
+          device_id = "00-68-f8-26-3b";
+          netvm_hostname = "ghaf-1761093179";
           serial_port = "/dev/ttyORINNX1";
           relay_number = 3;
           device_ip_address = "172.18.16.46";
