@@ -69,6 +69,13 @@ in
     ];
   };
 
+  services.scheduled-deployment = {
+    enable = true;
+    # After the window of the test agents: a reboot of this controller while
+    # an agent is drained would bring its nodes back online.
+    window = "Tue *-*-* 10..12:00,30:00 UTC";
+  };
+
   nix.settings.max-jobs = lib.mkForce 0;
   nix.settings.min-free = lib.mkOverride 40 controllerDisk.minFreeBytes;
   nix.settings.max-free = lib.mkOverride 40 controllerDisk.maxFreeBytes;
