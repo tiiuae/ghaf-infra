@@ -10,6 +10,15 @@ configurations. Keep hardware, disks, users, secret provisioning and trust
 policy in the consumer. These modules do not require importing a production host
 or the Ghaf host inventory.
 
+Hetzner consumers can import `nixosModules.hetzner-cloud` or
+`nixosModules.hetzner-robot` directly without a `machines` argument, SOPS or the
+monitoring module. The monitoring module uses the private Loki endpoint for
+inventory hosts with an internal IP and the public endpoint for other hosts.
+Standalone users set `services.monitoring.logs.lokiAddress` explicitly. For the
+public Ghaf endpoint, a declared SOPS `loki_password` secret supplies the default
+password file; hosts own its declaration and permissions.
+`nixosModules.azure` likewise requires neither inventory nor monitoring.
+
 Scheduled deployment is separate. Neither role module imports it or
 baseline-reset. To use it, explicitly import `nixosModules.scheduled-deployment`
 and enable `services.scheduled-deployment` in the host. The role modules then

@@ -124,7 +124,6 @@ let
     runtimeInputs = with pkgs; [
       openssh
       coreutils
-      sudo
       systemd
     ];
     text = # sh
@@ -138,15 +137,15 @@ let
 
         if [[ ! -f /var/lib/jenkins/jenkins.env ]]; then
           # create the file with correct permissions
-          sudo install -o jenkins -g jenkins -m 600 /dev/null /var/lib/jenkins/jenkins.env
+          ${config.security.wrapperDir}/sudo install -o jenkins -g jenkins -m 600 /dev/null /var/lib/jenkins/jenkins.env
         fi
 
         # add this controller to known hosts
-        sudo -u jenkins ssh-keygen -R "''${url#*//}" 2>/dev/null || true
-        sudo -u jenkins ssh -o StrictHostKeyChecking=no -i ${lib.escapeShellArg cfg.controllerSshKeyFile} "${config.networking.hostName}@''${url#*//}" exit
+        ${config.security.wrapperDir}/sudo -u jenkins ssh-keygen -R "''${url#*//}" 2>/dev/null || true
+        ${config.security.wrapperDir}/sudo -u jenkins ssh -o StrictHostKeyChecking=no -i ${lib.escapeShellArg cfg.controllerSshKeyFile} "${config.networking.hostName}@''${url#*//}" exit
 
-        echo "CONTROLLER=$url" | sudo tee /var/lib/jenkins/jenkins.env
-        sudo systemctl restart start-agents.service
+        echo "CONTROLLER=$url" | ${config.security.wrapperDir}/sudo tee /var/lib/jenkins/jenkins.env
+        ${config.security.wrapperDir}/sudo systemctl restart start-agents.service
 
         echo "Connected agents to the controller"
       '';
@@ -156,13 +155,12 @@ let
     name = "disconnect";
     runtimeInputs = with pkgs; [
       coreutils
-      sudo
       systemd
     ];
     text = # sh
       ''
-        sudo systemctl stop start-agents.service
-        echo "CONTROLLER=" | sudo tee /var/lib/jenkins/jenkins.env
+        ${config.security.wrapperDir}/sudo systemctl stop start-agents.service
+        echo "CONTROLLER=" | ${config.security.wrapperDir}/sudo tee /var/lib/jenkins/jenkins.env
 
         echo "Disconnected agents from the controller"
       '';

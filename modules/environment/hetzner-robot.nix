@@ -1,21 +1,7 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
+{ pkgs, ... }:
 {
-  lib,
-  config,
-  pkgs,
-  ...
-}:
-{
-  sops.secrets = lib.mkIf config.services.monitoring.logs.enable {
-    loki_password.owner = "alloy";
-  };
-
-  services.monitoring.logs = lib.mkIf config.services.monitoring.logs.enable {
-    lokiAddress = lib.mkDefault "https://monitoring.vedenemo.dev";
-    auth.password_file = config.sops.secrets.loki_password.path;
-  };
-
   networking = {
     useNetworkd = true;
     useDHCP = false;
