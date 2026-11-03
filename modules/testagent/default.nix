@@ -274,6 +274,7 @@ in
 
   # Add deployment hooks only when the host imports and enables scheduled deployment.
   imports = [
+    ../git-credentials.nix
     {
       config = lib.optionalAttrs (options.services ? scheduled-deployment) (
         lib.mkIf (cfg.enable && config.services.scheduled-deployment.enable) {

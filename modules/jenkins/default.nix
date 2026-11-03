@@ -187,7 +187,10 @@ let
   };
 in
 {
-  imports = [ ./scheduled-deployment.nix ];
+  imports = [
+    ../git-credentials.nix
+    ./scheduled-deployment.nix
+  ];
 
   options.services.ghaf-jenkins = {
     enable = lib.mkEnableOption "the Ghaf Jenkins controller";
@@ -223,6 +226,11 @@ in
       type = lib.types.str;
       description = "Public URL of the jenkins instance";
     };
+    provenanceRepository = lib.mkOption {
+      type = lib.types.str;
+      default = "https://github.com/tiiuae/ghaf-infra";
+      description = "Infrastructure configuration repository recorded as workflow.repository in build provenance.";
+    };
     remoteStores = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
       default = { };
@@ -236,6 +244,11 @@ in
     };
     registry = {
       enable = lib.mkEnableOption "OCI registry publishing";
+      namespace = lib.mkOption {
+        type = lib.types.str;
+        default = "ghaf";
+        description = "OCI repository namespace. Images are published under <namespace>/<job-name>/<target>, using the job name unchanged.";
+      };
       url = lib.mkOption {
         type = lib.types.str;
         description = "OCI registry exposed to Jenkins jobs";
@@ -605,6 +618,7 @@ in
         lib.optionalAttrs cfg.signing.enable signingEnvironment
         // {
           CI_ENV = cfg.envType;
+          JENKINS_PROVENANCE_REPOSITORY = cfg.provenanceRepository;
           OCI_PUBLISH_ENABLED = lib.boolToString cfg.registry.enable;
           JENKINS_SIGNING_ENABLED = lib.boolToString cfg.signing.enable;
           JIRA_TOKEN_AVAILABLE = lib.boolToString cfg.integrations.jira.enable;
@@ -613,6 +627,7 @@ in
         }
         // lib.optionalAttrs cfg.registry.enable {
           OCI_REGISTRY = cfg.registry.url;
+          OCI_NAMESPACE = cfg.registry.namespace;
         };
 
       extraJavaOptions = [

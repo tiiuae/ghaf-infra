@@ -15,8 +15,8 @@ Hetzner consumers can import `nixosModules.hetzner-cloud` or
 monitoring module. The monitoring module uses the private Loki endpoint for
 inventory hosts with an internal IP and the public endpoint for other hosts.
 Standalone users set `services.monitoring.logs.lokiAddress` explicitly. For the
-public Ghaf endpoint, a declared SOPS `loki_password` secret supplies the default
-password file; hosts own its declaration and permissions.
+public Ghaf endpoint, a declared SOPS `loki_password` secret supplies the
+default password file; hosts own its declaration and permissions.
 `nixosModules.azure` provides the guest profile, EFI tooling, a redistributable
 firmware default, Azure agent, cloud-init, networking and Hyper-V drivers. It
 requires neither inventory nor monitoring; consumers do not need an additional
@@ -26,9 +26,8 @@ bootloader selection remain host configuration, as do Nix tuning and sudo policy
 Scheduled deployment is separate. Neither role module imports it or
 baseline-reset. To use it, explicitly import `nixosModules.scheduled-deployment`
 and enable `services.scheduled-deployment` in the host. The role modules then
-activate their drain and post-deployment checks.
-Downstream hosts must also set its `repository` to their own infrastructure
-repository.
+activate their drain and post-deployment checks. Downstream hosts must also set
+its `repository` to their own infrastructure repository.
 
 ## Shared Nix settings
 
@@ -116,10 +115,10 @@ Each `agents` entry declares its device nodes and SSH account. Set
 public key. Node names default to `<variant>-<device>`. When two agents share a
 variant and device label, give each a unique `nodeNamePrefix` if they need to
 connect to the same controller simultaneously. Configure the same prefix in its
-`services.testagent`. Interchangeable agents may share identical node definitions;
-those are registered once. Conflicting definitions with the same name are
-rejected. Nodes retain device and `<variant>-<device>` labels for pipeline selection.
-Legacy `nodes.devices`, `nodes.testagentHosts`, and
+`services.testagent`. Interchangeable agents may share identical node
+definitions; those are registered once. Conflicting definitions with the same
+name are rejected. Nodes retain device and `<variant>-<device>` labels for
+pipeline selection. Legacy `nodes.devices`, `nodes.testagentHosts`, and
 `nodes.authorizedKeys` remain supported.
 
 Jobs default to `reloadOnStartup = true`, invoking them with `RELOAD_ONLY=true`
@@ -137,6 +136,110 @@ configuration is reset before Configuration as Code recreates it. Cleanup
 deletes root XML files, node definitions and top-level job config files. Declare
 configuration in Nix and Configuration as Code; changes made only through the
 Jenkins UI do not persist across boots.
+
+## Publishing and target selection
+
+`services.ghaf-jenkins.registry.namespace` defaults to `"ghaf"`. OCI images use
+`<namespace>/<job-name>/<target>`, keeping the job name unchanged and removing
+the target's `packages.` prefix. Job names must be valid lowercase OCI
+repository components when publishing.
+
+Set `services.ghaf-jenkins.provenanceRepository` to the consumer's
+infrastructure repository. It defaults to `https://github.com/tiiuae/ghaf-infra`
+and changes `externalParameters.workflow.repository` in provenance. The build
+target's repository and the provenance build-type URI keep their own identities.
+
+Consumer pipelines can select a device directly in a target map:
+
+```groovy
+def targets = [
+  [
+    target: 'packages.aarch64-linux.delivery-orinnx-lab',
+    device_tag: 'orin-nx',
+    test_tags: [
+      'orin-nxANDrelayboot',
+      'orin-nxANDark',
+    ],
+    sbom: true,
+  ],
+]
+
+pipelineExecution.create_pipeline(targets)
+```
+
+The optional `device_tag` supplies the default device for the target's tests and
+is forwarded as `DEVICE_TAG` to the hardware job. It uses the existing device
+labels, such as `orin-nx`, rather than matching the build target's name. A
+device explicitly selected in an individual `tests` entry takes precedence.
+Omitting the field preserves the existing inference and per-test configuration.
+
+`test_tags` is an ordered list of complete Robot include-tag expressions. The
+list runs in one hardware-test job, on one allocated agent, with one Robot
+invocation per expression. The example runs `orin-nxANDrelayboot` followed by
+`orin-nxANDark`. Expressions are passed unchanged and quoted; device filtering
+belongs in the expression, while `device_tag` selects the Jenkins agent.
+
+Boot handling matches the manual hardware-test job. There is no implicit boot
+test: include a boot expression explicitly when needed. If an expression
+containing `boot` fails, subsequent expressions are marked skipped. Other
+failures mark the job failed while allowing later expressions to run. Each
+invocation saves its outputs in `test-1`, `test-2`, and so on, and all results
+are archived together.
+
+Use either `test_tags` or the legacy `testset` selector. An empty list schedules
+no tests. Each explicit `tests` entry can also provide its own `test_tags` list.
+Existing `testset` callers retain their predefined stages and boot gating. The
+automatic hardware job receives the list as a JSON `TEST_TAGS` parameter, which
+takes precedence over `TESTSET`; the manual job's existing free-form `TEST_TAGS`
+parameter is unchanged.
+
+The optional `create_pipeline` options map accepts `hw_test_params`, a map of
+additional string parameters forwarded to hardware jobs. For example:
+
+```groovy
+pipelineExecution.create_pipeline(targets, null, null, [
+  hw_test_params: [
+    GHAF_FLAKE_REF: 'github:tiiuae/ghaf/<pinned-commit>',
+    CI_TEST_REPO_URL: 'https://github.com/tiiuae/ci-test-automation-ghaf-robots.git',
+    CI_TEST_REPO_BRANCH: 'main',
+  ],
+])
+```
+
+This allows an image from a downstream repository to use a public pinned Ghaf
+flash script. Test selection belongs in the target's `test_tags` or legacy
+`testset` field; empty extra parameter values are omitted.
+
+## Background Git authentication
+
+Both role modules provide `programs.git.credentials`. Configure it on every
+controller or agent that clones private repositories:
+
+```nix
+programs.git.credentials."https://github.com/tiiuae" = {
+  username = "x-access-token";
+  passwordFile = config.sops.secrets.github-token.path;
+};
+
+sops.secrets.github-token = {
+  owner = "jenkins";
+  mode = "0400";
+};
+```
+
+Entries are keyed by HTTPS credential-context URLs, so credentials can be scoped
+to a host or repository path. Git reads the configured runtime file through a
+credential helper; tokens never enter the Nix store or checkout URLs. An
+unreadable or missing file supplies no credentials. Provisioning and ownership
+remain the host's responsibility.
+
+Normal Git clone, fetch and ref-discovery commands use the helper automatically,
+including Jenkins's default command-line Git backend. No per-checkout
+`credentialsId` or private-repository branch workaround is required. JGit uses a
+different backend; keep the default CLI implementation for this setup.
+Credentials are available to any job or process that can read their runtime
+file. Nix's `github:` fetcher uses its own access-token configuration; this
+option configures Git HTTPS authentication.
 
 ## Agent hardware and runtime files
 
@@ -178,9 +281,9 @@ services.testagent.testConfig = {
 };
 ```
 
-Use the `devices` list to select Jenkins device nodes. Keep SSD
-symlinks, USB hub settings and other hardware-specific udev rules in the host
-configuration, alongside its JSON. There is no separate device schema.
+Use the `devices` list to select Jenkins device nodes. Keep SSD symlinks, USB
+hub settings and other hardware-specific udev rules in the host configuration,
+alongside its JSON. There is no separate device schema.
 
 `testConfig` accepts arbitrary JSON content and writes it unchanged to
 `/etc/jenkins/test_config.json`. No fields or defaults are added. It defaults to
@@ -196,10 +299,9 @@ key is independent of the machine's SSH server host key and its age identity.
 Only supply credentials for the peripherals in use. Robot uses names such as
 `dut-pass`, `plug-login`, `plug-pass`, `switch-token`, `switch-secret`,
 `wifi-ssid`, `wifi-password`, `pi-login`, `pi-pass`, `test-server-login`,
-`test-server-pass`, `fleetdm_enroll_secret`, and `fleetdm_api_token`.
-The host supplies the credentials needed by its Robot
-suites; the module does not validate or infer them from the hardware
-configuration.
+`test-server-pass`, `fleetdm_enroll_secret`, and `fleetdm_api_token`. The host
+supplies the credentials needed by its Robot suites; the module does not
+validate or infer them from the hardware configuration.
 
 `testCredentialFiles` maps credential names to decrypted runtime files:
 
@@ -215,9 +317,9 @@ It defaults to an empty attribute set; configure only the credentials in use.
 Hosts declare and decrypt their SOPS secrets. The module never reads their
 contents during evaluation or adds secrets to SOPS itself. Standard
 `/run/secrets/<name>` paths are used directly. Other paths are exposed read-only
-at Robot's expected locations inside each agent service.
-`controllerSshKeyFile` defaults to the separate `ssh_host_ed25519_key` secret;
-the policy defaults to the repository policy. Both can be overridden by consumers.
+at Robot's expected locations inside each agent service. `controllerSshKeyFile`
+defaults to the separate `ssh_host_ed25519_key` secret; the policy defaults to
+the repository policy. Both can be overridden by consumers.
 
 Jetson tooling is enabled for Orin labels. BrainStem and USB SD mux tooling
 remain enabled by default; KMTronic is installed with `tooling.relayboard`.
