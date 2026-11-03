@@ -38,8 +38,9 @@ let
 in
 {
   options.nix.caches = lib.mkOption {
-    type = lib.types.nonEmptyListOf (lib.types.enum (builtins.attrNames knownCaches));
-    description = "Binary caches to use.";
+    type = lib.types.listOf (lib.types.enum (builtins.attrNames knownCaches));
+    default = [ "nixos-org" ];
+    description = "Named binary caches to add. Additional caches can be configured through nix.settings.";
   };
 
   config.nix.settings = {
