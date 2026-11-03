@@ -4,7 +4,6 @@
   self,
   pkgs,
   inputs,
-  modulesPath,
   lib,
   ...
 }:
@@ -12,7 +11,6 @@
   imports = [
     ./disk-config.nix
     ../../azure-common.nix
-    (modulesPath + "/profiles/qemu-guest.nix")
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
@@ -29,8 +27,6 @@
   # this server has been initialized with 25.05 with nixos-anywhere
   # initializing fails with 24.11
   system.stateVersion = lib.mkForce "25.05";
-
-  hardware.enableRedistributableFirmware = true;
 
   networking = {
     hostName = "uae-azureci-az86-1";
@@ -50,11 +46,6 @@
       cpus = 32;
       ramGiB = 128;
     };
-  };
-
-  boot = {
-    # use predictable network interface names (eth0)
-    kernelParams = [ "net.ifnames=0" ];
   };
 
   environment.systemPackages = with pkgs; [

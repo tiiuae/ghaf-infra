@@ -1,11 +1,10 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
 #
-# Profile to import for Azure VMs. Imports azure-common.nix from nixpkgs,
-# and configures cloud-init.
+# Site policy for the Azure CI hosts. Azure guest setup is provided by
+# the reusable Azure module.
 {
   self,
-  pkgs,
   ...
 }:
 
@@ -41,12 +40,6 @@ in
     systemd.services.nix-gc.serviceConfig = {
       Restart = "on-failure";
     };
-
-    environment.systemPackages = with pkgs; [
-      efibootmgr
-    ];
-
-    hardware.enableRedistributableFirmware = true;
 
     security.sudo.enable = true;
     security.sudo.wheelNeedsPassword = false;

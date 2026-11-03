@@ -17,7 +17,11 @@ inventory hosts with an internal IP and the public endpoint for other hosts.
 Standalone users set `services.monitoring.logs.lokiAddress` explicitly. For the
 public Ghaf endpoint, a declared SOPS `loki_password` secret supplies the default
 password file; hosts own its declaration and permissions.
-`nixosModules.azure` likewise requires neither inventory nor monitoring.
+`nixosModules.azure` provides the guest profile, EFI tooling, a redistributable
+firmware default, Azure agent, cloud-init, networking and Hyper-V drivers. It
+requires neither inventory nor monitoring; consumers do not need an additional
+`qemu-guest.nix` import or `efibootmgr` package declaration. Disk layout and
+bootloader selection remain host configuration, as do Nix tuning and sudo policy.
 
 Scheduled deployment is separate. Neither role module imports it or
 baseline-reset. To use it, explicitly import `nixosModules.scheduled-deployment`
