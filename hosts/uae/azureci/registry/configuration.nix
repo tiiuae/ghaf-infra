@@ -4,7 +4,6 @@
   self,
   pkgs,
   inputs,
-  modulesPath,
   lib,
   ...
 }:
@@ -12,7 +11,6 @@
   imports = [
     ./disk-config.nix
     ../../azureci/azure-common.nix
-    (modulesPath + "/profiles/qemu-guest.nix")
     inputs.disko.nixosModules.disko
   ]
   ++ (with self.nixosModules; [
@@ -27,7 +25,6 @@
   # this server has been initialized with 26.05 with nixos-anywhere
   system.stateVersion = lib.mkForce "26.05";
 
-  hardware.enableRedistributableFirmware = true;
   networking.hostName = "uae-azureci-registry";
 
   # Use local filesystem storage until the AWS S3 me-central-1 outage is resolved.
@@ -35,11 +32,6 @@
     clientId = "uae-zot-registry";
     domain = "registry.uaenorth.cloudapp.azure.com";
     metrics.enable = true;
-  };
-
-  boot = {
-    # use predictable network interface names (eth0)
-    kernelParams = [ "net.ifnames=0" ];
   };
 
   environment.systemPackages = with pkgs; [

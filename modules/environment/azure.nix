@@ -3,12 +3,18 @@
 {
   config,
   lib,
+  modulesPath,
+  pkgs,
   ...
 }:
 let
   cfg = config.virtualisation.azure;
 in
 {
+  imports = [
+    (modulesPath + "/profiles/qemu-guest.nix")
+  ];
+
   options = {
     virtualisation.azure = {
       acceleratedNetworking = lib.mkOption {
@@ -20,6 +26,9 @@ in
 
   config = lib.mkMerge [
     {
+      environment.systemPackages = [ pkgs.efibootmgr ];
+      hardware.enableRedistributableFirmware = lib.mkDefault true;
+
       services.waagent.enable = true;
 
       # Enable cloud-init by default for waagent.

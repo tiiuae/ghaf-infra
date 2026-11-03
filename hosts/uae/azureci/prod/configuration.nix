@@ -3,7 +3,6 @@
 {
   config,
   inputs,
-  modulesPath,
   lib,
   ...
 }:
@@ -15,7 +14,6 @@
     ../remote-builders.nix
     ../../../hetzci/common.nix
     ../../../hetzci/signing.nix
-    (modulesPath + "/profiles/qemu-guest.nix")
     inputs.disko.nixosModules.disko
   ];
 
