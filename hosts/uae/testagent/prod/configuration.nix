@@ -109,7 +109,7 @@
           inherit location;
           device_id = "00-27-c1-e6-aa";
           netvm_hostname = "ghaf-0667018922";
-          serial_port = "/dev/ttyX1SB";
+          serial_port = "NONE";
           device_ip_address = "172.20.16.57";
           socket_ip_address = "NONE";
           plug_type = "NONE";
