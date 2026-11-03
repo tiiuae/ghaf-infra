@@ -3,13 +3,11 @@
 {
   modulesPath,
   lib,
-  machines,
   config,
   pkgs,
   ...
 }:
 let
-  defaultLoki = "http://${machines.ghaf-monitoring.internal_ip}:3100";
   cfg = config.virtualisation.hetzner;
 in
 {
@@ -24,15 +22,11 @@ in
   };
 
   config = {
-    services.monitoring.logs.lokiAddress = lib.mkDefault defaultLoki;
-
     networking = {
       useDHCP = true;
       usePredictableInterfaceNames = false;
+      firewall.trustedInterfaces = [ "eth1" ];
     };
-
-    # disable firewall on hetzner internal network
-    networking.firewall.trustedInterfaces = [ "eth1" ];
 
     boot.loader = {
       systemd-boot.enable = cfg.withEfiSupport;
@@ -43,17 +37,5 @@ in
     };
 
     environment.systemPackages = lib.optionals cfg.withEfiSupport [ pkgs.efibootmgr ];
-
-    warnings = [
-      (lib.mkIf
-        (
-          config.services.monitoring.logs.enable
-          && (config.services.monitoring.logs.lokiAddress == defaultLoki)
-          # naively assume name in machines matches hostname for now
-          && (!builtins.hasAttr "internal_ip" machines.${config.networking.hostName})
-        )
-        "${config.networking.hostName} sends logs to hetzner internal network but has no internal ip defined! is it part of the network?"
-      )
-    ];
   };
 }

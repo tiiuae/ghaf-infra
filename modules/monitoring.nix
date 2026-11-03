@@ -4,10 +4,22 @@
   config,
   lib,
   pkgs,
+  specialArgs,
   ...
 }:
 let
   cfg = config.services.monitoring;
+  machines = specialArgs.machines or { };
+  privateLoki =
+    if machines ? ghaf-monitoring.internal_ip then
+      "http://${machines.ghaf-monitoring.internal_ip}:3100"
+    else
+      null;
+  defaultLoki =
+    if privateLoki != null && !((machines.${config.networking.hostName} or { }) ? internal_ip) then
+      "https://monitoring.vedenemo.dev"
+    else
+      privateLoki;
 
   driftMetrics = pkgs.writeShellApplication {
     name = "ghaf-deployment-metrics";
@@ -136,10 +148,13 @@ in
         description = "Enable collecting systemd journal logs";
       };
 
-      lokiAddress = lib.mkOption {
-        type = lib.types.str;
-        description = "The address to send logs to";
-      };
+      lokiAddress = lib.mkOption (
+        {
+          type = lib.types.str;
+          description = "The address to send logs to";
+        }
+        // lib.optionalAttrs (defaultLoki != null) { default = defaultLoki; }
+      );
 
       auth = {
         username = lib.mkOption {
@@ -149,7 +164,11 @@ in
 
         password_file = lib.mkOption {
           type = lib.types.nullOr lib.types.path;
-          default = null;
+          default =
+            if cfg.logs.enable && cfg.logs.lokiAddress == "https://monitoring.vedenemo.dev" then
+              config.sops.secrets.loki_password.path or null
+            else
+              null;
         };
       };
     };
@@ -219,6 +238,15 @@ in
       };
     })
     (lib.mkIf cfg.logs.enable {
+      warnings =
+        lib.optional
+          (
+            privateLoki != null
+            && cfg.logs.lokiAddress == privateLoki
+            && !((machines.${config.networking.hostName} or { }) ? internal_ip)
+          )
+          "${config.networking.hostName} sends logs to the Hetzner private network but has no internal IP defined.";
+
       services.alloy = {
         enable = true;
         configPath = "/etc/alloy";

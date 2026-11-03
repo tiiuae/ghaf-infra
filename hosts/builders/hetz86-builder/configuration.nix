@@ -35,6 +35,7 @@ in
   sops = {
     defaultSopsFile = ./secrets.yaml;
     secrets = {
+      loki_password.owner = "alloy";
       ssh_private_key.owner = "root";
     };
   };
