@@ -26,6 +26,55 @@ activate their drain and post-deployment checks.
 Downstream hosts must also set its `repository` to their own infrastructure
 repository.
 
+## Shared Nix settings
+
+Import `ghaf-infra.nixosModules.nix-settings` for shared Nix defaults, including
+the `nix.caches` option:
+
+```nix
+{
+  imports = [ ghaf-infra.nixosModules.nix-settings ];
+
+  nix.caches = [ "nixos-org" "ghaf-dev" ];
+  nix.gc = {
+    automatic = true;
+    dates = "daily";
+    keepSystemGenerations = 3;
+  };
+  nix.settings = {
+    min-free = 10 * 1024 * 1024 * 1024;
+    max-free = 40 * 1024 * 1024 * 1024;
+  };
+}
+```
+
+The module enables flakes and the Nix command, lets remote builders use
+substitutes, and supplies overridable daemon scheduling and OOM-score defaults.
+It trusts `root` and `@wheel`; service modules can add their own trusted users.
+Use `nix.settings.trusted-users = lib.mkForce [ "root" ];` for a restricted list.
+
+`nix.gc.automatic` enables scheduled garbage collection, system-profile pruning,
+disk-pressure GC defaults and GC retries on failure together. It defaults to
+`false` for standalone consumers. Pruning runs before collection in the same
+service, keeping `nix.gc.keepSystemGenerations` generations (default 3).
+`nix.gc.dates`, `options`, `randomizedDelaySec`, and `persistent` retain their
+native NixOS meanings. Age-based deletion in `options` may remove additional
+generations. The default free-space thresholds are 20 GiB and 200 GiB; choose
+values appropriate to the host's disk.
+
+`nix.caches` defaults to `[ "nixos-org" ]`. Available names are `nixos-org`,
+`ghaf-dev`, `ghaf-dbg`, and `ghaf-release`. An empty list adds no named caches;
+normal NixOS cache defaults still apply. Add custom caches through native
+`nix.settings.substituters` and `nix.settings.trusted-public-keys`.
+
+This module needs no `self`, `inputs`, or inventory arguments and imports no
+monitoring or secret provisioning. Hosts own unfree-package policy,
+boot configuration and deployment policy. Set `system.configurationRevision`,
+`nix.registry`, and `nix.nixPath` explicitly using the consumer's own flake when
+needed. The existing `common` module imports `nix-settings`, opts into automatic
+GC by default, and retains Ghaf's cache selection and other site policy. Its
+former separate profile-pruning timer is replaced by pruning before GC.
+
 ## Controller jobs and agent registrations
 
 ```nix

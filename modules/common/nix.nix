@@ -5,12 +5,8 @@
   lib,
   inputs,
   config,
-  pkgs,
   ...
 }:
-let
-  asGB = size: toString (size * 1024 * 1024 * 1024);
-in
 {
   # revision of the flake the configuration was built from.
   # $ nixos-version --configuration-revision
@@ -24,72 +20,18 @@ in
   nixpkgs.config.allowUnfree = true;
 
   nix = {
+    gc.automatic = lib.mkDefault true;
+
     # This will add each flake input as a registry
     # To make nix3 commands consistent with your flake
     registry = lib.mapAttrs (_: value: { flake = value; }) inputs;
     # This will additionally add your inputs to the system's legacy channels
     # Making legacy nix commands consistent as well
     nixPath = lib.mapAttrsToList (key: value: "${key}=${value.to.path}") config.nix.registry;
-
-    settings = {
-      # We can trust root and any users with sudo rights
-      trusted-users = [
-        "root"
-        "@wheel"
-      ];
-      # Enable flakes and new 'nix' command
-      experimental-features = [
-        "nix-command"
-        "flakes"
-      ];
-      # Avoid copying unnecessary stuff over SSH
-      builders-use-substitutes = true;
-      # Auto-free the /nix/store:
-      #
-      # Ref:
-      # https://nixos.wiki/wiki/Storage_optimization#Automation
-      # https://nixos.org/manual/nix/stable/command-ref/conf-file.html#conf-min-free
-      #
-      # When free disk space in /nix/store drops below min-free during build,
-      # perform a garbage-collection until max-free bytes are available or there
-      # is no more garbage.
-      min-free = asGB 20;
-      max-free = asGB 200;
-      # check the free disk space every 5 seconds
-      min-free-check-interval = 5;
-      # Fallback quickly if substituters are not available.
-      connect-timeout = lib.mkDefault 5;
-      # The default at 10 is rarely enough.
-      log-lines = lib.mkDefault 25;
-    };
-    daemonCPUSchedPolicy = lib.mkDefault "batch";
-    daemonIOSchedClass = lib.mkDefault "idle";
-    daemonIOSchedPriority = lib.mkDefault 7;
-  };
-
-  # Make builds to be more likely killed than important services.
-  # 100 is the default for user slices and 500 is systemd-coredumpd@
-  # We rather want a build to be killed than our precious user sessions as builds can be easily restarted.
-  systemd.services.nix-daemon.serviceConfig.OOMScoreAdjust = lib.mkDefault 250;
-
-  # Sometimes it fails if a store path is still in use.
-  # This should fix intermediate issues.
-  systemd.services.nix-gc.serviceConfig = {
-    Restart = "on-failure";
   };
 
   # Direct `switch` deployments across NixOS release boundaries can fail during
   # user-unit activation. Require a `boot` deployment followed by a reboot
   # instead of switching releases on a running system.
   system.switch.inhibitors.nixos-release = config.system.nixos.release;
-
-  systemd.services.trim-profiles = {
-    description = "Delete older profiles";
-    serviceConfig.Type = "oneshot";
-    script = ''
-      ${pkgs.nix}/bin/nix-env --delete-generations +3 --profile /nix/var/nix/profiles/system
-    '';
-    startAt = "03:00";
-  };
-
 }
