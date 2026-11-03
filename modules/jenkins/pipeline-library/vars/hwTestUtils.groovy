@@ -153,7 +153,8 @@ def run_hw_test(
   boolean secureboot,
   String ci_env,
   String deviceTag = null,
-  boolean sendResultsToZephyr = false) {
+  boolean sendResultsToZephyr = false,
+  Map extraParams = [:]) {
   // Keep the blocking downstream wait outside node('built-in') so ghaf-hw-test
   // can acquire a controller executor for its own initialization stages.
   def build_href = "<a href=\"${pipelineModel.html_escape(env.BUILD_URL)}\">" +
@@ -182,6 +183,11 @@ def run_hw_test(
   }
   if (normalizedDeviceTag) {
     test_params << string(name: "DEVICE_TAG", value: normalizedDeviceTag)
+  }
+  extraParams.each { name, value ->
+    if (value?.toString()?.trim()) {
+      test_params << string(name: name, value: value.toString().trim())
+    }
   }
   def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
     parameters: test_params

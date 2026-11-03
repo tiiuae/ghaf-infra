@@ -668,7 +668,7 @@ should fit next to the map without scrolling, in both light and dark mode.
         what: 'The last stage of the run: a release decision on ci-release, a PR status on ci-prod pre-merge, and just the build result on ci-prod main.',
         r: '<code>policy-checker release</code> evaluates <code>slsa/release-policy.yaml</code> for each image: image signature, provenance signature, the earlier provenance trust verdict, SBOM presence and hardware test status. The resulting <code>release-policy.json</code> is signed with the provenance key on the HSM and attached to the image as an OCI referrer. A failed required criterion marks the run unstable.',
         p: 'Posts success or failure to the PR as the <code>jenkins-pre-merge</code> status. Nothing is archived.',
-        m: '<code>ghaf-main</code> posts no GitHub commit status and archives nothing. Its outputs are the Jenkins build result, the tested images under <code>ghaf/main</code> in the registry, and the store paths it built, which the builders push to Cachix <code>ghaf-dev</code> for everyone building on top of main.',
+        m: '<code>ghaf-main</code> posts no GitHub commit status and archives nothing. Its outputs are the Jenkins build result, the tested images under <code>ghaf/ghaf-main</code> in the registry, and the store paths it built, which the builders push to Cachix <code>ghaf-dev</code> for everyone building on top of main.',
         files: ['slsa/release-policy.yaml', 'pkgs/policy-checker/', 'modules/jenkins/pipeline-library/vars/pipelineExecution.groovy']
       } },
     { id: 'archive', lane: 'L4', cx: C(8), kind: 'pipeline',
@@ -925,7 +925,7 @@ should fit next to the map without scrolling, in both light and dark mode.
           files: ['hosts/hetzci/signing.nix'] },
         { badge: 'publish', title: 'Publish the new main',
           nodes: ['attest', 'publish', 'registry'], edges: ['e_attest_publish', 'e_publish_registry'],
-          text: 'Each image goes to <strong>registry.vedenemo.dev</strong> as <code>ghaf/main/&lt;target&gt;:prod-&lt;stamp&gt;-&lt;sha&gt;</code>, and <code>prod-latest</code> moves to it. The tag moves at publish time, before the hardware tests, so check the attached test results before relying on it.',
+          text: 'Each image goes to <strong>registry.vedenemo.dev</strong> as <code>ghaf/ghaf-main/&lt;target&gt;:prod-&lt;stamp&gt;-&lt;sha&gt;</code>, and <code>prod-latest</code> moves to it. The tag moves at publish time, before the hardware tests, so check the attached test results before relying on it.',
           files: ['pkgs/oci-publish/'] },
         { badge: 'agent', title: 'Test on real hardware',
           nodes: ['publish', 'hwtest', 'agent', 'dut', 'registry'], edges: ['e_publish_hwtest', 'e_hwtest_agent', 'e_registry_agent', 'e_agent_dut'],
@@ -933,10 +933,10 @@ should fit next to the map without scrolling, in both light and dark mode.
           files: ['modules/jenkins/pipelines/ghaf-hw-test.groovy', 'hosts/testagent/prod/'] },
         { badge: 'registry', title: 'Attach test results to the image',
           nodes: ['hwtest', 'registry'], edges: ['e_hwtest_registry'],
-          text: 'Results are attached to the main image as OCI referrers, so <code>nix run .#ghaf-fetch</code> on a <code>ghaf/main</code> image also brings its test evidence.' },
+          text: 'Results are attached to the main image as OCI referrers, so <code>nix run .#ghaf-fetch</code> on a <code>ghaf/ghaf-main</code> image also brings its test evidence.' },
         { badge: 'gate', title: 'What main leaves behind',
           nodes: ['hwtest', 'gate', 'cache'], edges: ['e_hwtest_gate', 'e_builders_cache'],
-          text: '<code>ghaf-main</code> posts no commit status and archives nothing. It leaves three results: the Jenkins build result, the tested images under <code>ghaf/main</code>, and, just as important, the store paths it built in <strong>Cachix ghaf-dev</strong> (everything except the disk images).',
+          text: '<code>ghaf-main</code> posts no commit status and archives nothing. It leaves three results: the Jenkins build result, the tested images under <code>ghaf/ghaf-main</code>, and, just as important, the store paths it built in <strong>Cachix ghaf-dev</strong> (everything except the disk images).',
           ci: 'Store paths are keyed by their inputs, so a developer building main right after a merge mostly downloads instead of rebuilding.',
           files: ['modules/jenkins/pipelines/ghaf-main.groovy', 'modules/remote-builder/cachix-push.sh'] }
       ]

@@ -43,6 +43,7 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
       description: 'Concrete device tag for agent selection. If empty, derive it from TEST_TARGET.'),
     string(name: 'GHAF_FLAKE_REF', defaultValue: '', description: 'Pinned Ghaf flake reference for flash-script. If empty, derive it from OCI metadata or IMG_URL commit.'),
     string(name: 'TESTSET', defaultValue: '_relayboot_', description: 'Target testset, e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.'),
+    string(name: 'TEST_TAGS', defaultValue: '', description: 'JSON array of Robot tag expressions to run in order in this job. Takes precedence over TESTSET.'),
     string(name: 'TESTAGENT_HOST', defaultValue: null, description: 'Target testagent host, e.g.: dev, prod, release'),
     booleanParam(name: 'SECUREBOOT', defaultValue: false, description: 'Test on secure boot enabled hardware'),
     booleanParam(name: 'SEND_RESULTS_TO_ZEPHYR', defaultValue: false, description: 'Send Robot Framework results to Zephyr'),
@@ -76,7 +77,14 @@ def init() {
   env.BUILD_TARGET = hwTestUtils.derive_target_name(imgUrl, env.OCI_TARGET) ?: ''
   env.TEST_TARGET = params.TEST_TARGET?.trim() ?: env.BUILD_TARGET ?: ''
   env.JOB_TARGET = env.BUILD_TARGET ?: env.TEST_TARGET
-  env.TESTSET = params.TESTSET ?: ''
+  env.TEST_TAGS = params.TEST_TAGS?.trim() ?: ''
+  if (env.TEST_TAGS) {
+    def testTags = pipelineModel.normalize_test_tags(readJSON(text: env.TEST_TAGS, returnPojo: true))
+    if (testTags.isEmpty()) {
+      error('TEST_TAGS must contain at least one Robot tag expression')
+    }
+  }
+  env.TESTSET = env.TEST_TAGS ? '' : (params.TESTSET ?: '')
   env.INSTALLER_FLOW = env.BUILD_TARGET.contains("installer") ? 'true' : 'false'
   def explicitDeviceTag = params.DEVICE_TAG?.trim()
   // Resolve the target here as well for controller-side fail-fast validation and
@@ -124,14 +132,16 @@ def split_img_url(String img_url) {
   return split
 }
 
-def ghaf_robot_test(String testname='relayboot') {
+def ghaf_robot_test(String testname='relayboot', String testTags = null) {
   if (!env.DEVICE_TAG) {
     error("DEVICE_TAG not set")
   }
   if (!env.DEVICE_NAME) {
     error("DEVICE_NAME not set")
   }
-  if (testname.contains('turnoff')) {
+  if (testTags != null) {
+    env.INCLUDE_TEST_TAGS = testTags
+  } else if (testname.contains('turnoff')) {
     env.INCLUDE_TEST_TAGS = testname
   } else {
     def bootTag = env.DEVICE_TAG
@@ -145,6 +155,7 @@ def ghaf_robot_test(String testname='relayboot') {
     env.INCLUDE_TEST_TAGS = "${bootTag}AND${testname}${env.EXTRATAG}"
   }
   dir("Robot-Framework/test-suites") {
+    env.ROBOT_EXECUTED = 'true'
     sh 'rm -f *.txt *.png *.jpeg *.mp4 *.mkv *.wav output.xml report.html log.html'
     // On failure, continue the pipeline execution
     env.COMMIT_HASH = 'NONE'
@@ -171,7 +182,7 @@ def ghaf_robot_test(String testname='relayboot') {
             -v TEST_TARGET:$TEST_TARGET \
             -v FLASHED:${FLASHED} \
             ${EXTRA_ROBOT_ARGS} \
-            -i $INCLUDE_TEST_TAGS .
+            -i "$INCLUDE_TEST_TAGS" .
         '''
       }
 
@@ -192,6 +203,9 @@ def ghaf_robot_test(String testname='relayboot') {
     } catch (Exception e) {
       currentBuild.result = "FAILURE"
       unstable("FAILED '${testname}': ${e.toString()}")
+      if ((testTags ?: testname).contains('boot')) {
+        env.BOOT_PASSED = 'false'
+      }
     } finally {
       // Move the test output (if any) to a subdirectory
       sh """
@@ -251,7 +265,7 @@ pipeline {
           steps {
             script {
               env.TARGET = env.TEST_TARGET
-              env.TESTSET = params.TESTSET ?: ''
+              env.TESTSET = env.TEST_TAGS ? '' : (params.TESTSET ?: '')
               env.EXTRATAG = hwTestUtils.extra_tag_suffix(env.TEST_TARGET, env.DEVICE_TAG)
               currentBuild.description = params.containsKey('DESC') ? "${params.DESC}" : "${env.TEST_TARGET}"
               println("Using BUILD_TARGET: ${env.BUILD_TARGET}")
@@ -479,6 +493,25 @@ pipeline {
             }
           }
         }
+        stage('HW tests') {
+          when { expression { env.TEST_TAGS } }
+          steps {
+            script {
+              def testTags = readJSON(text: env.TEST_TAGS, returnPojo: true)
+              env.BOOT_PASSED = 'true'
+              testTags.eachWithIndex { expression, index ->
+                def stageName = "${index + 1}. ${expression}"
+                stage(stageName) {
+                  if (env.BOOT_PASSED == 'true') {
+                    ghaf_robot_test("test-${index + 1}", expression)
+                  } else {
+                    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(stageName)
+                  }
+                }
+              }
+            }
+          }
+        }
         stage('Wipe system') {
           when { expression { env.INSTALLER_FLOW == 'true'} }
           steps {
@@ -505,7 +538,7 @@ pipeline {
       post {
         always {
           script {
-            artifactSupport.archive_robot_artifacts(TMP_IMG_DIR, env.BOOT_PASSED != null)
+            artifactSupport.archive_robot_artifacts(TMP_IMG_DIR, env.ROBOT_EXECUTED != null)
           }
         }
       }

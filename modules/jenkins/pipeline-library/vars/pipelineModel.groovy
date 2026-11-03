@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import groovy.json.JsonOutput
+
 private def fail(String message) {
   throw new IllegalArgumentException(message)
 }
@@ -147,7 +149,7 @@ private def test_stage_name(Map testRun, String subject) {
     fail("Missing test run")
   }
 
-  def testset = display_testset(testRun.testset)
+  def testset = testRun.test_tags ? testRun.test_tags.join(', ') : display_testset(testRun.testset)
   def mode = testRun.get('secureboot', false) ? 'secureboot' : 'no-secureboot'
   def components = [subject, testset]
   def host = normalize_optional_string(testRun.get('testagent_host_override', null))
@@ -164,6 +166,16 @@ private def normalize_optional_string(value) {
   }
   def trimmed = value.trim()
   return trimmed.isEmpty() ? null : trimmed
+}
+
+def normalize_test_tags(value) {
+  if (value == null) {
+    return []
+  }
+  if (!(value instanceof List) || value.any { !(it instanceof String) || !it.trim() }) {
+    fail("test_tags must be a list of non-empty Robot tag expressions")
+  }
+  return value.collect { it.trim() }
 }
 
 private def shallow_copy_map(Map source) {
@@ -361,7 +373,7 @@ def test_identity(Map testConfig, boolean secureboot = false) {
     fail("Missing test target")
   }
 
-  def testset = testConfig.testset
+  def testset = testConfig.test_tags ? "tags:${JsonOutput.toJson(testConfig.test_tags)}".toString() : testConfig.testset
   if (!(testset instanceof String) || testset.isEmpty()) {
     fail("Missing testset for '${testTarget}'")
   }
@@ -393,6 +405,10 @@ def test_result_entry(Map testRun, Map result = [:]) {
     secureboot: testRun.get('secureboot', false),
     artifacts: testRun.get('artifacts', null) ?: "test-results/${testRun.test_path_key}",
   ]
+  if (testRun.test_tags) {
+    entry.remove('testset')
+    entry.test_tags = testRun.test_tags
+  }
 
   def status = result.containsKey('status') ? result.status : testRun.get('initial_status', null)
   def reason = result.containsKey('reason') ? result.reason : testRun.get('initial_reason', null)
@@ -421,8 +437,16 @@ def normalize_tests(Map buildConfig, String defaultTestagentHost = null) {
   }
 
   def rawTests = []
+  def defaultDeviceTag = normalize_optional_string(buildConfig.get('device_tag', null))
+  if (defaultDeviceTag != null && info_for_device_tag(defaultDeviceTag) == null) {
+    fail("Unknown device_tag '${defaultDeviceTag}' for '${rawTarget}'")
+  }
   def legacyTestset = normalize_optional_string(buildConfig.get('testset', null))
   def hasLegacyTestset = legacyTestset != null
+  def buildTestTags = normalize_test_tags(buildConfig.get('test_tags', null))
+  if (hasLegacyTestset && buildTestTags) {
+    fail("Invalid test config for '${rawTarget}': use either 'test_tags' or 'testset', not both")
+  }
 
   if (buildConfig.containsKey('tests')) {
     def explicitTests = buildConfig.tests
@@ -432,11 +456,15 @@ def normalize_tests(Map buildConfig, String defaultTestagentHost = null) {
     if (hasLegacyTestset) {
       fail("Invalid test config for '${rawTarget}': use either 'tests' or legacy 'testset', not both")
     }
+    if (buildTestTags) {
+      fail("Invalid test config for '${rawTarget}': use either 'tests' or 'test_tags', not both")
+    }
     rawTests = explicitTests
-  } else if (hasLegacyTestset) {
+  } else if (hasLegacyTestset || buildTestTags) {
     rawTests = [[
       test_target: rawTarget,
       testset: legacyTestset,
+      test_tags: buildTestTags,
       test_secboot: buildConfig.get('test_secboot', false),
       secureboot_only: buildConfig.get('secureboot_only', false),
     ]]
@@ -456,8 +484,12 @@ def normalize_tests(Map buildConfig, String defaultTestagentHost = null) {
     def testTarget = resolvedTestTarget.target
 
     def testset = rawTest.testset
-    if (!(testset instanceof String) || testset.isEmpty()) {
-      fail("Missing testset for '${testTarget}'")
+    def testTags = normalize_test_tags(rawTest.get('test_tags', null))
+    if (testTags && normalize_optional_string(testset) != null) {
+      fail("Invalid test config for '${testTarget}': use either 'test_tags' or 'testset', not both")
+    }
+    if (!testTags && (!(testset instanceof String) || testset.isEmpty())) {
+      fail("Missing testset or test_tags for '${testTarget}'")
     }
 
     def overrideFromExplicitField = normalize_optional_string(rawTest.get('testagent_host_override', null))
@@ -483,6 +515,7 @@ def normalize_tests(Map buildConfig, String defaultTestagentHost = null) {
     def identity = test_identity([
       target: testTarget,
       testset: testset,
+      test_tags: testTags,
       effective_testagent_host: effectiveTestagentHost,
     ])
 
@@ -493,7 +526,9 @@ def normalize_tests(Map buildConfig, String defaultTestagentHost = null) {
     normalizedTest.target = testTarget
     normalizedTest.shortname = short_target_name(testTarget)
     normalizedTest.testset = testset
-    normalizedTest.device_tag = resolvedTestTarget.deviceTag
+    normalizedTest.test_tags = testTags
+    normalizedTest.device_tag = normalize_optional_string(rawTest.get('device_tag', null)) ?:
+      defaultDeviceTag ?: resolvedTestTarget.deviceTag
     normalizedTest.testagent_host_override = testagentHostOverride
     normalizedTest.effective_testagent_host = effectiveTestagentHost
     normalizedTest.secureboot_requested = securebootRequested

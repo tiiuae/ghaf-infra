@@ -71,6 +71,7 @@ def create_pipeline(
   def ghaf_checkout = pwd()
   def parallel_tests = options.get('parallel_tests', true)
   def sendResultsToZephyr = options.get('send_results_to_zephyr', false)
+  def hw_test_params = options.get('hw_test_params', [:])
   def source_vsa_required = options.get('source_vsa_required', false)
   def source_vsa_requested = source_vsa_required || options.get('source_vsa', true)
   def source_vsa_path = null
@@ -325,7 +326,7 @@ def create_pipeline(
                 },
                 "workflow": {
                   "name": "${host_name}",
-                  "repository": "https://github.com/tiiuae/ghaf-infra",
+                  "repository": ${JsonOutput.toJson(env.JENKINS_PROVENANCE_REPOSITORY ?: 'https://github.com/tiiuae/ghaf-infra')},
                   "ref": "${host_revision}"
                 },
                 "job": "${env.JOB_NAME}",
@@ -610,7 +611,7 @@ def create_pipeline(
         ) {
           withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
             def oci_repository =
-              "ghaf/${env.JOB_BASE_NAME.replaceFirst('^ghaf-', '')}/${build_target_name.replaceFirst('^packages\\.', '')}"
+              "${env.OCI_NAMESPACE ?: 'ghaf'}/${env.JOB_BASE_NAME}/${build_target_name.replaceFirst('^packages\\.', '')}"
             def oci_result_json = "${output}/oci-result.json"
             def oci_tags = []
             oci_tags << "${ci_env}-latest"
@@ -663,13 +664,16 @@ def create_pipeline(
                     build_shortname,
                     localTestRun.target,
                     localTestRun.id,
-                    localTestRun.testset,
+                    localTestRun.testset ?: '',
                     localTestRun.effective_testagent_host,
                     oci_result,
                     localTestRun.secureboot,
                     ci_env,
                     localTestRun.get('device_tag', null),
-                    sendResultsToZephyr
+                    sendResultsToZephyr,
+                    hw_test_params + (localTestRun.test_tags ? [
+                      TEST_TAGS: JsonOutput.toJson(localTestRun.test_tags),
+                    ] : [:])
                   )
                   persist_test_result(localTestRun, [job: job])
                   artifactSupport.with_controller_workspace(ghaf_checkout) {
