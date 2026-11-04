@@ -62,6 +62,12 @@ in
     logs.enable = true;
   };
 
+  services.scheduled-deployment = {
+    enable = true;
+    # Like the shared builders, before the working day.
+    window = "Tue *-*-* 05:00,30:00 UTC";
+  };
+
   # use hetzarm as aarch64 remote builder
   nix = {
     distributedBuilds = true;
