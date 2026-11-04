@@ -25,7 +25,7 @@ BUCKET="${BUCKET:=ghaf-artifacts-dev}"
 ACCESS_KEY="${ACCESS_KEY:=}"
 SECRET_KEY="${SECRET_KEY:=}"
 OCI_REGISTRY="${OCI_REGISTRY:=registry.vedenemo.dev}"
-OCI_REPOSITORY="${OCI_REPOSITORY:=/ghaf/release-candidate}"
+OCI_REPOSITORY="${OCI_REPOSITORY:=/${OCI_NAMESPACE:-ghaf}/ghaf-release-candidate}"
 REQUIRE_RELEASE_ATTESTATION="${REQUIRE_RELEASE_ATTESTATION:=true}"
 CI_ENV="${CI_ENV:=}"
 

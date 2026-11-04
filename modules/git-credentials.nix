@@ -12,7 +12,12 @@ in
 {
   options.programs.git.credentials = lib.mkOption {
     default = { };
-    description = "Background HTTPS Git credentials keyed by URL. Runtime secret-file permissions determine which users can authenticate.";
+    description = ''
+      Background HTTPS Git credentials keyed by URL. Runtime secret-file permissions
+      determine which users can authenticate. Matching host credentials take precedence
+      over Jenkins job credentials; an insufficiently scoped host token can block
+      checkout even when the job's token has access.
+    '';
     type = lib.types.attrsOf (
       lib.types.submodule {
         options = {
