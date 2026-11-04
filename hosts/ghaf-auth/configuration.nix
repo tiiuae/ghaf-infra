@@ -48,6 +48,8 @@
           "devenv-fi"
           "phone"
           "ci-dev-admins"
+          "robots"
+          "sfo"
         ];
       }
     ];
@@ -128,6 +130,20 @@
               "https://ghaf-jenkins-controller-release.northeurope.cloudapp.azure.com/oauth2/callback"
             ];
             secretEnv = "AZURE_CI_RELEASE_CLIENT_SECRET";
+            inherit grantTypes;
+          }
+          {
+            id = "robotci";
+            name = "ci-robots.uaenorth.cloudapp.azure.com";
+            redirectURIs = [ "https://ci-robots.uaenorth.cloudapp.azure.com/oauth2/callback" ];
+            secretEnv = "UAE_ROBOTS_CLIENT_SECRET";
+            inherit grantTypes;
+          }
+          {
+            id = "sfoci";
+            name = "ci-sfo.uaenorth.cloudapp.azure.com";
+            redirectURIs = [ "https://ci-sfo.uaenorth.cloudapp.azure.com/oauth2/callback" ];
+            secretEnv = "UAE_SFO_CLIENT_SECRET";
             inherit grantTypes;
           }
         ];
