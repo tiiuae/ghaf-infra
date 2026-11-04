@@ -40,6 +40,7 @@ the `nix.caches` option:
 
   nix.caches = [ "nixos-org" "ghaf-dev" ];
   nix.gc = {
+    # Opt in to scheduled collection.
     automatic = true;
     dates = "daily";
     keepSystemGenerations = 3;
@@ -56,14 +57,24 @@ substitutes, and supplies overridable daemon scheduling and OOM-score defaults.
 It trusts `root` and `@wheel`; service modules can add their own trusted users.
 Use `nix.settings.trusted-users = lib.mkForce [ "root" ];` for a restricted list.
 
-`nix.gc.automatic` enables scheduled garbage collection, system-profile pruning,
-disk-pressure GC defaults and GC retries on failure together. It defaults to
-`false` for standalone consumers. Pruning runs before collection in the same
-service, keeping `nix.gc.keepSystemGenerations` generations (default 3).
+Disk-pressure GC defaults apply independently of scheduled garbage collection:
+when free space drops below `nix.settings.min-free`, Nix collects garbage until
+`nix.settings.max-free` is available or there is no more garbage. The default
+thresholds are 20 GiB and 200 GiB, checked every 5 seconds; choose values
+appropriate to the host's disk.
+
+The module prunes system profiles daily at 03:00 through the separate
+`trim-profiles` service, keeping `nix.gc.keepSystemGenerations` generations
+(default 3). This timer runs even when scheduled GC is disabled, so old
+generations stop rooting store paths without collecting reusable build outputs
+until disk space is needed.
+
+`nix.gc.automatic` opts into scheduled garbage collection and GC retries on
+failure. It defaults to `false`, including for hosts importing `common`, so
+builders retain reusable build outputs until disk space is needed.
 `nix.gc.dates`, `options`, `randomizedDelaySec`, and `persistent` retain their
 native NixOS meanings. Age-based deletion in `options` may remove additional
-generations. The default free-space thresholds are 20 GiB and 200 GiB; choose
-values appropriate to the host's disk.
+generations.
 
 `nix.caches` defaults to `[ "nixos-org" ]`. Available names are `nixos-org`,
 `ghaf-dev`, `ghaf-dbg`, and `ghaf-release`. An empty list adds no named caches;
@@ -74,9 +85,8 @@ This module needs no `self`, `inputs`, or inventory arguments and imports no
 monitoring or secret provisioning. Hosts own unfree-package policy,
 boot configuration and deployment policy. Set `system.configurationRevision`,
 `nix.registry`, and `nix.nixPath` explicitly using the consumer's own flake when
-needed. The existing `common` module imports `nix-settings`, opts into automatic
-GC by default, and retains Ghaf's cache selection and other site policy. Its
-former separate profile-pruning timer is replaced by pruning before GC.
+needed. The existing `common` module imports `nix-settings` and retains Ghaf's
+cache selection and other site policy.
 
 ## Controller jobs and agent registrations
 
