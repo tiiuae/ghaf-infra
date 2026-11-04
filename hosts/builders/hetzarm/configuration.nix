@@ -61,6 +61,13 @@
     logs.enable = true;
   };
 
+  services.scheduled-deployment = {
+    enable = true;
+    # Ends before the window of hetzci-prod, whose post-deploy checks use
+    # this builder.
+    window = "Tue *-*-* 05:00,30:00 UTC";
+  };
+
   # hetz86-builder can use this as remote builder
   users.users.hetz86-builder = {
     isNormalUser = true;
