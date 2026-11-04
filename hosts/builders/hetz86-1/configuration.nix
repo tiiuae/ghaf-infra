@@ -62,4 +62,11 @@
     };
     logs.enable = true;
   };
+
+  services.scheduled-deployment = {
+    enable = true;
+    # Ends before the window of hetzci-prod, whose post-deploy checks use
+    # this builder.
+    window = "Tue *-*-* 05:00,30:00 UTC";
+  };
 }
