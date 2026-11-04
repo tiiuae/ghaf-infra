@@ -9,6 +9,7 @@
 {
   imports = [
     self.nixosModules.testagent
+    self.nixosModules.scheduled-deployment
     ../finland.nix
     ./hardware-configuration.nix
   ];
@@ -26,6 +27,13 @@
       "x1-sec-boot"
       "darter-sec-boot"
     ];
+  };
+  # The testagent module adds the drain and the post-deploy checks.
+  services.scheduled-deployment = {
+    enable = true;
+    # Ends before the window of hetzci-prod: a restart of the controller
+    # while this agent is drained would bring its nodes back online.
+    window = "Tue *-*-* 05:00,30:00 UTC";
   };
 
   # udev rules for test devices serial connections
