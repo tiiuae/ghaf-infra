@@ -1,6 +1,11 @@
 # SPDX-FileCopyrightText: 2022-2025 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  self,
+  ...
+}:
 let
   tuning = import ../../lib/nix-tuning.nix { inherit lib; };
 
@@ -9,6 +14,7 @@ let
 in
 {
   imports = [
+    self.nixosModules.scheduled-deployment
     ./disk-config.nix
     ../common.nix
     ../remote-builders.nix
@@ -77,6 +83,14 @@ in
   };
 
   services.jenkins.environment.SECUREBOOT_TESTS_REQUIRED = "true";
+
+  services.scheduled-deployment = {
+    enable = true;
+    # The builders and test agents start their runs at 05:00 or 05:30, which
+    # leaves about an hour for a drain before this window. The nightly
+    # pipelines have usually finished by then.
+    window = "Tue *-*-* 07..10:00,30:00 UTC";
+  };
 
   nix.settings.max-jobs = lib.mkForce 0;
   nix.settings.min-free = lib.mkOverride 40 controllerDisk.minFreeBytes;
