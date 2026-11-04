@@ -155,7 +155,8 @@ def run_hw_test(
   String deviceTag = null,
   boolean sendResultsToZephyr = false,
   Map extraParams = [:]) {
-  // Keep the blocking downstream wait outside node('built-in') so ghaf-hw-test
+  def jobName = env.JENKINS_HW_TEST_JOB
+  // Keep the blocking downstream wait outside node('built-in') so the hardware job
   // can acquire a controller executor for its own initialization stages.
   def build_href = "<a href=\"${pipelineModel.html_escape(env.BUILD_URL)}\">" +
     "${pipelineModel.html_escape("${env.JOB_NAME}#${env.BUILD_ID}")}</a>"
@@ -175,7 +176,7 @@ def run_hw_test(
     booleanParam(name: "SEND_RESULTS_TO_ZEPHYR", value: sendResultsToZephyr),
   ]
   if (oci_result == null) {
-    error("Missing OCI publish result for ${buildShortname}; cannot trigger ghaf-hw-test")
+    error("Missing OCI publish result for ${buildShortname}; cannot trigger ${jobName}")
   }
   test_params << string(name: "OCI_IMAGE_REF", value: oci_result.primary.reference)
   if (normalizedTestTarget) {
@@ -189,10 +190,11 @@ def run_hw_test(
       test_params << string(name: name, value: value.toString().trim())
     }
   }
-  def job = build(job: "ghaf-hw-test", propagate: false, wait: true,
+  def job = build(job: jobName, propagate: false, wait: true,
     parameters: test_params
   )
   return [
+    name: jobName,
     url: job.absoluteUrl,
     number: job.number,
     result: job.result,
@@ -205,9 +207,10 @@ def collect_hw_test_result(
   boolean secureboot,
   String output,
   Map job) {
-  def logPrefix = secureboot ? "ghaf-hw-test log SB '${testIdentity}:" : "ghaf-hw-test log '${testIdentity}:"
+  def logPrefix = secureboot ? "${job.name} log SB '${testIdentity}:" : "${job.name} log '${testIdentity}:"
   println(logPrefix)
-  sh "cat /var/lib/jenkins/jobs/ghaf-hw-test/builds/${job.number}/log | sed 's/^/    /'"
+  def logPath = artifactSupport.shell_quote("/var/lib/jenkins/jobs/${job.name}/builds/${job.number}/log")
+  sh "cat ${logPath} | sed 's/^/    /'"
   if (job.result != "SUCCESS") {
     unstable("FAILED: ${testIdentity}")
     currentBuild.result = "FAILURE"
@@ -217,7 +220,7 @@ def collect_hw_test_result(
   }
   def artifactsTarget = "${output}/test-results/${testPathKey}"
   copyArtifacts(
-    projectName: "ghaf-hw-test",
+    projectName: job.name,
     selector: specific("${job.number}"),
     target: artifactsTarget,
     optional: true

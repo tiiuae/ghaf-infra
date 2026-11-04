@@ -10,7 +10,7 @@ properties([
     string(name: 'ARTIFACTS_URL', defaultValue: '', description: '''
       Specify the artifacts URL used for local artifact lookup and OTA pinning.
       If OCI_TAG is empty, release artifacts are also archived from this local artifact path.
-      If left empty, uses the current latest artifacts from the 'ghaf-release-candidate' pipeline.
+      If left empty, uses the latest artifacts from the configured release-candidate job.
       Example:
       'https://ci-release.vedenemo.dev/artifacts/ghaf-release-candidate/20251210_081817797-commit_28fb2bdcbb558d02c33b01ef25a2250ff3fdc479/'
       '''.stripIndent()),
@@ -55,7 +55,7 @@ pipeline {
               }
               println("Using OCI_TAG: ${env.OCI_TAG}")
             }
-            def adir = "/var/lib/jenkins/artifacts/ghaf-release-candidate"
+            def adir = "/var/lib/jenkins/artifacts/${env.JENKINS_RELEASE_CANDIDATE_JOB}"
             // By default, take the release artifacts from the newest subdir directly under ${adir}
             env.ARTIFACTS_DIR = sh(script: "ls -dt1 ${adir}/*/ | head -n1", returnStdout:true).trim()
             // If params.ARTIFACTS_URL is defined, parse the artifacts dir from the given string instead
@@ -125,7 +125,8 @@ pipeline {
                 if (env.OCI_TAG) {
                   withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
                     sh """
-                      archive-ghaf-release -o "$OCI_TAG" -t "${params.GHAF_VERSION}"
+                      OCI_REPOSITORY="/${env.OCI_NAMESPACE ?: 'ghaf'}/${env.JENKINS_RELEASE_CANDIDATE_JOB}" \
+                        archive-ghaf-release -o "$OCI_TAG" -t "${params.GHAF_VERSION}"
                     """
                   }
                 } else {

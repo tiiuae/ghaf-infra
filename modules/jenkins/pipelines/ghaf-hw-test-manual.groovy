@@ -15,19 +15,28 @@ import groovy.transform.Field
 @Field def IMAGE_MEDIA_TYPE = 'application/octet-stream'
 @Field def SOURCE_REF_ANNOTATION = 'org.ghaf.source.ref'
 @Field def TARGET_ANNOTATION = 'org.ghaf.target'
+@Field int ROBOT_TEST_INDEX = 0
 env.BOOT_PASSED = 'true'
 
 ////////////////////////////////////////////////////////////////////////////////
 
-def pipelineParameters(boolean useFlakePinnedDefault = false) {
+def pipelineParameters(boolean useFlakePinnedDefault, Map defaults, Map agentChoices) {
+  def devices = agentChoices.devices
+  def hosts = agentChoices.hosts
+  if (devices.contains(defaults.DEVICE_TAG)) {
+    devices = [defaults.DEVICE_TAG] + (devices - [defaults.DEVICE_TAG])
+  }
+  if (hosts.contains(defaults.TESTAGENT_HOST)) {
+    hosts = [defaults.TESTAGENT_HOST] + (hosts - [defaults.TESTAGENT_HOST])
+  }
   return [
     booleanParam(
       name: 'USE_FLAKE_PINNED_CI_TEST',
       defaultValue: useFlakePinnedDefault,
       description: 'Use ci-test-automation source pinned in ghaf-infra flake. Defaults to enabled in release environment.'
     ),
-    string(name: 'CI_TEST_REPO_URL', defaultValue: 'https://github.com/tiiuae/ci-test-automation.git', description: 'Select ci-test-automation repository.'),
-    string(name: 'CI_TEST_REPO_BRANCH', defaultValue: 'main', description: 'Select ci-test-automation branch to checkout.'),
+    string(name: 'CI_TEST_REPO_URL', defaultValue: defaults.get('CI_TEST_REPO_URL', 'https://github.com/tiiuae/ci-test-automation.git'), description: 'Select ci-test-automation repository.'),
+    string(name: 'CI_TEST_REPO_BRANCH', defaultValue: defaults.get('CI_TEST_REPO_BRANCH', 'main'), description: 'Select ci-test-automation branch to checkout.'),
     string(name: 'TEST_TAGS', defaultValue: '', description: 'Target test tags, e.g.: lenovo-x1ANDapps, SP-T140, SP-T45ORSP-T60, etc.'),
     string(
       name: 'OCI_IMAGE_REF',
@@ -56,23 +65,13 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
       name: 'USE_LEGACY_DD_FLASH',
       defaultValue: false,
       description: 'Override flash-script usage and use the old-style dd flashing path instead. Intended for manual UI runs.'),
-    [
-      $class: 'ChoiceParameter',
+    choice(
       name: 'DEVICE_TAG',
-      choiceType: 'PT_RADIO',
+      choices: devices,
       description: '''
         Select the target device. If DEVICE_TAG is selected and both IMG_URL and OCI_IMAGE_REF are left empty, the target device is not flashed.
         Instead, tests will be run against the image flashed on the target device at the time of triggering this job.
-        If IMG_URL or OCI_IMAGE_REF is selected together with DEVICE_TAG, the selected device is flashed with the given image.'''.stripIndent(),
-      script: [
-        $class: 'GroovyScript',
-        script: [
-          classpath: [],
-          sandbox: true,
-          script: "return ['orin-agx','orin-agx-64','orin-nx','lenovo-x1','darter-pro', 'x1-sec-boot', 'darter-sec-boot', 'agx-64-sec-boot']"
-        ]
-      ]
-    ],
+        If IMG_URL or OCI_IMAGE_REF is selected together with DEVICE_TAG, the selected device is flashed with the given image.'''.stripIndent()),
     string(
       name: 'JOB_SELECTOR',
       defaultValue: '',
@@ -80,32 +79,18 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
         Legacy fallback for explicit test identity. Used only when TEST_TARGET is empty.
         If neither TEST_TARGET, JOB_SELECTOR, nor a build target derived from OCI_IMAGE_REF or IMG_URL is available, DEVICE_TAG is used as the job.
         For example system76-darp11-b-storeDisk-debug-installer or system76-darp11-b-storeDisk-debug.'''.stripIndent()),
-    [
-      $class: 'ChoiceParameter',
+    choice(
       name: 'TESTAGENT_HOST',
-      choiceType: 'PT_RADIO',
+      choices: hosts,
       description: '''
         Select the testagent-host. This parameter allows specifying the exact testagent in case Jenkins controller is
-        connected with multiple agents. Can be used together with IMG_URL, OCI_IMAGE_REF, and DEVICE_TAG.'''.stripIndent(),
-      script: [
-        $class: 'GroovyScript',
-        script: [
-          classpath: [],
-          sandbox: true,
-          script: "return ['dev','prod','release']"
-        ]
-      ]
-    ],
+        connected with multiple agents. Can be used together with IMG_URL, OCI_IMAGE_REF, and DEVICE_TAG.'''.stripIndent()),
     booleanParam(name: 'SECUREBOOT', defaultValue: false, description: 'Test on secure boot enabled hardware'),
     booleanParam(name: 'BOOT', defaultValue: true, description: 'Run boot test before any other tests (if any).'),
     booleanParam(name: 'WIPE_ONLY', defaultValue: false, description: 'Run just internal memory wiping stage! Use this option ONLY with installer image!.'),
     booleanParam(name: 'TURN_OFF', defaultValue: false, description: 'Turn off the device after other tests (if any).'),
   ]
 }
-
-properties([
-  parameters(pipelineParameters(false))
-])
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -160,6 +145,7 @@ def init() {
 }
 
 def ghaf_robot_test(String tags) {
+  def resultDir = "test-${++ROBOT_TEST_INDEX}"
   env.ROBOT_EXECUTED = 'true'
   env.INCLUDE_TEST_TAGS = "${tags}"
   env.COMMIT_HASH = 'NONE'
@@ -188,7 +174,7 @@ def ghaf_robot_test(String tags) {
           -v BUILD_ID:${BUILD_NUMBER} \
           -v COMMIT_HASH:$COMMIT_HASH \
           -v FLASHED:${FLASHED} \
-          -i $INCLUDE_TEST_TAGS .
+          -i "$INCLUDE_TEST_TAGS" .
       '''
       currentBuild.description = "${currentBuild.description}<br>✅ ${tags}"
     } catch (Exception e) {
@@ -202,8 +188,8 @@ def ghaf_robot_test(String tags) {
     } finally {
       // Move the test output (if any) to a subdirectory
       sh """
-        rm -fr $tags; mkdir -p $tags
-        mv -f *.txt *.png *.jpeg *.mp4 *.mkv *.wav output.xml report.html log.html $tags/ || true
+        mkdir -p '${resultDir}'
+        mv -f *.txt *.png *.jpeg *.mp4 *.mkv *.wav output.xml report.html log.html '${resultDir}/' || true
       """
     }
   }
@@ -221,8 +207,10 @@ pipeline {
       agent { label 'built-in' }
       steps {
         script {
+          def jobs = readJSON(file: '/etc/jenkins/jobs.json', returnPojo: true)
+          def agentChoices = readJSON(file: '/etc/jenkins/test-agent-choices.json', returnPojo: true)
           properties([
-            parameters(pipelineParameters(env.CI_ENV == 'release'))
+            parameters(pipelineParameters(env.CI_ENV == 'release', jobs[env.JOB_BASE_NAME]?.parameterDefaults ?: [:], agentChoices))
           ])
         }
       }

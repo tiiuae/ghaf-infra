@@ -22,15 +22,15 @@ import groovy.transform.Field
 
 ////////////////////////////////////////////////////////////////////////////////
 
-def pipelineParameters(boolean useFlakePinnedDefault = false) {
+def pipelineParameters(boolean useFlakePinnedDefault, Map defaults) {
   return [
     booleanParam(
       name: 'USE_FLAKE_PINNED_CI_TEST',
       defaultValue: useFlakePinnedDefault,
       description: 'Use ci-test-automation source pinned in ghaf-infra flake. Defaults to enabled in release environment.'
     ),
-    string(name: 'CI_TEST_REPO_URL', defaultValue: 'https://github.com/tiiuae/ci-test-automation.git', description: 'Select ci-test-automation repository.'),
-    string(name: 'CI_TEST_REPO_BRANCH', defaultValue: 'main', description: 'Select ci-test-automation branch to checkout.'),
+    string(name: 'CI_TEST_REPO_URL', defaultValue: defaults.get('CI_TEST_REPO_URL', 'https://github.com/tiiuae/ci-test-automation.git'), description: 'Select ci-test-automation repository.'),
+    string(name: 'CI_TEST_REPO_BRANCH', defaultValue: defaults.get('CI_TEST_REPO_BRANCH', 'main'), description: 'Select ci-test-automation branch to checkout.'),
     string(name: 'OCI_IMAGE_REF', defaultValue: '', description: 'Published OCI image reference.'),
     string(name: 'IMG_URL', defaultValue: '', description: 'Target image url.'),
     string(
@@ -39,20 +39,16 @@ def pipelineParameters(boolean useFlakePinnedDefault = false) {
       description: 'Concrete target identity to test. If empty, derive it from OCI_IMAGE_REF or IMG_URL.'),
     string(
       name: 'DEVICE_TAG',
-      defaultValue: '',
+      defaultValue: defaults.get('DEVICE_TAG', ''),
       description: 'Concrete device tag for agent selection. If empty, derive it from TEST_TARGET.'),
     string(name: 'GHAF_FLAKE_REF', defaultValue: '', description: 'Pinned Ghaf flake reference for flash-script. If empty, derive it from OCI metadata or IMG_URL commit.'),
     string(name: 'TESTSET', defaultValue: '_relayboot_', description: 'Target testset, e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.'),
     string(name: 'TEST_TAGS', defaultValue: '', description: 'JSON array of Robot tag expressions to run in order in this job. Takes precedence over TESTSET.'),
-    string(name: 'TESTAGENT_HOST', defaultValue: null, description: 'Target testagent host, e.g.: dev, prod, release'),
+    string(name: 'TESTAGENT_HOST', defaultValue: defaults.get('TESTAGENT_HOST', ''), description: 'Target testagent host, e.g.: dev, prod, release'),
     booleanParam(name: 'SECUREBOOT', defaultValue: false, description: 'Test on secure boot enabled hardware'),
     booleanParam(name: 'SEND_RESULTS_TO_ZEPHYR', defaultValue: false, description: 'Send Robot Framework results to Zephyr'),
   ]
 }
-
-properties([
-  parameters(pipelineParameters(false))
-])
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -228,8 +224,9 @@ pipeline {
       agent { label 'built-in' }
       steps {
         script {
+          def jobs = readJSON(file: '/etc/jenkins/jobs.json', returnPojo: true)
           properties([
-            parameters(pipelineParameters(env.CI_ENV == 'release'))
+            parameters(pipelineParameters(env.CI_ENV == 'release', jobs[env.JOB_BASE_NAME]?.parameterDefaults ?: [:]))
           ])
         }
       }
