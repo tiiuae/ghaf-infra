@@ -139,8 +139,4 @@
     min-free = lib.mkForce (70 * 1024 * 1024 * 1024);
     max-free = lib.mkForce (280 * 1024 * 1024 * 1024);
   };
-
-  networking.firewall.allowedTCPPorts = [
-    80
-  ];
 }

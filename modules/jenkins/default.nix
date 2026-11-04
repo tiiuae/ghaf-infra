@@ -744,7 +744,10 @@ in
       unitConfig.StartLimitBurst = 0;
     };
 
-    networking.firewall.allowedTCPPorts = lib.mkIf cfg.auth.enable [ 443 ];
+    networking.firewall.allowedTCPPorts = lib.mkIf cfg.auth.enable [
+      80
+      443
+    ];
 
     # Jenkins needs to be trusted user to use nix build --store
     nix.settings.trusted-users = [ "jenkins" ];
