@@ -155,7 +155,10 @@ def run_hw_test(
   String deviceTag = null,
   boolean sendResultsToZephyr = false,
   Map extraParams = [:]) {
-  def jobName = env.JENKINS_HW_TEST_JOB
+  def jobName = null
+  node('built-in') {
+    jobName = env.JENKINS_HW_TEST_JOB
+  }
   // Keep the blocking downstream wait outside node('built-in') so the hardware job
   // can acquire a controller executor for its own initialization stages.
   def build_href = "<a href=\"${pipelineModel.html_escape(env.BUILD_URL)}\">" +

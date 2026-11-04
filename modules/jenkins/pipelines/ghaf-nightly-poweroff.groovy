@@ -2,16 +2,19 @@
 
 def poweroff(String device) {
   def testagent_nodes = null
+  def jobName = null
   node('built-in') {
-    testagent_nodes = nodesByLabel(label: "$device", offline: false)
+    jobName = env.JENKINS_HW_TEST_MANUAL_JOB
+    testagent_nodes = nodesByLabel(label: "dev-${device}", offline: false)
   }
   if (!testagent_nodes) {
-    unstable("No '$device' test agents online")
+    unstable("No 'dev-${device}' test agents online")
     return
   }
-  def job = build(job: env.JENKINS_HW_TEST_MANUAL_JOB, propagate: false, wait: true,
+  def job = build(job: jobName, propagate: false, wait: true,
     parameters: [
       string(name: "DEVICE_TAG", value: "$device"),
+      string(name: "TESTAGENT_HOST", value: "dev"),
       booleanParam(name: "BOOT", value: false),
       booleanParam(name: "TURN_OFF", value: true),
       booleanParam(name: "RELOAD_ONLY", value: false),
