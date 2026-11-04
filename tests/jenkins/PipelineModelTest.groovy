@@ -89,6 +89,27 @@ assert normalizedLegacyBuild.test_runs*.stage_name == [
   'lenovo-x1 / relayboot bat / secureboot',
 ]
 
+def tagDevice = 'lenovo-x1'
+def interpolatedTags = [" ${tagDevice}ANDrelayboot ", "${tagDevice}ANDark"]
+[
+  [target: sampleTestTarget, test_tags: interpolatedTags],
+  [target: sampleTestTarget, tests: [[test_target: sampleTestTarget, test_tags: interpolatedTags]]],
+].each { config ->
+  def build = pipelineModel.normalize_build_config(config, true, 'prod', 'prod')
+  assert build.test_runs.size() == 1
+  def run = build.test_runs[0]
+  assert run.test_tags == ['lenovo-x1ANDrelayboot', 'lenovo-x1ANDark']
+  assert run.test_tags.every { it instanceof String }
+  assert run.stage_name == 'lenovo-x1 / lenovo-x1ANDrelayboot, lenovo-x1ANDark / no-secureboot'
+  assert pipelineModel.test_result_entry(run).test_tags == run.test_tags
+}
+
+['lenovo-x1ANDark', [123], ["${' '}"], [null]].each { invalidTags ->
+  expectFailure('test_tags must be a list of non-empty Robot tag expressions') {
+    pipelineModel.normalize_test_tags(invalidTags)
+  }
+}
+
 def normalizedSecurebootOnlyBuild = pipelineModel.normalize_build_config([
   target: sampleAgx64Target,
   testset: sampleTestset,

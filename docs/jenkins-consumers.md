@@ -237,6 +237,10 @@ Normal Git clone, fetch and ref-discovery commands use the helper automatically,
 including Jenkins's default command-line Git backend. No per-checkout
 `credentialsId` or private-repository branch workaround is required. JGit uses a
 different backend; keep the default CLI implementation for this setup.
+Matching host credentials take precedence over Jenkins job credentials. A host
+token without access to the repository can block checkout even when the job's
+own token has access. Scope the credential-context URLs narrowly or grant the
+host token access to all repositories matching those URLs.
 Credentials are available to any job or process that can read their runtime
 file. Nix's `github:` fetcher uses its own access-token configuration; this
 option configures Git HTTPS authentication.

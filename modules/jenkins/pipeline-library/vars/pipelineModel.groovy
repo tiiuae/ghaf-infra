@@ -172,10 +172,10 @@ def normalize_test_tags(value) {
   if (value == null) {
     return []
   }
-  if (!(value instanceof List) || value.any { !(it instanceof String) || !it.trim() }) {
+  if (!(value instanceof List) || value.any { !(it instanceof CharSequence) || !it.toString().trim() }) {
     fail("test_tags must be a list of non-empty Robot tag expressions")
   }
-  return value.collect { it.trim() }
+  return value.collect { it.toString().trim() }
 }
 
 private def shallow_copy_map(Map source) {
