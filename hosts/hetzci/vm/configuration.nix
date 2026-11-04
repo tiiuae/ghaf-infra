@@ -78,6 +78,7 @@
   };
 
   # Stub Caddy config for vm
+  networking.firewall.allowedTCPPorts = [ 80 ];
   services.caddy = {
     enable = true;
     enableReload = false;
