@@ -21,8 +21,8 @@ env.BOOT_PASSED = 'true'
 ////////////////////////////////////////////////////////////////////////////////
 
 def pipelineParameters(boolean useFlakePinnedDefault, Map defaults, Map agentChoices) {
-  def devices = agentChoices.devices
-  def hosts = agentChoices.hosts
+  def devices = [''] + agentChoices.devices
+  def hosts = [''] + agentChoices.hosts
   if (devices.contains(defaults.DEVICE_TAG)) {
     devices = [defaults.DEVICE_TAG] + (devices - [defaults.DEVICE_TAG])
   }

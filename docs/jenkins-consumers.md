@@ -155,8 +155,11 @@ These are form defaults; explicit build parameters take precedence. Without
 overrides, the test repository remains `tiiuae/ci-test-automation` on `main`.
 The manual job's device and host choices come from enabled `agents` registrations,
 including offline agents. A configured device or host default is selected first
-only if it is registered. With no registered agents,
-the choices are empty. Signing and secure-boot options remain always visible.
+only if it is registered. Both choices retain a blank option for automatic device
+selection and any available host. With no registered agents, only the blank
+options remain. Nightly poweroff always selects `dev` hardware, regardless of the
+manual job's configured host default. Signing and secure-boot options remain
+always visible.
 
 Each `agents` entry declares its device nodes and SSH account. Set
 `enable = false` for an unprovisioned registration. Enabled entries require a
