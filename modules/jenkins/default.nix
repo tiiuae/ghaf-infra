@@ -137,8 +137,8 @@ let
   filteredPipelines = pkgs.runCommand "pipelines" { } ''
     mkdir -p $out
     ${lib.concatStringsSep "\n" (
-      lib.mapAttrsToList (name: job: ''
-        cp "${job.scriptFile}" "$out/${name}.groovy"
+      lib.mapAttrsToList (_: job: ''
+        cp "${job.scriptFile}" "$out/${job.name}.groovy"
       '') cfg.jobs
     )}
   '';
@@ -164,26 +164,7 @@ let
   cascConfig = {
     unclassified.location.url = "${cfg.url}";
     jenkins.numExecutors = cfg.numExecutors;
-    jenkins.nodes = # all permutations of device and host lists
-      lib.mapCartesianProduct
-        (
-          { host, device }:
-          {
-            permanent = {
-              name = "${host}-${device}";
-              labelString = device;
-              launcher = "inbound";
-              mode = "EXCLUSIVE";
-              remoteFS = "/var/lib/jenkins/agents/${device}";
-              retentionStrategy = "always";
-            };
-          }
-        )
-        {
-          host = cfg.nodes.testagentHosts;
-          device = cfg.nodes.devices;
-        }
-      ++ registeredNodes;
+    jenkins.nodes = registeredNodes;
   };
 in
 {
@@ -303,19 +284,29 @@ in
     };
     jobs = lib.mkOption {
       default = { };
-      description = "Pipeline jobs keyed by flat Jenkins job name.";
+      description = "Pipeline jobs; keys select bundled scripts and default Jenkins names.";
       type = lib.types.attrsOf (
         lib.types.submodule (
           { name, ... }: {
             options = {
+              name = lib.mkOption {
+                type = lib.types.strMatching "[A-Za-z0-9_.-]+";
+                default = name;
+                description = "Jenkins job name; the attribute key still selects the default bundled pipeline.";
+              };
               scriptFile = lib.mkOption {
                 type = lib.types.path;
                 default = ./pipelines + "/${name}.groovy";
-                description = "Pipeline script; defaults to the bundled pipeline with this job's name.";
+                description = "Pipeline script; defaults to the bundled pipeline selected by the job's attribute key.";
               };
               description = lib.mkOption {
                 type = lib.types.str;
                 default = "";
+              };
+              parameterDefaults = lib.mkOption {
+                type = lib.types.attrsOf lib.types.str;
+                default = { };
+                description = "Default CI_TEST_REPO_URL, CI_TEST_REPO_BRANCH, DEVICE_TAG and TESTAGENT_HOST values for bundled hardware-test jobs.";
               };
               reloadOnStartup = lib.mkOption {
                 type = lib.types.bool;
@@ -360,23 +351,6 @@ in
           }
         )
       );
-    };
-    nodes = {
-      devices = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        description = "Devices to create agent nodes for";
-        default = [ ];
-      };
-      testagentHosts = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        description = "Variations of device nodes to create";
-        default = [ ];
-      };
-      authorizedKeys = lib.mkOption {
-        type = lib.types.attrsOf lib.types.str;
-        description = "SSH public keys keyed by test-agent hostname";
-        default = { };
-      };
     };
     pluginsFile = lib.mkOption {
       type = lib.types.path;
@@ -518,6 +492,14 @@ in
   config = lib.mkIf cfg.enable {
     assertions = [
       {
+        assertion =
+          let
+            names = map (job: job.name) (lib.attrValues cfg.jobs);
+          in
+          lib.length names == lib.length (lib.unique names);
+        message = "Jenkins job names must be unique.";
+      }
+      {
         assertion = lib.all (agent: agent.publicKey != null && agent.publicKey != "") (
           lib.attrValues registeredAgents
         );
@@ -532,11 +514,7 @@ in
       {
         assertion =
           let
-            names =
-              map (node: node.permanent.name) registeredNodes
-              ++ lib.concatMap (
-                host: map (device: "${host}-${device}") cfg.nodes.devices
-              ) cfg.nodes.testagentHosts;
+            names = map (node: node.permanent.name) registeredNodes;
           in
           lib.length names == lib.length (lib.unique names);
         message = "Jenkins node names must be unique; set matching unique nodeNamePrefix values on overlapping agents and their registrations.";
@@ -618,6 +596,9 @@ in
         lib.optionalAttrs cfg.signing.enable signingEnvironment
         // {
           CI_ENV = cfg.envType;
+          JENKINS_HW_TEST_JOB = cfg.jobs.ghaf-hw-test.name or "ghaf-hw-test";
+          JENKINS_HW_TEST_MANUAL_JOB = cfg.jobs.ghaf-hw-test-manual.name or "ghaf-hw-test-manual";
+          JENKINS_RELEASE_CANDIDATE_JOB = cfg.jobs.ghaf-release-candidate.name or "ghaf-release-candidate";
           JENKINS_PROVENANCE_REPOSITORY = cfg.provenanceRepository;
           OCI_PUBLISH_ENABLED = lib.boolToString cfg.registry.enable;
           JENKINS_SIGNING_ENABLED = lib.boolToString cfg.signing.enable;
@@ -773,7 +754,7 @@ in
       (lib.mapAttrs (_: publicKey: {
         isNormalUser = true;
         openssh.authorizedKeys.keys = [ publicKey ];
-      }) (cfg.nodes.authorizedKeys // agentKeys))
+      }) agentKeys)
       (lib.mkIf config.services.caddy.enable {
         jenkins.homeMode = "710";
       })
@@ -786,7 +767,17 @@ in
       {
         "jenkins/nix-fast-build.sh".source = "${self.outPath}/scripts/nix-fast-build.sh";
         "jenkins/remote-stores.json".text = builtins.toJSON cfg.remoteStores;
-        "jenkins/jobs.json".text = builtins.toJSON cfg.jobs;
+        "jenkins/jobs.json".text = builtins.toJSON (
+          lib.mapAttrs' (_: job: lib.nameValuePair job.name job) cfg.jobs
+        );
+        "jenkins/test-agent-choices.json".text = builtins.toJSON {
+          devices = lib.unique (lib.concatMap (agent: agent.devices) (lib.attrValues registeredAgents));
+          hosts = lib.unique (
+            map (agent: agent.variant) (
+              lib.filter (agent: agent.devices != [ ]) (lib.attrValues registeredAgents)
+            )
+          );
+        };
         "jenkins/provenance-trust-policy.yaml".source = cfg.provenanceTrustPolicyFile;
         "jenkins/release-policy.yaml".source = cfg.releasePolicyFile;
         "jenkins/pipelines".source = filteredPipelines;

@@ -9,7 +9,7 @@ def poweroff(String device) {
     unstable("No '$device' test agents online")
     return
   }
-  def job = build(job: "ghaf-hw-test-manual", propagate: false, wait: true,
+  def job = build(job: env.JENKINS_HW_TEST_MANUAL_JOB, propagate: false, wait: true,
     parameters: [
       string(name: "DEVICE_TAG", value: "$device"),
       booleanParam(name: "BOOT", value: false),

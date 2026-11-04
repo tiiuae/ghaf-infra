@@ -113,12 +113,50 @@ services.ghaf-jenkins = {
 ```
 
 All pipelines are declared through `jobs`. `scriptFile` defaults to the bundled
-`pipelines/<job-name>.groovy`; set it explicitly for a consumer-owned script.
+`pipelines/<attribute-key>.groovy`; set it explicitly for a consumer-owned script.
 For example, `jobs.ghaf-hw-test = { };` loads the bundled hardware test
 pipeline. The script is copied unchanged and loaded as a sandboxed Pipeline
 definition. Dollar signs and Groovy interpolation need no extra escaping. Job
 names must be flat names containing letters, digits, underscores, dots or
 hyphens.
+
+Set `name` to rename any job while retaining its bundled pipeline:
+
+```nix
+services.ghaf-jenkins.jobs = {
+  ghaf-main.name = "custom-main";
+  ghaf-hw-test.name = "custom-hw-test";
+};
+```
+
+The attribute key selects the script; `name` defaults to that key and controls
+the Jenkins job name, startup reloads, artifact paths, and publishing identity.
+Names must be unique. Hardware-test triggers, result collection, nightly
+poweroff, and release publishing follow the configured names of `ghaf-hw-test`,
+`ghaf-hw-test-manual`, and `ghaf-release-candidate` respectively.
+
+Bundled hardware-test jobs accept `parameterDefaults` for `CI_TEST_REPO_URL`,
+`CI_TEST_REPO_BRANCH`, `DEVICE_TAG`, and `TESTAGENT_HOST`. For example, reuse the
+manual pipeline under a consumer's job name without copying it:
+
+```nix
+services.ghaf-jenkins.jobs.ghaf-hw-test-manual = {
+  name = "robots-hw-test-manual";
+  parameterDefaults = {
+    CI_TEST_REPO_URL = "https://github.com/tiiuae/ghaf-robots-test-automation.git";
+    CI_TEST_REPO_BRANCH = "main";
+    DEVICE_TAG = "orin-nx";
+    TESTAGENT_HOST = "prod";
+  };
+};
+```
+
+These are form defaults; explicit build parameters take precedence. Without
+overrides, the test repository remains `tiiuae/ci-test-automation` on `main`.
+The manual job's device and host choices come from enabled `agents` registrations,
+including offline agents. A configured device or host default is selected first
+only if it is registered. With no registered agents,
+the choices are empty. Signing and secure-boot options remain always visible.
 
 Each `agents` entry declares its device nodes and SSH account. Set
 `enable = false` for an unprovisioned registration. Enabled entries require a
@@ -128,8 +166,7 @@ connect to the same controller simultaneously. Configure the same prefix in its
 `services.testagent`. Interchangeable agents may share identical node
 definitions; those are registered once. Conflicting definitions with the same
 name are rejected. Nodes retain device and `<variant>-<device>` labels for
-pipeline selection. Legacy `nodes.devices`, `nodes.testagentHosts`, and
-`nodes.authorizedKeys` remain supported.
+pipeline selection.
 
 Jobs default to `reloadOnStartup = true`, invoking them with `RELOAD_ONLY=true`
 after Jenkins starts. Disable this for a job that should not run at startup:
@@ -202,6 +239,10 @@ Existing `testset` callers retain their predefined stages and boot gating. The
 automatic hardware job receives the list as a JSON `TEST_TAGS` parameter, which
 takes precedence over `TESTSET`; the manual job's existing free-form `TEST_TAGS`
 parameter is unchanged.
+
+The manual hardware job also quotes its free-form tag expression and saves each
+invocation's outputs in numbered directories, so tag text is never used as a
+shell path.
 
 The optional `create_pipeline` options map accepts `hw_test_params`, a map of
 additional string parameters forwarded to hardware jobs. For example:
