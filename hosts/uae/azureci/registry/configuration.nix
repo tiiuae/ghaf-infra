@@ -32,6 +32,22 @@
     clientId = "uae-zot-registry";
     domain = "registry.uaenorth.cloudapp.azure.com";
     metrics.enable = true;
+    # SFO images contain proprietary bundles; never inherit the public fallback.
+    extraConfig.http.accessControl.repositories."sfo/**" = {
+      policies = [
+        {
+          users = [ "sfo-jenkins" ];
+          actions = [
+            "read"
+            "create"
+            "update"
+            "delete"
+          ];
+        }
+      ];
+      defaultPolicy = [ ];
+      anonymousPolicy = [ ];
+    };
   };
 
   environment.systemPackages = with pkgs; [
