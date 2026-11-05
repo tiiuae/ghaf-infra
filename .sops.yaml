@@ -11,6 +11,7 @@ keys:
   - &pavelf age1ndka4hh9dadckkk7y35zz98p2e0ykxpaewaw5eukezxl8sus7dsqcu0ydk
   - &lasse age1uyx0n8e84987arvsrm9c2r02k64slstnv32y2j0duuj47elh3v7qnhweh4
   - &kiran age1q5z5ng8qe4ya7c5mc8gqrj2w6k5frk7ad04pjx9csaeya7r6cdls3s47h3
+  - &alextserepov age18mas4khhycee76qrfkm42rkxhemszdfepg8t5wak4n8r30jtp4uqv5ae4j
 
   # hosts
   - &testagent-prod age12nrv5a9rk9vqvx2tqvghn4kt9ps6gdszmmynhjegl2ewefkh03fsexuy9y
@@ -274,6 +275,7 @@ creation_rules:
       - *fayad
       - *lasse
       - *kiran
+      - *alextserepov
   - path_regex: hosts/nethsm-gateway/dev/secrets.yaml$
     key_groups:
     - age:
@@ -284,6 +286,7 @@ creation_rules:
       - *fayad
       - *lasse
       - *kiran
+      - *alextserepov
   - path_regex: modules/nebula/ca\.key(\.crypt)?$
     key_groups:
     - age:
