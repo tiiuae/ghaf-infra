@@ -832,6 +832,8 @@ in
                     # Agent/Disconnect lets scheduled deployment take an
                     # agent's nodes temporarily offline.
                     permissions = [
+                      # Required to fetch the agent secret from Jenkins.
+                      "Overall/Read"
                       "Agent/Connect"
                       "Agent/Disconnect"
                     ];
