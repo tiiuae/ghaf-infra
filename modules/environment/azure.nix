@@ -37,6 +37,8 @@ in
       services.cloud-init = {
         enable = true;
         network.enable = true;
+        # Preserve installer-staged SSH host identities used to decrypt SOPS secrets.
+        settings.ssh_deletekeys = false;
       };
       systemd.services.cloud-config.serviceConfig.Restart = "on-failure";
 
