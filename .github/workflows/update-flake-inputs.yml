@@ -27,7 +27,7 @@ jobs:
       contents: read # Only required for checkout; branch/PR writes use AUTOMATION_TOKEN.
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43
         with:
           egress-policy: audit
 
@@ -39,7 +39,7 @@ jobs:
           persist-credentials: false
 
       - name: Install nix
-        uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+        uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b
 
       - name: Update all flake inputs
         shell: bash

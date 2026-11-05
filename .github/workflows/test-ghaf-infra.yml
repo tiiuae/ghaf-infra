@@ -50,7 +50,7 @@ jobs:
       cancel-in-progress: true
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43
         with:
           egress-policy: audit
       - uses: webfactory/ssh-agent@e83874834305fe9a4a2997156cb26c5de65a8555
@@ -65,7 +65,7 @@ jobs:
           persist-credentials: false
           allow-unsafe-pr-checkout: true
       - name: Install nix
-        uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+        uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b
       - name: Add builders to ssh_known_hosts
         shell: bash
         run: |
