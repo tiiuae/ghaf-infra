@@ -22,7 +22,7 @@ so it does not expire logs by age.
 
 ## Hosts
 
-The eight Prometheus jobs below are configured in
+The nine Prometheus jobs below are configured in
 [`hosts/ghaf-monitoring/configuration.nix`](../hosts/ghaf-monitoring/configuration.nix).
 Enabling an exporter does not add a host to a scrape job; most target lists
 must be updated explicitly.
@@ -69,6 +69,10 @@ forward NetHSM and systemd logs to Loki.
 
 The `uae` job scrapes `uae-azureci-prod` and `uae-nethsm-gateway` at their
 `nebula_ip` addresses on port 9100.
+
+The `uae-ssh` job scrapes the UAE builders `uae-azureci-az86-1` and
+`uae-azureci-hetzarm-1` through the same ssh proxy as the
+[Hetzner Robot](#hetzner-robot) hosts.
 
 ### Nebula metrics
 

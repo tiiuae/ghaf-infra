@@ -48,6 +48,11 @@
     };
   };
 
+  services.monitoring.metrics = {
+    enable = true;
+    ssh = true;
+  };
+
   environment.systemPackages = with pkgs; [
     screen
     tmux
