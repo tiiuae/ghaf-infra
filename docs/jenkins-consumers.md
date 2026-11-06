@@ -194,6 +194,11 @@ Jenkins UI do not persist across boots.
 the target's `packages.` prefix. Job names must be valid lowercase OCI
 repository components when publishing.
 
+`services.ghaf-jenkins.registry.username` defaults to `"jenkins"` and sets
+`OCI_USERNAME` for OCI publishing and Cosign. Set it to the project's upload
+account, such as `"robots-jenkins"`, and point `registry.passwordFile` to a file
+containing the matching plaintext password.
+
 Set `services.ghaf-jenkins.provenanceRepository` to the consumer's
 infrastructure repository. It defaults to `https://github.com/tiiuae/ghaf-infra`
 and changes `externalParameters.workflow.repository` in provenance. The build

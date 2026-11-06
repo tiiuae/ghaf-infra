@@ -234,6 +234,11 @@ in
         type = lib.types.str;
         description = "OCI registry exposed to Jenkins jobs";
       };
+      username = lib.mkOption {
+        type = lib.types.str;
+        default = "jenkins";
+        description = "Username used to authenticate to the OCI registry";
+      };
       passwordFile = lib.mkOption {
         type = lib.types.str;
         description = "Path to the OCI registry password file";
@@ -608,6 +613,7 @@ in
         }
         // lib.optionalAttrs cfg.registry.enable {
           OCI_REGISTRY = cfg.registry.url;
+          OCI_USERNAME = cfg.registry.username;
           OCI_NAMESPACE = cfg.registry.namespace;
         };
 
