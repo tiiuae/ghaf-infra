@@ -74,6 +74,18 @@ The `uae-ssh` job scrapes the UAE builders `uae-azureci-az86-1` and
 `uae-azureci-hetzarm-1` through the same ssh proxy as the
 [Hetzner Robot](#hetzner-robot) hosts.
 
+The monitoring server cannot reach the UAE lab network, so `uae-testagent-prod`
+and `uae-testagent2-prod` [push their metrics](#pushed-metrics).
+
+### Pushed metrics
+
+Hosts with `services.monitoring.metrics.push` are not scraped by Prometheus.
+Their Alloy reads `node-exporter` on localhost every 15 seconds and sends the
+metrics to the Prometheus remote-write receiver at
+`https://monitoring.vedenemo.dev/prometheus/api/v1/write`, with the same
+credentials as their logs. The metrics have the label `job="push"`, and
+`instance` is the host name.
+
 ### Nebula metrics
 
 The `nebula` job includes every host with a `nebula_ip` in `hosts/machines.nix`,
@@ -90,6 +102,11 @@ two minutes. For ci-release and ci-dbg, that only covers the controllers:
 their builders have no Nebula scrape target, and the general
 [`up?`](../hosts/ghaf-monitoring/provision/alert-rules/up.json) alert excludes
 all three hosts in each environment.
+
+A host that [pushes its metrics](#pushed-metrics) and stops has no failed
+scrape to alert on. `up?` also fires for a host whose `push` metrics stopped
+arriving within the last 15 days. Silence it when a host stops pushing on
+purpose.
 
 The only Loki-based alert,
 [`earlyoom SIGTERM`](../hosts/ghaf-monitoring/provision/alert-rules/earlyoom.json),

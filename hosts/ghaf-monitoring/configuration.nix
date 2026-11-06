@@ -440,6 +440,8 @@ in
     checkConfig = true;
     retentionTime = "90d";
     globalConfig.scrape_interval = "15s";
+    # hosts with services.monitoring.metrics.push send their metrics here
+    extraFlags = [ "--web.enable-remote-write-receiver" ];
 
     # blackbox exporter can ping arbitrary urls for us
     exporters.blackbox = {
