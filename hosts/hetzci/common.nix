@@ -64,6 +64,8 @@
 
   services.ghaf-jenkins = {
     enable = true;
+    # Keep in sync with Ghaf's .github/workflows/source-vsa.yml issuer pin.
+    sourceVsa.trustedWorkflowSha = "660e93c77e9840cf36278aef81ec39ec8a1ad7b2";
     remoteStores = builtins.listToAttrs (
       map (builder: {
         name = builder.system;
