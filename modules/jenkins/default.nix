@@ -165,11 +165,6 @@ let
     unclassified.location.url = "${cfg.url}";
     jenkins.numExecutors = cfg.numExecutors;
     jenkins.nodes = registeredNodes;
-    # The sandboxed shared library serializes test tag lists and test results.
-    # JsonOutput's Object overload is not in Jenkins' default whitelist.
-    security.scriptApproval.approvedSignatures = [
-      "staticMethod groovy.json.JsonOutput toJson java.lang.Object"
-    ];
   };
 in
 {

@@ -672,7 +672,7 @@ def create_pipeline(
                     localTestRun.get('device_tag', null),
                     sendResultsToZephyr,
                     hw_test_params + (localTestRun.test_tags ? [
-                      TEST_TAGS: JsonOutput.toJson(localTestRun.test_tags),
+                      TEST_TAGS: "[${localTestRun.test_tags.collect { JsonOutput.toJson(it) }.join(',')}]".toString(),
                     ] : [:])
                   )
                   persist_test_result(localTestRun, [job: job])

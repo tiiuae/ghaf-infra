@@ -373,7 +373,8 @@ def test_identity(Map testConfig, boolean secureboot = false) {
     fail("Missing test target")
   }
 
-  def testset = testConfig.test_tags ? "tags:${JsonOutput.toJson(testConfig.test_tags)}".toString() : testConfig.testset
+  def testset = testConfig.test_tags ?
+    "tags:[${testConfig.test_tags.collect { JsonOutput.toJson(it) }.join(',')}]".toString() : testConfig.testset
   if (!(testset instanceof String) || testset.isEmpty()) {
     fail("Missing testset for '${testTarget}'")
   }
