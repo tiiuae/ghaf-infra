@@ -32,6 +32,9 @@ in
     owner = "jenkins";
   });
 
+  # The monitoring server cannot reach the UAE lab network.
+  services.monitoring.metrics.push = true;
+
   environment.etc."jenkins/GhafInfraSignECP256.pem".source =
     "${self.outPath}/keys/GhafInfraSignECP256.pem";
 }

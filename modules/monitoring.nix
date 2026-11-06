@@ -130,6 +130,37 @@ let
           }
         '';
   }
+  // lib.optionalAttrs cfg.metrics.push {
+    # The instance label tells the pushing hosts apart in the dashboards.
+    metrics = # hcl
+      ''
+        prometheus.scrape "node" {
+        	targets = [{
+        		__address__  = "127.0.0.1:${toString config.services.prometheus.exporters.node.port}",
+        		instance     = "${config.networking.hostName}",
+        		machine_name = "${config.networking.hostName}",
+        	}]
+        	job_name        = "push"
+        	scrape_interval = "15s"
+        	forward_to      = [prometheus.remote_write.default.receiver]
+        }
+
+        prometheus.remote_write "default" {
+        	endpoint {
+        		url = "https://monitoring.vedenemo.dev/prometheus/api/v1/write"
+
+        		basic_auth {
+        			username      = "${cfg.logs.auth.username}"
+        			${
+             lib.optionalString (
+               cfg.logs.auth.password_file != null
+             ) ''password_file = "${cfg.logs.auth.password_file}"''
+           }
+        		}
+        	}
+        }
+      '';
+  }
   // cfg.alloy.configFiles;
 in
 {
@@ -138,6 +169,7 @@ in
       enable = lib.mkEnableOption "Expose metrics";
       openFirewall = lib.mkEnableOption "Open firewall ports";
       ssh = lib.mkEnableOption "Allow ssh access from monitoring server";
+      push = lib.mkEnableOption "Push metrics to the monitoring server with Alloy, using the log credentials";
     };
 
     logs = {
@@ -182,6 +214,14 @@ in
   };
 
   config = lib.mkMerge [
+    {
+      assertions = [
+        {
+          assertion = cfg.metrics.push -> cfg.metrics.enable && cfg.logs.enable;
+          message = "services.monitoring.metrics.push needs metrics.enable and logs.enable (Alloy and its credentials).";
+        }
+      ];
+    }
     (lib.mkIf cfg.metrics.enable {
       services.prometheus.exporters = {
         node = {

@@ -44,6 +44,11 @@
     };
   };
 
+  services.monitoring.metrics = {
+    enable = true;
+    ssh = true;
+  };
+
   sops.defaultSopsFile = ./secrets.yaml;
 
   environment.systemPackages = with pkgs; [

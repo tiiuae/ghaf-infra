@@ -24,6 +24,14 @@ let
       ;
   };
 
+  # UAE builders outside Nebula, also monitored through the ssh tunnel
+  uaeSshHosts = {
+    inherit (machines)
+      uae-azureci-az86-1
+      uae-azureci-hetzarm-1
+      ;
+  };
+
   # these hosts will be monitored through internal hetzner network
   hetznerCloudHosts = {
     inherit (machines)
@@ -105,7 +113,7 @@ in
   services.openssh.knownHosts = lib.mapAttrs (_: host: {
     hostNames = [ host.ip ];
     inherit (host) publicKey;
-  }) hetznerRobotHosts;
+  }) (hetznerRobotHosts // uaeSshHosts);
 
   # monitors also itself
   services.monitoring = {
@@ -432,6 +440,8 @@ in
     checkConfig = true;
     retentionTime = "90d";
     globalConfig.scrape_interval = "15s";
+    # hosts with services.monitoring.metrics.push send their metrics here
+    extraFlags = [ "--web.enable-remote-write-receiver" ];
 
     # blackbox exporter can ping arbitrary urls for us
     exporters.blackbox = {
@@ -584,6 +594,16 @@ in
                 uae-nethsm-gateway
                 ;
             };
+      }
+      {
+        job_name = "uae-ssh";
+        proxy_url = "http://127.0.0.1:8888";
+        static_configs = lib.mapAttrsToList (name: value: {
+          targets = [ "${value.ip}:9100" ];
+          labels = {
+            machine_name = name;
+          };
+        }) uaeSshHosts;
       }
     ];
   };
