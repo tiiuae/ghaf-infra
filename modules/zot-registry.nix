@@ -26,15 +26,12 @@ let
       retention = {
         policies = [
           {
-            repositories = [ "ghaf/**" ];
+            repositories = cfg.retention.repositories;
             deleteReferrers = true;
             deleteUntagged = true;
             keepTags = [
               {
-                patterns = [
-                  ".*-latest"
-                  "ghaf-.*"
-                ];
+                patterns = cfg.retention.keepTagPatterns;
               }
               {
                 patterns = [ "release-.*" ];
@@ -96,21 +93,6 @@ let
 
       accessControl = {
         repositories = {
-          "ghaf/**" = {
-            policies = [
-              {
-                users = [ "jenkins" ];
-                actions = [
-                  "read"
-                  "create"
-                  "update"
-                  "delete"
-                ];
-              }
-            ];
-            defaultPolicy = [ "read" ];
-            anonymousPolicy = [ "read" ];
-          };
           "**" = {
             defaultPolicy = [
               "read"
@@ -118,9 +100,24 @@ let
               "update"
               "delete"
             ];
-            anonymousPolicy = [ "read" ];
+            anonymousPolicy = [ ];
           };
-        };
+        }
+        //
+          lib.genAttrs (lib.unique (builtins.attrNames cfg.repositoryWriters ++ cfg.publicRepositories))
+            (repository: {
+              policies = lib.optional (builtins.hasAttr repository cfg.repositoryWriters) {
+                users = cfg.repositoryWriters.${repository};
+                actions = [
+                  "read"
+                  "create"
+                  "update"
+                  "delete"
+                ];
+              };
+              defaultPolicy = [ "read" ];
+              anonymousPolicy = lib.optionals (builtins.elem repository cfg.publicRepositories) [ "read" ];
+            });
       }
       // lib.optionalAttrs cfg.metrics.enable {
         metrics.users = [ "prometheus" ];
@@ -149,6 +146,33 @@ in
       type = lib.types.attrs;
       default = { };
       description = "Additional Zot configuration merged with the defaults.";
+    };
+    retention = {
+      repositories = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ "ghaf/**" ];
+        description = "Repository glob patterns to which the retention policy applies.";
+      };
+      keepTagPatterns = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [
+          ".*-latest"
+          "ghaf-.*"
+        ];
+        description = "Tag regular expressions to retain indefinitely in repositories covered by the retention policy.";
+      };
+    };
+    publicRepositories = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Repository glob patterns that allow anonymous reads. Other repositories require authentication.";
+    };
+    repositoryWriters = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+      default = {
+        "ghaf/**" = [ "jenkins" ];
+      };
+      description = "Repository glob patterns mapped to users allowed to read, create, update, and delete images. Other authenticated users have read access to these repositories.";
     };
     metrics.enable = lib.mkEnableOption "Zot metrics";
   };

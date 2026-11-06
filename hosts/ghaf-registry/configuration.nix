@@ -30,6 +30,7 @@
     clientId = "zot-registry";
     domain = "registry.vedenemo.dev";
     metrics.enable = true;
+    publicRepositories = [ "ghaf/**" ];
   };
 
   services.monitoring = {
