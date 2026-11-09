@@ -4,10 +4,12 @@
   config,
   inputs,
   lib,
+  self,
   ...
 }:
 {
   imports = [
+    self.nixosModules.scheduled-deployment
     ../../common.nix
     ./disk-config.nix
     ../azure-common.nix
@@ -78,5 +80,12 @@
       ghaf-manual = { };
       ghaf-nightly = { };
     };
+  };
+
+  services.scheduled-deployment = {
+    enable = true;
+    # After the builders and production test agents, leaving time for their
+    # drains to finish before restarting the controller.
+    window = "Tue *-*-* 07..10:00,30:00 UTC";
   };
 }
