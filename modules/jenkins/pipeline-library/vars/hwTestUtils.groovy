@@ -48,16 +48,10 @@ private def wrapped_usb_switch(String command) {
   return "(${command}; rc=\$?; /run/wrappers/bin/sudo udevadm settle --timeout=10 || true; sleep 2; exit \$rc)"
 }
 
-def setup_mount_commands(String conf_file_path, String target, String device_name) {
-  if (target.contains("microchip-icicle-")) {
-    def muxport = get_test_conf_property(conf_file_path, device_name, 'usb_sd_mux_port')
-    return [
-      mount_cmd: wrapped_usb_switch("/run/wrappers/bin/sudo usbsdmux ${muxport} host"),
-      unmount_cmd: wrapped_usb_switch("/run/wrappers/bin/sudo usbsdmux ${muxport} dut"),
-    ]
-  }
+def acroname_commands(String conf_file_path, String device_name) {
   def serial = get_test_conf_property(conf_file_path, device_name, 'usbhub_serial')
   return [
+    acroname_reset_cmd: "/run/wrappers/bin/sudo AcronameHubCLI -r -s ${serial} && sleep 5",
     mount_cmd: wrapped_usb_switch("/run/wrappers/bin/sudo AcronameHubCLI -u 0 -s ${serial}"),
     unmount_cmd: wrapped_usb_switch("/run/wrappers/bin/sudo AcronameHubCLI -u 1 -s ${serial}"),
   ]
