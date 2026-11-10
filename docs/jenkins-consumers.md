@@ -249,8 +249,8 @@ takes precedence over `TESTSET`; the manual job's existing free-form `TEST_TAGS`
 parameter is unchanged.
 
 The manual hardware job also quotes its free-form tag expression and saves each
-invocation's outputs in numbered directories, so tag text is never used as a
-shell path.
+invocation's outputs in a directory named after that expression, such as
+`relaybootANDorin-nx` or `relay-turnoff`.
 
 The optional `create_pipeline` options map accepts `hw_test_params`, a map of
 additional string parameters forwarded to hardware jobs. For example:
