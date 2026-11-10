@@ -65,6 +65,10 @@ def pipelineParameters(boolean useFlakePinnedDefault, Map defaults, Map agentCho
       name: 'USE_LEGACY_DD_FLASH',
       defaultValue: false,
       description: 'Override flash-script usage and use the old-style dd flashing path instead. Intended for manual UI runs.'),
+    booleanParam(
+      name: 'RESET_ACRONAME',
+      defaultValue: false,
+      description: 'Reset the Acroname USB hub during setup and connect the SSD to the target device.'),
     choice(
       name: 'DEVICE_TAG',
       choices: devices,
@@ -284,9 +288,14 @@ pipeline {
                 echo { \\\"Job\\\": \\\"${env.JOB_TARGET}\\\" } > ${TEST_CONFIG_DIR}/${BUILD_NUMBER}.json
                 ls -la ${TEST_CONFIG_DIR}
               """
-              def mountCommands = hwTestUtils.setup_mount_commands(CONF_FILE_PATH, env.TEST_TARGET, env.DEVICE_NAME)
-              env.MOUNT_CMD = mountCommands.mount_cmd
-              env.UNMOUNT_CMD = mountCommands.unmount_cmd
+              def acronameCommands = hwTestUtils.acroname_commands(CONF_FILE_PATH, env.DEVICE_NAME)
+              env.ACRONAME_RESET_CMD = acronameCommands.acroname_reset_cmd
+              env.MOUNT_CMD = acronameCommands.mount_cmd
+              env.UNMOUNT_CMD = acronameCommands.unmount_cmd
+              if (params.RESET_ACRONAME) {
+                sh env.ACRONAME_RESET_CMD
+                sh env.UNMOUNT_CMD
+              }
             }
           }
         }
@@ -329,6 +338,7 @@ pipeline {
           when { expression { params && (params.IMG_URL || params.OCI_IMAGE_REF) } }
           steps {
             script {
+              sh env.ACRONAME_RESET_CMD
               def dev = hwTestUtils.resolve_flash_target(CONF_FILE_PATH, env.DEVICE_NAME, env.MOUNT_CMD, env.UNMOUNT_CMD)
               if (params.USE_LEGACY_DD_FLASH) {
                 // Wipe possible ZFS leftovers, more details here:

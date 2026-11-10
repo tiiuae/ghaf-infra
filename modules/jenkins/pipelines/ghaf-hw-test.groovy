@@ -411,9 +411,11 @@ pipeline {
         stage('Flash') {
           steps {
             script {
-              def mountCommands = hwTestUtils.setup_mount_commands(CONF_FILE_PATH, env.TEST_TARGET, env.DEVICE_NAME)
-              env.MOUNT_CMD = mountCommands.mount_cmd
-              env.UNMOUNT_CMD = mountCommands.unmount_cmd
+              def acronameCommands = hwTestUtils.acroname_commands(CONF_FILE_PATH, env.DEVICE_NAME)
+              env.ACRONAME_RESET_CMD = acronameCommands.acroname_reset_cmd
+              env.MOUNT_CMD = acronameCommands.mount_cmd
+              env.UNMOUNT_CMD = acronameCommands.unmount_cmd
+              sh env.ACRONAME_RESET_CMD
               def dev = hwTestUtils.resolve_flash_target(CONF_FILE_PATH, env.DEVICE_NAME, env.MOUNT_CMD, env.UNMOUNT_CMD)
               def ghafFlakeRef = hwTestUtils.resolve_ghaf_flake_ref(params.GHAF_FLAKE_REF, params.IMG_URL, env.OCI_SOURCE_REF)
               if (!ghafFlakeRef) {
