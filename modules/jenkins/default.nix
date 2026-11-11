@@ -58,7 +58,6 @@ let
       uefi-sign-sysupdate
     ])
     ++ (with self.packages.${pkgs.stdenv.hostPlatform.system}; [
-      verify-signature
       select-pkcs11-node
       run-cosign
       systemd-sbsign
@@ -211,6 +210,11 @@ in
       type = lib.types.str;
       default = "https://github.com/tiiuae/ghaf-infra";
       description = "Infrastructure configuration repository recorded as workflow.repository in build provenance.";
+    };
+    verificationTools = lib.mkOption {
+      type = lib.types.attrsOf lib.types.package;
+      default = self.legacyPackages.${pkgs.stdenv.hostPlatform.system}.verificationTools;
+      description = "Shared verification packages created by ghaf-infra.lib.mkVerificationTools.";
     };
     remoteStores = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
@@ -558,7 +562,12 @@ in
       }
     ];
     environment.variables = lib.mkIf cfg.signing.enable signingEnvironment;
-    environment.systemPackages = [ pkgs.curl ] ++ lib.optionals cfg.signing.enable signingPackages;
+    environment.systemPackages = [
+      pkgs.curl
+      cfg.verificationTools.verify-signature
+      cfg.verificationTools.policy-checker
+    ]
+    ++ lib.optionals cfg.signing.enable signingPackages;
     services.jenkins = {
       enable = true;
       listenAddress = "localhost";
@@ -584,7 +593,8 @@ in
           inputs.sbomnix.packages.${pkgs.stdenv.hostPlatform.system}.sbomnix # provenance
           pkgs.oras
           self.packages.${pkgs.stdenv.hostPlatform.system}.oci-publish
-          self.packages.${pkgs.stdenv.hostPlatform.system}.policy-checker
+          cfg.verificationTools.policy-checker
+          cfg.verificationTools.verify-signature
           self.packages.${pkgs.stdenv.hostPlatform.system}.source-vsa
         ]
         ++ lib.optionals cfg.integrations.cachix.enable [
@@ -593,7 +603,7 @@ in
         ]
         ++ lib.optionals cfg.archive.enable [
           pkgs.tree
-          self.packages.${pkgs.stdenv.hostPlatform.system}.archive-ghaf-release
+          cfg.verificationTools.archive-ghaf-release
         ]
         ++ lib.optionals cfg.signing.enable signingPackages;
 

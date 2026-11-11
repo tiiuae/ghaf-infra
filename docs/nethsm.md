@@ -25,10 +25,11 @@ the host secrets.
 
 Signing operations can be done from Hetzner CI, with configured pkcs11-proxy.
 
-Jenkins uses `select-pkcs11-node` to choose a signing endpoint. It tries the
-`NetHSM` token on the Tampere and UAE gateways, then the `YubiHSM` token in
-the same order, and uses the first one that holds the requested key. The UAE
-controller tries the UAE gateway first (`ROUTER_PKCS11_REGIONS=uae,tampere`).
+Jenkins uses `select-pkcs11-node` to choose a signing endpoint. SLSA signing
+tries the `NetHSM` token on the Tampere and UAE gateways; UEFI signing uses
+`YubiHSM`. YubiHSM currently has no SLSA keys. The selector uses the first
+gateway that holds the requested key. The UAE controller configures
+`signing.proxy.endpoints` with the UAE gateway first.
 `nethsm-gateway-dev` is not part of this selection. Each probe has a
 default 75-second timeout to allow Nebula tunnels to recover; healthy probes
 return immediately. 75 seconds covers Linux's last SYN retry (about 67 seconds
@@ -36,8 +37,8 @@ with default `tcp_syn_retries` and `tcp_syn_linear_timeouts`) plus a short
 margin for TLS and key lookup. It is a recovery budget, not a guarantee.
 
 Each signing step re-runs selection under the controller-wide `signing` lock.
-With two configured key URIs and two proxy endpoints, four probes that reach
-the timeout take about five minutes before selection fails, and queued signing
+With one configured key URI and two proxy endpoints, two probes that reach
+the timeout take about two and a half minutes before selection fails, and queued signing
 steps can accumulate these waits. The timeout bounds endpoint selection, not
 the signing operation itself.
 
@@ -61,9 +62,19 @@ Each CI environment has its own keys, suffixed with the environment name
   release-policy attestations
 
 Jenkins records the PKCS#11 URI of the key that signed each artifact as
-`signing_key` in the artifact manifest. `verify-signature` uses it to select
-the matching certificate from `ghaf-infra-pki`. `archive-ghaf-release`
-additionally requires the keys of the environment that publishes the release.
+`signing_key` in the artifact manifest. `verify-signature` extracts its token
+and object name, then tries `<object>.pem` in each configured certificate
+directory for that token. The Ghaf defaults include both Tampere and UAE
+NetHSM directories from `ghaf-infra-pki`. The same URI can identify different
+regional keys; verification succeeds when either trusted certificate verifies
+the signature. It needs no HSM connection or gateway address.
+
+The verifier, `policy-checker`, and `archive-ghaf-release` are built together
+with one certificate configuration. Controllers, test agents, and standalone
+flake packages use this shared toolset. Archiving additionally checks an
+environment suffix on key object names, so a prod key cannot publish a release
+when `CI_ENV=release`. See [consumer configuration](./jenkins-consumers.md#signature-verification)
+for custom certificates and key names.
 
 ### Provenance
 

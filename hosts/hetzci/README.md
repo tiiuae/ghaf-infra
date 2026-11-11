@@ -104,7 +104,9 @@ module creates the public trust directory and exports it as
 `JENKINS_SECURE_AB_TRUST_DIR`.
 Jenkins supplies the generation in a per-run `config.json`.
 The existing pipelines still disable signing when `CI_ENV=vm`. Signature
-verification configuration is separate. HetzCI's Ghaf-specific signing tools,
+verification uses a shared toolset configured independently through
+`verificationTools`; see [consumer configuration](../../docs/jenkins-consumers.md#signature-verification).
+HetzCI's Ghaf-specific signing tools,
 certificates, and SOPS declarations remain in [`signing.nix`](./signing.nix).
 
 Pipeline tests live in [`tests/jenkins/`](../../tests/jenkins/) at the
