@@ -11,9 +11,6 @@
     { pkgs, self', ... }:
     {
       packages = {
-        policy-checker = pkgs.callPackage ../pkgs/policy-checker {
-          selfPkgs = self'.packages;
-        };
         nethsm-exporter = pkgs.callPackage ../pkgs/nethsm-exporter { };
         oci-publish = pkgs.callPackage ../pkgs/oci-publish { };
         source-vsa = pkgs.callPackage ../pkgs/source-vsa { };

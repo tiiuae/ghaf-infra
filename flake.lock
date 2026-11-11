@@ -241,11 +241,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1791457401,
-        "narHash": "sha256-HsenYAfYtkG9tGJ1TiCNoW5enqP+Eqxi3sN47jPHhPA=",
+        "lastModified": 1793614258,
+        "narHash": "sha256-ZpkZifHqrbaNxJt3URJRaemn7qPD9DKRYQh5RyxOUns=",
         "owner": "tiiuae",
         "repo": "ghaf-infra-pki",
-        "rev": "ed18f20fb76cdc9a817145012473ac0f7b441229",
+        "rev": "a03241784945b95754c824105a15b4003583de69",
         "type": "github"
       },
       "original": {
