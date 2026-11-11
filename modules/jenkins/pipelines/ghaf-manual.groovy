@@ -5,13 +5,16 @@
 def DEFAULT_REPO_URL = 'https://github.com/tiiuae/ghaf/'
 def PIPELINE = [:]
 
-properties([
-  githubProjectProperty(displayName: ''),
-  parameters([
+def pipelineParameters(List agentHosts, String defaultRepoUrl) {
+  def hosts = [''] + agentHosts
+  if (hosts.contains(env.CI_ENV)) {
+    hosts = [env.CI_ENV] + (hosts - [env.CI_ENV])
+  }
+  return [
     booleanParam(name: 'UEFISIGN', defaultValue: false, description: 'Enable secure boot signing (for supported targets)'),
     booleanParam(name: 'SECUREBOOT', defaultValue: false, description: 'Run tests also on secureboot enabled hardware, if available'),
     booleanParam(name: 'SBOM', defaultValue: false, description: 'Generate SBOMs for all selected build targets'),
-    string(name: 'REPO_URL', defaultValue: DEFAULT_REPO_URL, description: 'Git repository URL'),
+    string(name: 'REPO_URL', defaultValue: defaultRepoUrl, description: 'Git repository URL'),
     string(name: 'GITREF', defaultValue: 'main', description: 'Ghaf git reference (Commit/Branch/Tag)'),
     string(name: 'TESTSET', defaultValue: null, description: 'By default tests are skipped. To run hw-tests, define the target testset here; e.g.: _relayboot_, _relayboot_bat_, _relayboot_pre-merge_, etc.)'),
     string(
@@ -29,6 +32,11 @@ properties([
       defaultValue: false,
       description: 'Execute the custom Orin AGX flash script after Build.'
     ),
+    choice(
+      name: 'TESTAGENT_HOST',
+      choices: hosts,
+      description: 'Select the test agent host for Orin flashing. Defaults to the host corresponding to this Jenkins controller.'
+    ),
     booleanParam(name: 'doc', defaultValue: false, description: 'Build target packages.x86_64-linux.doc'),
     booleanParam(name: 'nvidia_jetson_orin_agx_debug_from_x86_64', defaultValue: false, description: 'Build target packages.x86_64-linux.nvidia-jetson-orin-agx-debug-from-x86_64'),
     booleanParam(name: 'nvidia_jetson_orin_agx_accelerated_guivm_debug_from_x86_64', defaultValue: false, description: 'Build target packages.x86_64-linux.nvidia-jetson-orin-agx-accelerated-guivm-debug-from-x86_64'),
@@ -43,14 +51,26 @@ properties([
     booleanParam(name: 'intel_laptop_storeDisk_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-storeDisk-debug-installer (generic Intel laptop storeDisk installer replacing the Darter Pro storeDisk installer target)'),
     booleanParam(name: 'intel_laptop_low_mem_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-low-mem-debug (generic Intel laptop low-memory image replacing the Dell Latitude 7330 debug target)'),
     booleanParam(name: 'intel_laptop_low_mem_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-low-mem-debug-installer'),
-  ])
-])
+  ]
+}
 pipeline {
   agent none
   options {
     buildDiscarder(logRotator(numToKeepStr: '30'))
   }
   stages {
+    stage('Set properties') {
+      agent { label 'built-in' }
+      steps {
+        script {
+          def agentChoices = readJSON(file: '/etc/jenkins/test-agent-choices.json', returnPojo: true)
+          properties([
+            githubProjectProperty(displayName: ''),
+            parameters(pipelineParameters(agentChoices.hosts, DEFAULT_REPO_URL)),
+          ])
+        }
+      }
+    }
     stage('Reload only') {
       agent { label 'built-in' }
       when { expression { params && params.RELOAD_ONLY } }
@@ -267,25 +287,26 @@ pipeline {
             error("Unable to resolve Orin device config for flash target '${flashTarget}'")
           }
           def secureBootDeviceTag = "${deviceInfo.tag - 'orin-'}-sec-boot"
-          // Dev orin devices support both secure-boot and non-secure-boot flash modes; other environments require the label to match the mode.
-          echo("Orin flash selection CI_ENV='${ciEnv}'")
-          def deviceTags = ciEnv == 'dev' ?
+          // Dev Orin devices support both secure-boot and non-secure-boot flash modes; other hosts require the label to match the mode.
+          def testAgentHost = params.TESTAGENT_HOST?.trim() ?: ciEnv
+          echo("Orin flash selection TESTAGENT_HOST='${testAgentHost}' (CI_ENV='${ciEnv}')")
+          def deviceTags = testAgentHost == 'dev' ?
             (secureBootFlash ? [secureBootDeviceTag, deviceInfo.tag] : [deviceInfo.tag, secureBootDeviceTag]) :
             [secureBootFlash ? secureBootDeviceTag : deviceInfo.tag]
           def availableDeviceTag = deviceTags.find { deviceTag ->
             try {
-              !nodesByLabel(label: deviceTag, offline: false).isEmpty()
+              !nodesByLabel(label: "${testAgentHost}-${deviceTag}", offline: false).isEmpty()
             } catch (Exception e) {
-              if (e.message?.contains("Could not find any nodes with '${deviceTag}' label")) {
+              if (e.message?.contains("Could not find any nodes with '${testAgentHost}-${deviceTag}' label")) {
                 return false
               }
               throw e
             }
           }
           if (availableDeviceTag == null) {
-            error("No online test agent found with any of these labels: ${deviceTags.join(', ')}")
+            error("No online test agent found with any of these labels: ${deviceTags.collect { "${testAgentHost}-${it}" }.join(', ')}")
           }
-          node(availableDeviceTag) {
+          node("${testAgentHost}-${availableDeviceTag}") {
             env.ORIN_AGX_FLASH_SCRIPT_PATH = flashScriptPath
             env.ORIN_AGX_GHAF_IMAGE_PATH = customGhafPath
             env.ORIN_AGX_SECURE_BOOT_FLASH = secureBootFlash.toString()
@@ -294,7 +315,7 @@ pipeline {
             env.ORIN_AGX_FLASH_GCROOT = "/var/lib/jenkins/gcroots/orin-agx-flash-script-${flashGcRootTag}"
             env.ORIN_AGX_GHAF_IMAGE_GCROOT = "/var/lib/jenkins/gcroots/orin-agx-ghaf-image-${flashGcRootTag}"
             env.ORIN_AGX_RELAY_NAME = "relay-${deviceInfo.name}"
-            def testAgentHost = sh(
+            def testAgentSshUser = sh(
               script: 'IFS= read -r host < /proc/sys/kernel/hostname; printf %s "$host"',
               returnStdout: true
             ).trim()
@@ -318,7 +339,7 @@ pipeline {
                   -delete
                 NIX_SSHOPTS="-i /run/secrets/ssh_host_ed25519_key -o StrictHostKeyChecking=no" \
                   nix copy \
-                    --from ssh://${testAgentHost}@\$controller_host \
+                    --from ssh://${testAgentSshUser}@\$controller_host \
                     --no-check-sigs \
                     ${testAgentStorePaths}
                 nix-store --add-root "\$ORIN_AGX_FLASH_GCROOT" \
