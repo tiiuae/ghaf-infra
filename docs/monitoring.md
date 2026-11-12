@@ -108,13 +108,23 @@ scrape to alert on. `up?` also fires for a host whose `push` metrics stopped
 arriving within the last 15 days. Silence it when a host stops pushing on
 purpose.
 
-The only Loki-based alert,
-[`earlyoom SIGTERM`](../hosts/ghaf-monitoring/provision/alert-rules/earlyoom.json),
-looks for low-memory messages. If its query fails, Grafana raises a
+The [`earlyoom SIGTERM`](../hosts/ghaf-monitoring/provision/alert-rules/earlyoom.json)
+alert looks for low-memory messages in Loki. If its query fails, Grafana raises a
 [datasource error](https://grafana.com/docs/grafana/latest/alerting/guides/connectivity-errors/)
-alert; if the query returns nothing, the rule stays OK. No rule checks whether
-a host has stopped sending journal entries. Entries that haven't reached Loki
-are lost when a [baseline reset](baseline-reset.md) host reboots.
+alert; if the query returns nothing, the rule stays OK.
+
+The `journal logs missing` alert names expected hosts that have sent no journal
+entries to the infrastructure Loki for 30 minutes, including hosts that have
+never reported. It evaluates every minute and clears when fresh entries arrive.
+The expected list comes from the repository checkout used to build monitoring
+and lists the hosts with journal shipping enabled, except `nethsm-gateway-dev`,
+as in the scrape configuration. It does not inspect live systems. Updating the
+monitoring server retires hosts removed from that list.
+Existing five-minute deployment-metrics jobs provide journal activity on idle hosts.
+Release and debug hosts are included: silence their alerts for maintenance
+lasting longer than 30 minutes. Loki query errors raise separate datasource
+alerts. Entries not yet delivered are lost when a
+[baseline reset](baseline-reset.md) host reboots.
 
 The scheduled deployment alerts are described in
 [scheduled deployment](scheduled-deployment.md#alerts).
