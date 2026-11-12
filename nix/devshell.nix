@@ -8,9 +8,6 @@
       config,
       ...
     }:
-    let
-      reusePkgs = inputs'.nixpkgs-reuse.legacyPackages;
-    in
     {
       devShells.default = pkgs.mkShell {
         shellHook = ''
@@ -58,7 +55,7 @@
             python3.pkgs.pytest
             python3.pkgs.pylint
             python3.pkgs.tabulate
-            reusePkgs.reuse
+            reuse
             sops
             ssh-to-age
             wget
