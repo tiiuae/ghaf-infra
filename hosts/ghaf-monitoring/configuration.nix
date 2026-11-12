@@ -51,6 +51,17 @@ let
       hetzarm-rel-1
       ;
   };
+
+  # machines contains inventory hosts with deployment metadata, without VM variants.
+  expectedJournalHosts = lib.concatMap (
+    name:
+    let
+      host = self.nixosConfigurations.${name}.config;
+      logs = host.services.monitoring.logs;
+    in
+    # Like the scrape targets, leave the AiC-managed development gateway out.
+    lib.optional (name != "nethsm-gateway-dev" && logs.enable && logs.journal) host.networking.hostName
+  ) (builtins.attrNames machines);
 in
 {
   imports = [
@@ -336,6 +347,17 @@ in
         }
       ];
       rules.settings.groups = [
+        {
+          name = "Journal delivery";
+          folder = "Alerts";
+          interval = "60s";
+          rules = [
+            (import ./provision/alert-rules/journal-missing.nix {
+              inherit lib;
+              hosts = expectedJournalHosts;
+            })
+          ];
+        }
         {
           name = "Health checks";
           folder = "Alerts";
