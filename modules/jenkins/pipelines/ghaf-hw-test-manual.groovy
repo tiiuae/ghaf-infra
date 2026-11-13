@@ -289,7 +289,7 @@ pipeline {
                 ls -la ${TEST_CONFIG_DIR}
               """
               def acronameCommands = hwTestUtils.acroname_commands(CONF_FILE_PATH, env.DEVICE_NAME)
-              env.ACRONAME_RESET_CMD = acronameCommands.acroname_reset_cmd
+              env.ACRONAME_RESET_CMD = "acronameCommands.acroname_reset_cmd; sleep 15"
               env.MOUNT_CMD = acronameCommands.mount_cmd
               env.UNMOUNT_CMD = acronameCommands.unmount_cmd
               if (params.RESET_ACRONAME) {
