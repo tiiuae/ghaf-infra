@@ -50,8 +50,23 @@ private def wrapped_usb_switch(String command) {
 
 def acroname_commands(String conf_file_path, String device_name) {
   def serial = get_test_conf_property(conf_file_path, device_name, 'usbhub_serial')
+  def hubSerial = serial.replaceFirst(/(?i)^0x/, '')
+  def acroname_hubs = "/run/wrappers/bin/sudo AcronameHubUpdater -D -t USB 2>&1"
+  def acroname_hub_poll = """
+    timeout 30s sh -c '
+      while :; do
+        if ${acroname_hubs} | tr -d "[:space:]" | grep -iFq "${hubSerial}"; then
+          exit 0
+        fi
+        sleep 1
+      done
+    ' || { echo 'Timed out waiting for Acroname ${serial} to become available' >&2; exit 1; }
+  """.stripIndent().trim()
+  def acroname_reset_cmd = "/run/wrappers/bin/sudo AcronameHubCLI -r -s ${serial} && ${acroname_hub_poll}"
   return [
-    acroname_reset_cmd: "/run/wrappers/bin/sudo AcronameHubCLI -r -s ${serial} && sleep 5",
+    acroname_reset_cmd: acroname_reset_cmd,
+    acroname_hub_poll: acroname_hub_poll,
+    acroname_hubs: acroname_hubs,
     mount_cmd: wrapped_usb_switch("/run/wrappers/bin/sudo AcronameHubCLI -u 0 -s ${serial}"),
     unmount_cmd: wrapped_usb_switch("/run/wrappers/bin/sudo AcronameHubCLI -u 1 -s ${serial}"),
   ]
