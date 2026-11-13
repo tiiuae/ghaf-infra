@@ -161,10 +161,10 @@ is_release_target() {
 }
 
 is_expected_signing_key() {
-  signing_key="$1"
-  object="$2"
-  [[ $signing_key == "pkcs11:token=NetHSM;object=$object" ||
-    $signing_key == "pkcs11:token=YubiHSM;object=$object" ]]
+  [[ $1 == pkcs11:* ]] || return 1
+  local parameters=";${1#pkcs11:};"
+  [[ $parameters =~ \;object=([^\;]+)\; ]] || return 1
+  [[ ${BASH_REMATCH[1]} == *-"$CI_ENV" ]]
 }
 
 verify_signatures() {
@@ -205,7 +205,7 @@ verify_signatures() {
     print_err "missing provenance signing key in manifest: $manifest"
     exit 1
   fi
-  if ! is_expected_signing_key "$prov_signing_key" "GhafInfraSignProv-${CI_ENV}"; then
+  if ! is_expected_signing_key "$prov_signing_key"; then
     print_err "provenance signing key does not match environment '$CI_ENV': $prov_signing_key"
     exit 1
   fi
@@ -224,7 +224,7 @@ verify_signatures() {
       print_err "missing image signing key: $dir"
       exit 1
     fi
-    if ! is_expected_signing_key "$img_signing_key" "GhafInfraSignECP256-${CI_ENV}"; then
+    if ! is_expected_signing_key "$img_signing_key"; then
       print_err "image signing key does not match environment '$CI_ENV': $img_signing_key"
       exit 1
     fi
@@ -242,7 +242,7 @@ verify_signatures() {
     print_err "  signature: $prov_sig"
     exit 1
   fi
-  verify_release_attestation "$dir" "$prov_signing_key"
+  verify_release_attestation "$dir"
 }
 
 expected_oci_digest() {
@@ -263,7 +263,6 @@ expected_oci_digest() {
 
 verify_release_attestation() {
   dir="$1"
-  release_signing_key="$2"
   if [[ $REQUIRE_RELEASE_ATTESTATION != "true" ]]; then
     echo "[+] Skipping release attestation verification"
     return 0
@@ -280,6 +279,14 @@ verify_release_attestation() {
     exit 1
   fi
 
+  if ! release_signing_key=$(jq -re '.predicate.signing_key' "$release_attestation"); then
+    print_err "missing release policy signing key: $release_attestation"
+    exit 1
+  fi
+  if ! is_expected_signing_key "$release_signing_key"; then
+    print_err "release policy signing key does not match environment '$CI_ENV': $release_signing_key"
+    exit 1
+  fi
   if ! verify-signature release "$release_attestation" "$release_attestation_sig" "$release_signing_key"; then
     print_err "failed verifying release policy attestation signature"
     print_err "  attestation: $release_attestation"

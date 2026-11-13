@@ -778,6 +778,9 @@ def create_pipeline(
           }
 
           withRedundancyRouter('provenance') { ctx ->
+            def releaseAttestation = readJSON file: "${outdir}/release-policy.json"
+            releaseAttestation.predicate.signing_key = ctx.uri
+            writeJSON file: "${outdir}/release-policy.json", json: releaseAttestation
             sh """
               openssl pkeyutl -sign -rawin \
                 -inkey "${ctx.uri}" \

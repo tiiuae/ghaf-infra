@@ -13,8 +13,8 @@ let
   cfg = config.services.testagent;
   agentPackages = [
     inputs.robot-framework.packages.${pkgs.stdenv.hostPlatform.system}.ghaf-robot
-    self.packages.${pkgs.stdenv.hostPlatform.system}.policy-checker
-    self.packages.${pkgs.stdenv.hostPlatform.system}.verify-signature
+    cfg.verificationTools.policy-checker
+    cfg.verificationTools.verify-signature
   ]
   ++
     lib.optional cfg.tooling.jetson.enable
@@ -241,6 +241,11 @@ in
       type = lib.types.path;
       default = "${self.outPath}/slsa/provenance-trust-policy.yaml";
       description = "Policy for verifying downloaded build provenance.";
+    };
+    verificationTools = lib.mkOption {
+      type = lib.types.attrsOf lib.types.package;
+      default = self.legacyPackages.${pkgs.stdenv.hostPlatform.system}.verificationTools;
+      description = "Shared verification packages created by ghaf-infra.lib.mkVerificationTools.";
     };
     nodeNamePrefix = lib.mkOption {
       type = lib.types.str;

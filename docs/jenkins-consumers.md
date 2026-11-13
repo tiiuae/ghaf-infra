@@ -187,6 +187,52 @@ deletes root XML files, node definitions and top-level job config files. Declare
 configuration in Nix and Configuration as Code; changes made only through the
 Jenkins UI do not persist across boots.
 
+## Signature verification
+
+Build one verification toolset per platform and use it on both controllers
+and test agents. The factory accepts certificate directories keyed by the
+PKCS#11 token name. For `pkcs11:token=NetHSM;object=provenance-release`,
+configure `certificateDirectories.NetHSM` and name the certificate
+`provenance-release.pem`. Replace `NetHSM` with your token's name if different.
+
+```nix
+{ pkgs, inputs, ... }:
+let
+  verificationTools = inputs.ghaf-infra.lib.mkVerificationTools {
+    inherit pkgs;
+    certificateDirectories.NetHSM = [
+      ./certificates/primary
+      ./certificates/backup
+    ];
+  };
+in
+{
+  services.ghaf-jenkins.verificationTools = verificationTools;
+  services.testagent.verificationTools = verificationTools;
+}
+```
+
+Set the relevant option on each host; the example shows both assignments.
+For example, both directories can contain `provenance-release.pem` with
+different regional certificates. Verification tries matching files until one
+succeeds, skipping absent files. Unknown tokens and signatures that match no
+trusted certificate fail. Gateway names, addresses, and availability do not
+affect verification.
+
+The factory returns `verify-signature`, `policy-checker`,
+`archive-ghaf-release`, and its `ghaf-fetch` dependency. For standalone use,
+install packages from the same toolset. `policy-checker` and archiving select
+that toolset's verifier even when another verifier is on `PATH`. Configuration
+is embedded in the packages; environment variables do not override it.
+
+The defaults use both Ghaf NetHSM certificate directories. Supplying a custom
+toolset replaces those defaults completely. Archiving requires each signing
+key's object name to end in `-${CI_ENV}`, such as `provenance-release` when
+`CI_ENV=release`. No archive key list is needed. Release-policy attestations
+must record their signer as `predicate.signing_key` before signing.
+Certificate changes require rolling out the updated toolset to every verifier.
+UEFI and OTA boot trust remain configured separately under `signing.certificates`.
+
 ## Publishing and target selection
 
 `services.ghaf-jenkins.registry.namespace` defaults to `"ghaf"`. OCI images use
