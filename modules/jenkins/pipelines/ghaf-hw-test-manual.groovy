@@ -15,7 +15,6 @@ import groovy.transform.Field
 @Field def IMAGE_MEDIA_TYPE = 'application/octet-stream'
 @Field def SOURCE_REF_ANNOTATION = 'org.ghaf.source.ref'
 @Field def TARGET_ANNOTATION = 'org.ghaf.target'
-@Field int ROBOT_TEST_INDEX = 0
 env.BOOT_PASSED = 'true'
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -149,7 +148,6 @@ def init() {
 }
 
 def ghaf_robot_test(String tags) {
-  def resultDir = "test-${++ROBOT_TEST_INDEX}"
   env.ROBOT_EXECUTED = 'true'
   env.INCLUDE_TEST_TAGS = "${tags}"
   env.COMMIT_HASH = 'NONE'
@@ -191,10 +189,11 @@ def ghaf_robot_test(String tags) {
       }
     } finally {
       // Move the test output (if any) to a subdirectory
-      sh """
-        mkdir -p '${resultDir}'
-        mv -f *.txt *.png *.jpeg *.mp4 *.mkv *.wav output.xml report.html log.html '${resultDir}/' || true
-      """
+      sh '''
+        rm -fr -- "$INCLUDE_TEST_TAGS"
+        mkdir -p -- "$INCLUDE_TEST_TAGS"
+        mv -f -- *.txt *.png *.jpeg *.mp4 *.mkv *.wav output.xml report.html log.html "$INCLUDE_TEST_TAGS/" || true
+      '''
     }
   }
 }
