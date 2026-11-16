@@ -666,7 +666,7 @@ should fit next to the map without scrolling, in both light and dark mode.
            m: { n: 'Result', s: 'Jenkins build status', a: 'images + warm ghaf-dev' } },
       info: {
         what: 'The last stage of the run: a release decision on ci-release, a PR status on ci-prod pre-merge, and just the build result on ci-prod main.',
-        r: '<code>policy-checker release</code> evaluates <code>slsa/release-policy.yaml</code> for each image: image signature, provenance signature, the earlier provenance trust verdict, SBOM presence and hardware test status. The resulting <code>release-policy.json</code> is signed with the provenance key on the HSM and attached to the image as an OCI referrer. A failed required criterion marks the run unstable.',
+        r: '<code>policy-checker release</code> evaluates <code>slsa/release-policy.yaml</code> for each image: image signature, provenance signature, the earlier provenance trust verdict, SBOM presence and hardware test status. The resulting <code>release-policy.json</code> is signed with the dedicated <code>GhafInfraSignReleasePolicy</code> key on the HSM and attached to the image as an OCI referrer. A failed required criterion marks the run unstable.',
         p: 'Posts success or failure to the PR as the <code>jenkins-pre-merge</code> status. Nothing is archived.',
         m: '<code>ghaf-main</code> posts no GitHub commit status and archives nothing. Its outputs are the Jenkins build result, the tested images under <code>ghaf/ghaf-main</code> in the registry, and the store paths it built, which the builders push to Cachix <code>ghaf-dev</code> for everyone building on top of main.',
         files: ['slsa/release-policy.yaml', 'pkgs/policy-checker/', 'modules/jenkins/pipeline-library/vars/pipelineExecution.groovy']
@@ -674,7 +674,7 @@ should fit next to the map without scrolling, in both light and dark mode.
     { id: 'archive', lane: 'L4', cx: C(8), kind: 'pipeline',
       t: { o: { n: 'Release publish', s: 'ghaf-release-publish', a: 'verifies every signature' } },
       info: {
-        what: 'Pushes the OTA pin closures to Cachix <code>ghaf-release</code> and pins them (keeping two revisions), then runs <code>archive-ghaf-release</code>. That script verifies every image and provenance signature and the signed release-policy attestation (with the keys of the environment it runs in, so artifacts archived from ci-release must have been built there), packs tarballs and uploads them with rclone.',
+        what: 'Pushes the OTA pin closures to Cachix <code>ghaf-release</code> and pins them (keeping two revisions), then runs <code>archive-ghaf-release</code>. That script verifies signatures and authorizes signing keys with the locally configured release policy, packs tarballs and uploads them with rclone.',
         files: ['modules/jenkins/pipelines/ghaf-release-publish.groovy', 'scripts/archive-ghaf-release.sh']
       } },
 

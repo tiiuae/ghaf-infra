@@ -237,9 +237,8 @@ registry. Either way, the local artifact directory (`ARTIFACTS_URL`) must
 still exist: the pipeline checks it and reads it for OTA pinning. On
 ci-release, baseline reset discards that directory on reboot, so publish a
 release candidate before the controller reboots. Archival verifies all
-signatures and requires the signing keys of the environment it runs in, so
-artifacts archived from ci-release must also have been built there. The
-artifacts are then packaged into tarballs and uploaded to Hetzner Object
+signatures and authorizes their keys using the locally configured release
+policy. The artifacts are then packaged into tarballs and uploaded to Hetzner Object
 Storage (an S3-compatible service, bucket `ghaf-artifacts`) using
 rclone. The [ghaf-archive](https://github.com/tiiuae/ghaf-archive) web
 application provides a browsable frontend to the archived releases.
@@ -251,10 +250,10 @@ determines whether a failed criterion fails the release step. The attestation
 records the per-criterion result for image signature verification, SLSA
 provenance verification, the pre-test provenance trust policy verdict saved in
 `test-results.json`, SBOM presence, and hardware test status. Jenkins signs the
-attestation with the SLSA provenance signing key and publishes it as an OCI
-referrer without changing the already-published target manifest. Release
-archival requires a passing signed release-policy attestation by default and can
-be bypassed only by setting
+attestation with the dedicated `GhafInfraSignReleasePolicy` key and publishes
+it as an OCI referrer without changing the already-published target manifest.
+Release archival requires a passing signed release-policy attestation by default
+and can be bypassed only by setting
 `REQUIRE_RELEASE_ATTESTATION=false` for transitional use.
 
 ### Repository CI (ghaf-infra)

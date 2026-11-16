@@ -226,10 +226,22 @@ that toolset's verifier even when another verifier is on `PATH`. Configuration
 is embedded in the packages; environment variables do not override it.
 
 The defaults use both Ghaf NetHSM certificate directories. Supplying a custom
-toolset replaces those defaults completely. Archiving requires each signing
-key's object name to end in `-${CI_ENV}`, such as `provenance-release` when
-`CI_ENV=release`. No archive key list is needed. Release-policy attestations
-must record their signer as `predicate.signing_key` before signing.
+toolset replaces those defaults completely. The release policy lists permitted
+signing keys by purpose:
+
+```yaml
+signing_keys:
+  image: ["pkcs11:token=NetHSM;object=GhafInfraSignECP256-release"]
+  provenance: ["pkcs11:token=NetHSM;object=GhafInfraSignProv-release"]
+  release: ["pkcs11:token=NetHSM;object=GhafInfraSignReleasePolicy"]
+```
+
+Release CEL criteria use these lists to authorize image and provenance signers.
+Archiving checks all three purposes against the same lists in the trusted local
+policy selected by `RELEASE_POLICY_FILE` (default:
+`/etc/jenkins/release-policy.yaml`), independently of downloaded artifacts.
+Configure the release-attestation signing URI under `signing.keys.release`;
+attestations must record that signer as `predicate.signing_key` before signing.
 Certificate changes require rolling out the updated toolset to every verifier.
 UEFI and OTA boot trust remain configured separately under `signing.certificates`.
 

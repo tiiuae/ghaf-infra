@@ -2,6 +2,14 @@ version: '1.0'
 name: Ghaf Release Policy
 uri: https://github.com/tiiuae/ghaf-infra/blob/main/slsa/release-policy.yaml
 
+signing_keys:
+  image:
+    - pkcs11:token=NetHSM;object=GhafInfraSignECP256-release
+  provenance:
+    - pkcs11:token=NetHSM;object=GhafInfraSignProv-release
+  release:
+    - pkcs11:token=NetHSM;object=GhafInfraSignReleasePolicy
+
 criteria:
   - id: release-builder
     description: Artifact provenance identifies a release CI builder
@@ -14,14 +22,18 @@ criteria:
       ]
 
   - id: image-signature
-    description: Image signature exists and verifies successfully
+    description: Image signatures verify with the release image key
     required: true
-    cel: files.image && files.image_signature && signatures.image.verified
+    cel: |
+      files.image && files.image_signature && signatures.image.verified &&
+      manifest.images.all(image, image.signature.signing_key in signing_keys.image)
 
   - id: provenance-signature
-    description: SLSA provenance signature exists and verifies successfully
+    description: SLSA provenance signature verifies with the release provenance key
     required: true
-    cel: files.provenance && files.provenance_signature && signatures.provenance.verified
+    cel: |
+      files.provenance && files.provenance_signature && signatures.provenance.verified &&
+      manifest.attestations.provenance.signature.signing_key in signing_keys.provenance
 
   - id: provenance-policy
     description: SLSA provenance satisfies the configured provenance trust policy

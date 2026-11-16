@@ -38,11 +38,12 @@ type SignaturePolicy struct {
 }
 
 type TrustPolicy struct {
-	Name      string          `json:"name" yaml:"name"`
-	URI       string          `json:"uri" yaml:"uri"`
-	Version   string          `json:"version" yaml:"version"`
-	Signature SignaturePolicy `json:"signature" yaml:"signature"`
-	Criteria  []Criteria      `json:"criteria" yaml:"criteria"`
+	SigningKeys map[string][]string `json:"signing_keys" yaml:"signing_keys"`
+	Name        string              `json:"name" yaml:"name"`
+	URI         string              `json:"uri" yaml:"uri"`
+	Version     string              `json:"version" yaml:"version"`
+	Signature   SignaturePolicy     `json:"signature" yaml:"signature"`
+	Criteria    []Criteria          `json:"criteria" yaml:"criteria"`
 }
 
 type CriterionResult struct {
@@ -236,6 +237,7 @@ func verifyFileSignature(mode string, artifact string, signature string, signing
 func releaseVariables() []cel.EnvOption {
 	return []cel.EnvOption{
 		cel.Variable("manifest", cel.DynType),
+		cel.Variable("signing_keys", cel.DynType),
 		cel.Variable("oci", cel.DynType),
 		cel.Variable("provenance", cel.DynType),
 		cel.Variable("test_results", cel.DynType),
@@ -387,6 +389,7 @@ func evaluateReleasePolicy(
 		return nil, false, err
 	}
 
+	input["signing_keys"] = policy.SigningKeys
 	results, failures, err := evaluateCriteria(input, policy.Criteria, releaseVariables()...)
 	if err != nil {
 		return nil, false, err
