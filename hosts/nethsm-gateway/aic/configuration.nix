@@ -34,48 +34,4 @@
   # make way for manual config file
   sops.templates."p11nethsm.conf".path = lib.mkForce "/etc/nitrokey/p11nethsm-nix.conf";
   nebula.enable = false;
-
-  services.nebula.networks."vedenemo" = lib.mkIf config.nebula.enable {
-    firewall = {
-      outbound = lib.mkForce [
-        # allow udp outbound only to hetzner
-        {
-          port = 4242;
-          proto = "udp";
-          groups = [ "hetzner" ];
-        }
-        # allow dns requests
-        {
-          port = 53;
-          proto = "udp";
-          host = "any";
-        }
-        # allow any tcp or icmp outbound (between nebula hosts)
-        {
-          port = "any";
-          proto = "tcp";
-          host = "any";
-        }
-        {
-          port = "any";
-          proto = "icmp";
-          host = "any";
-        }
-      ];
-      inbound = [
-        # allow monitoring server to scrape nethsm metrics
-        {
-          inherit (config.nethsm.exporter) port;
-          proto = "tcp";
-          groups = [ "scraper" ];
-        }
-        # pkcs11-daemon
-        {
-          port = config.pkcs11.proxy.listenPort;
-          proto = "tcp";
-          host = "any";
-        }
-      ];
-    };
-  };
 }
