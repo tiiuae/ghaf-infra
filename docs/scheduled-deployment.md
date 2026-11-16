@@ -214,6 +214,14 @@ controller. A controller's window should start after the windows of its test
 agents: a reset of the controller would bring the nodes of a drained agent
 back online.
 
+## Service hosts
+
+`ghaf-monitoring` deploys on Tuesday from 08:00 to 10:30 UTC, within office
+hours in Finland and the UAE, because a failure can silence alerts.
+
+`nethsm-gateway-dev` remains unenrolled while AiC uses it off Nebula with
+manually managed PKCS#11 configuration and without Prometheus scraping.
+
 ## Enrolling a host
 
 1. The host must expose metrics (`services.monitoring.metrics.enable`) and be
