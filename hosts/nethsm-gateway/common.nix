@@ -17,6 +17,7 @@
     team-devenv
     openssh
     nebula
+    scheduled-deployment
     user-xzr
   ]);
 

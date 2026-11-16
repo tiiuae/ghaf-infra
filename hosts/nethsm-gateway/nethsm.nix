@@ -113,6 +113,28 @@ in
   };
 
   config = {
+    services.scheduled-deployment.postDeployChecks = ''
+      export PKCS11_PROXY_SOCKET=tls://${config.pkcs11.proxy.listenAddr}:${toString config.pkcs11.proxy.listenPort}
+      export PKCS11_PROXY_TLS_PSK_FILE=${config.systemd.services.pkcs11-daemon.environment.PKCS11_PROXY_TLS_PSK_FILE}
+      # Exercise the authenticated proxy and both tokens without signing or
+      # changing keys. HTTP success alone does not mean the HSM scrape worked.
+      for attempt in {1..10}; do
+        if metrics=$(${lib.getExe pkgs.curl} -fsS --max-time 8 http://127.0.0.1:${toString config.nethsm.exporter.port}/metrics) &&
+          ${lib.getExe pkgs.gnugrep} -qxE 'nethsm_up 1(\.0)?' <<<"$metrics" &&
+          tokens=$(${lib.getExe' pkgs.coreutils "timeout"} 10 ${lib.getExe' pkgs.gnutls "p11tool"} --provider ${pkcs11-proxy}/lib/libpkcs11-proxy.so --list-token-urls) &&
+          ${lib.getExe pkgs.gnugrep} -qE '(^|;)token=NetHSM(;|$)' <<<"$tokens" &&
+          ${lib.getExe pkgs.gnugrep} -qE '(^|;)token=YubiHSM(;|$)' <<<"$tokens"; then
+          break
+        fi
+        if [[ $attempt == 10 ]]; then
+          echo 'NetHSM metrics or PKCS#11 tokens are unavailable' >&2
+          exit 1
+        fi
+        sleep 6
+      done
+      systemctl is-active --quiet syslog-ng.service
+    '';
+
     sops.secrets = {
       tls-pks-file.owner = "root";
       nethsm-metrics-credentials.owner = "root";

@@ -17,6 +17,12 @@
   system.stateVersion = "23.11";
   networking.hostName = "nethsm-gateway";
 
+  services.scheduled-deployment = {
+    enable = true;
+    # Keep the signing gateways on different days so CI can use the other one.
+    window = "Tue *-*-* 05..08:00,30:00 UTC";
+  };
+
   # NetHSM connected directly to the ethernet port
   networking.interfaces.enp89s0 = {
     ipv4.addresses = [
