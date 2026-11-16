@@ -71,7 +71,7 @@
   "for": "2m",
   "keepFiringFor": "2m",
   "annotations": {
-    "summary": "NetHSM is unresponsive!"
+    "summary": "NetHSM behind {{ $labels.machine_name }} is unresponsive!"
   },
   "isPaused": false
 }
