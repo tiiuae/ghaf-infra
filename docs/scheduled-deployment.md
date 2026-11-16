@@ -68,7 +68,7 @@ journalctl -u scheduled-deployment -u scheduled-deployment-verify
 ```
 
 The last result of each host is shown in the "Scheduled deployments" table on
-the [Deployment drift](https://monitoring.vedenemo.dev/d/ghaf-deployment-drift)
+the [Deployments](https://monitoring.vedenemo.dev/d/ghaf-deployment-drift)
 dashboard.
 
 ## Results

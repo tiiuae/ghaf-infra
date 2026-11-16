@@ -1,6 +1,6 @@
 {
   "uid": "ghaf-deployment-drift",
-  "title": "Deployment drift",
+  "title": "Deployments",
   "description": "Running and next-boot revisions and kernels for monitored hosts, shown like inv print-revision, and the last scheduled deployment run of hosts that deploy themselves. Revision date is the commit date of the running revision; dirty or unknown revisions have no date.",
   "schemaVersion": 41,
   "version": 1,
