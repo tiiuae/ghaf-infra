@@ -37,6 +37,7 @@ in
         oras
         tree
         jq
+        yq-go
       ])
       ++ [
         ghaf-fetch

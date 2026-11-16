@@ -54,12 +54,16 @@ signed with `openssl` using keys stored in the HSM. Test agents verify these
 signatures with `policy-checker` / `verify-signature` before flashing images.
 
 Signing of blobs is done through openssl with the keys stored in the HSM.
-Each CI environment has its own keys, suffixed with the environment name
+Image and provenance keys are suffixed with the CI environment name
 (`CI_ENV`, for example `-prod` or `-release`):
 
 - `GhafInfraSignECP256-<env>`: ECDSA, used for signing disk images
-- `GhafInfraSignProv-<env>`: EDDSA, used for signing provenance files and
-  release-policy attestations
+- `GhafInfraSignProv-<env>`: EDDSA, used for signing provenance files
+- `GhafInfraSignReleasePolicy`: EDDSA, the dedicated release-policy
+  attestation key, selected through the `release` signing purpose
+
+`GhafInfraSignReleasePolicy` has no environment suffix. Its certificate is
+currently published in the Tampere NetHSM directory.
 
 Jenkins records the PKCS#11 URI of the key that signed each artifact as
 `signing_key` in the artifact manifest. `verify-signature` extracts its token
@@ -71,9 +75,11 @@ the signature. It needs no HSM connection or gateway address.
 
 The verifier, `policy-checker`, and `archive-ghaf-release` are built together
 with one certificate configuration. Controllers, test agents, and standalone
-flake packages use this shared toolset. Archiving additionally checks an
-environment suffix on key object names, so a prod key cannot publish a release
-when `CI_ENV=release`. See [consumer configuration](./jenkins-consumers.md#signature-verification)
+flake packages use this shared toolset. Archiving authorizes each signer with
+the trusted release policy's `signing_keys` lists. The default policy
+restricts images and provenance to their respective release keys and release
+attestations to `GhafInfraSignReleasePolicy`.
+See [consumer configuration](./jenkins-consumers.md#signature-verification)
 for custom certificates and key names.
 
 ### Provenance

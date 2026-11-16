@@ -57,6 +57,9 @@ in
         provenance = [
           "pkcs11:token=NetHSM;object=GhafInfraSignProv-${config.services.ghaf-jenkins.envType}"
         ];
+        release = [
+          "pkcs11:token=NetHSM;object=GhafInfraSignReleasePolicy"
+        ];
         image = [
           "pkcs11:token=NetHSM;object=GhafInfraSignECP256-${config.services.ghaf-jenkins.envType}"
         ];

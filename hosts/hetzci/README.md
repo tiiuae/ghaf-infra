@@ -89,7 +89,8 @@ library as `JENKINS_PKCS11_MODULE`, the PIN file as `JENKINS_SIGNING_PIN_FILE`,
 and an ordered, purpose-keyed JSON map of key URIs via
 `JENKINS_SIGNING_KEYS_FILE`. Proxy endpoints are published via
 `JENKINS_PKCS11_ENDPOINTS_FILE`. The pipeline calls `select-pkcs11-node PURPOSE`
-with `provenance`, `image`, or `uefi`. The selector tries each configured key URI
+with `provenance`, `image`, `uefi`, or `release`. Release-policy
+attestations use `signing.keys.release`. The selector tries each configured key URI
 in order, trying all proxy endpoints in their configured order before moving to
 the next key. With a direct PKCS#11 library, it probes each key once without
 proxy endpoints. It returns the first working URI, socket, and region as JSON.

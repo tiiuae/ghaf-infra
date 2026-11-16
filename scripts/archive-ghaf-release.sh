@@ -27,7 +27,7 @@ SECRET_KEY="${SECRET_KEY:=}"
 OCI_REGISTRY="${OCI_REGISTRY:=registry.vedenemo.dev}"
 OCI_REPOSITORY="${OCI_REPOSITORY:=/${OCI_NAMESPACE:-ghaf}/ghaf-release-candidate}"
 REQUIRE_RELEASE_ATTESTATION="${REQUIRE_RELEASE_ATTESTATION:=true}"
-CI_ENV="${CI_ENV:=}"
+RELEASE_POLICY_FILE="${RELEASE_POLICY_FILE:-/etc/jenkins/release-policy.yaml}"
 
 release_targets=(
   "packages.aarch64-linux.nvidia-jetson-orin-agx-debug"
@@ -48,6 +48,7 @@ Usage: $MYNAME [-h] [-v] (-a ARTIFACTS | -o OCI_TAG) -t GHAF_VERSION
 Archive Ghaf release to a permanent storage.
 Assumes storage credentials are exported in environment variables ACCESS_KEY and SECRET_KEY.
 STORAGE_URL and STORAGE_REGION may be overridden for another Hetzner region.
+RELEASE_POLICY_FILE selects the trusted local policy (default: /etc/jenkins/release-policy.yaml).
 
 
 Options:
@@ -160,11 +161,13 @@ is_release_target() {
   return 1
 }
 
-is_expected_signing_key() {
-  [[ $1 == pkcs11:* ]] || return 1
-  local parameters=";${1#pkcs11:};"
-  [[ $parameters =~ \;object=([^\;]+)\; ]] || return 1
-  [[ ${BASH_REMATCH[1]} == *-"$CI_ENV" ]]
+verify_authorized_signature() {
+  if ! jq -e --arg purpose "$1" --arg key "$4" \
+    '.[$purpose] | any(. == $key)' <<<"$release_signing_keys" >/dev/null; then
+    print_err "signing key is not authorized for $1: $4"
+    return 1
+  fi
+  verify-signature "$@"
 }
 
 verify_signatures() {
@@ -205,10 +208,6 @@ verify_signatures() {
     print_err "missing provenance signing key in manifest: $manifest"
     exit 1
   fi
-  if ! is_expected_signing_key "$prov_signing_key"; then
-    print_err "provenance signing key does not match environment '$CI_ENV': $prov_signing_key"
-    exit 1
-  fi
   while IFS=$'\t' read -r img_rel img_sig_rel img_signing_key; do
     img="$dir/$img_rel"
     if [[ -z $img_rel ]]; then
@@ -224,19 +223,15 @@ verify_signatures() {
       print_err "missing image signing key: $dir"
       exit 1
     fi
-    if ! is_expected_signing_key "$img_signing_key"; then
-      print_err "image signing key does not match environment '$CI_ENV': $img_signing_key"
-      exit 1
-    fi
     echo "[+] Verifying: $img"
-    if ! verify-signature image "$img" "$img_sig" "$img_signing_key"; then
+    if ! verify_authorized_signature image "$img" "$img_sig" "$img_signing_key"; then
       print_err "failed verifying image signature"
       print_err "  image: $img"
       print_err "  signature: $img_sig"
       exit 1
     fi
   done < <(jq -re '(.images // (if .image then [.image] else [] end))[] | [.path // "", .signature.path // "", .signature.signing_key // ""] | @tsv' "$manifest")
-  if ! verify-signature provenance "$prov" "$prov_sig" "$prov_signing_key"; then
+  if ! verify_authorized_signature provenance "$prov" "$prov_sig" "$prov_signing_key"; then
     print_err "failed verifying provenance signature"
     print_err "  provenance: $prov"
     print_err "  signature: $prov_sig"
@@ -283,11 +278,7 @@ verify_release_attestation() {
     print_err "missing release policy signing key: $release_attestation"
     exit 1
   fi
-  if ! is_expected_signing_key "$release_signing_key"; then
-    print_err "release policy signing key does not match environment '$CI_ENV': $release_signing_key"
-    exit 1
-  fi
-  if ! verify-signature release "$release_attestation" "$release_attestation_sig" "$release_signing_key"; then
+  if ! verify_authorized_signature release "$release_attestation" "$release_attestation_sig" "$release_signing_key"; then
     print_err "failed verifying release policy attestation signature"
     print_err "  attestation: $release_attestation"
     print_err "  signature: $release_attestation_sig"
@@ -483,8 +474,8 @@ main() {
     NONE='\033[0m'
   fi
   argparse "$@"
-  if [[ -z $CI_ENV ]]; then
-    print_err "missing CI_ENV environment variable"
+  if [[ ! -r $RELEASE_POLICY_FILE ]]; then
+    print_err "cannot read release policy: $RELEASE_POLICY_FILE"
     exit 1
   fi
   case "${REQUIRE_RELEASE_ATTESTATION,,}" in
@@ -506,6 +497,8 @@ main() {
   exit_unless_command_exists realpath
   exit_unless_command_exists tree
   exit_unless_command_exists jq
+  exit_unless_command_exists yq
+  release_signing_keys=$(yq -o=json '.signing_keys' "$RELEASE_POLICY_FILE")
 
   # Prepare the release archive from artifacts
   if [[ -n $OCI_TAG ]]; then

@@ -777,7 +777,7 @@ def create_pipeline(
             error("Release policy failed before writing attestation for ${build_shortname}")
           }
 
-          withRedundancyRouter('provenance') { ctx ->
+          withRedundancyRouter('release') { ctx ->
             def releaseAttestation = readJSON file: "${outdir}/release-policy.json"
             releaseAttestation.predicate.signing_key = ctx.uri
             writeJSON file: "${outdir}/release-policy.json", json: releaseAttestation
