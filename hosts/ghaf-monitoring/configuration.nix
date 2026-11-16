@@ -74,6 +74,7 @@ in
     openssh
     nebula
     nginx
+    scheduled-deployment
     team-devenv
   ]);
 
@@ -133,6 +134,19 @@ in
       enable = true;
       lokiAddress = "http://${config.services.loki.configuration.server.http_listen_address}:${toString config.services.loki.configuration.server.http_listen_port}";
     };
+  };
+
+  services.scheduled-deployment = {
+    enable = true;
+    # A failure can silence alerts. Keep the window in office hours in both
+    # Finland (10:00-12:30 in winter, 11:00-13:30 in summer) and the UAE.
+    window = "Tue *-*-* 08..10:00,30:00 UTC";
+    postDeployChecks = ''
+      ${lib.getExe pkgs.curl} -fsS --max-time 10 --retry 10 --retry-delay 6 --retry-max-time 60 --retry-all-errors http://127.0.0.1:${toString config.services.prometheus.port}/prometheus/-/ready
+      ${lib.getExe pkgs.curl} -fsS --max-time 10 --retry 10 --retry-delay 6 --retry-max-time 60 --retry-all-errors http://127.0.0.1:${toString config.services.loki.configuration.server.http_listen_port}/ready
+      ${lib.getExe pkgs.curl} -fsS --max-time 10 --retry 10 --retry-delay 6 --retry-max-time 60 --retry-all-errors https://${domain}/api/health | ${lib.getExe pkgs.jq} -e '.database == "ok"' > /dev/null
+      systemctl is-active --quiet sshified.service
+    '';
   };
 
   services.grafana = {
