@@ -206,9 +206,10 @@ in
             name,
             src,
             replacements ? { },
+            allowUiUpdates ? false,
           }:
           {
-            inherit name;
+            inherit name allowUiUpdates;
             options.path = pkgs.writeText "${name}.json" (
               builtins.replaceStrings (builtins.attrNames replacements) (builtins.attrValues replacements) (
                 builtins.readFile src
@@ -252,6 +253,7 @@ in
         (dashboard {
           name = "deployment-drift";
           src = ./provision/dashboards/deployment-drift.json;
+          allowUiUpdates = true;
           replacements = {
             "\${DS_PROMETHEUS}" = "prometheus";
           };

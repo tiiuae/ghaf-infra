@@ -145,10 +145,11 @@ To debug the prometheus jobs, visit <https://monitoring.vedenemo.dev/prometheus>
 with basic auth credentials that you can find in the `secrets.yaml` under
 `hosts/ghaf-monitoring`.
 
-Everything in grafana is provisioned through the nix configuration. You cannot
-manually edit alerts, dashboards or anything else. These are stored as JSON
-under `provision/`. To make changes in the Grafana UI, duplicate the item you
-wish to change, make your changes, test it and export the JSON.
+Everything in Grafana is provisioned through the Nix configuration, with JSON
+definitions under `provision/`. Only the Deployment drift dashboard can be
+saved from the Grafana UI. Unsaved edits only affect your own view; saved edits
+apply to all users until the provisioned JSON changes. To change other items,
+duplicate the item, make your changes, test it and export the JSON.
 
 Some items can be exported with the option
 `Export the dashboard to use in another instance`, which should be used when
