@@ -4,6 +4,7 @@
   "description": "Running and next-boot revisions and kernels for monitored hosts, shown like inv print-revision, and the last scheduled deployment run of hosts that deploy themselves. Revision date is the commit date of the running revision; dirty or unknown revisions have no date.",
   "schemaVersion": 41,
   "version": 1,
+  "editable": true,
   "refresh": "1m",
   "time": { "from": "now-1h", "to": "now" },
   "panels": [
@@ -11,7 +12,7 @@
       "id": 1,
       "type": "table",
       "title": "Host deployments",
-      "gridPos": { "h": 20, "w": 24, "x": 0, "y": 0 },
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
@@ -147,7 +148,7 @@
       "id": 2,
       "type": "table",
       "title": "Scheduled deployments",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 14 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "targets": [
         {
