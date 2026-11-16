@@ -565,15 +565,19 @@ in
         job_name = "nethsm";
         # let's not hammer the nethsm api so frequently
         scrape_interval = "60s";
-        static_configs = [
-          {
-            # nethsm-exporter is running on the gateway, on port 8000
-            targets = [
-              "nethsm-gateway.sumu.vedenemo.dev:8000"
-              "uae-nethsm-gateway.sumu.vedenemo.dev:8000"
+        # nethsm-exporter is running on the gateway, on port 8000
+        static_configs =
+          map
+            (name: {
+              targets = [ "${name}.sumu.vedenemo.dev:8000" ];
+              labels = {
+                machine_name = name;
+              };
+            })
+            [
+              "nethsm-gateway"
+              "uae-nethsm-gateway"
             ];
-          }
-        ];
       }
       {
         # this job monitors the UAE hosts through nebula tunnel
