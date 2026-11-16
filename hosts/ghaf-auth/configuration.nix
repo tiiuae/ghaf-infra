@@ -3,6 +3,7 @@
 {
   self,
   lib,
+  pkgs,
   config,
   inputs,
   ...
@@ -18,6 +19,7 @@
     openssh
     nginx
     auth-server
+    scheduled-deployment
     team-devenv
   ]);
 
@@ -34,6 +36,15 @@
   services.monitoring = {
     metrics.enable = true;
     logs.enable = true;
+  };
+
+  services.scheduled-deployment = {
+    enable = true;
+    # Check Dex's health and discovery through nginx, including TLS.
+    postDeployChecks = ''
+      ${lib.getExe pkgs.curl} -fsS --max-time 10 --retry 10 --retry-delay 6 --retry-max-time 60 --retry-all-errors https://${config.services.auth-server.domain}/healthz | ${lib.getExe pkgs.gnugrep} -Fx 'Health check passed'
+      ${lib.getExe pkgs.curl} -fsS --max-time 10 --retry 10 --retry-delay 6 --retry-max-time 60 --retry-all-errors https://${config.services.auth-server.domain}/.well-known/openid-configuration | ${lib.getExe pkgs.jq} -e --arg issuer ${lib.escapeShellArg config.services.dex.settings.issuer} '.issuer == $issuer and (.jwks_uri | type == "string")' > /dev/null
+    '';
   };
 
   services.auth-server = {
