@@ -146,8 +146,8 @@ with basic auth credentials that you can find in the `secrets.yaml` under
 `hosts/ghaf-monitoring`.
 
 Everything in Grafana is provisioned through the Nix configuration, with JSON
-definitions under `provision/`. Only the Deployment drift dashboard can be
-saved from the Grafana UI. Unsaved edits only affect your own view; saved edits
+definitions under `provision/`. Only the Deployments dashboard can be saved
+from the Grafana UI. Unsaved edits only affect your own view; saved edits
 apply to all users until the provisioned JSON changes. To change other items,
 duplicate the item, make your changes, test it and export the JSON.
 
