@@ -221,11 +221,30 @@ back online.
 `ghaf-monitoring` deploys on Tuesday from 08:00 to 10:30 UTC, within office
 hours in Finland and the UAE, because a failure can silence alerts.
 
-`nethsm-gateway` deploys on Tuesday from 05:00 to 08:30 UTC. CI selects a
-gateway once per signing step and does not retry, so a run waits until it sees
-no connection to the gateway's PKCS#11 proxy for a minute, checking every five
-seconds. A short connection between checks, or a signing step that starts
-after the wait, can still be cut off.
+`nethsm-gateway` deploys on Tuesday and `uae-nethsm-gateway` on Wednesday,
+both from 05:00 to 08:30 UTC, so CI can sign through the other gateway while
+one is deployed. CI selects a gateway once per signing step and does not
+retry, so a run waits until it sees no connection to the gateway's PKCS#11
+proxy for a minute, checking every five seconds. A short connection between
+checks, or a signing step that starts after the wait, can still be cut off.
+
+Runs do not check the other gateway. While one gateway is down, for example
+when `scheduled deployment failed`, `up? (Nebula)` or `nethsm up?` fires for
+it, [hold](#pausing-a-host) the other gateway so that its deployment cannot
+take the last working gateway offline. A gateway that fails to boot reports
+neither a deployment result nor NetHSM metrics, so only `up? (Nebula)` of
+these alerts fires. Alerts can clear while the PKCS#11 proxy is still
+unavailable, so before releasing the hold, probe the gateway from a
+controller that tries it first: a Hetzner controller for `nethsm-gateway`,
+`uae-azureci-prod` for `uae-nethsm-gateway`.
+
+```sh
+sudo -u jenkins bash -lc 'select-pkcs11-node provenance && select-pkcs11-node uefi'
+```
+
+These check the `NetHSM` and `YubiHSM` tokens the way signing does. Both must
+print the gateway's region, `tampere` or `uae`; the other region means the
+selector fell back to the other gateway.
 
 `nethsm-gateway-dev` remains unenrolled while AiC uses it off Nebula with
 manually managed PKCS#11 configuration and without Prometheus scraping.
