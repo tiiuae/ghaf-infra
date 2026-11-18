@@ -24,6 +24,7 @@ from typing import Any, NoReturn
 DETACHED_SIGNATURE_MEDIA_TYPE = "application/vnd.ghaf.signature.v1"
 TARGET_ARTIFACT_TYPE = "application/vnd.ghaf.image.v1"
 TARGET_CONFIG_MEDIA_TYPE = "application/vnd.ghaf.manifest.v1+json"
+UEFI_PROVENANCE_ARTIFACT_TYPE = "application/vnd.ghaf.uefi-provenance.v1+json"
 TEST_RESULTS_ARTIFACT_TYPE = "application/vnd.ghaf.test-results.v1"
 TEST_RESULTS_MEDIA_TYPE = "application/x-tar"
 RELEASE_ATTESTATION_ARTIFACT_TYPE = "application/vnd.ghaf.release-attestation.v1+json"
@@ -42,14 +43,21 @@ SYSUPDATE_MEDIA_TYPES = {
 REFERRER_MEDIA_TYPES = {
     "source_vsa": "application/vnd.dev.sigstore.bundle.v0.3+json",
     "provenance": "application/vnd.in-toto+json",
+    "uefi_provenance": "application/vnd.in-toto+json",
     "release_policy": RELEASE_ATTESTATION_ARTIFACT_TYPE,
     "sbom_cyclonedx": "application/vnd.cyclonedx+json",
     "sbom_spdx": "application/spdx+json",
     "sbom_csv": "text/csv",
 }
+# Existing consumers discover Nix build provenance by its artifact type.
+REFERRER_ARTIFACT_TYPES = {
+    **REFERRER_MEDIA_TYPES,
+    "uefi_provenance": UEFI_PROVENANCE_ARTIFACT_TYPE,
+}
 REFERRER_DESCRIPTIONS = {
     "source_vsa": "SLSA Source VSA",
     "provenance": "SLSA Provenance",
+    "uefi_provenance": "SLSA UEFI signing provenance",
     "release_policy": "Ghaf release policy attestation",
     "sbom_cyclonedx": "CycloneDX SBOM",
     "sbom_spdx": "SPDX SBOM",
@@ -176,6 +184,7 @@ def publish_referrer(
 ) -> dict[str, str]:
     """Attach one referrer artifact."""
     media_type = REFERRER_MEDIA_TYPES[role]
+    artifact_type = REFERRER_ARTIFACT_TYPES[role]
 
     files = [f"{relpath}:{media_type}"]
     if signature_relpath:
@@ -191,7 +200,7 @@ def publish_referrer(
             *annotation_args(annotations),
             "--disable-path-validation",
             "--artifact-type",
-            media_type,
+            artifact_type,
             subject_reference,
             *files,
         ],
@@ -200,7 +209,7 @@ def publish_referrer(
 
     result = {
         "path": relpath,
-        "artifact_type": media_type,
+        "artifact_type": artifact_type,
         "digest": output["digest"],
     }
 
@@ -220,6 +229,7 @@ def publish_attestations(
     for role in (
         "source_vsa",
         "provenance",
+        "uefi_provenance",
         "sbom_cyclonedx",
         "sbom_spdx",
         "sbom_csv",

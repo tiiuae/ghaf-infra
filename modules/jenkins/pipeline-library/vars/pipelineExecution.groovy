@@ -212,6 +212,7 @@ def create_pipeline(
         ],
       ],
     ]
+    def uefi_signing = [:]
     def oci_result = null
     def provenance_policy_passed = null
     def provenance_policy_failure = null
@@ -475,6 +476,18 @@ def create_pipeline(
             }
           }
           def img_name = artifactSupport.path_basename(uefi_image.path)
+          def sysupdate_manifest_image = is_sysupdate_target ?
+            manifest.images.find { it.role == 'sysupdate-manifest' } : null
+          if (is_sysupdate_target && sysupdate_manifest_image == null) {
+            error("sysupdate manifest not found")
+          }
+          def signer_input = is_sysupdate_target ? sysupdate_manifest_image.path : uefi_image.path
+          uefi_signing = [
+            signer: is_sysupdate_target ? 'uefi-sign-sysupdate' :
+              (build_target_name.contains('nvidia-jetson-orin') ? 'uefisign-simple' : 'uefisign'),
+            input: signer_input - 'unsigned-output/',
+            started_on: artifactSupport.run_cmd('date -u +%Y-%m-%dT%H:%M:%SZ'),
+          ]
 
           try {
             sh """
@@ -482,21 +495,30 @@ def create_pipeline(
               mkdir -p '${tmpdir}'
             """
 
-            if (is_sysupdate_target) {
-              def sysupdate_manifest_image = manifest.images.find { it.role == 'sysupdate-manifest' }
-              if (sysupdate_manifest_image == null) {
-                error("sysupdate manifest not found")
+            withRedundancyRouter('uefi') { ctx ->
+              sh """
+                ${uefi_signing.signer} "${env.JENKINS_UEFI_CERTIFICATE_FILE}" \
+                  "${ctx.uri}" \
+                  ${artifactSupport.shell_quote("${output}/${signer_input}")} \
+                  '${tmpdir}'
+              """
+              record_signature(manifest.uefi, ctx)
+            }
+            uefi_signing.finished_on = artifactSupport.run_cmd('date -u +%Y-%m-%dT%H:%M:%SZ')
+            if (target_config.provenance_requested) {
+              def signer_outputs = sh(
+                script: "find -L '${tmpdir}' -type f -printf '%P\\0' | sort -z",
+                returnStdout: true
+              )
+              uefi_signing.subjects = signer_outputs.split('\u0000').findAll { it }.collect { path ->
+                def digest = artifactSupport.run_cmd(
+                  "sha256sum < ${artifactSupport.shell_quote("${tmpdir}/${path}")}"
+                ).tokenize()[0]
+                [name: path, digest: [sha256: digest]]
               }
-              withRedundancyRouter('uefi') { ctx ->
-                sh """
-                  uefi-sign-sysupdate "${env.JENKINS_UEFI_CERTIFICATE_FILE}" \
-                    "${ctx.uri}" \
-                    ${artifactSupport.shell_quote("${output}/${sysupdate_manifest_image.path}")} \
-                    '${tmpdir}'
-                """
-                record_signature(manifest.uefi, ctx)
-              }
+            }
 
+            if (is_sysupdate_target) {
               sh "mkdir -p '${output}/images'"
               manifest.images.each { image ->
                 def name = artifactSupport.path_basename(image.path)
@@ -545,17 +567,6 @@ def create_pipeline(
               """)
               record_signature(sysupdate_manifest_image.signature, ota_signing_ctx, ota_signature_path)
             } else {
-              def signer = build_target_name.contains("nvidia-jetson-orin") ? "uefisign-simple" : "uefisign"
-              withRedundancyRouter('uefi') { ctx ->
-                sh """
-                  ${signer} "${env.JENKINS_UEFI_CERTIFICATE_FILE}" \
-                    "${ctx.uri}" \
-                    ${output}/${uefi_image.path} \
-                    '${tmpdir}'
-                """
-                record_signature(manifest.uefi, ctx)
-              }
-
               sh """
                 mkdir -p '${output}/images'
                 mv '${tmpdir}/signed_${img_name}' '${output}/images/${img_name}'
@@ -568,6 +579,66 @@ def create_pipeline(
           } finally {
             sh "rm -rf '${tmpdir}'"
           }
+        }
+        run_optional_stage(
+          manifest.uefi.signed && target_config.provenance_requested,
+          "Provenance (UEFI) ${build_shortname}"
+        ) {
+          def build_provenance = readJSON(file: "${output}/${manifest.attestations.provenance.path}", returnPojo: true)
+          def unsigned_output = artifactSupport.run_cmd("readlink -f ${output}/unsigned-output")
+          def unsigned_subject = build_provenance.subject.find { it.uri == unsigned_output }
+          if (!unsigned_subject?.digest) {
+            error("Build provenance does not identify unsigned output '${unsigned_output}'")
+          }
+          def sha256 = { String path ->
+            artifactSupport.run_cmd("sha256sum < ${artifactSupport.shell_quote(path)}").tokenize()[0]
+          }
+          def signer_path = artifactSupport.run_cmd("readlink -f \"\$(command -v ${uefi_signing.signer})\"")
+          def uefi_provenance = [
+            _type: 'https://in-toto.io/Statement/v1',
+            subject: uefi_signing.subjects,
+            predicateType: 'https://slsa.dev/provenance/v1',
+            predicate: [
+              buildDefinition: [
+                buildType: 'https://github.com/tiiuae/ghaf-infra/blob/main/slsa/v1.0/L1/uefi-buildtype.md',
+                externalParameters: [input: uefi_signing.input],
+                internalParameters: [signer: uefi_signing.signer, signing_key: manifest.uefi.signing_key],
+                resolvedDependencies: [
+                  unsigned_subject,
+                  [
+                    uri: manifest.attestations.provenance.path,
+                    digest: [sha256: sha256("${output}/${manifest.attestations.provenance.path}")],
+                  ],
+                  [uri: signer_path, digest: [sha256: sha256(signer_path)]],
+                  [
+                    uri: env.JENKINS_UEFI_CERTIFICATE_FILE,
+                    digest: [sha256: sha256(env.JENKINS_UEFI_CERTIFICATE_FILE)],
+                  ],
+                ],
+              ],
+              runDetails: [
+                builder: [id: env.JENKINS_URL, version: ['ghaf-infra': host_revision]],
+                metadata: [
+                  invocationId: env.BUILD_URL,
+                  startedOn: uefi_signing.started_on,
+                  finishedOn: uefi_signing.finished_on,
+                ],
+              ],
+            ],
+          ]
+          def provenance_path = 'attestations/uefi-provenance.json'
+          writeFile(file: "${output}/${provenance_path}", text: JsonOutput.prettyPrint(JsonOutput.toJson(uefi_provenance)))
+          def attestation = [path: provenance_path, signature: empty_signature()]
+          withRedundancyRouter('provenance') { ctx ->
+            sh """
+              openssl pkeyutl -sign -rawin \
+                -inkey "${ctx.uri}" \
+                -out ${output}/${provenance_path}.sig \
+                -in ${output}/${provenance_path}
+            """
+            record_signature(attestation.signature, ctx, "${provenance_path}.sig")
+          }
+          manifest.attestations.uefi_provenance = attestation
         }
         run_optional_stage(
           !target_config.no_image && signing_possible,
