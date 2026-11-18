@@ -113,6 +113,25 @@ in
   };
 
   config = {
+    # CI selects a gateway once per signing step and does not retry, so a
+    # proxy restart during a step fails it. Nothing stops new requests, so
+    # wait until no proxy connection is seen for a minute. Sampling misses
+    # connections that open and close between samples.
+    services.scheduled-deployment.drain = lib.getExe (
+      pkgs.writeShellApplication {
+        name = "nethsm-gateway-drain";
+        runtimeInputs = [ pkgs.iproute2 ];
+        text = ''
+          [[ $1 == idle ]] || exit 0
+          for _ in {1..12}; do
+            sleep 5
+            # An ss failure exits nonzero (errexit), so it never reads as idle.
+            connections=$(ss -Htn state established '( sport = :${toString config.pkcs11.proxy.listenPort} )')
+            [[ -z $connections ]] || exit 1
+          done
+        '';
+      }
+    );
     services.scheduled-deployment.postDeployChecks = ''
       export PKCS11_PROXY_SOCKET=tls://${config.pkcs11.proxy.listenAddr}:${toString config.pkcs11.proxy.listenPort}
       export PKCS11_PROXY_TLS_PSK_FILE=${config.systemd.services.pkcs11-daemon.environment.PKCS11_PROXY_TLS_PSK_FILE}
