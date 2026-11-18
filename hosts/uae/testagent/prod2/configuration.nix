@@ -63,10 +63,10 @@
     # SSD-drive
     SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="50026B7283C099A7", SYMLINK+="ssdORINAGX1", MODE="0666", GROUP="dialout"
 
-    # Orin nx
+    # Orin NX
     SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", ATTRS{serial}=="AU008K01", SYMLINK+="ttyORINNX1", MODE="0666", GROUP="dialout"
     # SSD-drive
-    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S3R4NF0K618289", SYMLINK+="ssdORINNX1", MODE="0666", GROUP="dialout"
+    SUBSYSTEM=="block", KERNEL=="sd[a-z]", ENV{ID_SERIAL_SHORT}=="S5GANS0R112836R", SYMLINK+="ssdORINNX1", MODE="0666", GROUP="dialout"
 
     # Orin AGX64
     SUBSYSTEM=="tty", KERNEL=="ttyACM[0-9]*", ATTRS{serial}=="TOPO7394FE13", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="ttyAGX64", MODE="0666", GROUP="dialout"
@@ -84,8 +84,8 @@
         relay_serial_port = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_B0013I2U-if00-port0";
         OrinAGX1 = {
           inherit location;
-          device_id = "00-48-98-73-41";
-          netvm_hostname = "ghaf-1217950529";
+          device_id = "00-7b-73-b8-59";
+          netvm_hostname = "ghaf-2071181401";
           serial_port = "/dev/ttyAGX1";
           relay_number = 2;
           device_ip_address = "172.20.16.55";
@@ -98,8 +98,8 @@
         };
         OrinNX1 = {
           inherit location;
-          device_id = "00-ca-96-a7-e4";
-          netvm_hostname = "ghaf-3398871012";
+          device_id = "00-a7-76-7f-cf";
+          netvm_hostname = "ghaf-2809561039";
           serial_port = "/dev/ttyORINNX1";
           relay_number = 3;
           device_ip_address = "172.20.16.75";
@@ -112,8 +112,8 @@
         };
         OrinAGX64 = {
           inherit location;
-          device_id = "00-24-a3-f0-f4";
-          netvm_hostname = "ghaf-0614723828";
+          device_id = "00-b8-db-07-75";
+          netvm_hostname = "ghaf-3101362037";
           serial_port = "/dev/ttyAGX64";
           relay_number = 4;
           device_ip_address = "172.20.16.35";
