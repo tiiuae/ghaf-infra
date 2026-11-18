@@ -109,7 +109,6 @@
     system = "x86_64-linux";
     machine = {
       ip = "192.168.70.3";
-      nebula_ip = "10.42.42.21";
     };
   };
 
