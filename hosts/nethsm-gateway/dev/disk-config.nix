@@ -3,7 +3,7 @@
 {
   disko.devices.disk = {
     os = {
-      device = "/dev/disk/by-id/nvme-Samsung_SSD_980_500GB_S64DNL1TA02542E";
+      device = "/dev/disk/by-id/nvme-WDC_WDS500G2B0C-00PXH0_21191X803827";
       type = "disk";
       content = {
         type = "gpt";

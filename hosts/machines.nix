@@ -95,13 +95,21 @@
     };
   };
 
+  nethsm-gateway-aic = {
+    module = ./nethsm-gateway/aic/configuration.nix;
+    system = "x86_64-linux";
+    machine = {
+      ip = "192.168.70.2";
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOP5+New1tmP7Lj63pi9gsNS8CF/i2/dUk7DZyiZwYw/";
+    };
+  };
+
   nethsm-gateway-dev = {
     module = ./nethsm-gateway/dev/configuration.nix;
     system = "x86_64-linux";
     machine = {
-      ip = "192.168.70.2";
+      ip = "192.168.70.3";
       nebula_ip = "10.42.42.21";
-      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOP5+New1tmP7Lj63pi9gsNS8CF/i2/dUk7DZyiZwYw/";
     };
   };
 

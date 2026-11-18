@@ -3,6 +3,7 @@
 {
   lib,
   config,
+  machines,
   ...
 }:
 {
@@ -13,69 +14,74 @@
 
   sops.defaultSopsFile = ./secrets.yaml;
 
-  system.stateVersion = "25.11";
+  system.stateVersion = "26.11";
   networking.hostName = "nethsm-gateway-dev";
 
   # NetHSM connected directly to the ethernet port
-  networking.interfaces.enp0s20f0u2 = {
+  networking.interfaces.enp88s0 = {
+    useDHCP = false;
     ipv4.addresses = [
       {
-        address = "10.255.255.3";
+        address = "10.255.255.4";
         prefixLength = 29;
       }
     ];
   };
 
-  # temporary overrides for local manual lab use
-  pkcs11.proxy.listenAddr = "0.0.0.0";
-  networking.firewall.allowedTCPPorts = [ config.pkcs11.proxy.listenPort ];
-  systemd.services.pkcs11-daemon.environment.PKCS11_PROXY_TLS_PSK_FILE =
-    lib.mkForce "/etc/pkcs11/tls-psk";
-  # make way for manual config file
-  sops.templates."p11nethsm.conf".path = lib.mkForce "/etc/nitrokey/p11nethsm-nix.conf";
-  nebula.enable = false;
-
-  services.nebula.networks."vedenemo" = lib.mkIf config.nebula.enable {
-    firewall = {
-      outbound = lib.mkForce [
-        # allow udp outbound only to hetzner
-        {
-          port = 4242;
-          proto = "udp";
-          groups = [ "hetzner" ];
-        }
-        # allow dns requests
-        {
-          port = 53;
-          proto = "udp";
-          host = "any";
-        }
-        # allow any tcp or icmp outbound (between nebula hosts)
-        {
-          port = "any";
-          proto = "tcp";
-          host = "any";
-        }
-        {
-          port = "any";
-          proto = "icmp";
-          host = "any";
-        }
-      ];
-      inbound = [
-        # allow monitoring server to scrape nethsm metrics
-        {
-          inherit (config.nethsm.exporter) port;
-          proto = "tcp";
-          groups = [ "scraper" ];
-        }
-        # pkcs11-daemon
-        {
-          port = config.pkcs11.proxy.listenPort;
-          proto = "tcp";
-          host = "any";
-        }
-      ];
-    };
+  networking.interfaces.enp89s0 = {
+    useDHCP = false;
+    ipv4.addresses = [
+      {
+        address = "192.168.70.3";
+        prefixLength = 24;
+      }
+    ];
   };
+
+  pkcs11.proxy.listenAddr = machines.nethsm-gateway.nebula_ip;
+
+  nebula.enable = true;
+
+  services.nebula.networks."vedenemo".firewall = {
+    outbound = lib.mkForce [
+      # allow udp outbound only to hetzner
+      {
+        port = 4242;
+        proto = "udp";
+        groups = [ "hetzner" ];
+      }
+      # allow dns requests
+      {
+        port = 53;
+        proto = "udp";
+        host = "any";
+      }
+      # allow any tcp or icmp outbound (between nebula hosts)
+      {
+        port = "any";
+        proto = "tcp";
+        host = "any";
+      }
+      {
+        port = "any";
+        proto = "icmp";
+        host = "any";
+      }
+    ];
+    inbound = [
+      # allow monitoring server to scrape nethsm metrics
+      {
+        inherit (config.nethsm.exporter) port;
+        proto = "tcp";
+        groups = [ "scraper" ];
+      }
+      # pkcs11-daemon
+      {
+        port = config.pkcs11.proxy.listenPort;
+        proto = "tcp";
+        host = "any";
+      }
+    ];
+  };
+
 }
