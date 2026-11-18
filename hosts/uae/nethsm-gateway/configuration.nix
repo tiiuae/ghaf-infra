@@ -19,6 +19,12 @@
   system.stateVersion = "23.11";
   networking.hostName = "uae-nethsm-gateway";
 
+  services.scheduled-deployment = {
+    enable = true;
+    # Keep the signing gateways on different days so CI can use the other one.
+    window = "Wed *-*-* 05..08:00,30:00 UTC";
+  };
+
   # Assign IP configs because dhcp is disabled in network
   networking = {
     interfaces.enp3s0 = {
