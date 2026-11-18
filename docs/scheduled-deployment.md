@@ -39,7 +39,9 @@ Each run:
    up to an hour until no test runs on them. On a [builder](#builders), waits
    up to an hour until no build has run for a minute. On a
    [Jenkins controller](#jenkins-controllers), holds new builds in the queue
-   and waits up to an hour until running builds finish.
+   and waits up to an hour until running builds finish. On a
+   [NetHSM gateway](#service-hosts), waits up to an hour until no connection
+   to the PKCS#11 proxy is seen for a minute.
 5. Skips if a unit has failed, then switches to the target. If the kernel,
    initrd or kernel modules change, or a switch inhibitor refuses the switch,
    it makes the target the boot default and reboots instead. Baseline-reset
@@ -81,7 +83,7 @@ dashboard.
 | `skipped` | `build_failed` | The build failed, also when inputs or caches are unavailable. The next run retries. If it keeps failing, build the host locally to see the error. |
 | `skipped` | `low_disk_space` | Less than 10 GiB is free in `/nix/store`. Free space on the host. |
 | `skipped` | `drain_failed` | Taking a test agent's nodes offline failed. The nodes are back online, and the next run retries. |
-| `skipped` | `drain_timeout` | Tests kept running on a test agent's nodes, or builds on a builder or a controller, for an hour. A test agent's nodes are back online, a controller's queued builds start, and the next run retries. |
+| `skipped` | `drain_timeout` | Tests kept running on a test agent's nodes, builds on a builder or a controller, or signing on a NetHSM gateway, for an hour. A test agent's nodes are back online, a controller's queued builds start, and the next run retries. |
 | `skipped` | `failed_units` | A unit had failed before activation. Fix the unit, or clear it with `systemctl reset-failed`. |
 | `skipped` | `rejected_target` | The head of `main` failed on this host before. A new commit on `main` gets a new attempt; to retry the same commit, [clear the rejected target](#retrying-a-rejected-target). |
 | `held` | `operator_hold` | Someone [paused the host](#pausing-a-host). |
@@ -218,6 +220,12 @@ back online.
 
 `ghaf-monitoring` deploys on Tuesday from 08:00 to 10:30 UTC, within office
 hours in Finland and the UAE, because a failure can silence alerts.
+
+`nethsm-gateway` deploys on Tuesday from 05:00 to 08:30 UTC. CI selects a
+gateway once per signing step and does not retry, so a run waits until it sees
+no connection to the gateway's PKCS#11 proxy for a minute, checking every five
+seconds. A short connection between checks, or a signing step that starts
+after the wait, can still be cut off.
 
 `nethsm-gateway-dev` remains unenrolled while AiC uses it off Nebula with
 manually managed PKCS#11 configuration and without Prometheus scraping.
