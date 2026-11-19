@@ -20,8 +20,8 @@ and signature metadata under `attestations.uefi_provenance`.
 
 UEFI provenance is generated only when UEFI signing succeeds and provenance is
 enabled for the target. Targets with signing disabled, no image, no UEFI signing
-request, or `provenance: false` do not produce it. This addition does not change
-existing image signatures or introduce provenance-chain verification.
+request, or `provenance: false` do not produce it. The main image is signed
+separately; provenance-chain verification is not performed by the pipeline.
 
 ## Inputs
 
@@ -57,10 +57,10 @@ statement describes the subsequent transformation without copying those fields.
 Each `subject` is a file returned by the signer, identified by its path relative
 to the signer's output directory in `name` and the SHA-256 of its exact bytes in
 `digest.sha256`. The pipeline recursively inventories that directory immediately
-after the signer succeeds, before moving or renaming files. Nested paths and
-companion files are included without filtering by extension or consulting the
-image manifest. Subject names retain the signer's original filenames, including
-any `signed_` prefix, even when the existing publishing flow later renames them.
+after the signer succeeds. Nested paths and companion files are included
+without filtering by extension. The complete signer output is retained under
+`output/`, preserving the subject names, including any `signed_` prefix.
+Subject names are relative to that directory, not to `manifest.json`.
 
 Only signer outputs are subjects. Temporary OTA verification files, the OTA
 manifest signature created separately by Jenkins, and detached CI image
@@ -68,9 +68,8 @@ signatures are produced after this inventory and are not included.
 
 The pipeline invokes the selected signer with the configured certificate,
 selected UEFI key URI, unsigned input and temporary output directory. It hashes
-every returned file before the existing output collection and OTA signing
-procedure. The pipeline then writes the statement and signs it with the
-provenance key.
+every returned file before adding OTA and main-image signatures. The pipeline
+then writes the statement and signs it with the provenance key.
 
 `runDetails.builder.id` is the Jenkins controller URL. Its `version.ghaf-infra`
 is the controller's NixOS configuration revision, identifying the infrastructure

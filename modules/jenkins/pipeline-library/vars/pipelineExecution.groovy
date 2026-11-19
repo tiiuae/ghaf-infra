@@ -39,12 +39,24 @@ private def run_optional_stage(boolean enabled, String stageName, Closure body) 
   }
 }
 
-private def empty_signature() { [path: null, signing_key: null, signing_proxy: null] }
+private def signature_entry(Map ctx, String path) { [path: path, signing_key: ctx.uri] }
 
-private def record_signature(Map target, Map signingCtx, String path = null) {
-  if (path != null) target.path = path
-  target.signing_key = signingCtx.uri
-  target.signing_proxy = signingCtx.socket
+private def find_main_image(String directory, String preferred = null) {
+  if (preferred) {
+    if (!fileExists("${directory}/${preferred}")) error("Main image '${preferred}' not found in '${directory}'")
+    return preferred
+  }
+  def candidates = sh(
+    script: "find -L ${artifactSupport.shell_quote(directory)} -type f -regextype posix-extended -regex '.*\\.(img|raw|iso)(\\.zst)?' -printf '%P\\0'",
+    returnStdout: true
+  ).split('\u0000').findAll { it }
+  def depth = -1
+  for (def path in candidates) {
+    def candidate_depth = path.count('/')
+    if (depth < 0 || candidate_depth < depth) depth = candidate_depth
+  }
+  def images = candidates.findAll { it.count('/') == depth }
+  return images.size() == 1 ? images[0] : null
 }
 
 def create_pipeline(
@@ -168,50 +180,13 @@ def create_pipeline(
     def output = "${artifacts_local_dir}/${build_target_name}"
 
     def manifest = [
-      ci_env: ci_env,
-      job: [
-        name: env.JOB_NAME,
-        build_id: env.BUILD_ID,
-        build_url: env.BUILD_URL,
-      ],
-      source: [
-        repository: target_repo,
-        ref: target_commit,
-        revision: target_commit,
-        flake_ref: target_flake_ref,
-      ],
+      schema_version: 2,
       target: build_target_name,
-      build: [
-        ts_begin: null,
-        ts_finished: null,
-      ],
-      images: [],
-      uefi: [
-        signed: false,
-        reason: null,
-        image_path: null,
-        signing_key: null,
-        signing_proxy: null,
-      ],
-      attestations: [
-        source_vsa: [
-          path: source_vsa_path,
-        ],
-        provenance: [
-          path: null,
-          signature: empty_signature(),
-        ],
-        sbom_csv: [
-          path: null,
-        ],
-        sbom_cyclonedx: [
-          path: null,
-        ],
-        sbom_spdx: [
-          path: null,
-        ],
-      ],
+      source: [flake_ref: target_flake_ref],
+      output: [path: 'output'],
+      attestations: [:],
     ]
+    def build_times = [:]
     def uefi_signing = [:]
     def oci_result = null
     def provenance_policy_passed = null
@@ -250,14 +225,6 @@ def create_pipeline(
       return entry
     }
 
-    if (target_config.no_image) {
-      manifest.uefi.reason = "no_image"
-    } else if (!signing_possible) {
-      manifest.uefi.reason = "signing_not_possible"
-    } else if (!target_config.uefi_sign_requested) {
-      manifest.uefi.reason = "not_requested"
-    }
-
     pipeline[build_target_name] = {
       artifactSupport.with_controller_workspace(ghaf_checkout) {
         lock(label: 'nix-build', quantity: 1) {
@@ -265,6 +232,7 @@ def create_pipeline(
             sh "mkdir -v -p ${output}"
             if (source_vsa_path != null) {
               sh "install -Dm644 '${artifacts_local_dir}/source-vsa.sigstore.json' '${output}/attestations/source-vsa.sigstore.json'"
+              manifest.attestations.source_vsa = [path: source_vsa_path]
             }
             def system = build_target_name.tokenize('.')[1]
             def remote_stores = readJSON file: '/etc/jenkins/remote-stores.json'
@@ -272,7 +240,7 @@ def create_pipeline(
             def store_args = remote_store ?
               "--store ${artifactSupport.shell_quote(remote_store)} --eval-store auto" : ''
 
-            manifest.build.ts_begin = artifactSupport.run_cmd('date +%s')
+            build_times.ts_begin = artifactSupport.run_cmd('date +%s')
 
             def build_result = readJSON text: sh(
               script: """
@@ -287,7 +255,7 @@ def create_pipeline(
               returnStdout: true
             ).trim()
 
-            manifest.build.ts_finished = artifactSupport.run_cmd('date +%s')
+            build_times.ts_finished = artifactSupport.run_cmd('date +%s')
 
             def store_path = build_result[0]?.outputs?.out
             if (!store_path) {
@@ -309,9 +277,6 @@ def create_pipeline(
               nix-store --add-root ${output}/unsigned-output \
                 --realise ${artifactSupport.shell_quote(store_path)}
             """
-
-            manifest.build.remote_store = remote_store
-            manifest.build.remote_output = remote_store ? store_path : null
           }
 
           run_optional_stage(
@@ -339,8 +304,8 @@ def create_pipeline(
               'PROVENANCE_BUILD_TYPE=https://github.com/tiiuae/ghaf-infra/blob/ea938e90/slsa/v1.0/L1/buildtype.md',
               "PROVENANCE_BUILDER_ID=${env.JENKINS_URL}",
               "PROVENANCE_INVOCATION_ID=${env.BUILD_URL}",
-              "PROVENANCE_TIMESTAMP_BEGIN=${manifest.build.ts_begin}",
-              "PROVENANCE_TIMESTAMP_FINISHED=${manifest.build.ts_finished}",
+              "PROVENANCE_TIMESTAMP_BEGIN=${build_times.ts_begin}",
+              "PROVENANCE_TIMESTAMP_FINISHED=${build_times.ts_finished}",
               "PROVENANCE_EXTERNAL_PARAMS=${ext_params}"
             ]) {
               sh "mkdir -v -p ${output}/attestations"
@@ -352,7 +317,7 @@ def create_pipeline(
                     || { sleep 30; exit 1; }
                 """
               }
-              manifest.attestations.provenance.path = "attestations/provenance.json"
+              manifest.attestations.provenance = [path: 'attestations/provenance.json']
             }
           }
         }
@@ -382,9 +347,9 @@ def create_pipeline(
               --cdx ${outdir}/sbom.cdx.json \
               --spdx ${outdir}/sbom.spdx.json
           """
-          manifest.attestations.sbom_csv.path = "attestations/sbom.csv"
-          manifest.attestations.sbom_cyclonedx.path = "attestations/sbom.cdx.json"
-          manifest.attestations.sbom_spdx.path = "attestations/sbom.spdx.json"
+          manifest.attestations.sbom_csv = [path: 'attestations/sbom.csv']
+          manifest.attestations.sbom_cyclonedx = [path: 'attestations/sbom.cdx.json']
+          manifest.attestations.sbom_spdx = [path: 'attestations/sbom.spdx.json']
         }
         run_optional_stage(
           signing_possible && target_config.provenance_requested,
@@ -397,7 +362,7 @@ def create_pipeline(
                 -out ${output}/attestations/provenance.json.sig \
                 -in ${output}/attestations/provenance.json
             """
-            record_signature(manifest.attestations.provenance.signature, ctx, "attestations/provenance.json.sig")
+            manifest.attestations.provenance.signature = signature_entry(ctx, 'attestations/provenance.json.sig')
           }
         }
         run_optional_stage(
@@ -421,71 +386,22 @@ def create_pipeline(
           }
         }
         run_optional_stage(
-          !target_config.no_image,
-          "Find image ${build_shortname}"
-        ) {
-          if (is_sysupdate_target) {
-            def sysupdate_manifest_path = artifactSupport.run_cmd(
-              "find -L ${output}/unsigned-output -maxdepth 1 -name '*.manifest' -print -quit"
-            )
-            def sysupdate_manifest = readJSON file: sysupdate_manifest_path
-            def images = [[path: sysupdate_manifest_path, role: 'sysupdate-manifest']]
-            ['root', 'verity', 'kernel'].each { role ->
-              images << [
-                path: "${output}/unsigned-output/${sysupdate_manifest[role].file}",
-                role: role,
-              ]
-            }
-            manifest.images = images.collect { image ->
-              [
-                path: image.path - "${output}/",
-                role: image.role,
-                signature: empty_signature(),
-              ]
-            }
-          } else {
-            def img_paths = artifactSupport.run_cmd(
-              "find -L ${output}/unsigned-output -regex '.*\\.\\(img\\|raw\\|zst\\|iso\\)\$' -print | sort"
-            )
-            def images = img_paths.split('\n').findAll { it }
-            if (images.isEmpty()) {
-              error("No image found!")
-            }
-            manifest.images = images.collect { img_path ->
-              def relpath = img_path - "${output}/"
-              [
-                path: relpath,
-                role: artifactSupport.image_role(relpath),
-                signature: empty_signature(),
-              ]
-            }
-          }
-        }
-        run_optional_stage(
           !target_config.no_image && signing_possible && target_config.uefi_sign_requested,
           "Sign (UEFI) ${build_shortname}"
         ) {
           def tmpdir = artifactSupport.build_tmpdir("uefisign-${build_shortname}")
-          def uefi_image = null
-          if (!is_sysupdate_target && manifest.images.size() == 1) {
-            uefi_image = manifest.images[0]
-          } else {
-            uefi_image = manifest.images.find { it.role == 'kernel' }
-            if (uefi_image == null) {
-              error("UEFI signing for multi-image target requires an image with role 'kernel'")
-            }
+          def unsigned_dir = "${output}/unsigned-output"
+          def input_hint = target_config.image_path && fileExists("${unsigned_dir}/${target_config.image_path}") ? target_config.image_path : null
+          def signer_input = is_sysupdate_target ? artifactSupport.run_cmd(
+            "find -L '${unsigned_dir}' -maxdepth 1 -name '*.manifest' -printf '%P' -quit"
+          ) : find_main_image(unsigned_dir, input_hint)
+          if (!signer_input) {
+            error("UEFI signing requires a main image; set 'image_path' in the target config when selection is ambiguous")
           }
-          def img_name = artifactSupport.path_basename(uefi_image.path)
-          def sysupdate_manifest_image = is_sysupdate_target ?
-            manifest.images.find { it.role == 'sysupdate-manifest' } : null
-          if (is_sysupdate_target && sysupdate_manifest_image == null) {
-            error("sysupdate manifest not found")
-          }
-          def signer_input = is_sysupdate_target ? sysupdate_manifest_image.path : uefi_image.path
           uefi_signing = [
             signer: is_sysupdate_target ? 'uefi-sign-sysupdate' :
               (build_target_name.contains('nvidia-jetson-orin') ? 'uefisign-simple' : 'uefisign'),
-            input: signer_input - 'unsigned-output/',
+            input: signer_input,
           ]
           uefi_signing.signer_path = artifactSupport.run_cmd("readlink -f \"\$(command -v ${uefi_signing.signer})\"")
 
@@ -500,11 +416,11 @@ def create_pipeline(
               sh """
                 ${artifactSupport.shell_quote(uefi_signing.signer_path)} "${env.JENKINS_UEFI_CERTIFICATE_FILE}" \
                   "${ctx.uri}" \
-                  ${artifactSupport.shell_quote("${output}/${signer_input}")} \
+                  ${artifactSupport.shell_quote("${unsigned_dir}/${signer_input}")} \
                   '${tmpdir}'
               """
               uefi_signing.finished_on = artifactSupport.run_cmd('date -u +%Y-%m-%dT%H:%M:%SZ')
-              record_signature(manifest.uefi, ctx)
+              uefi_signing.signing_key = ctx.uri
             }
             if (target_config.provenance_requested) {
               def signer_outputs = sh(
@@ -519,18 +435,11 @@ def create_pipeline(
               }
             }
 
+            sh "mv '${tmpdir}' '${output}/output'"
             if (is_sysupdate_target) {
-              sh "mkdir -p '${output}/images'"
-              manifest.images.each { image ->
-                def name = artifactSupport.path_basename(image.path)
-                sh """
-                  mv ${artifactSupport.shell_quote("${tmpdir}/${name}")} \
-                    ${artifactSupport.shell_quote("${output}/images/${name}")}
-                """
-                image.path = "images/${name}"
-              }
-
-              def ota_signature_path = "${sysupdate_manifest_image.path}.sig"
+              manifest.sysupdate = [path: "output/${artifactSupport.path_basename(signer_input)}"]
+              def ota_signature_path = "${manifest.sysupdate.path}.sig"
+              sh "mkdir -p '${tmpdir}'"
               sh(label: 'Prepare OTA verification key', script: """
                 # Ed25519's fixed raw public-key length, in bytes.
                 ed25519_public_key_size=32
@@ -547,7 +456,7 @@ def create_pipeline(
                 sh(label: 'Sign finalized OTA manifest', script: """
                   openssl pkeyutl -sign -rawin \
                     -inkey "${ctx.uri}" \
-                    -in ${artifactSupport.shell_quote("${output}/${sysupdate_manifest_image.path}")} \
+                    -in ${artifactSupport.shell_quote("${output}/${manifest.sysupdate.path}")} \
                     -out '${tmpdir}/manifest.sig'
                 """)
                 ota_signing_ctx = ctx
@@ -559,30 +468,21 @@ def create_pipeline(
                 test "\$(wc -c < '${tmpdir}/manifest.sig')" -eq "\$ed25519_signature_size"
                 openssl pkeyutl -verify -rawin -pubin -keyform DER \
                   -inkey '${tmpdir}/update-key.der' \
-                  -in ${artifactSupport.shell_quote("${output}/${sysupdate_manifest_image.path}")} \
+                  -in ${artifactSupport.shell_quote("${output}/${manifest.sysupdate.path}")} \
                   -sigfile '${tmpdir}/manifest.sig'
               """)
 
               sh(label: 'Publish verified OTA signature', script: """
                 mv '${tmpdir}/manifest.sig' ${artifactSupport.shell_quote("${output}/${ota_signature_path}")}
               """)
-              record_signature(sysupdate_manifest_image.signature, ota_signing_ctx, ota_signature_path)
-            } else {
-              sh """
-                mkdir -p '${output}/images'
-                mv '${tmpdir}/signed_${img_name}' '${output}/images/${img_name}'
-              """
+              manifest.sysupdate.signature = signature_entry(ota_signing_ctx, ota_signature_path)
             }
-            uefi_image.path = "images/${img_name}"
-            manifest.uefi.signed = true
-            manifest.uefi.image_path = "images/${img_name}"
-            manifest.uefi.reason = null
           } finally {
             sh "rm -rf '${tmpdir}'"
           }
         }
         run_optional_stage(
-          manifest.uefi.signed && target_config.provenance_requested,
+          uefi_signing.finished_on != null && target_config.provenance_requested,
           "Provenance (UEFI) ${build_shortname}"
         ) {
           def unsigned_output = artifactSupport.run_cmd("readlink -f ${output}/unsigned-output")
@@ -608,7 +508,7 @@ def create_pipeline(
               buildDefinition: [
                 buildType: 'https://github.com/tiiuae/ghaf-infra/blob/main/slsa/v1.0/L1/uefi-buildtype.md',
                 externalParameters: [input: uefi_signing.input],
-                internalParameters: [signer: uefi_signing.signer, signing_key: manifest.uefi.signing_key],
+                internalParameters: [signer: uefi_signing.signer, signing_key: uefi_signing.signing_key],
                 resolvedDependencies: [
                   unsigned_subject,
                   [
@@ -634,7 +534,7 @@ def create_pipeline(
           ]
           def provenance_path = 'attestations/uefi-provenance.json'
           writeFile(file: "${output}/${provenance_path}", text: JsonOutput.prettyPrint(JsonOutput.toJson(uefi_provenance)))
-          def attestation = [path: provenance_path, signature: empty_signature()]
+          def attestation = [path: provenance_path]
           withRedundancyRouter('provenance') { ctx ->
             sh """
               openssl pkeyutl -sign -rawin \
@@ -642,43 +542,51 @@ def create_pipeline(
                 -out ${output}/${provenance_path}.sig \
                 -in ${output}/${provenance_path}
             """
-            record_signature(attestation.signature, ctx, "${provenance_path}.sig")
+            attestation.signature = signature_entry(ctx, "${provenance_path}.sig")
           }
           manifest.attestations.uefi_provenance = attestation
         }
+        stage("Collect output ${build_shortname}") {
+          if (!uefi_signing.finished_on) {
+            // Outputs without a main image can link to an entire NixOS system closure.
+            sh """
+              mkdir -p '${output}/output'
+              if test -d '${output}/unsigned-output'; then
+                cp -rs${target_config.no_image ? '' : 'L'} --no-preserve=mode '${output}/unsigned-output/.' '${output}/output/'
+              else
+                ln -s '${output}/unsigned-output' '${output}/output/'\"\$(basename \"\$(readlink -f '${output}/unsigned-output')\")\"
+              fi
+            """
+          }
+          if (!target_config.no_image && !is_sysupdate_target) {
+            def image_hint = target_config.image_path
+            if (image_hint && uefi_signing.finished_on) {
+              def signed_image = "signed_${artifactSupport.path_basename(image_hint)}"
+              if (fileExists("${output}/output/${signed_image}")) image_hint = signed_image
+            }
+            def image_path = find_main_image("${output}/output", image_hint)
+            if (image_path) manifest.image = [path: "output/${image_path}"]
+          }
+        }
         run_optional_stage(
-          !target_config.no_image && signing_possible,
+          manifest.image != null && signing_possible,
           "Sign (SLSA) image ${build_shortname}"
         ) {
           withRedundancyRouter('image') { ctx ->
-            sh "mkdir -p ${output}/images"
-            manifest.images.findAll { it.role != 'sysupdate-manifest' }.each { image ->
-              def img_name = artifactSupport.path_basename(image.path)
-              record_signature(image.signature, ctx, "images/${img_name}.sig")
-              sh """
-                openssl dgst -sha256 -sign \
-                  "${ctx.uri}" \
-                  -out ${output}/${image.signature.path} \
-                  ${output}/${image.path}
-              """
-            }
+            def signature_path = "${manifest.image.path}.sig"
+            sh """
+              openssl dgst -sha256 -sign "${ctx.uri}" \
+                -out ${artifactSupport.shell_quote("${output}/${signature_path}")} \
+                ${artifactSupport.shell_quote("${output}/${manifest.image.path}")}
+            """
+            manifest.image.signature = signature_entry(ctx, signature_path)
           }
         }
         stage("Link artifacts ${build_shortname}") {
-          sh "mkdir -p ${output}/images"
-          manifest.images.each { image ->
-            def img_name = artifactSupport.path_basename(image.path)
-            def image_link = "images/${img_name}"
-            if (image.path && image.path != image_link) {
-              sh "ln -s ${output}/${image.path} ${output}/${image_link}"
-              image.path = image_link
-            }
-          }
-
           write_manifest()
 
           artifactSupport.append_to_build_description(artifacts_href, true)
-          if (registry_publish_enabled) {
+          if (registry_publish_enabled && !target_config.no_image) {
             artifactSupport.append_to_build_description("OCI Tag: ${pipelineModel.html_escape(immutable_tag)}", true)
           }
         }
@@ -694,13 +602,12 @@ def create_pipeline(
             oci_tags << "${ci_env}-latest"
             def oci_alias_args = oci_tags.collect { "--tag '${it}'" }.join(" \\\n                ")
             def oci_alias_args_block = oci_alias_args ? " \\\n                ${oci_alias_args}" : ""
-            def oci_sysupdate_arg = is_sysupdate_target ? " \\\n                --sysupdate" : ""
             sh """
               oci-publish target \
                 --target-dir '${output}' \
                 --repository '${oci_repository}' \
                 --primary-tag '${immutable_tag}' \
-                --result-json '${oci_result_json}'${oci_sysupdate_arg}${oci_alias_args_block}
+                --result-json '${oci_result_json}'${oci_alias_args_block}
             """
             oci_result = readJSON file: oci_result_json
           }
@@ -709,8 +616,8 @@ def create_pipeline(
 
       def test_failure_message = null
       if (!normalized_test_runs.isEmpty()) {
-        if (manifest.images.size() != 1) {
-          error("Multi-image hardware tests are not implemented for ${build_shortname}; found ${manifest.images.size()} images")
+        if (!manifest.image && normalized_test_runs.any { it.initial_status != 'SKIPPED' }) {
+          error("Hardware tests require a main image for ${build_shortname}; set 'image_path' in the target config")
         }
         def tests_completed = true
         try {
