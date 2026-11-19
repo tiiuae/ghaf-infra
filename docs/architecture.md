@@ -236,10 +236,12 @@ the controller's artifact directory or, when `OCI_TAG` is set, from the
 registry. Either way, the local artifact directory (`ARTIFACTS_URL`) must
 still exist: the pipeline checks it and reads it for OTA pinning. On
 ci-release, baseline reset discards that directory on reboot, so publish a
-release candidate before the controller reboots. Archival verifies all
-signatures and authorizes their keys using the locally configured release
-policy. The artifacts are then packaged into tarballs and uploaded to Hetzner Object
-Storage (an S3-compatible service, bucket `ghaf-artifacts`) using
+release candidate before the controller reboots. Archival verifies image
+signatures, the Nix build provenance signature, and the release-policy attestation
+signature when required, and authorizes their keys using the locally configured
+release policy. The UEFI provenance signature is archived but is not verified
+during archival. The artifacts are then packaged into tarballs and uploaded to
+Hetzner Object Storage (an S3-compatible service, bucket `ghaf-artifacts`) using
 rclone. The [ghaf-archive](https://github.com/tiiuae/ghaf-archive) web
 application provides a browsable frontend to the archived releases.
 
