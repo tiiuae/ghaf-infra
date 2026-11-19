@@ -15,5 +15,6 @@
       host = "hetzci-release";
     };
     monitoring = import ./monitoring.nix { inherit self; };
+    install-ghaf-lighthouse = import ./install.nix { inherit self; };
   };
 }
