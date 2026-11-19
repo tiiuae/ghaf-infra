@@ -35,6 +35,7 @@
   };
 
   services.nginx.virtualHosts."vedenemo.dev" = {
+    http2 = false;
     enableACME = true;
     forceSSL = true;
     default = true;

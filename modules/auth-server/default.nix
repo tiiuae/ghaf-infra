@@ -108,9 +108,12 @@ in
 
     services.nginx = lib.mkIf cfg.nginx.enable {
       enable = true;
-      virtualHosts.${cfg.domain}.locations."/" = {
-        proxyPass = "http://${config.services.dex.settings.web.http}";
-        recommendedProxySettings = true;
+      virtualHosts.${cfg.domain} = {
+        http2 = false;
+        locations."/" = {
+          proxyPass = "http://${config.services.dex.settings.web.http}";
+          recommendedProxySettings = true;
+        };
       };
     };
 
