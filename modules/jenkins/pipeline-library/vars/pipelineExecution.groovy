@@ -486,8 +486,8 @@ def create_pipeline(
             signer: is_sysupdate_target ? 'uefi-sign-sysupdate' :
               (build_target_name.contains('nvidia-jetson-orin') ? 'uefisign-simple' : 'uefisign'),
             input: signer_input - 'unsigned-output/',
-            started_on: artifactSupport.run_cmd('date -u +%Y-%m-%dT%H:%M:%SZ'),
           ]
+          uefi_signing.signer_path = artifactSupport.run_cmd("readlink -f \"\$(command -v ${uefi_signing.signer})\"")
 
           try {
             sh """
@@ -496,18 +496,19 @@ def create_pipeline(
             """
 
             withRedundancyRouter('uefi') { ctx ->
+              uefi_signing.started_on = artifactSupport.run_cmd('date -u +%Y-%m-%dT%H:%M:%SZ')
               sh """
-                ${uefi_signing.signer} "${env.JENKINS_UEFI_CERTIFICATE_FILE}" \
+                ${artifactSupport.shell_quote(uefi_signing.signer_path)} "${env.JENKINS_UEFI_CERTIFICATE_FILE}" \
                   "${ctx.uri}" \
                   ${artifactSupport.shell_quote("${output}/${signer_input}")} \
                   '${tmpdir}'
               """
+              uefi_signing.finished_on = artifactSupport.run_cmd('date -u +%Y-%m-%dT%H:%M:%SZ')
               record_signature(manifest.uefi, ctx)
             }
-            uefi_signing.finished_on = artifactSupport.run_cmd('date -u +%Y-%m-%dT%H:%M:%SZ')
             if (target_config.provenance_requested) {
               def signer_outputs = sh(
-                script: "find -L '${tmpdir}' -type f -printf '%P\\0' | sort -z",
+                script: "bash -o pipefail -c ${artifactSupport.shell_quote("find -L '${tmpdir}' -type f -printf '%P\\0' | sort -z")}",
                 returnStdout: true
               )
               uefi_signing.subjects = signer_outputs.split('\u0000').findAll { it }.collect { path ->
@@ -584,16 +585,21 @@ def create_pipeline(
           manifest.uefi.signed && target_config.provenance_requested,
           "Provenance (UEFI) ${build_shortname}"
         ) {
-          def build_provenance = readJSON(file: "${output}/${manifest.attestations.provenance.path}", returnPojo: true)
           def unsigned_output = artifactSupport.run_cmd("readlink -f ${output}/unsigned-output")
-          def unsigned_subject = build_provenance.subject.find { it.uri == unsigned_output }
+          def unsigned_subject = readJSON(
+            text: artifactSupport.run_cmd("""
+              jq -c --arg uri ${artifactSupport.shell_quote(unsigned_output)} \
+                'first(.subject[] | select(.uri == \$uri)) // {}' \
+                ${artifactSupport.shell_quote("${output}/${manifest.attestations.provenance.path}")}
+            """),
+            returnPojo: true
+          )
           if (!unsigned_subject?.digest) {
             error("Build provenance does not identify unsigned output '${unsigned_output}'")
           }
           def sha256 = { String path ->
             artifactSupport.run_cmd("sha256sum < ${artifactSupport.shell_quote(path)}").tokenize()[0]
           }
-          def signer_path = artifactSupport.run_cmd("readlink -f \"\$(command -v ${uefi_signing.signer})\"")
           def uefi_provenance = [
             _type: 'https://in-toto.io/Statement/v1',
             subject: uefi_signing.subjects,
@@ -609,7 +615,7 @@ def create_pipeline(
                     uri: manifest.attestations.provenance.path,
                     digest: [sha256: sha256("${output}/${manifest.attestations.provenance.path}")],
                   ],
-                  [uri: signer_path, digest: [sha256: sha256(signer_path)]],
+                  [uri: uefi_signing.signer_path, digest: [sha256: sha256(uefi_signing.signer_path)]],
                   [
                     uri: env.JENKINS_UEFI_CERTIFICATE_FILE,
                     digest: [sha256: sha256(env.JENKINS_UEFI_CERTIFICATE_FILE)],
