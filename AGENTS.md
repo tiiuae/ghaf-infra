@@ -85,7 +85,7 @@ Python tests live in `tests/test_tasks.py`; Jenkins pipeline tests live in
 `tests/jenkins/`. Both run through the hooks configured in `nix/git-hooks.nix`.
 NixOS VM tests (for example `tests/scheduled-deployment.nix`) are flake outputs
 `tests.<name>`, outside the hooks and `nix flake check`; the
-`.github/workflows/vm-tests.yml` workflow runs them on PRs that touch their files.
+`.github/workflows/vm-tests.yml` workflow runs them on every PR.
 
 - Run `nix fmt` to catch formatting/lint issues early.
 - Run `nix flake check --option allow-import-from-derivation false --no-build` for checks.

@@ -270,8 +270,9 @@ The ghaf-infra repository has its own GitHub Actions workflows
 - `test-ghaf-infra.yml`: builds all NixOS configurations for x86_64 and
   aarch64 using remote builders, and runs the pre-commit checks on x86_64.
 - `vm-tests.yml`: runs the NixOS VM tests (flake outputs `tests.<name>`) on
-  GitHub-hosted runners, for PRs that change a test, the code it covers or the
-  flake inputs, and on manual runs.
+  GitHub-hosted runners for every PR and on manual runs. The job `vm tests`
+  reports their combined result and is a required check, see
+  [updates](./scheduled-deployment.md#updates).
 - `authorize.yml`: reusable authorization workflow. PRs from `tiiuae` org
   members are auto-approved; external PRs require manual approval before
   CI runs.
@@ -332,8 +333,8 @@ execution context and signing-time evidence. Commit tags in GHCR are immutable.
 
 - `update-robot-framework.yml`: daily automated PR to bump the
   robot-framework flake input.
-- `update-flake-inputs.yml`: weekly automated PR to update all flake inputs
-  and Jenkins plugin manifests.
+- `update-flake-inputs.yml`: weekly automated PR that updates the Jenkins plugin
+  manifests and every flake input other than robot-framework.
 - `pages.yml`: publishes the interactive
   [CI map](https://tiiuae.github.io/ghaf-infra/) (`docs/ci-map.html`) to
   GitHub Pages when it changes on `main`.
