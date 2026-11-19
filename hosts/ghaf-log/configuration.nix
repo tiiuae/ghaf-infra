@@ -124,6 +124,7 @@
   services.nginx = {
     virtualHosts = {
       "${config.services.grafana.settings.server.domain}" = {
+        http2 = false;
         enableACME = true;
         forceSSL = true;
         default = true;
@@ -134,6 +135,7 @@
       };
 
       "loki.${config.services.grafana.settings.server.domain}" = {
+        http2 = false;
         enableACME = true;
         forceSSL = true;
         basicAuthFile = config.sops.secrets.loki_basic_auth.path;

@@ -652,6 +652,7 @@ in
 
   services.nginx.virtualHosts = {
     "${domain}" = {
+      http2 = false;
       default = true;
       enableACME = true;
       forceSSL = true;

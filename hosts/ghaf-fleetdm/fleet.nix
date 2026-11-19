@@ -180,6 +180,7 @@ in
   };
 
   services.nginx.virtualHosts.${domain} = {
+    http2 = false;
     forceSSL = true;
     enableACME = true;
 
