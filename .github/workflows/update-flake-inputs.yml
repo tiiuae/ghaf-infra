@@ -41,9 +41,14 @@ jobs:
       - name: Install nix
         uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086
 
-      - name: Update all flake inputs
+      # robot-framework has its own daily update PR, which would conflict.
+      - name: Update flake inputs except robot-framework
         shell: bash
-        run: nix flake update
+        run: |
+          set -euo pipefail
+          mapfile -t inputs < <(nix flake metadata --json |
+            jq -r '.locks.nodes.root.inputs | keys[] | select(. != "robot-framework")')
+          nix flake update "${inputs[@]:?no flake inputs found}"
 
       - name: Update Jenkins plugins
         shell: bash
@@ -81,4 +86,4 @@ jobs:
           signoff: true
           title: "flake.lock: Update flake inputs and Jenkins plugins"
           body: |
-            This PR updates all flake inputs in `flake.lock` and refreshes Jenkins plugins manifest.
+            This PR updates every flake input other than `robot-framework` in `flake.lock`, and refreshes the Jenkins plugins manifest.
