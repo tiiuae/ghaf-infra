@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Runs the NixOS VM tests (flake outputs 'tests.<name>') on GitHub-hosted
-# runners for changes that can affect them, including flake input updates.
-# 'nix flake check' and the build workflow do not run them. Each test has its
-# own job and its own paths below. Run the tests manually on any ref with:
+# runners for every PR. 'nix flake check' and the build workflow do not run
+# them. The job 'vm tests' always reports and is the check to require in the
+# branch protection: it fails unless every test passed, so adding a test below
+# needs no settings change. Run the tests manually on any ref with:
 #   gh workflow run vm-tests.yml --ref <branch>
 # (GitHub offers manual runs once the workflow is on the default branch.)
 
@@ -15,24 +16,25 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - .github/workflows/vm-tests.yml
-      - flake.lock
-      - flake.nix
-      # scheduled-deployment
-      - modules/baseline-reset/**
-      - modules/monitoring.nix
-      - modules/scheduled-deployment/**
-      - tests/scheduled-deployment*.nix
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  scheduled-deployment:
+  test:
+    name: test (${{ matrix.test }})
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - scheduled-deployment
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
@@ -45,5 +47,17 @@ jobs:
       # Enables KVM on the runner by default (input 'enable_kvm').
       - name: Install nix
         uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086 # v31.11.5
-      - name: Run the scheduled-deployment VM test
-        run: nix build -L .#tests.scheduled-deployment
+      - name: Run the VM test
+        run: nix build -L .#tests.${{ matrix.test }}
+
+  vm-tests:
+    name: vm tests
+    needs: [test]
+    # Also when 'test' failed, was cancelled or skipped: anything but success fails.
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every test to pass
+        env:
+          RESULT: ${{ needs.test.result }}
+        run: test "$RESULT" = success
