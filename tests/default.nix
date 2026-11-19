@@ -14,5 +14,6 @@
       inherit self;
       host = "hetzci-release";
     };
+    monitoring = import ./monitoring.nix { inherit self; };
   };
 }
