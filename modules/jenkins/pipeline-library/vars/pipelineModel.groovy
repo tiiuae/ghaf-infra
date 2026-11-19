@@ -663,6 +663,9 @@ def normalize_build_config(
   def normalized = shallow_copy_map(targetConfig)
   normalized.shortname = short_target_name(targetName)
   normalized.no_image = normalized.get('no_image', false)
+  if (normalized.no_image && normalized.image_path) {
+    fail("Invalid config for '${targetName}': no_image and image_path are mutually exclusive")
+  }
   normalized.sysupdate = normalized.get('sysupdate', false)
   def uefiSignRequested = normalized.get('uefisign', false) || normalized.get('uefisigniso', false)
   if (normalized.sysupdate &&
