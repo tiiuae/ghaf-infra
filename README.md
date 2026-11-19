@@ -72,8 +72,7 @@ NixOS VM tests are separate flake outputs under `tests`, outside the hooks and
 nix build -L .#tests.scheduled-deployment
 ```
 
-The [VM tests workflow](./.github/workflows/vm-tests.yml) runs them on PRs that
-change a test, the code it covers or the flake inputs.
+The [VM tests workflow](./.github/workflows/vm-tests.yml) runs them on every PR.
 
 ## Directory Structure
 
