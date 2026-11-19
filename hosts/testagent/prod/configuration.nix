@@ -97,7 +97,7 @@
           socket_ip_address = "NONE";
           plug_type = "NONE";
           switch_bot = "DarterPRO-prod";
-          usbhub_serial = "2CA3D5CC";
+          usbhub_serial = "A200766F";
           ext_drive_by-id = "/dev/ssdDARTER";
           threads = 16;
         };
