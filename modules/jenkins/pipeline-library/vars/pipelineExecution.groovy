@@ -86,13 +86,14 @@ def create_pipeline(
   def hw_test_params = options.get('hw_test_params', [:])
   def source_vsa_required = options.get('source_vsa_required', false)
   def source_vsa_requested = source_vsa_required || options.get('source_vsa', true)
+  def source_vsa_file = "${artifactSupport.controller_workdir()}/tmp/source-vsa.sigstore.json"
   def source_vsa_path = null
 
   run_optional_stage(source_vsa_requested, "Source VSA") {
+    sh "mkdir -p '${artifactSupport.controller_workdir()}/tmp'"
     def target_repository = target_repo.replaceAll('/+$', '').replaceFirst(/\.git$/, '').replaceFirst(/^https:\/\/github\.com\//, '')
     def quoted_target_repository = artifactSupport.shell_quote(target_repository)
     def quoted_target_commit = artifactSupport.shell_quote(target_commit)
-    sh "mkdir -v -p '${artifacts_local_dir}'"
     def source_vsa_status = 1
     // Recent commits on main may still be waiting for the VSA workflow to publish.
     def source_vsa_attempts = sh(
@@ -112,7 +113,7 @@ def create_pipeline(
           source-vsa fetch \
             --repository ${quoted_target_repository} \
             --commit ${quoted_target_commit} \
-            --bundle '${artifacts_local_dir}/source-vsa.sigstore.json'
+            --bundle '${source_vsa_file}'
         """,
         returnStatus: true
       )
@@ -231,7 +232,7 @@ def create_pipeline(
           stage("Build ${build_shortname}") {
             sh "mkdir -v -p ${output}"
             if (source_vsa_path != null) {
-              sh "install -Dm644 '${artifacts_local_dir}/source-vsa.sigstore.json' '${output}/attestations/source-vsa.sigstore.json'"
+              sh "install -Dm644 '${source_vsa_file}' '${output}/attestations/source-vsa.sigstore.json'"
               manifest.attestations.source_vsa = [path: source_vsa_path]
             }
             def system = build_target_name.tokenize('.')[1]
