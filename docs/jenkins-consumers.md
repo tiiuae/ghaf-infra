@@ -247,7 +247,70 @@ UEFI and OTA boot trust remain configured separately under `signing.certificates
 
 ## Publishing and target selection
 
-`services.ghaf-jenkins.registry.namespace` defaults to `"ghaf"`. OCI images use
+Each target has a version 2 `manifest.json` describing how to use its output:
+
+```json
+{
+  "schema_version": 2,
+  "target": "packages.aarch64-linux.nvidia-jetson-orin-nx-debug",
+  "source": { "flake_ref": "git+https://github.com/tiiuae/ghaf?rev=<commit>" },
+  "output": { "path": "output" },
+  "image": {
+    "path": "output/signed-system.img.zst",
+    "signature": {
+      "path": "output/signed-system.img.zst.sig",
+      "signing_key": "pkcs11:token=NetHSM;object=GhafInfraSignECP256"
+    }
+  },
+  "attestations": {
+    "provenance": {
+      "path": "attestations/provenance.json",
+      "signature": {
+        "path": "attestations/provenance.json.sig",
+        "signing_key": "pkcs11:token=NetHSM;object=GhafInfraSignProv"
+      }
+    },
+    "uefi_provenance": {
+      "path": "attestations/uefi-provenance.json",
+      "signature": {
+        "path": "attestations/uefi-provenance.json.sig",
+        "signing_key": "pkcs11:token=NetHSM;object=GhafInfraSignProv"
+      }
+    }
+  }
+}
+```
+
+All paths are relative to `manifest.json`. The complete `output.path` directory
+is retained, published as individual files, and archived, including files not
+named in the manifest. Unsigned outputs use a writable directory of symlinks to
+the original Nix output; signed outputs preserve everything returned by the
+signer, with no renaming. Downloads and release archives contain the file
+contents rather than links to the builder's Nix store.
+
+`image` is optional and points to the main flashable image in the final output.
+Selection considers `.img`, `.raw`, `.iso`, and their `.zst` variants, preferring
+the files nearest the output directory root. A unique image there is selected;
+for example, a top-level disk image takes precedence over `recovery/boot.img`.
+Set `image_path: 'relative/path.img.zst'` in a pipeline target config to select an
+explicit path within the final output. For UEFI signing, use the unsigned input
+path; collection prefers `signed_<input-basename>` when present in the signed
+output, falling back to the configured path.
+Only this main image gets a detached CI signature, alongside the image.
+Signatures and attestations are omitted when unavailable. Build details and
+digests remain in provenance.
+
+Sysupdate targets use an optional `sysupdate` entry with `path` and `signature`
+fields pointing to the finalized OTA manifest and its signature. Its payloads
+are described by that OTA manifest, without repeating them in the CI manifest.
+Sysupdate publishing retains the OTA layout: the OTA manifest is the OCI config,
+and its signature and payloads are layers. The CI manifest is not published there.
+The `no_image: true` target option disables image selection, UEFI signing,
+image signatures, hardware tests, and registry publishing. It cannot be combined
+with `image_path`. The output is still collected. The manifest's `image` field
+keeps its existing name and structure.
+
+`services.ghaf-jenkins.registry.namespace` defaults to `"ghaf"`. OCI outputs use
 `<namespace>/<job-name>/<target>`, keeping the job name unchanged and removing
 the target's `packages.` prefix. Job names must be valid lowercase OCI
 repository components when publishing.

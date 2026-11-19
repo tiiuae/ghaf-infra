@@ -22,8 +22,8 @@ from typing import Any, NoReturn
 
 
 DETACHED_SIGNATURE_MEDIA_TYPE = "application/vnd.ghaf.signature.v1"
-TARGET_ARTIFACT_TYPE = "application/vnd.ghaf.image.v1"
-TARGET_CONFIG_MEDIA_TYPE = "application/vnd.ghaf.manifest.v1+json"
+TARGET_ARTIFACT_TYPE = "application/vnd.ghaf.output.v1"
+TARGET_CONFIG_MEDIA_TYPE = "application/vnd.ghaf.manifest.v2+json"
 UEFI_PROVENANCE_ARTIFACT_TYPE = "application/vnd.ghaf.uefi-provenance.v1+json"
 TEST_RESULTS_ARTIFACT_TYPE = "application/vnd.ghaf.test-results.v1"
 TEST_RESULTS_MEDIA_TYPE = "application/x-tar"
@@ -259,58 +259,6 @@ def publish_attestations(
     return referrers
 
 
-def normalized_images(manifest: dict[str, Any]) -> list[dict[str, Any]]:
-    """Return manifest images, accepting the legacy single-image field."""
-    images = manifest.get("images")
-    if images is None:
-        image = manifest.get("image")
-        images = [image] if image else []
-
-    if not isinstance(images, list) or not images:
-        fail("manifest must contain at least one image")
-
-    return images
-
-
-def parse_sysupdate_artifacts(
-    *, manifest: dict[str, Any], target_dir: Path
-) -> tuple[dict[str, Any], str, str | None, list[dict[str, str]]]:
-    """Parse signed sysupdate image entries and return OCI file entries."""
-    images = normalized_images(manifest)
-    sysupdate_manifest_image = next(
-        image
-        for image in images
-        if image.get("role") == "sysupdate-manifest"
-        or image["path"].endswith(".manifest")
-    )
-    sysupdate_manifest_path = sysupdate_manifest_image["path"]
-    sysupdate_manifest = read_json(target_dir / sysupdate_manifest_path)
-    sysupdate_manifest_signature_path = sysupdate_manifest_image.get(
-        "signature", {}
-    ).get("path")
-
-    images_by_name = {Path(image["path"]).name: image for image in images}
-    files = []
-    for role in ("kernel", "root", "verity"):
-        image = images_by_name[sysupdate_manifest[role]["file"]]
-        file_entry = {
-            "role": role,
-            "path": image["path"],
-            "media_type": SYSUPDATE_MEDIA_TYPES[role],
-        }
-        signature_relpath = image.get("signature", {}).get("path")
-        if signature_relpath:
-            file_entry["signature_path"] = signature_relpath
-        files.append(file_entry)
-
-    return (
-        sysupdate_manifest,
-        sysupdate_manifest_path,
-        sysupdate_manifest_signature_path,
-        files,
-    )
-
-
 def create_test_results_archive(results_dir: Path, archive_path: Path) -> None:
     """Create a tar archive containing the test results."""
     if not results_dir.is_dir():
@@ -326,231 +274,124 @@ def create_test_results_archive(results_dir: Path, archive_path: Path) -> None:
         archive.add(test_results_json, arcname=test_results_json.name)
 
 
-def publish_target_artifacts(
-    *,
-    manifest: dict[str, Any],
-    target_dir: Path,
-    result_json: Path,
-    repository: str,
-    common_args: list[str],
-    primary_reference: str,
-    primary_tag: str,
-    tags: list[str],
-    subject_uses_digest: bool,
-) -> int:
-    """Publish the primary artifact, referrers, and result metadata."""
-    manifest_path = target_dir / "manifest.json"
-    result_reference_prefix = f"{primary_reference.rsplit(':', 1)[0]}@"
-    target = manifest["target"]
-    images = normalized_images(manifest)
-    source = manifest.get("source", {})
-    primary_annotations = {
-        "org.opencontainers.image.description": "Disk image",
-        "org.opencontainers.image.title": target,
-        "org.opencontainers.image.source": source.get("repository", ""),
-        "org.opencontainers.image.revision": source.get("revision", ""),
-        SOURCE_REF_ANNOTATION: source.get("flake_ref", ""),
-        TARGET_ANNOTATION: target,
-    }
-
-    push_files = []
-    for image in images:
-        image_path = image["path"]
-        image_signature = image["signature"]["path"]
-        push_files.append(f"{image_path}:application/octet-stream")
-        if image_signature:
-            push_files.append(f"{image_signature}:{DETACHED_SIGNATURE_MEDIA_TYPE}")
-
-    primary_output = run_oras(
-        [
-            "push",
-            *common_args,
-            *annotation_args(primary_annotations),
-            "--disable-path-validation",
-            "--artifact-type",
-            TARGET_ARTIFACT_TYPE,
-            "--config",
-            f"{manifest_path}:{TARGET_CONFIG_MEDIA_TYPE}",
-            primary_reference,
-            *push_files,
-        ],
-        cwd=target_dir,
-    )
-    primary_digest = primary_output["digest"]
-
-    referrers = publish_attestations(
-        manifest=manifest,
-        common_args=common_args,
-        subject_reference=(
-            f"{result_reference_prefix}{primary_digest}"
-            if subject_uses_digest
-            else primary_reference
-        ),
-        target_dir=target_dir,
-    )
-
-    if tags:
-        run_command(["oras", "tag", *common_args, primary_reference, *tags])
-
-    result = {
-        "target": target,
-        "repository": repository,
-        "primary_tag": primary_tag,
-        "primary": {
-            "artifact_type": TARGET_ARTIFACT_TYPE,
-            "media_type": primary_output["mediaType"],
-            "digest": primary_digest,
-            "reference": f"{result_reference_prefix}{primary_digest}",
-            "tag_reference": primary_reference,
-        },
-        "referrers": referrers,
-        "tags": tags,
-    }
-    write_json(result_json, result)
-
-    print(f"[+] Published {target} as {result_reference_prefix}{primary_digest}")
-    print(f"[+] Wrote publish result: {result_json}")
-    return 0
-
-
-def publish_sysupdate_artifacts(
-    *,
-    manifest: dict[str, Any],
-    target_dir: Path,
-    result_json: Path,
-    repository: str,
-    common_args: list[str],
-    primary_reference: str,
-    primary_tag: str,
-    tags: list[str],
-    subject_uses_digest: bool,
-) -> int:
-    """Publish sysupdate artifacts, referrers, and result metadata."""
-    result_reference_prefix = f"{primary_reference.rsplit(':', 1)[0]}@"
-    target = manifest["target"]
-    source = manifest.get("source", {})
-    (
-        sysupdate_manifest,
-        sysupdate_manifest_path,
-        sysupdate_manifest_signature_path,
-        files,
-    ) = parse_sysupdate_artifacts(manifest=manifest, target_dir=target_dir)
-
-    annotations = {
-        "org.opencontainers.image.description": "OTA update",
-        "org.opencontainers.image.title": target,
-        "org.opencontainers.image.source": source.get("repository", ""),
-        "org.opencontainers.image.revision": source.get("revision", ""),
-        SOURCE_REF_ANNOTATION: source.get("flake_ref", ""),
-        TARGET_ANNOTATION: target,
-        "org.ghaf.ota.version": sysupdate_manifest.get("version", ""),
-        "org.ghaf.ota.system": sysupdate_manifest.get("system", ""),
-    }
-
-    push_files = []
-    if sysupdate_manifest_signature_path:
-        push_files.append(
-            f"{sysupdate_manifest_signature_path}:{SYSUPDATE_MANIFEST_SIGNATURE_MEDIA_TYPE}"
-        )
-    for file in files:
-        push_files.append(f"{file['path']}:{file['media_type']}")
-        signature_path = file.get("signature_path")
-        if signature_path:
-            push_files.append(f"{signature_path}:{DETACHED_SIGNATURE_MEDIA_TYPE}")
-
-    primary_output = run_oras(
-        [
-            "push",
-            *common_args,
-            *annotation_args(annotations),
-            "--disable-path-validation",
-            "--artifact-type",
-            SYSUPDATE_MANIFEST_MEDIA_TYPE,
-            "--config",
-            f"{target_dir / sysupdate_manifest_path}:{SYSUPDATE_MANIFEST_MEDIA_TYPE}",
-            primary_reference,
-            *push_files,
-        ],
-        cwd=target_dir,
-    )
-    primary_digest = primary_output["digest"]
-
-    referrers = publish_attestations(
-        manifest=manifest,
-        common_args=common_args,
-        subject_reference=(
-            f"{result_reference_prefix}{primary_digest}"
-            if subject_uses_digest
-            else primary_reference
-        ),
-        target_dir=target_dir,
-    )
-
-    if tags:
-        run_command(["oras", "tag", *common_args, primary_reference, *tags])
-
-    result = {
-        "target": target,
-        "repository": repository,
-        "primary_tag": primary_tag,
-        "primary": {
-            "artifact_type": SYSUPDATE_MANIFEST_MEDIA_TYPE,
-            "media_type": primary_output["mediaType"],
-            "digest": primary_digest,
-            "reference": f"{result_reference_prefix}{primary_digest}",
-            "tag_reference": primary_reference,
-        },
-        "sysupdate": {
-            "version": sysupdate_manifest.get("version"),
-            "system": sysupdate_manifest.get("system"),
-            "root_verity_hash": sysupdate_manifest.get("root_verity_hash"),
-            "manifest_path": sysupdate_manifest_path,
-            "files": files,
-        },
-        "referrers": referrers,
-        "tags": tags,
-    }
-    write_json(result_json, result)
-
-    print(
-        f"[+] Published {target} sysupdate as {result_reference_prefix}{primary_digest}"
-    )
-    print(f"[+] Wrote publish result: {result_json}")
-    return 0
-
-
 def publish_target(args: argparse.Namespace) -> int:
-    """Publish one target artifact and its referrers."""
+    """Publish the complete output directory and its attestation referrers."""
     target_dir = Path(args.target_dir).expanduser().resolve()
-    manifest_path = target_dir / "manifest.json"
     result_json = Path(args.result_json).expanduser().resolve()
+    manifest = read_json(target_dir / "manifest.json")
+    output_dir = target_dir / manifest["output"]["path"]
+    if not output_dir.is_dir():
+        fail(f"output directory is missing: {output_dir}")
 
-    if not target_dir.is_dir() or not manifest_path.is_file():
-        fail("target directory or manifest.json is missing")
+    target = manifest["target"]
+    source = {}
+    if provenance_path := manifest["attestations"].get("provenance", {}).get("path"):
+        source = read_json(target_dir / provenance_path)["predicate"][
+            "buildDefinition"
+        ]["externalParameters"]["target"]
+    annotations = {
+        "org.opencontainers.image.description": "Target output",
+        "org.opencontainers.image.title": target,
+        "org.opencontainers.image.source": source.get("repository", ""),
+        "org.opencontainers.image.revision": source.get("ref", ""),
+        SOURCE_REF_ANNOTATION: manifest["source"]["flake_ref"],
+        TARGET_ANNOTATION: target,
+    }
+    files = []
+    media_types = {}
+    if image_signature := manifest.get("image", {}).get("signature", {}).get("path"):
+        media_types[image_signature] = DETACHED_SIGNATURE_MEDIA_TYPE
 
-    manifest = read_json(manifest_path)
+    artifact_type = TARGET_ARTIFACT_TYPE
+    config_path, config_media_type = "manifest.json", TARGET_CONFIG_MEDIA_TYPE
+    sysupdate_result = None
+    if sysupdate := manifest.get("sysupdate"):
+        # Preserve the OTA registry format consumed by the updater.
+        artifact_type = config_media_type = SYSUPDATE_MANIFEST_MEDIA_TYPE
+        config_path = sysupdate["path"]
+        ota = read_json(target_dir / config_path)
+        annotations.update(
+            {
+                "org.opencontainers.image.description": "OTA update",
+                "org.ghaf.ota.version": ota["version"],
+                "org.ghaf.ota.system": ota["system"],
+            }
+        )
+        if signature_path := sysupdate.get("signature", {}).get("path"):
+            media_types[signature_path] = SYSUPDATE_MANIFEST_SIGNATURE_MEDIA_TYPE
+            files.append(signature_path)
+        ota_files = []
+        for role in ("kernel", "root", "verity"):
+            media_type = SYSUPDATE_MEDIA_TYPES[role]
+            path = (Path(config_path).parent / ota[role]["file"]).as_posix()
+            media_types[path] = media_type
+            files.append(path)
+            ota_files.append({"role": role, "path": path, "media_type": media_type})
+        sysupdate_result = {
+            "version": ota["version"],
+            "system": ota["system"],
+            "root_verity_hash": ota["root_verity_hash"],
+            "manifest_path": config_path,
+            "files": ota_files,
+        }
+    else:
+        files = sorted(
+            (Path(root) / name).relative_to(target_dir).as_posix()
+            for root, _directories, names in os.walk(output_dir, followlinks=True)
+            for name in names
+        )
+
     repository = normalize_repository(args.repository)
-
-    with oras_publish_context() as (
-        common_args,
-        reference_prefix,
-        subject_uses_digest,
-    ):
+    with oras_publish_context() as (common_args, reference_prefix, subject_uses_digest):
         primary_reference = f"{reference_prefix}{repository}:{args.primary_tag}"
-        publish_artifacts = (
-            publish_sysupdate_artifacts if args.sysupdate else publish_target_artifacts
+        output = run_oras(
+            [
+                "push",
+                *common_args,
+                *annotation_args(annotations),
+                "--disable-path-validation",
+                "--artifact-type",
+                artifact_type,
+                "--config",
+                f"{config_path}:{config_media_type}",
+                primary_reference,
+                *[
+                    f"{path}:{media_types.get(path, 'application/octet-stream')}"
+                    for path in files
+                ],
+            ],
+            cwd=target_dir,
         )
-        return publish_artifacts(
+        reference = f"{reference_prefix}{repository}@{output['digest']}"
+        referrers = publish_attestations(
             manifest=manifest,
-            target_dir=target_dir,
-            result_json=result_json,
-            repository=repository,
             common_args=common_args,
-            primary_reference=primary_reference,
-            primary_tag=args.primary_tag,
-            tags=list(args.tags),
-            subject_uses_digest=subject_uses_digest,
+            subject_reference=reference if subject_uses_digest else primary_reference,
+            target_dir=target_dir,
         )
+        if args.tags:
+            run_command(["oras", "tag", *common_args, primary_reference, *args.tags])
+
+    result = {
+        "target": target,
+        "repository": repository,
+        "primary_tag": args.primary_tag,
+        "primary": {
+            "artifact_type": artifact_type,
+            "media_type": output["mediaType"],
+            "digest": output["digest"],
+            "reference": reference,
+            "tag_reference": primary_reference,
+        },
+        "referrers": referrers,
+        "tags": args.tags,
+    }
+    if sysupdate_result:
+        result["sysupdate"] = sysupdate_result
+    write_json(result_json, result)
+    print(f"[+] Published {target} as {reference}")
+    print(f"[+] Wrote publish result: {result_json}")
+    return 0
 
 
 def publish_test_results(args: argparse.Namespace) -> int:
@@ -626,11 +467,6 @@ def build_parser() -> argparse.ArgumentParser:
     target_parser.add_argument("--primary-tag", required=True)
     target_parser.add_argument("-o", "--result-json", required=True)
     target_parser.add_argument("-t", "--tag", action="append", default=[], dest="tags")
-    target_parser.add_argument(
-        "--sysupdate",
-        action="store_true",
-        help="publish target as a sysupdate artifact",
-    )
     target_parser.set_defaults(handler=publish_target)
 
     test_results_parser = subparsers.add_parser(
