@@ -17,6 +17,7 @@
     common
     zot-registry
     openssh
+    scheduled-deployment
     team-devenv
   ]);
 
@@ -67,6 +68,15 @@
       # Hetzner private Loki address.
       lokiAddress = "https://monitoring.vedenemo.dev";
     };
+  };
+
+  services.scheduled-deployment = {
+    enable = true;
+    # Retry for most of the 300 s check budget, as on ghaf-registry: after a
+    # restart, zot may process its storage before it listens.
+    postDeployChecks = ''
+      ${lib.getExe pkgs.curl} -fsS --retry 40 --retry-delay 6 --retry-all-errors -o /dev/null https://registry.uaenorth.cloudapp.azure.com/v2/
+    '';
   };
 
   environment.systemPackages = with pkgs; [
