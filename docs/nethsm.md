@@ -160,7 +160,8 @@ Jenkins controllers have the following UEFI signing tools available
 
 - `uefisign`: sign individual EFI binaries
 - `uefisigniso`: sign EFI binaries within ISO images
-- `uefisign-simple`: simplified wrapper for common signing operations
+- `uefisign-orin`: sign an Orin build output directory, retaining disk metadata
+  and producing signed recovery files when recovery inputs are present
 - `uefi-sign-sysupdate`: Ghaf manifest-v2 A/B sysupdate signer
 - `systemd-sbsign`: systemd's built-in sbsign tool for PE binary signing
 

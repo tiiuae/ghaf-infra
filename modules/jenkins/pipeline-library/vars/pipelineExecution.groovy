@@ -392,18 +392,23 @@ def create_pipeline(
         ) {
           def tmpdir = artifactSupport.build_tmpdir("uefisign-${build_shortname}")
           def unsigned_dir = "${output}/unsigned-output"
-          def input_hint = target_config.image_path && fileExists("${unsigned_dir}/${target_config.image_path}") ? target_config.image_path : null
-          def signer_input = is_sysupdate_target ? artifactSupport.run_cmd(
-            "find -L '${unsigned_dir}' -maxdepth 1 -name '*.manifest' -printf '%P' -quit"
-          ) : find_main_image(unsigned_dir, input_hint)
+          def signer
+          def signer_input
+          if (is_sysupdate_target) {
+            signer = 'uefi-sign-sysupdate'
+            signer_input = artifactSupport.run_cmd("find -L '${unsigned_dir}' -maxdepth 1 -name '*.manifest' -printf '%P' -quit")
+          } else if (build_target_name.contains('nvidia-jetson-orin')) {
+            signer = 'uefisign-orin'
+            signer_input = '.'
+          } else {
+            signer = 'uefisign'
+            def input_hint = target_config.image_path && fileExists("${unsigned_dir}/${target_config.image_path}") ? target_config.image_path : null
+            signer_input = find_main_image(unsigned_dir, input_hint)
+          }
           if (!signer_input) {
             error("UEFI signing requires a main image; set 'image_path' in the target config when selection is ambiguous")
           }
-          uefi_signing = [
-            signer: is_sysupdate_target ? 'uefi-sign-sysupdate' :
-              (build_target_name.contains('nvidia-jetson-orin') ? 'uefisign-simple' : 'uefisign'),
-            input: signer_input,
-          ]
+          uefi_signing = [signer: signer, input: signer_input]
           uefi_signing.signer_path = artifactSupport.run_cmd("readlink -f \"\$(command -v ${uefi_signing.signer})\"")
 
           try {
@@ -436,7 +441,10 @@ def create_pipeline(
               }
             }
 
-            sh "mv '${tmpdir}' '${output}/output'"
+            sh """
+              chmod -R g+rX '${tmpdir}'
+              mv '${tmpdir}' '${output}/output'
+            """
             if (is_sysupdate_target) {
               manifest.sysupdate = [path: "output/${artifactSupport.path_basename(signer_input)}"]
               def ota_signature_path = "${manifest.sysupdate.path}.sig"

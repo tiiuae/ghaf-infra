@@ -27,11 +27,12 @@ separately; provenance-chain verification is not performed by the pipeline.
 
 `buildDefinition.externalParameters.input` is the signer input path relative to
 the unsigned Nix output directory. It identifies the disk/installer image, or
-the sysupdate manifest for a sysupdate target.
+the sysupdate manifest for a sysupdate target. For Orin targets it is `.`,
+identifying the entire unsigned output directory passed to `uefisign-orin`.
 
 The platform records these `internalParameters`:
 
-- `signer`: the command selected by the pipeline: `uefisign`, `uefisign-simple`,
+- `signer`: the command selected by the pipeline: `uefisign`, `uefisign-orin`,
   or `uefi-sign-sysupdate`.
 - `signing_key`: the PKCS#11 URI actually selected for UEFI signing.
 
