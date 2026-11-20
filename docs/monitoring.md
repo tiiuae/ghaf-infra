@@ -71,8 +71,8 @@ The `uae` job scrapes `uae-azureci-prod` and `uae-nethsm-gateway` at their
 `nebula_ip` addresses on port 9100.
 
 The `uae-ssh` job scrapes the UAE builders `uae-azureci-az86-1` and
-`uae-azureci-hetzarm-1` through the same ssh proxy as the
-[Hetzner Robot](#hetzner-robot) hosts.
+`uae-azureci-hetzarm-1` and the registry `uae-azureci-registry` through the
+same ssh proxy as the [Hetzner Robot](#hetzner-robot) hosts.
 
 The monitoring server cannot reach the UAE lab network, so `uae-testagent-prod`
 and `uae-testagent2-prod` [push their metrics](#pushed-metrics).

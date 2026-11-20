@@ -20,7 +20,10 @@
     team-devenv
   ]);
 
-  sops.defaultSopsFile = ./secrets.yaml;
+  sops = {
+    defaultSopsFile = ./secrets.yaml;
+    secrets.loki_password.owner = "alloy";
+  };
 
   # this server has been initialized with 26.05 with nixos-anywhere
   system.stateVersion = lib.mkForce "26.05";
@@ -50,6 +53,19 @@
       "ghaf/**" = [ "jenkins" ];
       "robots/**" = [ "robots-jenkins" ];
       "sfo/**" = [ "sfo-jenkins" ];
+    };
+  };
+
+  services.monitoring = {
+    metrics = {
+      enable = true;
+      ssh = true;
+    };
+    logs = {
+      enable = true;
+      # internal_ip is on the Azure network, so the default would be the
+      # Hetzner private Loki address.
+      lokiAddress = "https://monitoring.vedenemo.dev";
     };
   };
 
