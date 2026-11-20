@@ -168,6 +168,65 @@ Rejected targets are listed, one revision per line, in
 `/var/lib/scheduled-deployment/rejected`. Delete the line, or the file, and
 [start a run](#running-a-deployment-by-hand) to retry.
 
+## Updates
+
+The [weekly update](../.github/workflows/update-flake-inputs.yml) opens a PR on
+Monday at 04:00 UTC that updates the Jenkins plugins and every flake input
+other than `robot-framework`, which has its
+[own daily PR](../.github/workflows/update-robot-framework.yml). A bot PR needs
+no review of the lock diff when the required checks pass: the build of all
+hosts, `nix flake check`, and the [VM tests](../.github/workflows/vm-tests.yml),
+whose combined result is the job `vm tests`:
+
+- [scheduled-deployment](../tests/scheduled-deployment.nix): the runner, with
+  stub drains.
+- [jenkins-controller](../tests/jenkins-controller.nix), for the prod and the
+  release controller: Jenkins starts with the real plugins, jobs, agents and
+  auth groups, and on prod the script that holds the queue for scheduled
+  deployment. All plugins load, anonymous requests are refused, the
+  forwarded-user headers are accepted, test agents can fetch their connection
+  secrets and every pipeline passes the declarative linter. The release run
+  also builds on a release builder that trusts an SSH user CA.
+- [monitoring](../tests/monitoring.nix): node metrics and journal logs of an
+  agent reach Prometheus and Loki, see [monitoring](./monitoring.md).
+- [install](../tests/install.nix): in a VM with an empty virtual disk, disko
+  applies the disk layout of `ghaf-lighthouse`, the bootloader installs and the
+  system boots from disk. The real host is not touched.
+
+What CI cannot show, such as kernel and driver behavior on real hardware, only
+shows on the real hosts, where the staged windows, the post-deploy checks and
+the rollback of [a run](#how-a-run-works) limit the damage.
+
+A maintainer merges a bot PR on Monday once the checks are green. The merge
+stays manual so that the maintainer can run more checks first, or delay it. The
+release environment is not part of scheduled deployment, so it is worth running
+[`inv install-release`](./tasks.md#install-release) with the PR checked out, and
+starting a cache-warming build (the target set "Minimal build targets (cache
+warming)" of `ghaf-release-candidate`) on the release Jenkins, ci-release.
+Merge before the first window on Tuesday at 05:00 UTC for all hosts to get the
+update that week. A later merge reaches only the hosts whose windows have not
+run yet, and the others the week after.
+
+### When a run rejects an update
+
+1. Whoever reacts first to the [alert](#alerts) handles it. A host that fails to
+   boot never records `post_boot_checks`, so also watch the reachability and
+   `journal logs missing` alerts, and recover such a host from its console.
+   A failure after a switch is rolled back, one after a reboot is not, see
+   [results](#results).
+2. To stop the update from reaching more hosts, revert the bot's commit, which is
+   a single commit, or pin the input that caused the failure, and
+   [hold](#pausing-a-host) the hosts with a run in progress. Keep the pin until
+   the cause is fixed upstream, or the next weekly PR brings the update back, and
+   track it in an issue.
+3. Hosts that already deployed the commit do not run again before their next
+   window. The [Deployments dashboard](https://monitoring.vedenemo.dev/d/ghaf-deployment-drift)
+   lists their revisions. Release any hold, then
+   [run the revert or the fix by hand](#running-a-deployment-by-hand) on them.
+4. The revert or the fix is a new commit, so nothing needs clearing. To retry the
+   rejected commit itself, see [retrying a rejected target](#retrying-a-rejected-target).
+5. Add the check that would have caught the failure to the VM tests.
+
 ## Test agents
 
 On a [test agent](./jenkins-testagents.md), a run takes the agent's nodes
