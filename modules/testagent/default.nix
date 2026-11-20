@@ -107,6 +107,7 @@ let
 
               # opens a websocket connection to the jenkins controller from this agent
               ${pkgs.jdk}/bin/java \
+                -XX:-UseBASE64Intrinsics \
                 -jar agent.jar \
                 -url "$CONTROLLER" \
                 -name "${name}" \
