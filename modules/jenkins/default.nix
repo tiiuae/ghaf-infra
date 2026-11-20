@@ -643,6 +643,8 @@ in
         "-Dhudson.model.ParametersAction.safeParameters=DESC,RELOAD_ONLY,GHAF_FLAKE_REF"
         # Ensure workspace root dir is what we expect
         ''-Djenkins.model.Jenkins.workspacesDir=$JENKINS_HOME/workspace/\$ITEM_FULL_NAME''
+        # Disable Base64 intrinsics to address CVE-2026-114938 java4shell
+        "-XX:-UseBASE64Intrinsics"
       ];
       plugins =
         let
