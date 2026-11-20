@@ -12,7 +12,6 @@ import groovy.transform.Field
 @Field def TMP_IMG_DIR = './image'
 @Field def CONF_FILE_PATH = '/etc/jenkins/test_config.json'
 @Field def CI_TEST_PINNED_SOURCE_FILE = '/etc/jenkins/ci-test-automation-pinned-source'
-@Field def IMAGE_MEDIA_TYPE = 'application/octet-stream'
 @Field def SOURCE_REF_ANNOTATION = 'org.ghaf.source.ref'
 @Field def TARGET_ANNOTATION = 'org.ghaf.target'
 env.BOOT_PASSED = 'true'
@@ -304,11 +303,12 @@ pipeline {
             script {
               def img_path
               if (params.OCI_IMAGE_REF) {
-                def pullResult = artifactSupport.oras_pull_json(params.OCI_IMAGE_REF, TMP_IMG_DIR)
-                img_path = artifactSupport.find_oci_pull_file(pullResult, IMAGE_MEDIA_TYPE)
-                if (!img_path) {
-                  error("Unable to derive image file from OCI image '${params.OCI_IMAGE_REF}'")
-                }
+                def manifestPath = artifactSupport.fetch_build_manifest(params.OCI_IMAGE_REF, TMP_IMG_DIR)
+                def manifest = readJSON file: manifestPath
+                def image = manifest.image
+                if (!image?.path) error("Build manifest must identify a main image for flashing")
+                artifactSupport.oras_pull_json(params.OCI_IMAGE_REF, TMP_IMG_DIR)
+                img_path = "${TMP_IMG_DIR}/${image.path}"
               } else {
                 img_path = artifactSupport.run_wget(params.IMG_URL, TMP_IMG_DIR)
               }

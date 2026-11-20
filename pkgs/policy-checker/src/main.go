@@ -283,38 +283,10 @@ func releasePolicyInput(
 		testResults["configured"] = true
 	}
 
-	images := []any{}
-	rawImages, hasImages := manifest["images"]
-	if hasImages && rawImages != nil {
-		if imageList, ok := rawImages.([]any); ok {
-			images = imageList
-		}
-	} else if image, ok := manifest["image"]; ok {
-		images = []any{image}
-	}
-	imageExists := len(images) > 0
-	imageSignatureExists := len(images) > 0
-	imageSignaturesVerified := len(images) > 0
-	imageSignatureErrors := []string{}
-	for _, image := range images {
-		imagePath := filepath.Join(targetDir, stringAt(image, "path"))
-		imageSignaturePath := filepath.Join(targetDir, stringAt(image, "signature", "path"))
-		imageSigningKey := stringAt(image, "signature", "signing_key")
-		imageSignature := verifyFileSignature("image", imagePath, imageSignaturePath, imageSigningKey)
-
-		if !fileExists(imagePath) {
-			imageExists = false
-		}
-		if !fileExists(imageSignaturePath) {
-			imageSignatureExists = false
-		}
-		if verified, ok := imageSignature["verified"].(bool); !ok || !verified {
-			imageSignaturesVerified = false
-			if message, ok := imageSignature["error"].(string); ok && message != "" {
-				imageSignatureErrors = append(imageSignatureErrors, message)
-			}
-		}
-	}
+	imagePath := filepath.Join(targetDir, stringAt(manifest, "image", "path"))
+	imageSignaturePath := filepath.Join(targetDir, stringAt(manifest, "image", "signature", "path"))
+	imageSigningKey := stringAt(manifest, "image", "signature", "signing_key")
+	imageSignature := verifyFileSignature("image", imagePath, imageSignaturePath, imageSigningKey)
 	provenancePath := filepath.Join(targetDir, stringAt(manifest, "attestations", "provenance", "path"))
 	provenanceSignaturePath := filepath.Join(targetDir, stringAt(manifest, "attestations", "provenance", "signature", "path"))
 	provenanceSigningKey := stringAt(manifest, "attestations", "provenance", "signature", "signing_key")
@@ -345,8 +317,8 @@ func releasePolicyInput(
 		"provenance":   provenance,
 		"test_results": testResults,
 		"files": map[string]any{
-			"image":           imageExists,
-			"image_signature": imageSignatureExists,
+			"image":           fileExists(imagePath),
+			"image_signature": fileExists(imageSignaturePath),
 			"provenance":      fileExists(provenancePath),
 			"provenance_signature": fileExists(
 				provenanceSignaturePath,
@@ -356,10 +328,7 @@ func releasePolicyInput(
 			"sbom_spdx":      fileExists(sbomSPDX),
 		},
 		"signatures": map[string]any{
-			"image": map[string]any{
-				"verified": imageSignaturesVerified,
-				"error":    strings.Join(imageSignatureErrors, "; "),
-			},
+			"image":      imageSignature,
 			"provenance": provenanceSignature,
 		},
 		"provenance_policy": provenancePolicy,

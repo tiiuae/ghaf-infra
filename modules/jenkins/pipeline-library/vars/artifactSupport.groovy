@@ -26,6 +26,19 @@ def oras_pull_json(String reference, String outputDir) {
   )
 }
 
+def fetch_build_manifest(String reference, String outputDir) {
+  def ociManifest = readJSON(text: run_cmd("oras manifest fetch --format json ${shell_quote(reference)}")).content
+  def descriptor = ([ociManifest.config] + (ociManifest.layers ?: [])).find {
+    it?.mediaType == 'application/vnd.ghaf.manifest.v2+json'
+  }
+  if (!descriptor?.digest) error("Unable to find build manifest in '${reference}'")
+  def path = "${outputDir}/manifest.json"
+  def blob = "${parse_oci_reference(reference).repository}@${descriptor.digest}"
+  sh "mkdir -p ${shell_quote(outputDir)}"
+  sh "oras blob fetch --output ${shell_quote(path)} ${shell_quote(blob)}"
+  return path
+}
+
 @NonCPS
 def find_oci_pull_file(Map pullResult, String mediaType) {
   def file = pullResult.files?.find { it.mediaType == mediaType }
@@ -103,14 +116,6 @@ def path_basename(String path) {
   }
   def idx = path.lastIndexOf('/')
   return idx >= 0 ? path.substring(idx + 1) : path
-}
-
-def image_role(String path) {
-  def basename = path_basename(path)
-  if (basename == null) {
-    return null
-  }
-  return basename.endsWith('.iso') ? 'installer' : 'disk'
 }
 
 def append_to_build_description(String text, boolean once = false) {
