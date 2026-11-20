@@ -24,11 +24,12 @@ let
       ;
   };
 
-  # UAE builders outside Nebula, also monitored through the ssh tunnel
+  # UAE CI hosts outside Nebula, also monitored through the ssh tunnel
   uaeSshHosts = {
     inherit (machines)
       uae-azureci-az86-1
       uae-azureci-hetzarm-1
+      uae-azureci-registry
       ;
   };
 
