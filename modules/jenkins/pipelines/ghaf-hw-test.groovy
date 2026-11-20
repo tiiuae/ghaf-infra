@@ -14,8 +14,6 @@ import groovy.transform.Field
 @Field def CI_TEST_PINNED_SOURCE_FILE = '/etc/jenkins/ci-test-automation-pinned-source'
 @Field def IN_TOTO_MEDIA_TYPE = 'application/vnd.in-toto+json'
 @Field def DETACHED_SIGNATURE_MEDIA_TYPE = 'application/vnd.ghaf.signature.v1'
-@Field def IMAGE_MEDIA_TYPE = 'application/octet-stream'
-@Field def TARGET_CONFIG_MEDIA_TYPE = 'application/vnd.ghaf.manifest.v1+json'
 @Field def SOURCE_REF_ANNOTATION = 'org.ghaf.source.ref'
 @Field def TARGET_ANNOTATION = 'org.ghaf.target'
 @Field def SOURCE_REVISION_ANNOTATION = 'org.opencontainers.image.revision'
@@ -335,19 +333,7 @@ pipeline {
                 if (!provenance_path || !sig_path) {
                   error("Unable to derive provenance files from OCI referrer '${provenanceRef}'")
                 }
-                def ociManifest = readJSON(
-                  text: artifactSupport.run_cmd(
-                    "oras manifest fetch --format json ${artifactSupport.shell_quote(params.OCI_IMAGE_REF)}"
-                  )
-                )
-                def config = ociManifest.content?.config
-                if (config?.mediaType != TARGET_CONFIG_MEDIA_TYPE || !config.digest) {
-                  error("Unable to derive build manifest from OCI image '${params.OCI_IMAGE_REF}'")
-                }
-                def repository = artifactSupport.parse_oci_reference(params.OCI_IMAGE_REF).repository
-                manifest_path = "${TMP_IMG_DIR}/manifest.json"
-                def configReference = "${repository}@${config.digest}"
-                sh "oras blob fetch --output ${artifactSupport.shell_quote(manifest_path)} ${artifactSupport.shell_quote(configReference)}"
+                manifest_path = artifactSupport.fetch_build_manifest(params.OCI_IMAGE_REF, TMP_IMG_DIR)
               } else {
                 def split = split_img_url(params.IMG_URL)
                 def artifacts_url = split["artifacts_url"]
@@ -377,34 +363,25 @@ pipeline {
         stage('Image download') {
           steps {
             script {
+              def buildManifest = readJSON file: env.BUILD_MANIFEST_PATH
+              def image = buildManifest.image
+              def signingKey = image?.signature?.signing_key
+              if (!image?.path || !image.signature?.path || !signingKey) {
+                error("Build manifest must identify a signed main image for flashing")
+              }
               def img_path
               def sig_path
               if (params.OCI_IMAGE_REF) {
-                def pullResult = artifactSupport.oras_pull_json(params.OCI_IMAGE_REF, TMP_IMG_DIR)
-                img_path = artifactSupport.find_oci_pull_file(pullResult, IMAGE_MEDIA_TYPE)
-                sig_path = artifactSupport.find_oci_pull_file(pullResult, DETACHED_SIGNATURE_MEDIA_TYPE)
-                if (!img_path || !sig_path) {
-                  error("Unable to derive image files from OCI image '${params.OCI_IMAGE_REF}'")
-                }
+                artifactSupport.oras_pull_json(params.OCI_IMAGE_REF, TMP_IMG_DIR)
+                img_path = "${TMP_IMG_DIR}/${image.path}"
+                sig_path = "${TMP_IMG_DIR}/${image.signature.path}"
               } else {
-                img_path = artifactSupport.run_wget(params.IMG_URL, TMP_IMG_DIR)
                 def split = split_img_url(params.IMG_URL)
-                def artifacts_url = split["artifacts_url"]
-                def img_relpath = split["img_relpath"]
-                def target = split["target_name"]
-                def sig_url = "${artifacts_url}/${target}/${img_relpath}.sig"
-                sig_path = artifactSupport.run_wget(sig_url, TMP_IMG_DIR)
+                def base_url = "${split.artifacts_url}/${split.target_name}"
+                img_path = artifactSupport.run_wget(params.IMG_URL, TMP_IMG_DIR)
+                sig_path = artifactSupport.run_wget("${base_url}/${image.signature.path}", TMP_IMG_DIR)
               }
               println "Downloaded image to workspace: ${img_path}"
-              println "Downloaded SLSA signature file to workspace: ${sig_path}"
-              def buildManifest = readJSON file: env.BUILD_MANIFEST_PATH
-              def images = buildManifest.images ?: (buildManifest.image ? [buildManifest.image] : [])
-              def imageName = artifactSupport.path_basename(img_path)
-              def image = images.find { artifactSupport.path_basename(it.path) == imageName }
-              def signingKey = image?.signature?.signing_key
-              if (!signingKey) {
-                error("Unable to derive signing key for '${imageName}' from build manifest")
-              }
               sh "verify-signature image ${artifactSupport.shell_quote(img_path)} ${artifactSupport.shell_quote(sig_path)} ${artifactSupport.shell_quote(signingKey)}"
               // flash-script handles .zst natively; pass the original download path.
               env.FLASH_INPUT_PATH = img_path
