@@ -82,6 +82,9 @@ def init() {
   }
   env.TESTSET = env.TEST_TAGS ? '' : (params.TESTSET ?: '')
   env.INSTALLER_FLOW = env.BUILD_TARGET.contains("installer") ? 'true' : 'false'
+  def upstreamCause = currentBuild.getBuildCauses().find { it.upstreamProject }
+  env.UPSTREAM_PROJECT = upstreamCause?.upstreamProject ?: ''
+  env.UPSTREAM_BUILD_ID = upstreamCause?.upstreamBuild ?: ''
   def explicitDeviceTag = params.DEVICE_TAG?.trim()
   // Resolve the target here as well for controller-side fail-fast validation and
   // device/agent selection. The agent-side Resolve target stage repeats this so
@@ -174,6 +177,8 @@ def ghaf_robot_test(String testname='relayboot', String testTags = null) {
             -v DEVICE:$DEVICE_NAME \
             -v DEVICE_TYPE:$DEVICE_TAG \
             -v BUILD_ID:${BUILD_NUMBER} \
+            -v UPSTREAM_PROJECT:"$UPSTREAM_PROJECT" \
+            -v UPSTREAM_BUILD_ID:"$UPSTREAM_BUILD_ID" \
             -v COMMIT_HASH:$COMMIT_HASH \
             -v TEST_TARGET:$TEST_TARGET \
             -v FLASHED:${FLASHED} \
