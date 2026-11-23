@@ -76,13 +76,10 @@ def parse_oci_reference(String reference) {
 def run_wget(String url, String to_dir) {
   def quotedDir = shell_quote(to_dir)
   def quotedUrl = shell_quote(url)
+  def command = "wget --show-progress --progress=dot:giga --force-directories --timestamping " +
+    "-P ${quotedDir} ${quotedUrl} 2>&1 | tee /dev/stderr"
   def output = sh(
-    script: """
-      bash -o pipefail -c "
-        wget --show-progress --progress=dot:giga --force-directories --timestamping \
-          -P ${quotedDir} ${quotedUrl} 2>&1 | tee /dev/stderr
-      "
-    """.stripIndent().trim(),
+    script: "bash -o pipefail -c ${shell_quote(command)}",
     returnStdout: true
   ).trim()
   // wget prints the saved path inside curly quotes, so straight apostrophes

@@ -667,6 +667,9 @@ def normalize_build_config(
     fail("Invalid config for '${targetName}': no_image and image_path are mutually exclusive")
   }
   normalized.sysupdate = normalized.get('sysupdate', false)
+  if (normalized.sysupdate && normalized.image_path) {
+    fail("Invalid config for '${targetName}': sysupdate builds cannot define image_path")
+  }
   def uefiSignRequested = normalized.get('uefisign', false) || normalized.get('uefisigniso', false)
   if (normalized.sysupdate &&
       (!normalized.get('secure_ab', false) || normalized.no_image || !signingPossible || !uefiSignRequested)) {
@@ -677,6 +680,9 @@ def normalize_build_config(
   normalized.build_otapin_requested = normalized.get('build_otapin', false)
   normalized.sbom_requested = normalized.get('sbom', false)
   normalized.tests = normalize_tests(normalized, defaultTestagentHost)
+  if (normalized.sysupdate && !normalized.tests.isEmpty()) {
+    fail("Invalid config for '${targetName}': sysupdate builds cannot define tests")
+  }
   def securebootAvailable = normalized.get('secureboot_available', ciEnv == "prod")
   normalized.tests.each { normalizedTest ->
     if (normalizedTest.get('secureboot_available', null) == null) {

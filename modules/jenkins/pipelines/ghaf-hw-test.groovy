@@ -413,7 +413,7 @@ pipeline {
               )
               // flash-script validates /dev/sdX format; resolve the by-id symlink
               def resolved_dev = artifactSupport.run_cmd("/run/wrappers/bin/sudo readlink -f ${dev}")
-              sh "/run/wrappers/bin/sudo ${flashScriptPath}/bin/flash-script -d ${resolved_dev} -i ${env.FLASH_INPUT_PATH} -f"
+              sh "/run/wrappers/bin/sudo ${artifactSupport.shell_quote("${flashScriptPath}/bin/flash-script")} -d ${artifactSupport.shell_quote(resolved_dev)} -i ${artifactSupport.shell_quote(env.FLASH_INPUT_PATH)} -f"
               env.FLASHED = 'true'
               // Unmount
               sh "${env.UNMOUNT_CMD}"

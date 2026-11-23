@@ -316,7 +316,7 @@ pipeline {
               if (params.USE_LEGACY_DD_FLASH) {
                 // Uncompress for the legacy dd flashing path.
                 if(img_path.endsWith(".zst")) {
-                  sh "zstd -dfv ${img_path}"
+                  sh "zstd -dfv -- ${artifactSupport.shell_quote(img_path)}"
                   // env.IMG_PATH stores the path to the uncompressed image
                   env.IMG_PATH = img_path.substring(0, img_path.lastIndexOf('.'))
                 } else {
@@ -356,7 +356,7 @@ pipeline {
                   sh "/run/wrappers/bin/sudo dd if=/dev/zero of=${dev} bs=${SECTOR} count=${MIB_TO_SECTORS} seek=\$(( ${SECTORS} - ${MIB_TO_SECTORS} )) conv=fsync status=none"
                 }
                 // Write the image
-                sh "/run/wrappers/bin/sudo dd if=${env.IMG_PATH} of=${dev} bs=1M status=progress conv=fsync"
+                sh "/run/wrappers/bin/sudo dd ${artifactSupport.shell_quote("if=${env.IMG_PATH}")} ${artifactSupport.shell_quote("of=${dev}")} bs=1M status=progress conv=fsync"
               } else {
                 if (env.FLASH_INPUT_PATH.endsWith('.raw')) {
                   error("flash-script does not support '.raw' images. Enable USE_LEGACY_DD_FLASH to flash '${env.FLASH_INPUT_PATH}' with dd.")
@@ -375,7 +375,7 @@ pipeline {
                 )
                 // flash-script validates /dev/sdX format; resolve the by-id symlink.
                 def resolved_dev = artifactSupport.run_cmd("/run/wrappers/bin/sudo readlink -f ${dev}")
-                sh "/run/wrappers/bin/sudo ${flashScriptPath}/bin/flash-script -d ${resolved_dev} -i ${env.FLASH_INPUT_PATH} -f"
+                sh "/run/wrappers/bin/sudo ${artifactSupport.shell_quote("${flashScriptPath}/bin/flash-script")} -d ${artifactSupport.shell_quote(resolved_dev)} -i ${artifactSupport.shell_quote(env.FLASH_INPUT_PATH)} -f"
               }
               env.FLASHED = 'true'
               // Unmount
