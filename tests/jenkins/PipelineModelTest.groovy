@@ -459,3 +459,18 @@ expectFailure("reserved in canonical test identities") {
     effective_testagent_host: 'prod',
   ])
 }
+
+expectFailure('no_image and image_path are mutually exclusive') {
+  pipelineModel.normalize_build_config([
+    target: sampleTestTarget, no_image: true, image_path: 'disk.img',
+  ], true, 'prod', 'prod')
+}
+
+def sysupdateConfig = [target: sampleTestTarget, sysupdate: true, secure_ab: true, uefisign: true]
+assert pipelineModel.normalize_build_config(sysupdateConfig, true, 'prod', 'prod').sysupdate
+expectFailure('sysupdate builds cannot define image_path') {
+  pipelineModel.normalize_build_config(sysupdateConfig + [image_path: 'disk.img'], true, 'prod', 'prod')
+}
+expectFailure('sysupdate builds cannot define tests') {
+  pipelineModel.normalize_build_config(sysupdateConfig + [testset: sampleTestset], true, 'prod', 'prod')
+}
