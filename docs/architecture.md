@@ -270,9 +270,9 @@ The ghaf-infra repository has its own GitHub Actions workflows
 - `test-ghaf-infra.yml`: builds all NixOS configurations for x86_64 and
   aarch64 using remote builders, and runs the pre-commit checks on x86_64.
 - `vm-tests.yml`: runs the NixOS VM tests (flake outputs `tests.<name>`) on
-  GitHub-hosted runners for every PR and on manual runs. The job `vm tests`
-  reports their combined result and is a required check, see
-  [updates](./scheduled-deployment.md#updates).
+  GitHub-hosted runners for every PR, every push to main and on manual runs.
+  The job `vm tests` reports their combined result and is a required check,
+  see [updates](./scheduled-deployment.md#updates).
 - `authorize.yml`: reusable authorization workflow. PRs from `tiiuae` org
   members are auto-approved; external PRs require manual approval before
   CI runs.
