@@ -364,7 +364,8 @@ pipeline {
           steps {
             script {
               def buildManifest = readJSON file: env.BUILD_MANIFEST_PATH
-              def image = buildManifest.image
+              def requestedPath = params.OCI_IMAGE_REF ? null : split_img_url(params.IMG_URL).img_relpath
+              def image = artifactSupport.main_image(buildManifest, requestedPath)
               def signingKey = image?.signature?.signing_key
               if (!image?.path || !image.signature?.path || !signingKey) {
                 error("Build manifest must identify a signed main image for flashing")
