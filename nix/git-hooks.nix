@@ -59,8 +59,10 @@
       groovy-jenkins-tests = pkgs.writeShellApplication {
         name = "groovy-jenkins-tests";
         runtimeInputs = [
+          pkgs.bash
           pkgs.coreutils
           pkgs.findutils
+          pkgs.gawk
           pkgs.groovy
         ];
         text = ''
@@ -77,6 +79,20 @@
             echo "groovy-jenkins-tests: running ''${test_file}"
             groovy "''${test_file}"
           done
+        '';
+      };
+
+      artifact-tests = pkgs.writeShellApplication {
+        name = "artifact-tests";
+        runtimeInputs = [
+          pkgs.bash
+          pkgs.coreutils
+          pkgs.gnutar
+          pkgs.oras
+          pkgs.jq
+        ];
+        text = ''
+          exec ${pkgs.lib.getExe' python-env "pytest"} -q tests/test_artifacts.py
         '';
       };
 
@@ -155,6 +171,13 @@
             name = "pytest-tasks";
             entry = "${pkgs.lib.getExe' python-env "pytest"} -q tests/test_tasks.py";
             files = "^(tasks\\.py|tests/test_tasks\\.py)$";
+            pass_filenames = false;
+          };
+          pytest-artifacts = {
+            enable = true;
+            name = "pytest-artifacts";
+            entry = "${pkgs.lib.getExe artifact-tests}";
+            files = "^(pkgs/oci-publish/.*|scripts/archive-ghaf-release\\.sh|tests/test_artifacts\\.py)$";
             pass_filenames = false;
           };
           # github actions linter
