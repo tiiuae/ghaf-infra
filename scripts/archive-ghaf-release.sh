@@ -54,7 +54,7 @@ RELEASE_POLICY_FILE selects the trusted local policy (default: /etc/jenkins/rele
 Options:
   -h    Print this help message
   -v    Set the script verbosity to DEBUG
-  -a    Specify a path to ARTIFACTS directory
+  -a    Specify a path to legacy v1 ARTIFACTS (v2 requires -o)
   -o    Specify an OCI tag to pull release artifacts from the registry
   -t    Specify a ghaf release tag/version name, e.g. 'ghaf-25.12.1'
 
@@ -402,6 +402,11 @@ prepare_artifacts() {
     echo "[+] Release artifact: $target_name"
     manifest="$dir/manifest.json"
 
+    if [[ -z $OCI_TAG ]] && jq -e '.schema_version == 2' "$manifest" >/dev/null; then
+      print_err "full-output release archives require OCI retrieval (-o); local files are not bound to the release attestation"
+      exit 1
+    fi
+
     # verify signatures
     verify_signatures "$dir"
 
@@ -410,6 +415,10 @@ prepare_artifacts() {
 
     if ! output_path=$(jq -re '.output.path // empty' "$manifest"); then
       print_err "missing output directory in manifest: $manifest"
+      exit 1
+    fi
+    if [[ $output_path == /* || /$output_path/ == */../* ]]; then
+      print_err "output path must stay within the target directory: $output_path"
       exit 1
     fi
     mkdir -p "$(dirname "$TMPDIR/$target_name/$output_path")"

@@ -43,7 +43,8 @@ private def signature_entry(Map ctx, String path) { [path: path, signing_key: ct
 
 private def find_main_image(String directory, String preferred = null) {
   if (preferred) {
-    if (!fileExists("${directory}/${preferred}")) error("Main image '${preferred}' not found in '${directory}'")
+    if (preferred.startsWith('/') || preferred.tokenize('/').contains('..')) error("Main image path must stay within the output directory")
+    if (sh(script: "test -f ${artifactSupport.shell_quote("${directory}/${preferred}")}", returnStatus: true) != 0) error("Main image '${preferred}' not found in '${directory}'")
     return preferred
   }
   def candidates = sh(
@@ -56,7 +57,9 @@ private def find_main_image(String directory, String preferred = null) {
     if (depth < 0 || candidate_depth < depth) depth = candidate_depth
   }
   def images = candidates.findAll { it.count('/') == depth }
-  return images.size() == 1 ? images[0] : null
+  if (images.isEmpty()) error("No main image found in '${directory}'")
+  if (images.size() != 1) error("Ambiguous main image in '${directory}': ${images.sort().join(', ')}; set 'image_path' in the target config")
+  return images[0]
 }
 
 def create_pipeline(
@@ -183,7 +186,7 @@ def create_pipeline(
     def manifest = [
       schema_version: 2,
       target: build_target_name,
-      source: [flake_ref: target_flake_ref],
+      source: [repository: target_repo, revision: target_commit, flake_ref: target_flake_ref],
       output: [path: 'output'],
       attestations: [:],
     ]
@@ -277,6 +280,7 @@ def create_pipeline(
             sh """
               nix-store --add-root ${output}/unsigned-output \
                 --realise ${artifactSupport.shell_quote(store_path)}
+              oci-publish validate-output --target-dir '${output}' '${output}/unsigned-output'
             """
           }
 
@@ -392,12 +396,12 @@ def create_pipeline(
         ) {
           def tmpdir = artifactSupport.build_tmpdir("uefisign-${build_shortname}")
           def unsigned_dir = "${output}/unsigned-output"
-          def input_hint = target_config.image_path && fileExists("${unsigned_dir}/${target_config.image_path}") ? target_config.image_path : null
+          def input_hint = target_config.image_path
           def signer_input = is_sysupdate_target ? artifactSupport.run_cmd(
             "find -L '${unsigned_dir}' -maxdepth 1 -name '*.manifest' -printf '%P' -quit"
           ) : find_main_image(unsigned_dir, input_hint)
           if (!signer_input) {
-            error("UEFI signing requires a main image; set 'image_path' in the target config when selection is ambiguous")
+            error("OTA manifest missing from '${unsigned_dir}'")
           }
           uefi_signing = [
             signer: is_sysupdate_target ? 'uefi-sign-sysupdate' :
@@ -420,6 +424,7 @@ def create_pipeline(
                   ${artifactSupport.shell_quote("${unsigned_dir}/${signer_input}")} \
                   '${tmpdir}'
               """
+              sh "oci-publish validate-output --target-dir '${tmpdir}' '${tmpdir}'"
               uefi_signing.finished_on = artifactSupport.run_cmd('date -u +%Y-%m-%dT%H:%M:%SZ')
               uefi_signing.signing_key = ctx.uri
             }
@@ -566,7 +571,7 @@ def create_pipeline(
               if (fileExists("${output}/output/${signed_image}")) image_hint = signed_image
             }
             def image_path = find_main_image("${output}/output", image_hint)
-            if (image_path) manifest.image = [path: "output/${image_path}"]
+            manifest.image = [path: "output/${image_path}"]
           }
         }
         run_optional_stage(
@@ -583,7 +588,7 @@ def create_pipeline(
             manifest.image.signature = signature_entry(ctx, signature_path)
           }
         }
-        stage("Link artifacts ${build_shortname}") {
+        stage("Write manifest ${build_shortname}") {
           write_manifest()
 
           artifactSupport.append_to_build_description(artifacts_href, true)

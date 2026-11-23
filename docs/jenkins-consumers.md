@@ -253,12 +253,16 @@ Each target has a version 2 `manifest.json` describing how to use its output:
 {
   "schema_version": 2,
   "target": "packages.aarch64-linux.nvidia-jetson-orin-nx-debug",
-  "source": { "flake_ref": "git+https://github.com/tiiuae/ghaf?rev=<commit>" },
+  "source": {
+    "repository": "https://github.com/tiiuae/ghaf",
+    "revision": "<commit>",
+    "flake_ref": "git+https://github.com/tiiuae/ghaf?rev=<commit>"
+  },
   "output": { "path": "output" },
   "image": {
-    "path": "output/signed-system.img.zst",
+    "path": "output/signed_system.img.zst",
     "signature": {
-      "path": "output/signed-system.img.zst.sig",
+      "path": "output/signed_system.img.zst.sig",
       "signing_key": "pkcs11:token=NetHSM;object=GhafInfraSignECP256"
     }
   },
@@ -288,7 +292,8 @@ the original Nix output; signed outputs preserve everything returned by the
 signer, with no renaming. Downloads and release archives contain the file
 contents rather than links to the builder's Nix store.
 
-`image` is optional and points to the main flashable image in the final output.
+`image` points to the main flashable image in the final output. It is required
+unless `no_image` or `sysupdate` is enabled.
 Selection considers `.img`, `.raw`, `.iso`, and their `.zst` variants, preferring
 the files nearest the output directory root. A unique image there is selected;
 for example, a top-level disk image takes precedence over `recovery/boot.img`.
@@ -297,8 +302,9 @@ explicit path within the final output. For UEFI signing, use the unsigned input
 path; collection prefers `signed_<input-basename>` when present in the signed
 output, falling back to the configured path.
 Only this main image gets a detached CI signature, alongside the image.
-Signatures and attestations are omitted when unavailable. Build details and
-digests remain in provenance.
+Signatures and attestations are omitted when unavailable. Source identity is
+recorded even when provenance is disabled; build details and digests remain in
+provenance.
 
 Sysupdate targets use an optional `sysupdate` entry with `path` and `signature`
 fields pointing to the finalized OTA manifest and its signature. Its payloads
@@ -307,8 +313,22 @@ Sysupdate publishing retains the OTA layout: the OTA manifest is the OCI config,
 and its signature and payloads are layers. The CI manifest is not published there.
 The `no_image: true` target option disables image selection, UEFI signing,
 image signatures, hardware tests, and registry publishing. It cannot be combined
-with `image_path`. The output is still collected. The manifest's `image` field
-keeps its existing name and structure.
+with `image_path`. The output is still collected. Sysupdate targets cannot set
+`image_path` or tests.
+
+Output links must resolve within the Nix store or the target's staging directory.
+Dangling links, cycles, and special files fail validation before collection or
+signing. The publisher checks upload paths again.
+
+Version 2 release archives require `archive-ghaf-release.sh -o <tag>` so the full
+output is retrieved by OCI digest and bound to the signed release attestation.
+Local `-a` input does not authenticate additional output files.
+
+Consumer-facing changes from v1 are `images/` to `output/`, manifest schema v2,
+and OCI artifact type `application/vnd.ghaf.image.v1` to
+`application/vnd.ghaf.output.v1`. Sysupdate keeps its OTA manifest config and
+payload media types, but no longer publishes detached per-payload `.sig` layers;
+the finalized OTA manifest and its signature authenticate the payload digests.
 
 `services.ghaf-jenkins.registry.namespace` defaults to `"ghaf"`. OCI outputs use
 `<namespace>/<job-name>/<target>`, keeping the job name unchanged and removing

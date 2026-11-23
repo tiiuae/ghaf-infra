@@ -13,6 +13,7 @@ from contextlib import contextmanager
 import json
 import os
 import re
+import stat
 import subprocess
 import sys
 import tarfile
@@ -274,6 +275,54 @@ def create_test_results_archive(results_dir: Path, archive_path: Path) -> None:
         archive.add(test_results_json, arcname=test_results_json.name)
 
 
+def output_files(
+    path: Path, target_dir: Path, ancestors: frozenset[Path] = frozenset()
+) -> list[Path]:
+    """Follow output links only within the store or this target, rejecting cycles."""
+    try:
+        resolved = path.resolve(strict=True)
+        if not (
+            resolved.is_relative_to("/nix/store") or resolved.is_relative_to(target_dir)
+        ):
+            fail(f"output path escapes the Nix store and target directory: {path}")
+        mode = resolved.stat().st_mode
+        if stat.S_ISREG(mode):
+            return [path]
+        if not stat.S_ISDIR(mode):
+            fail(f"output path is not a regular file or directory: {path}")
+        if resolved in ancestors:
+            fail(f"output directory cycle: {path}")
+        files = []
+        for child in sorted(path.iterdir()):
+            files.extend(output_files(child, target_dir, ancestors | {resolved}))
+        return files
+    except (OSError, RuntimeError) as error:
+        fail(f"invalid output path {path}: {error}")
+
+
+def validate_output(args: argparse.Namespace) -> int:
+    """Validate an output before collection, hashing, or signing follows its links."""
+    output_files(Path(args.path), Path(args.target_dir).resolve(strict=True))
+    return 0
+
+
+def validate_upload_files(
+    manifest: dict[str, Any], target_dir: Path, upload_paths: list[str]
+) -> None:
+    """Check every explicit upload, including attestation and OTA payload paths."""
+    for attestation in manifest["attestations"].values():
+        if attestation.get("path"):
+            upload_paths.append(attestation["path"])
+        if signature := attestation.get("signature"):
+            upload_paths.append(signature["path"])
+    for relpath in upload_paths:
+        path = Path(relpath)
+        if path.is_absolute() or ".." in path.parts:
+            fail(f"artifact path must be relative to the target directory: {relpath}")
+        if output_files(target_dir / path, target_dir) != [target_dir / path]:
+            fail(f"artifact path must identify a regular file: {relpath}")
+
+
 def publish_target(args: argparse.Namespace) -> int:
     """Publish the complete output directory and its attestation referrers."""
     target_dir = Path(args.target_dir).expanduser().resolve()
@@ -284,16 +333,12 @@ def publish_target(args: argparse.Namespace) -> int:
         fail(f"output directory is missing: {output_dir}")
 
     target = manifest["target"]
-    source = {}
-    if provenance_path := manifest["attestations"].get("provenance", {}).get("path"):
-        source = read_json(target_dir / provenance_path)["predicate"][
-            "buildDefinition"
-        ]["externalParameters"]["target"]
+    source = manifest["source"]
     annotations = {
         "org.opencontainers.image.description": "Target output",
         "org.opencontainers.image.title": target,
         "org.opencontainers.image.source": source.get("repository", ""),
-        "org.opencontainers.image.revision": source.get("ref", ""),
+        "org.opencontainers.image.revision": source.get("revision", ""),
         SOURCE_REF_ANNOTATION: manifest["source"]["flake_ref"],
         TARGET_ANNOTATION: target,
     }
@@ -309,6 +354,7 @@ def publish_target(args: argparse.Namespace) -> int:
         # Preserve the OTA registry format consumed by the updater.
         artifact_type = config_media_type = SYSUPDATE_MANIFEST_MEDIA_TYPE
         config_path = sysupdate["path"]
+        output_files(target_dir / config_path, target_dir)
         ota = read_json(target_dir / config_path)
         annotations.update(
             {
@@ -335,11 +381,12 @@ def publish_target(args: argparse.Namespace) -> int:
             "files": ota_files,
         }
     else:
-        files = sorted(
-            (Path(root) / name).relative_to(target_dir).as_posix()
-            for root, _directories, names in os.walk(output_dir, followlinks=True)
-            for name in names
-        )
+        files = [
+            path.relative_to(target_dir).as_posix()
+            for path in output_files(output_dir, target_dir)
+        ]
+
+    validate_upload_files(manifest, target_dir, [config_path, *files])
 
     repository = normalize_repository(args.repository)
     with oras_publish_context() as (common_args, reference_prefix, subject_uses_digest):
@@ -460,6 +507,13 @@ def build_parser() -> argparse.ArgumentParser:
     """Build the CLI parser."""
     parser = argparse.ArgumentParser(description="Publish Ghaf OCI artifacts")
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    validate_parser = subparsers.add_parser(
+        "validate-output", help="check output paths before following links"
+    )
+    validate_parser.add_argument("--target-dir", required=True)
+    validate_parser.add_argument("path")
+    validate_parser.set_defaults(handler=validate_output)
 
     target_parser = subparsers.add_parser("target", help="publish one target artifact")
     target_parser.add_argument("-d", "--target-dir", required=True)
