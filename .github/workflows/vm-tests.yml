@@ -3,16 +3,22 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Runs the NixOS VM tests (flake outputs 'tests.<name>') on GitHub-hosted
-# runners for every PR. 'nix flake check' and the build workflow do not run
-# them. The job 'vm tests' always reports and is the check to require in the
-# branch protection: it fails unless every test passed, so adding a test below
-# needs no settings change. Run the tests manually on any ref with:
+# runners for every PR and every push to main. 'nix flake check' and the build
+# workflow do not run them. The job 'vm tests' always reports and is the check
+# to require in the branch protection: it fails unless every test passed, so
+# adding a test below needs no settings change. A PR need not be up to date
+# with main before it is merged, so the run on main tests the merged head that
+# scheduled deployment picks up. A newer push cancels the run of an older one,
+# since only the head is deployed. Run the tests manually on any ref with:
 #   gh workflow run vm-tests.yml --ref <branch>
 # (GitHub offers manual runs once the workflow is on the default branch.)
 
 name: VM tests
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
