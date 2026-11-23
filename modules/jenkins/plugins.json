@@ -241,9 +241,9 @@
   },
   {
     "name": "github-branch-source",
-    "version": "1986.v801e40614d00",
-    "url": "https://updates.jenkins.io/download/plugins/github-branch-source/1986.v801e40614d00/github-branch-source.hpi",
-    "sha256": "1j0bfr8xgaan4mh75m1x3w606g4vwk58xksfwy4xnxr3ypm499wm"
+    "version": "1988.v87ea_66346560",
+    "url": "https://updates.jenkins.io/download/plugins/github-branch-source/1988.v87ea_66346560/github-branch-source.hpi",
+    "sha256": "0ifrmmw7h9yik3bkxibpnlwpn48bwc9vxvdxnl0ci7cb6yj73ig9"
   },
   {
     "name": "github-pullrequest",
@@ -391,9 +391,9 @@
   },
   {
     "name": "lockable-resources",
-    "version": "1593.v81b_70c9dfccb_",
-    "url": "https://updates.jenkins.io/download/plugins/lockable-resources/1593.v81b_70c9dfccb_/lockable-resources.hpi",
-    "sha256": "0yivz80j59pq1hqdwmjb9aqzdzh6rxsw2m7yahjm0sa9i0xpwwrk"
+    "version": "1601.vb_b_863eec56b_e",
+    "url": "https://updates.jenkins.io/download/plugins/lockable-resources/1601.vb_b_863eec56b_e/lockable-resources.hpi",
+    "sha256": "1cbggs4jgwwsymjj9zr6z14zv97da3jkyhk064isn304n33phjby"
   },
   {
     "name": "mailer",
@@ -415,9 +415,9 @@
   },
   {
     "name": "matrix-project",
-    "version": "928.v1effc3f3a_236",
-    "url": "https://updates.jenkins.io/download/plugins/matrix-project/928.v1effc3f3a_236/matrix-project.hpi",
-    "sha256": "0yc8g7h9xwjm0j3gn8n4s7d4qqiv2489bmxjw74bnbhgqvz0926l"
+    "version": "954.v656d2cf610c4",
+    "url": "https://updates.jenkins.io/download/plugins/matrix-project/954.v656d2cf610c4/matrix-project.hpi",
+    "sha256": "1k8nc8wvdk94yw20afxni5fvw15i74vkpgmj2gvd804akprz2a0a"
   },
   {
     "name": "maven-plugin",
@@ -601,9 +601,9 @@
   },
   {
     "name": "scm-api",
-    "version": "728.vc30dcf7a_0df5",
-    "url": "https://updates.jenkins.io/download/plugins/scm-api/728.vc30dcf7a_0df5/scm-api.hpi",
-    "sha256": "09h3bkss1lclcwx9fp7p0g73kdrp3q7a1aqh4a8zm8nshwllfdhk"
+    "version": "732.v830c71a_cfed3",
+    "url": "https://updates.jenkins.io/download/plugins/scm-api/732.v830c71a_cfed3/scm-api.hpi",
+    "sha256": "0fdspx0w9m1aqalkdqz5dg6h0di7mmk0wink78hqf40cm8clq9cx"
   },
   {
     "name": "script-security",
