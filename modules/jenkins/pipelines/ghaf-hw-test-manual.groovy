@@ -305,7 +305,7 @@ pipeline {
               if (params.OCI_IMAGE_REF) {
                 def manifestPath = artifactSupport.fetch_build_manifest(params.OCI_IMAGE_REF, TMP_IMG_DIR)
                 def manifest = readJSON file: manifestPath
-                def image = manifest.image
+                def image = artifactSupport.main_image(manifest)
                 if (!image?.path) error("Build manifest must identify a main image for flashing")
                 artifactSupport.oras_pull_json(params.OCI_IMAGE_REF, TMP_IMG_DIR)
                 img_path = "${TMP_IMG_DIR}/${image.path}"

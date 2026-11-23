@@ -178,16 +178,12 @@ verify_signatures() {
     print_err "missing manifest: $dir"
     exit 1
   fi
-  if ! img_rel=$(jq -re '.image.path // empty | select(length > 0)' "$manifest"); then
-    print_err "missing image in manifest: $manifest"
+  if ! image_count=$(jq -re '(.images // (if .image then [.image] else [] end)) | length' "$manifest"); then
+    print_err "missing images entry in manifest: $manifest"
     exit 1
   fi
-  if ! img_sig_rel=$(jq -re '.image.signature.path // empty | select(length > 0)' "$manifest"); then
-    print_err "missing image signature in manifest: $manifest"
-    exit 1
-  fi
-  if ! img_signing_key=$(jq -re '.image.signature.signing_key // empty | select(length > 0)' "$manifest"); then
-    print_err "missing image signing key in manifest: $manifest"
+  if [[ $image_count -eq 0 ]]; then
+    print_err "missing image: $dir"
     exit 1
   fi
   if ! prov_rel=$(jq -re '.attestations.provenance.path' "$manifest"); then
@@ -212,15 +208,29 @@ verify_signatures() {
     print_err "missing provenance signing key in manifest: $manifest"
     exit 1
   fi
-  img="$dir/$img_rel"
-  img_sig="$dir/$img_sig_rel"
-  echo "[+] Verifying: $img"
-  if ! verify_authorized_signature image "$img" "$img_sig" "$img_signing_key"; then
-    print_err "failed verifying image signature"
-    print_err "  image: $img"
-    print_err "  signature: $img_sig"
-    exit 1
-  fi
+  while IFS=$'\t' read -r img_rel img_sig_rel img_signing_key; do
+    img="$dir/$img_rel"
+    if [[ -z $img_rel ]]; then
+      print_err "missing image: $dir"
+      exit 1
+    fi
+    img_sig="$dir/$img_sig_rel"
+    if [[ -z $img_sig_rel ]]; then
+      print_err "missing image signature: $dir"
+      exit 1
+    fi
+    if [[ -z $img_signing_key ]]; then
+      print_err "missing image signing key: $dir"
+      exit 1
+    fi
+    echo "[+] Verifying: $img"
+    if ! verify_authorized_signature image "$img" "$img_sig" "$img_signing_key"; then
+      print_err "failed verifying image signature"
+      print_err "  image: $img"
+      print_err "  signature: $img_sig"
+      exit 1
+    fi
+  done < <(jq -re '(.images // (if .image then [.image] else [] end))[] | [.path // "", .signature.path // "", .signature.signing_key // ""] | @tsv' "$manifest")
   if ! verify_authorized_signature provenance "$prov" "$prov_sig" "$prov_signing_key"; then
     print_err "failed verifying provenance signature"
     print_err "  provenance: $prov"
@@ -413,16 +423,25 @@ prepare_artifacts() {
     mkdir -p "$TMPDIR/$target_name"
     ln -s "$manifest" "$TMPDIR/$target_name/manifest.json"
 
-    if ! output_path=$(jq -re '.output.path // empty' "$manifest"); then
-      print_err "missing output directory in manifest: $manifest"
-      exit 1
+    if jq -e '.schema_version == 2' "$manifest" >/dev/null; then
+      if ! output_path=$(jq -re '.output.path // empty' "$manifest"); then
+        print_err "missing output directory in manifest: $manifest"
+        exit 1
+      fi
+      if [[ $output_path == /* || /$output_path/ == */../* ]]; then
+        print_err "output path must stay within the target directory: $output_path"
+        exit 1
+      fi
+      mkdir -p "$(dirname "$TMPDIR/$target_name/$output_path")"
+      ln -s "$dir/$output_path" "$TMPDIR/$target_name/$output_path"
+    else
+      while IFS=$'\t' read -r image image_sig; do
+        mkdir -p "$(dirname "$TMPDIR/$target_name/$image")"
+        mkdir -p "$(dirname "$TMPDIR/$target_name/$image_sig")"
+        ln -s "$dir/$image" "$TMPDIR/$target_name/$image"
+        ln -s "$dir/$image_sig" "$TMPDIR/$target_name/$image_sig"
+      done < <(jq -re '(.images // (if .image then [.image] else [] end))[] | [.path // "", .signature.path // ""] | @tsv' "$manifest")
     fi
-    if [[ $output_path == /* || /$output_path/ == */../* ]]; then
-      print_err "output path must stay within the target directory: $output_path"
-      exit 1
-    fi
-    mkdir -p "$(dirname "$TMPDIR/$target_name/$output_path")"
-    ln -s "$dir/$output_path" "$TMPDIR/$target_name/$output_path"
 
     # attestations
     if [[ -d "$dir/attestations" ]]; then

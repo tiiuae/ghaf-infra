@@ -22,11 +22,12 @@ criteria:
       ]
 
   - id: image-signature
-    description: The main image is signed with the release image key
+    description: Image signatures verify with the release image key
     required: true
     cel: |
       files.image && files.image_signature && signatures.image.verified &&
-      manifest.image.signature.signing_key in signing_keys.image
+      (has(manifest.images) ? manifest.images : [manifest.image]).all(image,
+        image.signature.signing_key in signing_keys.image)
 
   - id: provenance-signature
     description: SLSA provenance signature verifies with the release provenance key

@@ -29,7 +29,7 @@ def oras_pull_json(String reference, String outputDir) {
 def fetch_build_manifest(String reference, String outputDir) {
   def ociManifest = readJSON(text: run_cmd("oras manifest fetch --format json ${shell_quote(reference)}")).content
   def descriptor = ([ociManifest.config] + (ociManifest.layers ?: [])).find {
-    it?.mediaType == 'application/vnd.ghaf.manifest.v2+json'
+    it?.mediaType in ['application/vnd.ghaf.manifest.v2+json', 'application/vnd.ghaf.manifest.v1+json']
   }
   if (!descriptor?.digest) error("Unable to find build manifest in '${reference}'")
   def path = "${outputDir}/manifest.json"
@@ -37,6 +37,16 @@ def fetch_build_manifest(String reference, String outputDir) {
   sh "mkdir -p ${shell_quote(outputDir)}"
   sh "oras blob fetch --output ${shell_quote(path)} ${shell_quote(blob)}"
   return path
+}
+
+def main_image(Map manifest, String requestedPath = null) {
+  if (manifest.images == null && manifest.image) return manifest.image
+  def images = manifest.images ?: []
+  def matches = requestedPath ? images.findAll { it.path == requestedPath } : images
+  if (matches.size() != 1) {
+    error("Legacy build manifest must identify one image to flash; found ${matches.size()} matching images")
+  }
+  return matches[0]
 }
 
 @NonCPS

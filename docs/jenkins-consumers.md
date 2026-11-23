@@ -324,6 +324,11 @@ Version 2 release archives require `archive-ghaf-release.sh -o <tag>` so the ful
 output is retrieved by OCI digest and bound to the signed release attestation.
 Local `-a` input does not authenticate additional output files.
 
+Hardware-test consumers, release policy checks, and archival also accept v1
+manifests. Legacy releases retain their image layout and verify every listed
+image signature. Flashing a legacy manifest with several images requires an
+`IMG_URL` selecting a specific image; OCI flashing requires a unique image.
+
 Consumer-facing changes from v1 are `images/` to `output/`, manifest schema v2,
 and OCI artifact type `application/vnd.ghaf.image.v1` to
 `application/vnd.ghaf.output.v1`. Sysupdate keeps its OTA manifest config and
