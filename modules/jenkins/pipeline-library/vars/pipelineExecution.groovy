@@ -278,9 +278,9 @@ def create_pipeline(
             }
 
             sh """
+              oci-publish validate-output --target-dir '${output}' ${artifactSupport.shell_quote(store_path)}
               nix-store --add-root ${output}/unsigned-output \
                 --realise ${artifactSupport.shell_quote(store_path)}
-              oci-publish validate-output --target-dir '${output}' '${output}/unsigned-output'
             """
           }
 
@@ -554,7 +554,7 @@ def create_pipeline(
         }
         stage("Collect output ${build_shortname}") {
           if (!uefi_signing.finished_on) {
-            // Outputs without a main image can link to an entire NixOS system closure.
+            // Keep links for no_image outputs; all output paths have already been validated.
             sh """
               mkdir -p '${output}/output'
               if test -d '${output}/unsigned-output'; then

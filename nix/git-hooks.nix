@@ -87,6 +87,7 @@
         runtimeInputs = [
           pkgs.bash
           pkgs.coreutils
+          pkgs.findutils
           pkgs.gnutar
           pkgs.oras
           pkgs.jq

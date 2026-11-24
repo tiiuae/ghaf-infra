@@ -38,6 +38,8 @@ in
         tree
         jq
         yq-go
+        gnutar
+        findutils
       ])
       ++ [
         ghaf-fetch
