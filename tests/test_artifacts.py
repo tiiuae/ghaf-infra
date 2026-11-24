@@ -148,3 +148,158 @@ cp "$TMPDIR/archived/test.tar" "$3"
                 handle.extractfile(f"packages.test/{image['signature']['path']}").read()
                 == b"signature"
             )
+
+
+@pytest.mark.parametrize(
+    "unsafe_tar", [None, "../escape", "symlink", "symlink-write", "hardlink"]
+)
+def test_archive_referrer_isolation(tmp_path, unsafe_tar):
+    layout = tmp_path / "layout"
+    primary = tmp_path / "primary"
+    (primary / "output").mkdir(parents=True)
+    (primary / "output/disk.img").write_bytes(b"primary image")
+    (primary / "manifest.json").write_text(
+        json.dumps({"schema_version": 2, "target": "packages.test"})
+    )
+    subprocess.run(
+        [
+            "oras",
+            "push",
+            "--oci-layout-path",
+            str(layout),
+            "--artifact-type",
+            oci_publish.TARGET_ARTIFACT_TYPE,
+            "--config",
+            "manifest.json:application/json",
+            "release-test",
+            "output/disk.img",
+        ],
+        cwd=primary,
+        check=True,
+    )
+    digest = subprocess.check_output(
+        ["oras", "resolve", "--oci-layout-path", str(layout), "release-test"], text=True
+    ).strip()
+    referrer = tmp_path / "referrer"
+    (referrer / "attestations").mkdir(parents=True)
+    (referrer / "output").mkdir()
+    (referrer / "output/disk.img").write_bytes(b"referrer replacement")
+    (referrer / "output/injected").write_bytes(b"unattested")
+    (referrer / "manifest.json").write_text("{}")
+    for name in ("provenance", "release-policy"):
+        (referrer / f"attestations/{name}.json").write_text(name)
+        (referrer / f"attestations/{name}.json.sig").write_text("signature")
+    (referrer / "test-results").mkdir()
+    (referrer / "test-results/log.txt").write_text("test log")
+    (referrer / "test-results.json").write_text("{}")
+    with tarfile.open(referrer / "test-results.tar", "w") as archive:
+        archive.add(referrer / "test-results", arcname="test-results")
+        archive.add(referrer / "test-results.json", arcname="test-results.json")
+        archive.add(referrer / "output", arcname="output")
+        if unsafe_tar in ("symlink", "symlink-write", "hardlink"):
+            link = tarfile.TarInfo("test-results/link")
+            link.type = tarfile.LNKTYPE if unsafe_tar == "hardlink" else tarfile.SYMTYPE
+            link.linkname = (
+                "../../escape" if unsafe_tar == "symlink" else str(primary / "output")
+            )
+            archive.addfile(link)
+            if unsafe_tar == "symlink-write":
+                archive.add(
+                    referrer / "output/disk.img", arcname="test-results/link/disk.img"
+                )
+        elif unsafe_tar:
+            archive.add(referrer / "output/injected", arcname=unsafe_tar)
+    for artifact_type, paths in (
+        (
+            "application/vnd.in-toto+json",
+            ["attestations/provenance.json", "attestations/provenance.json.sig"],
+        ),
+        (
+            oci_publish.RELEASE_ATTESTATION_ARTIFACT_TYPE,
+            [
+                "attestations/release-policy.json",
+                "attestations/release-policy.json.sig",
+            ],
+        ),
+        (oci_publish.TEST_RESULTS_ARTIFACT_TYPE, ["test-results.tar"]),
+        ("application/unexpected", []),
+    ):
+        subprocess.run(
+            [
+                "oras",
+                "attach",
+                "--oci-layout-path",
+                str(layout),
+                "--artifact-type",
+                artifact_type,
+                digest,
+                *paths,
+                "output/disk.img",
+                "output/injected",
+                "manifest.json",
+            ],
+            cwd=referrer,
+            check=True,
+        )
+    # Route registry references to a real local OCI layout; no registry or uploads.
+    script = (
+        (ROOT / "scripts/archive-ghaf-release.sh")
+        .read_text()
+        .rsplit('\nmain "$@"', 1)[0]
+        + r"""
+trap 'rm -rf "$TMPDIR"' EXIT
+release_targets=(packages.test)
+fetch_script=$3
+oras() {
+  local reference="${!#}"
+  if [[ $reference == *@* ]]; then reference="${reference##*@}"; else reference="${reference##*:}"; fi
+  if [[ $1 == manifest || $1 == blob ]]; then
+    command oras "$1" "$2" --oci-layout-path "$layout" "${@:3:$#-3}" "$reference"
+  else
+    command oras "$1" --oci-layout-path "$layout" "${@:2:$#-2}" "$reference"
+  fi
+}
+export -f oras
+export layout
+ghaf-fetch() { bash "$fetch_script" "$@"; }
+mkdir "$2-selected"
+(cd "$2-selected" && ghaf-fetch --referrer application/vnd.in-toto+json "$OCI_REGISTRY$OCI_REPOSITORY/test:release-test")
+pull_artifacts_from_oci release-test
+cp -r "$ARTIFACTS/packages.test" "$2"
+"""
+    )
+    pulled = tmp_path / "pulled"
+    result = subprocess.run(
+        [
+            "bash",
+            "-c",
+            "layout=$1\n" + script,
+            "archive-test",
+            str(layout),
+            str(pulled),
+            str(ROOT / "scripts/ghaf-fetch.sh"),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert (result.returncode == 0) == (unsafe_tar is None), (
+        result.stdout + result.stderr
+    )
+    if unsafe_tar is None:
+        assert (pulled / "output/disk.img").read_bytes() == b"primary image"
+        assert not (pulled / "output/injected").exists()
+        assert (
+            json.loads((pulled / "manifest.json").read_text())["target"]
+            == "packages.test"
+        )
+        assert (pulled / "attestations/provenance.json").read_text() == "provenance"
+        assert (
+            pulled / "attestations/release-policy.json"
+        ).read_text() == "release-policy"
+        assert (pulled / "test-results/log.txt").read_text() == "test log"
+        assert (pulled / "test-results.json").read_text() == "{}"
+    assert (primary / "output/disk.img").read_bytes() == b"primary image"
+    selected = tmp_path / "pulled-selected"
+    assert (selected / "attestations/provenance.json").read_text() == "provenance"
+    assert not (selected / "attestations/release-policy.json").exists()

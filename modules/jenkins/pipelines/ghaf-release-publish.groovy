@@ -8,15 +8,12 @@ properties([
       Ghaf release tag or version name used to identify the release in the archive. Example: 'ghaf-25.12.1'
       '''.stripIndent()),
     string(name: 'ARTIFACTS_URL', defaultValue: '', description: '''
-      Specify the artifacts URL used for local artifact lookup and OTA pinning.
-      If OCI_TAG is empty, release artifacts are also archived from this local artifact path.
-      If left empty, uses the latest artifacts from the configured release-candidate job.
+      Required artifacts URL used to locate the local OTA pins for the release candidate matching OCI_TAG.
       Example:
       'https://ci-release.vedenemo.dev/artifacts/ghaf-release-candidate/20251210_081817797-commit_28fb2bdcbb558d02c33b01ef25a2250ff3fdc479/'
       '''.stripIndent()),
     string(name: 'OCI_TAG', defaultValue: '', description: '''
-      Specify an OCI registry tag.
-      If set, all release targets are archived from the OCI registry using this tag. ARTIFACTS_URL must be set and is still used for OTA pinning.
+      Required OCI registry tag used to archive all release targets. ARTIFACTS_URL is still used for OTA pinning.
       Example:
       'release-20260603_123242705-29e9ef6e98ef9a589b5814fe438ba94601df1bdc'
       '''.stripIndent()),
@@ -48,38 +45,32 @@ pipeline {
             if (!params.GHAF_VERSION) {
               error('Missing GHAF_VERSION parameter')
             }
-            env.OCI_TAG = params.OCI_TAG ?: ''
-            if (env.OCI_TAG) {
-              if (!params.ARTIFACTS_URL) {
-                error('ARTIFACTS_URL parameter is required when OCI_TAG is set')
-              }
-              println("Using OCI_TAG: ${env.OCI_TAG}")
+            if (!params.OCI_TAG?.trim()) {
+              error('Missing OCI_TAG parameter; release archives require OCI retrieval')
             }
+            if (!params.ARTIFACTS_URL) {
+              error('ARTIFACTS_URL parameter is required for OTA pinning')
+            }
+            env.OCI_TAG = params.OCI_TAG.trim()
+            println("Using OCI_TAG: ${env.OCI_TAG}")
             def adir = "/var/lib/jenkins/artifacts/${env.JENKINS_RELEASE_CANDIDATE_JOB}"
-            // By default, take the release artifacts from the newest subdir directly under ${adir}
-            env.ARTIFACTS_DIR = sh(script: "ls -dt1 ${adir}/*/ | head -n1", returnStdout:true).trim()
-            // If params.ARTIFACTS_URL is defined, parse the artifacts dir from the given string instead
-            if (params.ARTIFACTS_URL) {
-              // Parse out the ARTIFACTS_DIR from the ARTIFACTS_URL
-              // Match e.g. 20251210_112231771-commit_28fb2bdcbb558d02c33b01ef25a2250ff3fdc479
-              def match = params.ARTIFACTS_URL =~ /(\d{8}_\d{9}-commit_[0-9a-f]{40})/
-              if(match) {
-                env.ARTIFACTS_DIR = "${adir}/${match.group(1)}/"
-                match = null // https://stackoverflow.com/questions/40454558
-                println("Parsed ARTIFACTS_DIR from params.ARTIFACTS_URL")
-              } else {
-                error("Unexpected ARTIFACTS_URL: ${params.ARTIFACTS_URL}")
-              }
+            // Match e.g. 20251210_112231771-commit_28fb2bdcbb558d02c33b01ef25a2250ff3fdc479
+            def match = params.ARTIFACTS_URL =~ /(\d{8}_\d{9}-commit_[0-9a-f]{40})/
+            if (match) {
+              env.ARTIFACTS_DIR = "${adir}/${match.group(1)}/"
+              match = null // https://stackoverflow.com/questions/40454558
+            } else {
+              error("Unexpected ARTIFACTS_URL: ${params.ARTIFACTS_URL}")
             }
             println("Using ARTIFACTS_DIR: ${env.ARTIFACTS_DIR}")
             stage("Check artifacts") {
-              sh """
+              sh '''
                 if [ ! -d "$ARTIFACTS_DIR" ]; then
                   echo "Error: invalid artifacts_dir: '$ARTIFACTS_DIR'"
                   exit 1
                 fi
                 tree --noreport "$ARTIFACTS_DIR"
-              """
+              '''
             }
           }
         }
@@ -122,16 +113,10 @@ pipeline {
                 } else {
                   env.BUCKET=params.BUCKET
                 }
-                if (env.OCI_TAG) {
-                  withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
-                    sh """
-                      OCI_REPOSITORY="/${env.OCI_NAMESPACE ?: 'ghaf'}/${env.JENKINS_RELEASE_CANDIDATE_JOB}" \
-                        archive-ghaf-release -o "$OCI_TAG" -t "${params.GHAF_VERSION}"
-                    """
-                  }
-                } else {
+                withCredentials([string(credentialsId: 'oci_registry_password', variable: 'OCI_PASSWORD')]) {
                   sh """
-                    archive-ghaf-release -a "$ARTIFACTS_DIR" -t "${params.GHAF_VERSION}"
+                    OCI_REPOSITORY="/${env.OCI_NAMESPACE ?: 'ghaf'}/${env.JENKINS_RELEASE_CANDIDATE_JOB}" \
+                      archive-ghaf-release -o "$OCI_TAG" -t "${params.GHAF_VERSION}"
                   """
                 }
               }

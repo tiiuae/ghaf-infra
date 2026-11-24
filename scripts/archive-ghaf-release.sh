@@ -338,12 +338,7 @@ pull_artifacts_from_oci() {
     fi
     rm -f "$manifest_log"
     resolved_reference="$OCI_REGISTRY$OCI_REPOSITORY/$oci_target_name@$resolved_digest"
-    printf '%s\n' "$resolved_reference" >"$target_dir/oci-reference"
-
-    if ! (
-      cd "$target_dir"
-      ghaf-fetch --all "$resolved_reference"
-    ); then
+    if ! (cd "$target_dir" && ghaf-fetch --primary "$resolved_reference"); then
       print_err "failed pulling OCI target: $resolved_reference"
       exit 1
     fi
@@ -362,10 +357,51 @@ pull_artifacts_from_oci() {
       exit 1
     fi
 
-    if [[ -f "$target_dir/test-results.tar" ]]; then
-      tar -xf "$target_dir/test-results.tar" -C "$target_dir"
-      rm -f "$target_dir/test-results.tar"
+    # Referrers must never add to or overwrite the primary artifact's output.
+    if [[ -e "$target_dir/attestations" || -L "$target_dir/attestations" ||
+      -e "$target_dir/test-results" || -L "$target_dir/test-results" ]]; then
+      print_err "unexpected attestation or test-result directory in primary artifact"
+      exit 1
     fi
+    while read -r artifact_type referrer_files; do
+      read -r -a referrer_paths <<<"$referrer_files"
+      referrer_dir=$(mktemp -d "$TMPDIR/referrer.XXXXXX")
+      (cd "$referrer_dir" && ghaf-fetch --referrer "$artifact_type" "$resolved_reference")
+      [[ -n $(find "$referrer_dir" -mindepth 1 -print -quit) ]] || continue
+      if [[ $artifact_type == application/vnd.ghaf.test-results.v1 ]]; then
+        if [[ ! -f "$referrer_dir/test-results.tar" || -L "$referrer_dir/test-results.tar" ]]; then
+          print_err "missing regular test-results.tar in referrer"
+          exit 1
+        fi
+        test_results_dir=$(mktemp -d "$TMPDIR/test-results.XXXXXX")
+        tar --extract --no-same-owner --no-same-permissions --file "$referrer_dir/test-results.tar" --directory "$test_results_dir"
+        referrer_dir="$test_results_dir"
+        if [[ -n $(find "$referrer_dir" ! -type f ! -type d -print -quit) ]]; then
+          print_err "test results must contain only regular files and directories"
+          exit 1
+        fi
+      fi
+      for path in "${referrer_paths[@]}"; do
+        [[ -e "$referrer_dir/$path" || -L "$referrer_dir/$path" ]] || continue
+        if [[ -L "$referrer_dir/$path" || $(realpath "$referrer_dir/$path") != "$referrer_dir/"* ||
+        ($path != test-results && ! -f "$referrer_dir/$path") ]]; then
+          print_err "invalid referrer path: $path"
+          exit 1
+        fi
+        mkdir -p "$(dirname "$target_dir/$path")"
+        cp -rT -- "$referrer_dir/$path" "$target_dir/$path"
+      done
+    done <<'REFERRERS'
+application/vnd.in-toto+json attestations/provenance.json attestations/provenance.json.sig
+application/vnd.ghaf.uefi-provenance.v1+json attestations/uefi-provenance.json attestations/uefi-provenance.json.sig
+application/vnd.dev.sigstore.bundle.v0.3+json attestations/source-vsa.sigstore.json
+application/vnd.cyclonedx+json attestations/sbom.cdx.json
+application/spdx+json attestations/sbom.spdx.json
+text/csv attestations/sbom.csv
+application/vnd.ghaf.release-attestation.v1+json attestations/release-policy.json attestations/release-policy.json.sig
+application/vnd.ghaf.test-results.v1 test-results test-results.json
+REFERRERS
+    printf '%s\n' "$resolved_reference" >"$target_dir/oci-reference"
     pulled_targets=$((pulled_targets + 1))
   done
 

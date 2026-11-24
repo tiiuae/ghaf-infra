@@ -230,11 +230,13 @@ immutable `<env>-<timestamp>-<commit>` tag and a mutable `<env>-latest` tag.
 Test results and the release-policy attestation are attached as OCI
 referrers. To download an artifact and its referrers, run
 `nix run .#ghaf-fetch -- <reference>`.
+Use `--primary` to download only the primary artifact and its manifest, or
+`--referrer ARTIFACT_TYPE` to download matching referrers without the interactive
+selector. Both download into the current directory.
 
-For releases, the `ghaf-release-publish` pipeline archives the artifacts from
-the controller's artifact directory or, when `OCI_TAG` is set, from the
-registry. Either way, the local artifact directory (`ARTIFACTS_URL`) must
-still exist: the pipeline checks it and reads it for OTA pinning. On
+For releases, the `ghaf-release-publish` pipeline requires `OCI_TAG` and archives
+the artifacts from the registry. The local artifact directory (`ARTIFACTS_URL`)
+must still exist: the pipeline checks it and reads it for OTA pinning. On
 ci-release, baseline reset discards that directory on reboot, so publish a
 release candidate before the controller reboots. Archival verifies image
 signatures, the Nix build provenance signature, and the release-policy attestation
