@@ -28,6 +28,14 @@ let
     inherit self inputs machines;
   };
 
+  pkgsBySystem = lib.mapAttrs (
+    system: _:
+    import inputs.nixpkgs {
+      inherit system;
+      config.allowUnfree = true;
+    }
+  ) hostsBySystem;
+
   # Calls nixosSystem with a host configuration module from the inventory and
   # optional extra configuration.
   mkNixOS =
@@ -43,6 +51,7 @@ let
           { pkgs, ... }:
           {
             nixpkgs.hostPlatform = hostInventory.${systemName}.system;
+            nixpkgs.pkgs = lib.mkDefault pkgsBySystem.${hostInventory.${systemName}.system};
             boot.kernelPackages = pkgs.linuxPackages_latest;
           }
         )
@@ -68,6 +77,7 @@ let
           { pkgs, ... }:
           {
             nixpkgs.hostPlatform = hostInventory.hetzci-vm.system;
+            nixpkgs.pkgs = lib.mkDefault pkgsBySystem.${hostInventory.hetzci-vm.system};
             boot.kernelPackages = pkgs.linuxPackages_latest;
             # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/virtualisation/qemu-vm.nix
             virtualisation.vmVariant.virtualisation.forwardPorts = [

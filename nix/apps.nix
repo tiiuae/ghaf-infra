@@ -212,7 +212,7 @@ in
 {
   flake.apps."x86_64-linux" =
     let
-      pkgs = import inputs.nixpkgs { system = "x86_64-linux"; };
+      pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
     in
     {
       run-hetzci-vm = {
