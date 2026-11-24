@@ -20,7 +20,7 @@ To add a NixOS host to ghaf-infra, follow the steps below. See also
 The examples below target an x86_64 Hetzner Cloud VM using legacy BIOS and
 use `ghaf-example` as the host name. Replace it with the actual name. For
 other platforms, start from a host with the same hardware and boot mode. See
-[`hosts/ghaf-webserver/`](../hosts/ghaf-webserver/) for a minimal reference.
+[`hosts/ghaf-lighthouse/`](../hosts/ghaf-lighthouse/) for a reference.
 
 ### 1. Create the host configuration
 
@@ -69,7 +69,7 @@ root login.
 For a new install, replace `<nixpkgs-release>` with the pinned release:
 
 ```sh
-nix eval --raw .#nixosConfigurations.ghaf-webserver.config.system.nixos.release
+nix eval --raw .#nixosConfigurations.ghaf-lighthouse.config.system.nixos.release
 ```
 
 `inv install` warns if `system.stateVersion` differs. Keep the chosen value on

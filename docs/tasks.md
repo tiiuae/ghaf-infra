@@ -52,7 +52,6 @@ Current ghaf-infra targets:
 │ ghaf-log              │ ghaf-log              │ 95.217.177.197  │
 │ ghaf-monitoring       │ ghaf-monitoring       │ 135.181.103.32  │
 │ ghaf-registry         │ ghaf-registry         │ 89.167.65.27    │
-│ ghaf-webserver        │ ghaf-webserver        │ 37.27.204.82    │
 │ hetz86-1              │ hetz86-1              │ 37.27.170.242   │
 │ hetz86-builder        │ hetz86-builder        │ 65.108.7.79     │
 │ hetz86-dbg-1          │ hetz86-dbg-1          │ 46.62.194.110   │

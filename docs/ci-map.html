@@ -1010,10 +1010,7 @@ should fit next to the map without scrolling, in both light and dark mode.
       walks: 'Not part of a run.' },
     { host: 'ghaf-fleetdm', url: 'fleetdm.vedenemo.dev', config: 'hosts/ghaf-fleetdm/',
       what: 'Fleet device management server for Ghaf end devices.',
-      walks: 'Test agents carry Fleet enrollment credentials, so Ghaf images flashed during hardware tests can register with it.' },
-    { host: 'ghaf-webserver', url: 'vedenemo.dev', config: 'hosts/ghaf-webserver/',
-      what: 'Nginx serving static web content.',
-      walks: 'Not part of a run.' }
+      walks: 'Test agents carry Fleet enrollment credentials, so Ghaf images flashed during hardware tests can register with it.' }
   ];
 
   var KIND_LABEL = {
@@ -1365,12 +1362,12 @@ should fit next to the map without scrolling, in both light and dark mode.
   }
   // Host names that are websites people can open (Jenkins, Grafana, Fleet).
   var WEB_HOSTS = ['ci-prod.vedenemo.dev', 'ci-release.vedenemo.dev', 'ci-dev.vedenemo.dev', 'ci-dbg.vedenemo.dev',
-    'ci-prod.uaenorth.cloudapp.azure.com', 'monitoring.vedenemo.dev', 'ghaflogs.vedenemo.dev', 'fleetdm.vedenemo.dev', 'vedenemo.dev'];
+    'ci-prod.uaenorth.cloudapp.azure.com', 'monitoring.vedenemo.dev', 'ghaflogs.vedenemo.dev', 'fleetdm.vedenemo.dev'];
   function hostLink(host) {
     return '<a class="hostlink" href="https://' + host + '/" target="_blank" rel="noopener">' + host + '</a>';
   }
-  // Link web host names inside a panel's text (bare vedenemo.dev only in tables).
-  var HOST_RE = new RegExp('(?<![\\w.-])(' + WEB_HOSTS.slice(0, -1).map(function (h) { return h.replace(/\./g, '\\.'); }).join('|') + ')(?![\\w-])', 'g');
+  // Link web host names inside a panel's text.
+  var HOST_RE = new RegExp('(?<![\\w.-])(' + WEB_HOSTS.map(function (h) { return h.replace(/\./g, '\\.'); }).join('|') + ')(?![\\w-])', 'g');
   function linkHosts(html) { return html.replace(HOST_RE, function (h) { return hostLink(h); }); }
   function filesHtml(files) {
     if (!files || !files.length) return '';
@@ -1432,7 +1429,7 @@ should fit next to the map without scrolling, in both light and dark mode.
         '<li><b>Colours</b>: <span class="k-config"><span class="swatch"></span></span>ghaf-infra code <span class="k-pipeline"><span class="swatch"></span></span>Jenkins <span class="k-build"><span class="swatch"></span></span>Nix build <span class="k-store"><span class="swatch"></span></span>storage <span class="k-trust"><span class="swatch"></span></span>trust <span class="k-event"><span class="swatch"></span></span>trigger/report <span class="k-external"><span class="swatch"></span></span>external. Click a colour or NIXOS in the legend under the map to light up only those.</li>' +
         '<li><b>Click any box</b> for what it is, the CI analogy, and the files that define it.</li>' +
         '<li><b>Environments</b>: the walks run on ci-prod (pre-merge and main) and ci-release. ci-dev, ci-dbg, the UAE controller and a local VM run the same Jenkins module; see the table below the map.</li>' +
-        '<li><b>Not drawn</b>: the Nebula lighthouse, monitoring, device logs, Fleet and the web server are listed under Supporting services below the map.</li>' +
+        '<li><b>Not drawn</b>: the Nebula lighthouse, monitoring, device logs and Fleet are listed under Supporting services below the map.</li>' +
         '</ul>';
       nav = ['p', 'm', 'r'].map(function (k) { return '<button type="button" class="btn primary" data-route="' + k + '">Walk ' + ROUTE_NAME[k] + ' ▶</button>'; }).join('');
     }
