@@ -5,6 +5,7 @@
   lib,
   inputs,
   config,
+  options,
   ...
 }:
 {
@@ -17,7 +18,9 @@
   # commit time of the revision above, read by the drift metrics in modules/monitoring.nix
   environment.etc."configuration-revision-timestamp".text = "${toString (self.lastModified or 0)}\n";
 
-  nixpkgs.config.allowUnfree = true;
+  # Hosts get allowUnfree from pkgsBySystem in hosts/default.nix: NixOS asserts
+  # that nixpkgs.config is empty when nixpkgs.pkgs is set.
+  nixpkgs.config = lib.mkIf (!options.nixpkgs.pkgs.isDefined) { allowUnfree = true; };
 
   nix = {
     # This will add each flake input as a registry
