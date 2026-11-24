@@ -14,14 +14,13 @@ let
   );
   isAutoConfiguredHost = _: host: (host.kind or "host") != "vm";
 
-  # Per-system grouping of nixosConfiguration names. Driven by the inventory's
-  # `system` field. Seeded with `hetzci-vm-no-host-nix-store`, which is an
-  # x86_64-linux VM variant exposed in `flake.nixosConfigurations` without its
-  # own inventory entry.
+  # Per-system grouping of the inventory's host names, driven by its `system`
+  # field. hetzci-vm-no-host-nix-store has no inventory entry: its toplevel is
+  # the same as hetzci-vm's.
   hostsBySystem = lib.foldlAttrs (
     acc: name: host:
     acc // { ${host.system} = (acc.${host.system} or [ ]) ++ [ name ]; }
-  ) { x86_64-linux = [ "hetzci-vm-no-host-nix-store" ]; } hostInventory;
+  ) { } hostInventory;
 
   # make self and inputs available in nixos modules
   specialArgs = {

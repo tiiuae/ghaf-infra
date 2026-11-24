@@ -33,7 +33,7 @@ jobs:
     secrets:
       read-org-members: ${{ secrets.READ_ORG_MEMBERS }}
   build_matrix:
-    name: "build"
+    name: "build (${{ matrix.arch }})"
     needs: [authorize]
     if: needs.authorize.outputs.result == 'authorized'
     runs-on: ubuntu-latest
@@ -42,7 +42,11 @@ jobs:
       matrix:
         include:
           - arch: x86_64-linux
+            builder: ${{ vars.BUILDER_X86 }}
+            eval-max-memory-size: 4096
           - arch: aarch64-linux
+            builder: ${{ vars.BUILDER_AARCH }}
+            eval-max-memory-size: 2048
     concurrency:
       # Cancel any in-progress workflow runs from the same PR or branch,
       # allowing matrix jobs to run concurrently:
@@ -75,27 +79,17 @@ jobs:
       - name: Build ${{ matrix.arch }}
         shell: bash
         run: |
-          # Derive the per-arch host list from flake.lib.hostsBySystem so the
-          # filter stays in sync with the canonical inventory (no name-based
-          # heuristics).
-          HOSTS=$(nix eval --raw \
-            ".#lib.hostsBySystem.${{ matrix.arch }}" \
-            --apply 'names: builtins.concatStringsSep "|" names')
-          if [ "${{ matrix.arch }}" == "x86_64-linux" ]; then
-            BUILDER="${BUILDER_X86}"
-            # x86 targets: all x86_64-linux nixosConfigurations, devShell, pre-commit checks
-            FILTER="(^nixosConfigurations\\.(${HOSTS})\\.|^devShells\\.x86_64-linux\\..*$|x86_64-linux\\.pre-commit)"
-          elif [ "${{ matrix.arch }}" == "aarch64-linux" ]; then
-            BUILDER="${BUILDER_AARCH}"
-            # aarch64 targets: aarch64-linux nixosConfigurations
-            FILTER="^nixosConfigurations\\.(${HOSTS})\\."
-          else
-            echo "::error::Unknown architecture: '${{ matrix.arch }}'"
-            exit 1
-          fi
-          OPTS="--remote $BUILDER --no-download --skip-cached --option accept-flake-config true"
-          # Build arch-specific targets based on FILTER
-          ./scripts/nix-fast-build.sh -f "$FILTER" -o "$OPTS"
+          export NIX_SSHOPTS="-o ControlMaster=no"
+          # The builders are shared with Jenkins. Two evaluation workers keep
+          # memory use down while reusing Nixpkgs across the targets in each worker.
+          nix run --inputs-from .# nixpkgs#nix-fast-build -- \
+            --flake ".#lib.ciBuilds.${{ matrix.arch }}" \
+            --remote "${BUILDER:?Missing builder for this architecture}" \
+            --remote-ssh-option ControlMaster no \
+            --remote-ssh-option ConnectTimeout 30 \
+            --max-jobs 2 --eval-workers 2 \
+            --eval-max-memory-size "${{ matrix.eval-max-memory-size }}" \
+            --no-nom --no-download --skip-cached \
+            --option accept-flake-config true
         env:
-          BUILDER_X86: ${{ vars.BUILDER_X86 }}
-          BUILDER_AARCH: ${{ vars.BUILDER_AARCH }}
+          BUILDER: ${{ matrix.builder }}
