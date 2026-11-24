@@ -41,7 +41,6 @@ let
       ghaf-monitoring
       ghaf-lighthouse
       ghaf-registry
-      ghaf-webserver
       ghaf-fleetdm
       hetzci-dbg
       hetzci-dev

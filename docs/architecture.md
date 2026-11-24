@@ -106,7 +106,6 @@ They are monitored by `ghaf-monitoring` through the Nebula overlay.
 | `ghaf-log` | Grafana + Loki | **Ghaf device** log analysis (ghaflogs.vedenemo.dev) |
 | `ghaf-lighthouse` | Nebula lighthouse | Overlay network discovery and DNS for `sumu.vedenemo.dev` |
 | `ghaf-registry` | [Zot](https://zotregistry.dev/) OCI registry | Container image registry (registry.vedenemo.dev), OIDC-authenticated via ghaf-auth |
-| `ghaf-webserver` | Nginx | Static web content (vedenemo.dev) |
 | `ghaf-fleetdm` | [Fleet](https://fleetdm.com/) (fleetdm.vedenemo.dev) | Device management server for Ghaf end-devices. Test agents carry enrollment credentials (via sops) so that Ghaf images flashed during CI testing can register with Fleet |
 
 ### NetHSM Gateways

@@ -115,15 +115,6 @@
     };
   };
 
-  ghaf-webserver = {
-    module = ./ghaf-webserver/configuration.nix;
-    system = "x86_64-linux";
-    machine = {
-      ip = "37.27.204.82";
-      internal_ip = "10.0.0.8";
-    };
-  };
-
   ghaf-auth = {
     module = ./ghaf-auth/configuration.nix;
     system = "x86_64-linux";
