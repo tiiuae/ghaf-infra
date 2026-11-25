@@ -103,6 +103,8 @@ For secure A/B builds, also set `signing.certificates.uefi.pk`,
 These public certificates must be available at Nix build time. The Jenkins
 module creates the public trust directory and exports it as
 `JENKINS_SECURE_AB_TRUST_DIR`.
+When `signing.certificates.ota` is set, the PK certificate directory must also
+contain `auth/PK.auth`, `auth/KEK.auth`, and `auth/db.auth` for UEFI enrollment.
 Jenkins supplies the generation in a per-run `config.json`.
 The existing pipelines still disable signing when `CI_ENV=vm`. Signature
 verification uses a shared toolset configured independently through

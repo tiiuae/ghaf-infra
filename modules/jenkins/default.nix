@@ -39,6 +39,10 @@ let
         openssl x509 -in ${lib.escapeShellArg cfg.signing.certificates.uefi.pk} -out "$out/PK.crt"
         openssl x509 -in ${lib.escapeShellArg cfg.signing.certificates.uefi.kek} -out "$out/KEK.crt"
         openssl x509 -in ${lib.escapeShellArg cfg.signing.certificates.uefi.db} -out "$out/db.crt"
+        # The PKI package ships enrollment files in auth/ beside its certificates.
+        install -m 0644 ${lib.escapeShellArg "${builtins.dirOf cfg.signing.certificates.uefi.pk}/auth/PK.auth"} "$out/PK.auth"
+        install -m 0644 ${lib.escapeShellArg "${builtins.dirOf cfg.signing.certificates.uefi.pk}/auth/KEK.auth"} "$out/KEK.auth"
+        install -m 0644 ${lib.escapeShellArg "${builtins.dirOf cfg.signing.certificates.uefi.pk}/auth/db.auth"} "$out/db.auth"
         openssl x509 -in ${lib.escapeShellArg cfg.signing.certificates.ota} -pubkey -noout > update.pem
         openssl pkey -pubin -in update.pem -outform DER -out update.der
         # Ed25519 SubjectPublicKeyInfo: fixed 12-byte header followed by the raw key.
@@ -56,6 +60,7 @@ let
       uefisigniso
       uefisign-simple
       uefi-sign-sysupdate
+      uefi-sign-x86-ab
     ])
     ++ (with self.packages.${pkgs.stdenv.hostPlatform.system}; [
       select-pkcs11-node
@@ -451,7 +456,7 @@ in
           pk = lib.mkOption {
             type = lib.types.nullOr lib.types.str;
             default = null;
-            description = "Path to the public UEFI PK certificate included in secure A/B build trust";
+            description = "Path to the public UEFI PK certificate included in secure A/B build trust. When signing.certificates.ota is set, auth/PK.auth, auth/KEK.auth, and auth/db.auth must exist beside this certificate.";
           };
           kek = lib.mkOption {
             type = lib.types.nullOr lib.types.str;

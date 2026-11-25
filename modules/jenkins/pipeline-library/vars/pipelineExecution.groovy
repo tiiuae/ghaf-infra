@@ -148,7 +148,7 @@ def create_pipeline(
       }
       sh """
         mkdir -p ${artifactSupport.shell_quote(secure_ab_config_dir)}
-        for file in PK.crt KEK.crt db.crt update.pub; do
+        for file in PK.crt KEK.crt db.crt PK.auth KEK.auth db.auth update.pub; do
           cp ${artifactSupport.shell_quote(env.JENKINS_SECURE_AB_TRUST_DIR)}/"\$file" ${artifactSupport.shell_quote(secure_ab_config_dir)}/
         done
       """
@@ -177,6 +177,7 @@ def create_pipeline(
     def build_target_name = target_config.target
     def build_shortname = target_config.shortname
     def is_sysupdate_target = target_config.sysupdate
+    def is_secure_ab_initial_target = target_config.get('secure_ab_initial', false)
     def normalized_test_runs = target_config.test_runs
     if (!registry_publish_enabled && normalized_test_runs.any { it.initial_status != 'SKIPPED' }) {
       error('Hardware tests require services.ghaf-jenkins.registry.enable')
@@ -404,11 +405,12 @@ def create_pipeline(
             error("OTA manifest missing from '${unsigned_dir}'")
           }
           uefi_signing = [
-            signer: is_sysupdate_target ? 'uefi-sign-sysupdate' :
+            signer: is_secure_ab_initial_target ? 'uefi-sign-x86-ab' : is_sysupdate_target ? 'uefi-sign-sysupdate' :
               (build_target_name.contains('nvidia-jetson-orin') ? 'uefisign-simple' : 'uefisign'),
-            input: signer_input,
+            input: is_secure_ab_initial_target ? '.' : signer_input,
           ]
           uefi_signing.signer_path = artifactSupport.run_cmd("readlink -f \"\$(command -v ${uefi_signing.signer})\"")
+          def signer_output_dir = is_secure_ab_initial_target ? "${tmpdir}/signed-output" : tmpdir
 
           try {
             sh """
@@ -418,30 +420,40 @@ def create_pipeline(
 
             withRedundancyRouter('uefi') { ctx ->
               uefi_signing.started_on = artifactSupport.run_cmd('date -u +%Y-%m-%dT%H:%M:%SZ')
-              sh """
-                ${artifactSupport.shell_quote(uefi_signing.signer_path)} "${env.JENKINS_UEFI_CERTIFICATE_FILE}" \
-                  "${ctx.uri}" \
-                  ${artifactSupport.shell_quote("${unsigned_dir}/${signer_input}")} \
-                  '${tmpdir}'
-              """
-              sh "oci-publish validate-output --target-dir '${tmpdir}' '${tmpdir}'"
+              if (is_secure_ab_initial_target) {
+                sh """
+                  ${artifactSupport.shell_quote(uefi_signing.signer_path)} \\
+                    --key-dir ${artifactSupport.shell_quote(secure_ab_config_dir)} \\
+                    --private-key ${artifactSupport.shell_quote(ctx.uri)} \\
+                    --input ${artifactSupport.shell_quote(unsigned_dir)} \\
+                    --output ${artifactSupport.shell_quote(signer_output_dir)}
+                """
+              } else {
+                sh """
+                  ${artifactSupport.shell_quote(uefi_signing.signer_path)} "${env.JENKINS_UEFI_CERTIFICATE_FILE}" \
+                    "${ctx.uri}" \
+                    ${artifactSupport.shell_quote("${unsigned_dir}/${signer_input}")} \
+                    '${tmpdir}'
+                """
+              }
+              sh "oci-publish validate-output --target-dir '${tmpdir}' ${artifactSupport.shell_quote(signer_output_dir)}"
               uefi_signing.finished_on = artifactSupport.run_cmd('date -u +%Y-%m-%dT%H:%M:%SZ')
               uefi_signing.signing_key = ctx.uri
             }
             if (target_config.provenance_requested) {
               def signer_outputs = sh(
-                script: "bash -o pipefail -c ${artifactSupport.shell_quote("find -L '${tmpdir}' -type f -printf '%P\\0' | sort -z")}",
+                script: "bash -o pipefail -c ${artifactSupport.shell_quote("find -L '${signer_output_dir}' -type f -printf '%P\\0' | sort -z")}",
                 returnStdout: true
               )
               uefi_signing.subjects = signer_outputs.split('\u0000').findAll { it }.collect { path ->
                 def digest = artifactSupport.run_cmd(
-                  "sha256sum < ${artifactSupport.shell_quote("${tmpdir}/${path}")}"
+                  "sha256sum < ${artifactSupport.shell_quote("${signer_output_dir}/${path}")}"
                 ).tokenize()[0]
                 [name: path, digest: [sha256: digest]]
               }
             }
 
-            sh "mv '${tmpdir}' '${output}/output'"
+            sh "mv ${artifactSupport.shell_quote(signer_output_dir)} '${output}/output'"
             if (is_sysupdate_target) {
               manifest.sysupdate = [path: "output/${artifactSupport.path_basename(signer_input)}"]
               def ota_signature_path = "${manifest.sysupdate.path}.sig"
