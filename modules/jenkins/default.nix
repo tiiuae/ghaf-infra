@@ -54,7 +54,7 @@ let
     ++ (with inputs.ci-yubi.packages.${pkgs.stdenv.hostPlatform.system}; [
       uefisign
       uefisigniso
-      uefisign-simple
+      uefisign-orin
       uefi-sign-sysupdate
     ])
     ++ (with self.packages.${pkgs.stdenv.hostPlatform.system}; [
