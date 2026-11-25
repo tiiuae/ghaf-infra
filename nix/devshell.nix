@@ -42,7 +42,6 @@
             git
             jq
             nix
-            nix-fast-build
             nixfmt
             nixos-rebuild
             nixos-anywhere
