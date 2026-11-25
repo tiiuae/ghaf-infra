@@ -580,6 +580,9 @@ def create_pipeline(
         ) {
           withRedundancyRouter('image') { ctx ->
             def signature_path = "${manifest.image.path}.sig"
+            if (fileExists("${output}/${signature_path}")) {
+              error("Refusing to overwrite existing image signature '${signature_path}'")
+            }
             sh """
               openssl dgst -sha256 -sign "${ctx.uri}" \
                 -out ${artifactSupport.shell_quote("${output}/${signature_path}")} \

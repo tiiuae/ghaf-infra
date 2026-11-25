@@ -374,8 +374,8 @@ pipeline {
               def sig_path
               if (params.OCI_IMAGE_REF) {
                 artifactSupport.oras_pull_json(params.OCI_IMAGE_REF, TMP_IMG_DIR)
-                img_path = "${TMP_IMG_DIR}/${image.path}"
-                sig_path = "${TMP_IMG_DIR}/${image.signature.path}"
+                img_path = artifactSupport.downloaded_file(TMP_IMG_DIR, image.path)
+                sig_path = artifactSupport.downloaded_file(TMP_IMG_DIR, image.signature.path)
               } else {
                 def split = split_img_url(params.IMG_URL)
                 def base_url = "${split.artifacts_url}/${split.target_name}"

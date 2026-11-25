@@ -41,9 +41,11 @@ assert support.main_image([images: [first]]) == first
 assert support.main_image([images: [first, second]], second.path) == second
 expectFailure('found 2 matching images') { support.main_image([images: [first, second]]) }
 
+def root = java.nio.file.Files.createTempDirectory('image-selection').toFile()
+def outside = new File("${root.path}-outside")
 support.binding.setVariable('artifactSupport', support)
 support.binding.setVariable('sh', { Map args ->
-  def process = new ProcessBuilder('bash', '-c', args.script).start()
+  def process = new ProcessBuilder('bash', '-c', args.script).directory(root).start()
   def output = process.inputStream.text
   def status = process.waitFor()
   if (args.returnStatus) return status
@@ -52,7 +54,6 @@ support.binding.setVariable('sh', { Map args ->
 })
 def execution = new GroovyShell(support.binding).parse(new File(repoRoot, 'modules/jenkins/pipeline-library/vars/pipelineExecution.groovy'))
 
-def root = java.nio.file.Files.createTempDirectory('image-selection').toFile()
 try {
   expectFailure('No main image found') { execution.find_main_image(root.path) }
   new File(root, 'recovery').mkdir()
@@ -64,6 +65,30 @@ try {
   assert execution.find_main_image(root.path, 'recovery/boot.img') == 'recovery/boot.img'
   expectFailure("Main image 'typo.img' not found") { execution.find_main_image(root.path, 'typo.img') }
   expectFailure('must stay within') { execution.find_main_image(root.path, '../escape.img') }
+
+  new File(root, 'recovery/boot.img.sig').text = 'signature'
+  def quotedPath = "recovery/disk '\$(touch escaped).img"
+  new File(root, quotedPath).text = 'quoted filename'
+  java.nio.file.Files.createSymbolicLink(new File(root, 'alias.img').toPath(), new File(root, 'recovery/boot.img').toPath())
+  ['disk.img.zst', 'recovery/boot.img', 'recovery/boot.img.sig', quotedPath, 'alias.img'].each { path ->
+    assert support.downloaded_file(root.path, path) == "${root.path}/${path}"
+  }
+  assert !new File(root, 'escaped').exists()
+
+  outside.mkdir()
+  new File(outside, 'private.img').text = 'outside the download directory'
+  java.nio.file.Files.createSymbolicLink(new File(root, 'outside.img').toPath(), new File(outside, 'private.img').toPath())
+  java.nio.file.Files.createSymbolicLink(new File(root, 'outside-dir').toPath(), outside.toPath())
+  java.nio.file.Files.createSymbolicLink(new File(root, 'missing.img').toPath(), new File(root, 'nonexistent').toPath())
+  [
+    '', null, '.', 'recovery', 'nonexistent.img', 'missing.img',
+    new File(outside, 'private.img').path,
+    "../${outside.name}/private.img", 'recovery/../disk.img.zst',
+    'outside.img', 'outside-dir/private.img',
+  ].each { path ->
+    expectFailure('download directory') { support.downloaded_file(root.path, path) }
+  }
 } finally {
   root.deleteDir()
+  outside.deleteDir()
 }
