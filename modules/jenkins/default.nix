@@ -783,7 +783,6 @@ in
 
     environment.etc = lib.mkMerge [
       {
-        "jenkins/nix-fast-build.sh".source = "${self.outPath}/scripts/nix-fast-build.sh";
         "jenkins/remote-stores.json".text = builtins.toJSON cfg.remoteStores;
         "jenkins/jobs.json".text = builtins.toJSON (
           lib.mapAttrs' (_: job: lib.nameValuePair job.name job) cfg.jobs
