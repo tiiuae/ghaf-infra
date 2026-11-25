@@ -176,6 +176,7 @@ def create_pipeline(
     }
     def build_target_name = target_config.target
     def build_shortname = target_config.shortname
+    def is_orin_target = build_target_name.contains('nvidia-jetson-orin')
     def is_sysupdate_target = target_config.sysupdate
     def normalized_test_runs = target_config.test_runs
     if (!registry_publish_enabled && normalized_test_runs.any { it.initial_status != 'SKIPPED' }) {
@@ -397,15 +398,16 @@ def create_pipeline(
           def tmpdir = artifactSupport.build_tmpdir("uefisign-${build_shortname}")
           def unsigned_dir = "${output}/unsigned-output"
           def input_hint = target_config.image_path
+          // Orin signing also needs the partition metadata and recovery files.
           def signer_input = is_sysupdate_target ? artifactSupport.run_cmd(
             "find -L '${unsigned_dir}' -maxdepth 1 -name '*.manifest' -printf '%P' -quit"
-          ) : find_main_image(unsigned_dir, input_hint)
+          ) : (is_orin_target ? '.' : find_main_image(unsigned_dir, input_hint))
           if (!signer_input) {
             error("OTA manifest missing from '${unsigned_dir}'")
           }
           uefi_signing = [
             signer: is_sysupdate_target ? 'uefi-sign-sysupdate' :
-              (build_target_name.contains('nvidia-jetson-orin') ? 'uefisign-simple' : 'uefisign'),
+              (is_orin_target ? 'uefisign-orin' : 'uefisign'),
             input: signer_input,
           ]
           uefi_signing.signer_path = artifactSupport.run_cmd("readlink -f \"\$(command -v ${uefi_signing.signer})\"")
@@ -441,7 +443,11 @@ def create_pipeline(
               }
             }
 
-            sh "mv '${tmpdir}' '${output}/output'"
+            // uefisign-orin leaves the directory at 0700; let Caddy read it through the jenkins group.
+            sh """
+              chmod g+rx '${tmpdir}'
+              mv '${tmpdir}' '${output}/output'
+            """
             if (is_sysupdate_target) {
               manifest.sysupdate = [path: "output/${artifactSupport.path_basename(signer_input)}"]
               def ota_signature_path = "${manifest.sysupdate.path}.sig"

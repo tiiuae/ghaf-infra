@@ -160,9 +160,14 @@ Jenkins controllers have the following UEFI signing tools available
 
 - `uefisign`: sign individual EFI binaries
 - `uefisigniso`: sign EFI binaries within ISO images
-- `uefisign-simple`: simplified wrapper for common signing operations
+- `uefisign-orin`: sign NVIDIA Orin build output directories, including recovery images
 - `uefi-sign-sysupdate`: Ghaf manifest-v2 A/B sysupdate signer
 - `systemd-sbsign`: systemd's built-in sbsign tool for PE binary signing
+
+Orin disk images are expected to use UKI so the signature covers the kernel,
+initrd, command line and device tree. `uefisign-orin` requires exactly one disk
+image across the build output root and `sd-image/`; `image_path` does not select
+the image for this signer.
 
 These tools use the same PKCS#11 proxy connection as SLSA signing to access
 the HSM keys. Jenkins signs with the DB key `uefi-ghaf-db`, selected through
