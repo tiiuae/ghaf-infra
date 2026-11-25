@@ -308,7 +308,7 @@ pipeline {
                 def image = artifactSupport.main_image(manifest)
                 if (!image?.path) error("Build manifest must identify a main image for flashing")
                 artifactSupport.oras_pull_json(params.OCI_IMAGE_REF, TMP_IMG_DIR)
-                img_path = "${TMP_IMG_DIR}/${image.path}"
+                img_path = artifactSupport.downloaded_file(TMP_IMG_DIR, image.path)
               } else {
                 img_path = artifactSupport.run_wget(params.IMG_URL, TMP_IMG_DIR)
               }

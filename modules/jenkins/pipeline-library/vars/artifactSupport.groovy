@@ -49,6 +49,24 @@ def main_image(Map manifest, String requestedPath = null) {
   return matches[0]
 }
 
+def downloaded_file(String directory, String path) {
+  if (!path || path.startsWith('/') || path.tokenize('/').contains('..')) {
+    error("Artifact path must be relative and stay within the download directory: '${path}'")
+  }
+  def file = "${directory}/${path}"
+  if (sh(script: """
+    root=\$(realpath -e -- ${shell_quote(directory)}) || exit 1
+    file=\$(realpath -e -- ${shell_quote(file)}) || exit 1
+    case "\$file" in
+      "\$root"/*) test -f "\$file" ;;
+      *) exit 1 ;;
+    esac
+  """, returnStatus: true) != 0) {
+    error("Artifact must be a regular file within the download directory: '${path}'")
+  }
+  return file
+}
+
 @NonCPS
 def find_oci_pull_file(Map pullResult, String mediaType) {
   def file = pullResult.files?.find { it.mediaType == mediaType }
