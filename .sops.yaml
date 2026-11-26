@@ -271,7 +271,6 @@ creation_rules:
   - path_regex: hosts/nethsm-gateway/dev/secrets.yaml$
     key_groups:
     - age:
-      - *nethsm-gateway-dev
       - *jrautiola
       - *hrosten
       - *cazfi
