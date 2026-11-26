@@ -20,7 +20,7 @@ def pipelineParameters(List agentHosts, String defaultRepoUrl) {
     string(
       name: 'CUSTOM_ORIN_FLASH_SCRIPT',
       defaultValue: '',
-      description: 'Custom Orin AGX flash script target ending with -flash-script or -flash-qspi. TESTSET is not supported for custom targets.'
+      description: 'Custom Orin AGX or NX flash script target ending with -flash-script or -flash-qspi. TESTSET is not supported for custom targets.'
     ),
     string(
       name: 'CUSTOM_GHAF_TARGET',
@@ -28,9 +28,9 @@ def pipelineParameters(List agentHosts, String defaultRepoUrl) {
       description: 'Custom ghaf image target. Required for -flash-script and secure-boot flashes. TESTSET is not supported for custom targets.'
     ),
     booleanParam(
-      name: 'EXECUTE_ORIN_AGX_FLASH',
+      name: 'EXECUTE_ORIN_FLASH',
       defaultValue: false,
-      description: 'Execute the custom Orin AGX flash script after Build.'
+      description: 'Execute the selected custom Orin AGX, AGX64, or NX flash script after Build. The target must identify its Orin device.'
     ),
     choice(
       name: 'TESTAGENT_HOST',
@@ -255,14 +255,14 @@ pipeline {
         }
       }
     }
-    stage('Execute Orin AGX flash') {
+    stage('Execute Orin flash') {
       agent none
-      when { expression { params && params.EXECUTE_ORIN_AGX_FLASH } }
+      when { expression { params && params.EXECUTE_ORIN_FLASH } }
       steps {
         script {
           def flashTarget = params.CUSTOM_ORIN_FLASH_SCRIPT
           if (!(flashTarget?.endsWith('-flash-script') || flashTarget?.endsWith('-flash-qspi'))) {
-            error("EXECUTE_ORIN_AGX_FLASH requires CUSTOM_ORIN_FLASH_SCRIPT to end with '-flash-script' or '-flash-qspi'")
+            error("Orin flash execution requires CUSTOM_ORIN_FLASH_SCRIPT to end with '-flash-script' or '-flash-qspi'")
           }
           def customGhafTarget = params.CUSTOM_GHAF_TARGET
           def needsGhafImage = flashTarget.endsWith('-flash-script') || params.UEFISIGN
@@ -282,9 +282,8 @@ pipeline {
           def secureBootFlash = customGhafPath && params.UEFISIGN
           def testAgentStorePaths = customGhafPath ? "${flashScriptPath} ${customGhafPath}" : flashScriptPath
           def deviceInfo = pipelineModel.device_info(flashTarget, false)
-            ?: pipelineModel.device_info(null, false, 'orin-agx')
           if (!deviceInfo || !['orin-agx', 'orin-agx-64', 'orin-nx'].contains(deviceInfo.tag)) {
-            error("Unable to resolve Orin device config for flash target '${flashTarget}'")
+            error("Unable to identify a supported Orin device from custom flash target '${flashTarget}'")
           }
           def secureBootDeviceTag = "${deviceInfo.tag - 'orin-'}-sec-boot"
           // Dev Orin devices support both secure-boot and non-secure-boot flash modes; other hosts require the label to match the mode.
@@ -306,110 +305,168 @@ pipeline {
           if (availableDeviceTag == null) {
             error("No online test agent found with any of these labels: ${deviceTags.collect { "${testAgentHost}-${it}" }.join(', ')}")
           }
-          node("${testAgentHost}-${availableDeviceTag}") {
-            env.ORIN_AGX_FLASH_SCRIPT_PATH = flashScriptPath
-            env.ORIN_AGX_GHAF_IMAGE_PATH = customGhafPath
-            env.ORIN_AGX_SECURE_BOOT_FLASH = secureBootFlash.toString()
-            def flashGcRootTag = (env.BUILD_TAG ?: "build-${env.BUILD_NUMBER}")
-              .replaceAll(/[^A-Za-z0-9_.-]/, '_')
-            env.ORIN_AGX_FLASH_GCROOT = "/var/lib/jenkins/gcroots/orin-agx-flash-script-${flashGcRootTag}"
-            env.ORIN_AGX_GHAF_IMAGE_GCROOT = "/var/lib/jenkins/gcroots/orin-agx-ghaf-image-${flashGcRootTag}"
-            env.ORIN_AGX_RELAY_NAME = "relay-${deviceInfo.name}"
-            def testAgentSshUser = sh(
-              script: 'IFS= read -r host < /proc/sys/kernel/hostname; printf %s "$host"',
-              returnStdout: true
-            ).trim()
-            try {
-              sh """
-                set -eu
-                . /var/lib/jenkins/jenkins.env
-                controller_url="\${CONTROLLER:-}"
-                controller_host="\${controller_url#*://}"
-                controller_host="\${controller_host%%/*}"
-                if [ -z "\$controller_host" ]; then
-                  echo "Unable to derive Jenkins controller host from CONTROLLER='\$controller_url'"
-                  exit 1
-                fi
-                mkdir -p /var/lib/jenkins/gcroots
-                find /var/lib/jenkins/gcroots \
-                  -maxdepth 1 \
-                  -type l \
-                  -name 'orin-agx-flash-script-*' \
-                  -mtime +7 \
-                  -delete
-                NIX_SSHOPTS="-i /run/secrets/ssh_host_ed25519_key -o StrictHostKeyChecking=no" \
-                  nix copy \
-                    --from ssh://${testAgentSshUser}@\$controller_host \
-                    --no-check-sigs \
-                    ${testAgentStorePaths}
-                nix-store --add-root "\$ORIN_AGX_FLASH_GCROOT" \
-                  --realise "\$ORIN_AGX_FLASH_SCRIPT_PATH"
-                if [ -n "\${ORIN_AGX_GHAF_IMAGE_PATH:-}" ]; then
-                  nix-store --add-root "\$ORIN_AGX_GHAF_IMAGE_GCROOT" \
-                    --realise "\$ORIN_AGX_GHAF_IMAGE_PATH"
-                fi
-              """
-              sh """
-                set -eu
-                curl --fail-with-body --silent --show-error \
-                  --request POST \
-                  --form "relay=\$ORIN_AGX_RELAY_NAME" \
-                  --form "state=ON" \
-                  http://127.0.0.1:8000/api/set_state
-                sleep 5
-              """
-              def boardctlOutput = sh(
-                script: '''
-                  set +e
-                  /run/wrappers/bin/sudo boardctl -t topo recovery 2>&1
-                  echo "BOARDCTL_RC=$?"
-                ''',
+          lock(resource: "orin-flash-${testAgentHost}") {
+            node("${testAgentHost}-${availableDeviceTag}") {
+              env.ORIN_FLASH_SCRIPT_PATH = flashScriptPath
+              env.ORIN_FLASH_GHAF_IMAGE_PATH = customGhafPath
+              env.ORIN_FLASH_SECURE_BOOT = secureBootFlash.toString()
+              def flashGcRootTag = (env.BUILD_TAG ?: "build-${env.BUILD_NUMBER}")
+                .replaceAll(/[^A-Za-z0-9_.-]/, '_')
+              env.ORIN_FLASH_GCROOT = "/var/lib/jenkins/gcroots/orin-agx-flash-script-${flashGcRootTag}"
+              env.ORIN_FLASH_GHAF_IMAGE_GCROOT = "/var/lib/jenkins/gcroots/orin-agx-ghaf-image-${flashGcRootTag}"
+              env.ORIN_POWER_RELAY_NAME = "relay-${deviceInfo.name}"
+              if (deviceInfo.tag == 'orin-nx') {
+                def recoveryRelayNumber = sh(
+                  script: "jq -r '.addresses[\"${deviceInfo.name}\"].recovery_relay_number // \"NONE\"' /etc/jenkins/test_config.json",
+                  returnStdout: true
+                ).trim()
+                if (!(recoveryRelayNumber ==~ /[1-4]/)) {
+                  error("Invalid or missing recovery_relay_number for ${deviceInfo.name}: '${recoveryRelayNumber}'. Configure a relay channel from 1 to 4 on the test agent.")
+                }
+                env.ORIN_RECOVERY_RELAY_NUMBER = recoveryRelayNumber
+              }
+              def testAgentSshUser = sh(
+                script: 'IFS= read -r host < /proc/sys/kernel/hostname; printf %s "$host"',
                 returnStdout: true
               ).trim()
-              println(boardctlOutput)
-              def boardctlRcLine = boardctlOutput.readLines().find { it.startsWith('BOARDCTL_RC=') }
-              if (boardctlRcLine == null) {
-                error('Unable to read boardctl return code')
-              }
-              def boardctlRc = boardctlRcLine - 'BOARDCTL_RC='
-              if (boardctlRc != '0') {
-                error("boardctl failed with return code ${boardctlRc}")
-              }
-              if (!boardctlOutput.contains('Recovery mode done.')) {
-                error("boardctl output did not contain 'Recovery mode done.'")
-              }
-              timeout(time: 60, unit: 'MINUTES') {
-                sh '''
+              try {
+                sh """
                   set -eu
-                  flash_scripts="$(find "${ORIN_AGX_FLASH_SCRIPT_PATH}/bin" -maxdepth 1 -type f -executable)"
-                  flash_script_count="$(printf '%s\n' "$flash_scripts" | sed '/^$/d' | wc -l)"
-                  if [ "$flash_script_count" -ne 1 ]; then
-                    echo "Expected exactly one executable in ${ORIN_AGX_FLASH_SCRIPT_PATH}/bin"
-                    printf '%s\n' "$flash_scripts"
+                  . /var/lib/jenkins/jenkins.env
+                  controller_url="\${CONTROLLER:-}"
+                  controller_host="\${controller_url#*://}"
+                  controller_host="\${controller_host%%/*}"
+                  if [ -z "\$controller_host" ]; then
+                    echo "Unable to derive Jenkins controller host from CONTROLLER='\$controller_url'"
                     exit 1
                   fi
-                  flash_script="$(printf '%s\n' "$flash_scripts")"
-                  flash_args=""
-                  if [ -n "${ORIN_AGX_GHAF_IMAGE_PATH:-}" ]; then
-                    flash_args="-s ${ORIN_AGX_GHAF_IMAGE_PATH}"
-                    if [ "${ORIN_AGX_SECURE_BOOT_FLASH}" = "true" ]; then
-                      flash_args="--secure-boot $flash_args"
-                    fi
+                  mkdir -p /var/lib/jenkins/gcroots
+                  find /var/lib/jenkins/gcroots \\
+                    -maxdepth 1 \\
+                    -type l \\
+                    -name 'orin-agx-flash-script-*' \\
+                    -mtime +7 \\
+                    -delete
+                  NIX_SSHOPTS="-i /run/secrets/ssh_host_ed25519_key -o StrictHostKeyChecking=no" \\
+                    nix copy \\
+                      --from ssh://${testAgentSshUser}@\$controller_host \\
+                      --no-check-sigs \\
+                      ${testAgentStorePaths}
+                  nix-store --add-root "\$ORIN_FLASH_GCROOT" \\
+                    --realise "\$ORIN_FLASH_SCRIPT_PATH"
+                  if [ -n "\${ORIN_FLASH_GHAF_IMAGE_PATH:-}" ]; then
+                    nix-store --add-root "\$ORIN_FLASH_GHAF_IMAGE_GCROOT" \\
+                      --realise "\$ORIN_FLASH_GHAF_IMAGE_PATH"
                   fi
-                  /run/wrappers/bin/sudo "$flash_script" $flash_args
+                """
+                if (deviceInfo.tag == 'orin-nx') {
+                  sh '''
+                    set -eu
+                    curl --fail-with-body --silent --show-error --request POST \
+                      --form "relay=$ORIN_POWER_RELAY_NAME" --form "state=OFF" \
+                      http://127.0.0.1:8000/api/set_state
+                    sleep 3
+                    curl --fail-with-body --silent --show-error --request POST \
+                      --form "relay=relay-$ORIN_RECOVERY_RELAY_NUMBER" --form "state=ON" \
+                      http://127.0.0.1:8000/api/set_state
+                    sleep 1
+                    curl --fail-with-body --silent --show-error --request POST \
+                      --form "relay=$ORIN_POWER_RELAY_NAME" --form "state=ON" \
+                      http://127.0.0.1:8000/api/set_state
+                    set +x
+                    for attempt in $(seq 1 30); do
+                      recovery_device_found=false
+                      for usb_device in /sys/bus/usb/devices/*; do
+                        [ -r "$usb_device/idVendor" ] || continue
+                        [ "$(cat "$usb_device/idVendor")" = '0955' ] || continue
+                        product_id="$(cat "$usb_device/idProduct" 2>/dev/null || true)"
+                        case "$product_id" in
+                          7323|7423) recovery_device_found=true; break ;;
+                        esac
+                      done
+                      if [ "$recovery_device_found" = true ]; then
+                        echo "Orin NX detected in recovery mode."
+                        break
+                      fi
+                      if [ "$attempt" -eq 30 ]; then
+                        echo "Orin NX recovery USB IDs 0955:7323 or 0955:7423 were not found."
+                        exit 1
+                      fi
+                      sleep 2
+                    done
+                    set -x
+                  '''
+                } else {
+                  sh """
+                    set -eu
+                    curl --fail-with-body --silent --show-error \
+                      --request POST \
+                      --form "relay=\$ORIN_POWER_RELAY_NAME" \
+                      --form "state=ON" \
+                      http://127.0.0.1:8000/api/set_state
+                    sleep 5
+                    """
+                }
+                if (deviceInfo.tag != 'orin-nx') {
+                  def boardctlOutput = sh(
+                    script: '''
+                      set +e
+                      /run/wrappers/bin/sudo boardctl -t topo recovery 2>&1
+                      echo "BOARDCTL_RC=$?"
+                    ''',
+                    returnStdout: true
+                  ).trim()
+                  println(boardctlOutput)
+                  def boardctlRcLine = boardctlOutput.readLines().find { it.startsWith('BOARDCTL_RC=') }
+                  if (boardctlRcLine == null) {
+                    error('Unable to read boardctl return code')
+                  }
+                  def boardctlRc = boardctlRcLine - 'BOARDCTL_RC='
+                  if (boardctlRc != '0') {
+                    error("boardctl failed with return code ${boardctlRc}")
+                  }
+                  if (!boardctlOutput.contains('Recovery mode done.')) {
+                    error("boardctl output did not contain 'Recovery mode done.'")
+                  }
+                }
+                timeout(time: 60, unit: 'MINUTES') {
+                  sh '''
+                    set -eu
+                    flash_scripts="$(find "${ORIN_FLASH_SCRIPT_PATH}/bin" -maxdepth 1 -type f -executable)"
+                    flash_script_count="$(printf '%s\n' "$flash_scripts" | sed '/^$/d' | wc -l)"
+                    if [ "$flash_script_count" -ne 1 ]; then
+                      echo "Expected exactly one executable in ${ORIN_FLASH_SCRIPT_PATH}/bin"
+                      printf '%s\n' "$flash_scripts"
+                      exit 1
+                    fi
+                    flash_script="$(printf '%s\n' "$flash_scripts")"
+                    flash_args=""
+                    if [ -n "${ORIN_FLASH_GHAF_IMAGE_PATH:-}" ]; then
+                      flash_args="-s ${ORIN_FLASH_GHAF_IMAGE_PATH}"
+                      if [ "${ORIN_FLASH_SECURE_BOOT}" = "true" ]; then
+                        flash_args="--secure-boot $flash_args"
+                      fi
+                    fi
+                    /run/wrappers/bin/sudo "$flash_script" $flash_args
+                  '''
+                }
+              } finally {
+                sh '''
+                  if [ -n "${ORIN_RECOVERY_RELAY_NUMBER:-}" ]; then
+                    curl --fail --silent --show-error --request POST \
+                      --form "relay=relay-$ORIN_RECOVERY_RELAY_NUMBER" --form "state=OFF" \
+                      http://127.0.0.1:8000/api/set_state || true
+                  fi
+                  curl --fail-with-body --silent --show-error \
+                    --request POST \
+                    --form "relay=$ORIN_POWER_RELAY_NAME" \
+                    --form "state=OFF" \
+                    http://127.0.0.1:8000/api/set_state || \
+                    echo "Warning: failed to turn off relay $ORIN_POWER_RELAY_NAME"
+                  rm -f "$ORIN_FLASH_GCROOT" || true
+                  rm -f "$ORIN_FLASH_GHAF_IMAGE_GCROOT" || true
                 '''
               }
-            } finally {
-              sh '''
-                curl --fail-with-body --silent --show-error \
-                  --request POST \
-                  --form "relay=$ORIN_AGX_RELAY_NAME" \
-                  --form "state=OFF" \
-                  http://127.0.0.1:8000/api/set_state || \
-                  echo "Warning: failed to turn off relay $ORIN_AGX_RELAY_NAME"
-                rm -f "$ORIN_AGX_FLASH_GCROOT" || true
-                rm -f "$ORIN_AGX_GHAF_IMAGE_GCROOT" || true
-              '''
             }
           }
         }

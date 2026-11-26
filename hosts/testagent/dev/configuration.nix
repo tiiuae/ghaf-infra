@@ -111,6 +111,7 @@
           netvm_hostname = "ghaf-1138015446";
           serial_port = "/dev/ttyORINNX1";
           relay_number = 3;
+          recovery_relay_number = 2;
           device_ip_address = "172.18.16.61";
           socket_ip_address = "NONE";
           plug_type = "NONE";
