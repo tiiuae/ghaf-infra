@@ -74,10 +74,17 @@ def LAPTOP_RELEASE_TARGETS = [
 
 def MINIMAL_BUILD_TARGETS = [
   [ target: "packages.x86_64-linux.intel-laptop-debug",
-    testset: null, provenance: false,
+    sbom: true,
+    tests: [
+      [
+        device_tag: 'lenovo-x1',
+        variant: 'debug',
+        testset: '_relayboot_',
+      ],
+    ],
   ],
   [ target: "packages.aarch64-linux.nvidia-jetson-orin-agx-debug",
-    testset: null, provenance: false,
+    device_tag: 'orin-agx', testset: '_relayboot_', sbom: true,
   ],
 ]
 
@@ -145,7 +152,12 @@ pipeline {
               PIPELINE = pipelineExecution.create_pipeline(LAPTOP_RELEASE_TARGETS, null, null, PIPELINE_OPTIONS)
             } else if (params.RELEASE_TARGETS_SET.contains('Minimal build targets')){
               println('Minimal build targets selected')
-              PIPELINE = pipelineExecution.create_pipeline(MINIMAL_BUILD_TARGETS, null, null, PIPELINE_OPTIONS)
+              // Boot test only devices that have a test agent online
+              def targets = MINIMAL_BUILD_TARGETS.collect {
+                def deviceTag = it.device_tag ?: it.tests[0].device_tag
+                nodesByLabel(label: deviceTag, offline: false).isEmpty() ? it + [testset: null, tests: []] : it
+              }
+              PIPELINE = pipelineExecution.create_pipeline(targets, null, null, PIPELINE_OPTIONS)
             } else {
               error('Release targets pre-set was not selected')
             }

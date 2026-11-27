@@ -202,7 +202,10 @@ stays manual so that the maintainer can run more checks first, or delay it. The
 release environment is not part of scheduled deployment, so it is worth running
 [`inv install-release`](./tasks.md#install-release) with the PR checked out, and
 starting a cache-warming build (the target set "Minimal build targets (cache
-warming)" of `ghaf-release-candidate`) on the release Jenkins, ci-release.
+warming)" of `ghaf-release-candidate`) on the release Jenkins, ci-release. It
+builds one x86_64 and one aarch64 target and boot-tests them on the release test
+agent, or skips the boot tests if no test agent for the device is online when
+the build starts.
 Merge before the first window on Tuesday at 05:00 UTC for all hosts to get the
 update that week. A later merge reaches only the hosts whose windows have not
 run yet, and the others the week after.
