@@ -75,6 +75,12 @@
     };
   };
 
+  testagent3-prod = {
+    module = ./testagent/prod3/configuration.nix;
+    system = "x86_64-linux";
+    machine.ip = "172.18.16.49";
+  };
+
   testagent-release = {
     module = ./testagent/release/configuration.nix;
     system = "x86_64-linux";

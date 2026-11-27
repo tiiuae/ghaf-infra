@@ -73,6 +73,11 @@ creation_rules:
       - *testagent2-prod
       - *jrautiola
       - *hrosten
+  - path_regex: hosts/testagent/prod3/secrets.yaml$
+    key_groups:
+    - age:
+      - *jrautiola
+      - *hrosten
   - path_regex: hosts/testagent/release/secrets.yaml$
     key_groups:
     - age:
