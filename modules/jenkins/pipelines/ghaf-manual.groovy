@@ -45,7 +45,7 @@ def pipelineParameters(List agentHosts, String defaultRepoUrl) {
     booleanParam(name: 'nvidia_jetson_orin_nx_debug', defaultValue: false, description: 'Build target packages.aarch64-linux.nvidia-jetson-orin-nx-debug'),
     booleanParam(name: 'intel_laptop_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug (generic Intel laptop image replacing Lenovo X1 and Darter Pro debug targets)'),
     booleanParam(name: 'intel_laptop_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug-installer (generic Intel laptop installer replacing Lenovo X1 and Darter Pro installer targets)'),
-    booleanParam(name: 'intel_laptop_debug_secure_ab', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug-secure-ab'),
+    booleanParam(name: 'intel_laptop_debug_secure_ab', defaultValue: false, description: 'Build packages.x86_64-linux.intel-laptop-debug-secure-ab (sign when UEFISIGN is enabled)'),
     booleanParam(name: 'intel_laptop_debug_secure_ab_sysupdate', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-debug-secure-ab-sysupdate'),
     booleanParam(name: 'intel_laptop_storeDisk_debug', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-storeDisk-debug (generic Intel laptop storeDisk image replacing the Darter Pro storeDisk debug target)'),
     booleanParam(name: 'intel_laptop_storeDisk_debug_installer', defaultValue: false, description: 'Build target packages.x86_64-linux.intel-laptop-storeDisk-debug-installer (generic Intel laptop storeDisk installer replacing the Darter Pro storeDisk installer target)'),
@@ -185,7 +185,7 @@ pipeline {
             }
             if (params.intel_laptop_debug_secure_ab) {
               TARGETS.push(
-                [ target: "packages.x86_64-linux.intel-laptop-debug-secure-ab", secure_ab: true, uefisign: params.UEFISIGN, testset: null ])
+                [ target: "packages.x86_64-linux.intel-laptop-debug-secure-ab", secure_ab: true, secure_ab_initial: params.UEFISIGN, uefisign: params.UEFISIGN, testset: null ])
             }
             if (params.intel_laptop_debug_secure_ab_sysupdate) {
               TARGETS.push(
